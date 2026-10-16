@@ -1,0 +1,23 @@
+FROM python:3.14.7-slim-trixie
+
+WORKDIR /app
+COPY requirements.txt ./
+RUN python -m pip install --no-cache-dir -r requirements.txt
+COPY . /app
+RUN python scripts/assert_hosted_image_stack.py
+
+RUN groupadd --system breadmaker && useradd --system --gid breadmaker --home-dir /nonexistent --shell /usr/sbin/nologin breadmaker \
+    && mkdir -p /data && chown -R breadmaker:breadmaker /app /data
+
+ENV PYTHONPATH=/app/src \
+    BREADMAKER_RUNTIME=hosted_dev \
+    BREADMAKER_HOME=/data
+
+VOLUME ["/data"]
+EXPOSE 8080
+USER breadmaker
+
+# No authentication mode is forced by the image. `developer` still requires the
+# explicit `BREADMAKER_HOSTED_DEV_ALLOW_UNAUTHENTICATED` opt-in; `test` has its own CI-only boot guards; `session`
+# fails closed without a valid server session. Identity Platform issues those sessions in authenticated hosted development.
+CMD ["python", "-m", "uvicorn", "src.server:app", "--host", "0.0.0.0", "--port", "8080", "--no-access-log"]

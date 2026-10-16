@@ -1,0 +1,104 @@
+/* Images are free canvas objects, not cards. */
+.canvas-node.image-object{
+  min-width:40px;
+  min-height:30px;
+  display:block;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent!important;
+  box-shadow:none;
+  overflow:visible;
+  cursor:grab;
+}
+.canvas-node.image-object.selected{
+  outline:1.5px solid var(--accent);
+  outline-offset:3px;
+}
+.canvas-free-image{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  user-select:none;
+  pointer-events:none;
+}
+.canvas-node.image-object .node-port{z-index:6}
+.canvas-node.image-object .node-resize-handle{z-index:7}
+
+
+/* Text-only means exactly that: no card chrome or dividing rule. */
+.canvas-node.text{
+  min-width:40px;
+  min-height:24px;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.canvas-node.text .node-inner{padding:3px 6px 6px}
+.canvas-node.text .node-title-line{padding:0;margin:0;border:0;align-items:center}
+.canvas-node.text .node-body{margin-top:2px}
+.canvas-node.text .node-drag-strip{position:absolute;left:50%;right:auto;top:-8px;width:30px;height:6px;margin:0;transform:translateX(-50%);border:0;border-radius:999px;background:color-mix(in srgb,var(--text) 10%,transparent);cursor:grab;z-index:4;opacity:0;transition:opacity .1s ease}
+.canvas-node.text:hover .node-drag-strip,.canvas-node.text.selected .node-drag-strip{opacity:.72}
+
+/* Legend is a generated visual key: color Markers + independent icon Markers. */
+.legend-drawer-section{display:flex;flex-direction:column;gap:2px}
+.legend-drawer-section+.legend-drawer-section{margin-top:7px;padding-top:7px;border-top:1px solid var(--line)}
+.legend-drawer-section-title{
+  padding:2px 5px 4px;
+  font-size:10px;
+  line-height:1;
+  font-weight:700;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+.legend-entry-swatch.icon-only,.meaning-swatch.icon-only{background:var(--surface);color:var(--text)}
+.meaning-list{display:flex;flex-direction:column;gap:3px}
+.meaning-row{
+  display:grid;
+  grid-template-columns:24px minmax(0,1fr) auto 26px;
+  align-items:center;
+  gap:7px;
+  min-height:32px;
+  padding:3px 2px;
+}
+.meaning-swatch{
+  width:22px;
+  height:22px;
+  display:grid;
+  place-items:center;
+  border:1px solid var(--line2);
+  border-radius:50%;
+  font-size:12px;
+  font-weight:800;
+  line-height:1;
+}
+.meaning-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.meaning-row>.bare-button{width:26px;height:26px;padding:0;display:grid;place-items:center}
+.meaning-select-row{display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:6px;align-items:center}
+.meaning-select-row>select{min-width:0}
+.meaning-select-row>button{height:34px;padding:0;display:grid;place-items:center}
+.meaning-form-row{
+  display:grid;
+  grid-template-columns:68px minmax(0,1fr);
+  align-items:center;
+  gap:8px;
+  margin-top:7px;
+}
+.meaning-form-row>label{
+  margin:0;
+  font-size:11px;
+  line-height:1.2;
+  color:var(--muted);
+}
+.meaning-form-row>input,.meaning-form-row>textarea{min-width:0;margin:0}
+.meaning-form-description{align-items:start}
+.meaning-form-description>label{padding-top:8px}
+
+/* Split View mirrors the same visual geometry without editing controls. */
+.split-canvas-node.image-object{padding:0;border:0;background:transparent;box-shadow:none;overflow:visible}
+.split-canvas-node.image-object img{display:block;width:100%;height:100%;object-fit:contain}
+.split-canvas-node.text{border:0;background:transparent!important;box-shadow:none;padding:4px 6px}
+.context-menu{overflow:visible}.context-menu-row{position:relative}.context-menu-row>button{position:relative}.context-menu button:disabled{opacity:.48;cursor:default}.context-menu button:disabled:hover{background:transparent}.context-parent::after{content:'›';position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:16px}.context-submenu{display:none;position:absolute;left:calc(100% + 5px);top:-5px;min-width:230px;max-height:min(70vh,620px);overflow:auto;background:var(--surface);border:1px solid var(--line2);border-radius:6px;box-shadow:var(--shadow);padding:4px;z-index:92}.context-menu-row:hover>.context-submenu,.context-menu-row:focus-within>.context-submenu,.context-menu-row.submenu-open>.context-submenu{display:block}.context-heading{padding:8px 9px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);pointer-events:none}.context-submenu .context-sep{margin:5px 4px}
+

@@ -1,0 +1,58 @@
+.venv/
+__pycache__/
+data/*.sqlite3*
+backups/*.sqlite3
+assets/*
+!assets/.keep
+exports/*
+!exports/.keep
+
+data/*.lock
+backups/*.zip
+
+# Runtime/project state must never ship with the application source release.
+_unconfigured/
+.pytest_cache/
+.coverage
+htmlcov/
+*.pyc
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.lock
+
+
+# Installation-local backup/OAuth credentials and obscuring key.
+backup_credentials.json
+credential_obfuscation.key
+google_oauth_client.json
+
+# Disposable hosted-auth development sandbox state.
+.dev/
+
+# Developer machines, local secrets and generated reports.
+.env
+.env.*
+!.env.example
+.DS_Store
+verification-report.txt
+verification-report*.txt
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+*.pem
+*.p12
+*.pfx
+*.key
+node_modules/
+playwright-report/
+test-results/
+# Never commit author content or exported review packages.
+*.breadmaker
+*.breadreview
+*.sqlite
+*.db
+*.db-wal
+*.db-shm
+

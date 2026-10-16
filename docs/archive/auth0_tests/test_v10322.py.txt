@@ -1,0 +1,103 @@
+from __future__ import annotations
+
+from pathlib import Path
+import pytest
+
+ROOT=Path(__file__).resolve().parents[1]
+
+
+def _identity(subject:str, *, email='writer@example.test', verified=True, issuer='https://tenant.example.test/'):
+    from auth.oidc import VerifiedOidcIdentity
+    return VerifiedOidcIdentity(issuer=issuer,subject=subject,email=email,email_verified=verified,display_name='Writer',authenticated_at=1_700_000_000.0)
+
+
+def _boundary():
+    from auth.auth0 import Auth0BoundaryConfig
+    return Auth0BoundaryConfig(environment='production',issuer='https://tenant.example.test',client_id='client',application_origin='https://app.example.test',client_secret_ref='secret/ref')
+
+
+def test_v10322_release_and_review_plan_advance_together():
+    version=(ROOT/'VERSION').read_text().strip()
+    assert tuple(map(int,version.split('.'))) >= (10,3,22)
+    plan=(ROOT/'docs/BREADMAKER_REVIEW_IMPLEMENTATION_PLAN.md').read_text()
+    assert f'Implemented through **{version}**' in plan
+
+
+def test_v10322_database_mapper_requires_auth0_subject_and_verified_email(tmp_path):
+    from auth.database import DatabaseAuth0IdentityMapper, DatabaseAuth0IdentityError
+    from auth.accounts import HostedAccountIdentityStore
+    from workspace import Workspace
+    mapper=DatabaseAuth0IdentityMapper(_boundary())
+    ws=Workspace(tmp_path/'hosted');ws.init();store=HostedAccountIdentityStore(ws)
+    row=mapper.resolve_or_create_account(_identity('auth0|db-user'),store)
+    assert row.provider=='email_password'
+    assert row.email_verified is True
+    assert mapper.metadata()['password_owner']=='auth0'
+    assert mapper.metadata()['totp_owner']=='auth0'
+    assert mapper.metadata()['credentials_retained_by_breadmaker'] is False
+    with pytest.raises(DatabaseAuth0IdentityError,match='DATABASE_EMAIL_VERIFICATION_REQUIRED'):
+        mapper.map_verified_identity(_identity('auth0|unverified',verified=False))
+    with pytest.raises(DatabaseAuth0IdentityError,match='DATABASE_AUTH0_SUBJECT_PROVIDER_MISMATCH'):
+        mapper.map_verified_identity(_identity('google-oauth2|123'))
+
+
+def test_v10322_real_auth_routes_support_dev_and_staging_while_dev_builder_stays_local_only():
+    routes=(ROOT/'src/backend/runtime_routes.py').read_text()
+    hosted=(ROOT/'src/auth/hosted_login.py').read_text()
+    assert "runtime.mode in {'hosted_dev','hosted'}" in routes
+    assert "runtime.sessions.metadata().get('auth_mode')=='auth0'" in routes
+    assert "@router.get('/auth/login')" in routes
+    assert "@router.get('/auth/callback')" in routes
+    assert "environment != 'development'" in hosted
+    assert 'AUTH0_LOCAL_SANDBOX_DEVELOPMENT_ONLY' in hosted
+
+
+def test_v10322_localhost_auth_launcher_is_separate_and_uses_disposable_home():
+    normal=(ROOT/'run').read_text()
+    launcher=(ROOT/'run-hosted-auth-dev').read_text()
+    assert 'BREADMAKER_AUTH_MODE=auth0' not in normal
+    assert 'BREADMAKER_RUNTIME=hosted_dev' in launcher
+    assert 'BREADMAKER_AUTH_MODE=auth0' in launcher
+    assert 'BREADMAKER_ENV=development' in launcher
+    assert '.dev/hosted-auth-data' in launcher
+    assert 'BREADMAKER_AUTH0_CLIENT_SECRET' in launcher
+    assert 'BREADMAKER_OPEN_PATH="/auth/login?return_to=/"' in launcher
+    assert '.dev/' in (ROOT/'.gitignore').read_text()
+
+
+def test_v10322_local_runtime_remains_null_account_and_session_services():
+    local=(ROOT/'src/runtime/local.py').read_text()
+    assert 'NullSessionService()' in local
+    assert 'NullAccountIdentityService()' in local
+    assert 'auth0' not in local.lower()
+
+
+def test_v10322_auth0_session_mode_is_explicit_not_alias_of_developer_mode(monkeypatch):
+    from auth.sessions import build_hosted_session_service
+    monkeypatch.setenv('BREADMAKER_ENV','development')
+    service=build_hosted_session_service('auth0')
+    assert service.requires_authentication is True
+    assert service.metadata()['auth_mode']=='auth0'
+    assert service.test_bootstrap_enabled is False
+
+
+def test_v10322_hosted_login_dispatches_only_three_allowed_subject_families():
+    from auth.hosted_login import HostedAuth0LoginService, HostedAuth0LoginError
+    class Accounts:
+        def resolve_external_identity(self,*a): return None
+        def resolve_or_create_external_identity(self,issuer,subject,**kw):
+            class Row: user_id='usr_test'
+            return Row()
+    class Oidc:
+        identity=None
+        def complete_authorization(self,*,code,state): return self.identity,'/'
+    oidc=Oidc();service=HostedAuth0LoginService(boundary=_boundary(),oidc=oidc,accounts=Accounts())
+    binding='binding_token_abcdefghijklmnopqrstuvwxyz012345'
+    for subject,method in [('google-oauth2|1','google'),('apple|1','apple'),('auth0|1','email_password_totp')]:
+        oidc.identity=_identity(subject)
+        service._browser_bindings.bind(state='s',browser_binding=binding,expires_at=9_999_999_999.0)
+        assert service.complete(code='c',state='s',browser_binding=binding).auth_method==method
+    oidc.identity=_identity('github|1')
+    service._browser_bindings.bind(state='s',browser_binding=binding,expires_at=9_999_999_999.0)
+    with pytest.raises(HostedAuth0LoginError,match='AUTH0_CONNECTION_NOT_ALLOWED'):
+        service.complete(code='c',state='s',browser_binding=binding)

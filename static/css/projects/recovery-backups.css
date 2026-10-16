@@ -1,0 +1,52 @@
+/* 7.3 Reliability & Recovery */
+.backup-disk-warning{padding:10px 12px;border:1px solid var(--warning-border,var(--line2));border-radius:9px;background:var(--surface2);font-size:12px;line-height:1.45}
+.backup-status-line{padding:9px 0;font-size:12px;color:var(--muted)}
+.backup-recovery-heading{padding:4px 0 7px;font-size:12px;font-weight:700;color:var(--text)}
+.backup-recovery-project{display:grid;gap:6px;padding:8px 0;border-top:1px solid var(--line)}
+.backup-recovery-project:first-child{border-top:0;padding-top:0}
+.backup-recovery-project-title{font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.danger-extra-option{display:flex;gap:9px;align-items:flex-start;margin-top:14px;font-size:13px;line-height:1.4}
+.recovery-draft-list,.recovery-boot-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;max-height:min(52vh,420px);overflow:auto}
+.recovery-draft-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.recovery-draft-row>div{display:flex;flex-direction:column;gap:3px;min-width:0}.recovery-draft-row small{color:var(--muted)}
+.recovery-draft-copy{width:100%;box-sizing:border-box;resize:vertical}
+
+/* 7.3.1 backup/recovery UI simplification */
+.backup-folder-card{display:flex;align-items:center;gap:10px;padding:10px 0}
+.backup-folder-copy{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}
+.backup-folder-copy small{font-size:10.5px;color:var(--muted)}
+.backup-folder-copy b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.backup-folder-card .soft-button{flex:none;white-space:nowrap}
+.recovery-backup-list{display:grid;gap:7px;max-height:min(50vh,420px);overflow-y:auto;overflow-x:hidden;padding-right:3px;overscroll-behavior:contain;scrollbar-gutter:stable}
+.recovery-backup-row{min-width:0;display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:6px;padding:9px 10px;background:var(--surface)}
+.recovery-backup-copy{min-width:0;flex:1}
+.recovery-backup-copy b,.recovery-backup-copy small{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recovery-backup-copy b{font-size:12px}
+.recovery-backup-copy small{margin-top:3px;color:var(--muted);font-size:10.5px}
+.recovery-backup-restore{width:auto!important;flex:none;white-space:nowrap}
+.recovery-backup-error{flex:none;max-width:42%;font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recovery-backup-empty{padding:18px 8px;text-align:center;color:var(--muted);font-size:12px}
+.modal-card:has(.recovery-backup-list){overflow:hidden;display:flex;flex-direction:column}
+.modal-card:has(.recovery-backup-list) #modalBody{min-height:0;overflow:hidden;flex:1}
+.modal-card:has(.recovery-backup-list) .modal-actions{flex:none}
+@media(max-width:560px){.backup-folder-card{align-items:stretch;flex-direction:column}.backup-folder-card .soft-button{width:100%}.recovery-backup-row{align-items:flex-start;flex-wrap:wrap}.recovery-backup-restore{margin-left:auto}}
+/* 7.4: compact multi-destination backup UI. */
+.backup-destination-list{display:grid;gap:7px;max-height:min(52vh,430px);overflow-y:auto;overflow-x:hidden;padding-right:3px;overscroll-behavior:contain;scrollbar-gutter:stable}
+.backup-destination-row{min-width:0}
+.backup-destination-row>span:first-child{min-width:0}
+.backup-destination-row b,.backup-destination-row small{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.backup-destination-path{opacity:.82}
+.modal-card:has(.backup-destination-list){overflow:hidden;display:flex;flex-direction:column}
+.modal-card:has(.backup-destination-list) #modalBody{min-height:0;overflow:hidden;flex:1}
+.modal-card:has(.backup-destination-list) .modal-actions{flex:none}
+
+/* 7.8.3 destructive reset progress. The close control is disabled while the server
+   owns the reset; 100% is shown only after the synchronous reset response succeeds. */
+.danger-delete-progress{padding:4px 0 2px}
+.danger-delete-progress #deleteAllProgressStatus{margin:0 0 10px}
+.danger-delete-progress-track{height:7px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);overflow:hidden}
+.danger-delete-progress-track>span{display:block;height:100%;width:0;background:var(--danger);transition:width .18s ease}
+.danger-delete-progress-note{margin:10px 0 0}
+.danger-delete-progress.failed .danger-delete-progress-track>span{background:var(--danger)}
+.danger-delete-progress-error{margin:10px 0 0;padding:9px 10px;border:1px solid color-mix(in srgb,var(--danger) 40%,var(--line));border-radius:6px;background:color-mix(in srgb,var(--danger) 5%,var(--surface));color:var(--danger);font-size:12px;line-height:1.45}
+

@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{i18n:static.text.text.b30ebb7e}}</title>
+<script>
+(()=>{const path=String(location.pathname||'/').replace(/\/+$/,'')||'/';const project=path.match(/^\/p\/[0-9a-f]{32}(?:\/(canvas|maps|tasks|reviews))?$/);const view=project?(project[1]||'manuscript'):path==='/canvas'?'canvas':path==='/maps'?'maps':path==='/tasks'?'tasks':path==='/reviews'?'reviews':'manuscript';document.documentElement.dataset.initialView=view;let code='en';try{code=(localStorage.getItem('breadmaker-language')||'en').replace(/[^A-Za-z0-9_-]/g,'')||'en'}catch{}const load=async locale=>{const r=await fetch(`/locales/${encodeURIComponent(locale)}.json`,{cache:'no-store'});if(!r.ok)throw new Error('Locale file could not be loaded');return r.json()};window.__breadmakerLocalePromise=load(code).catch(error=>code==='en'?Promise.reject(error):load('en'))})();
+</script>
+<link rel="stylesheet" href="/static/styles.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/shared/workspace-foundations.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/canvas/navigation-and-legend.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/projects/center-interactions.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/canvas/object-presentation.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/maps/workspace.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/manuscript/editor-tools.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/projects/history-verification-export.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/canvas/configuration.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/projects/metadata-danger.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/manuscript/workspace.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/projects/settings.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/canvas/workspace.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/projects/import-browse.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/maps/presentation.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/shared/application-controls.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/projects/recovery-backups.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/reviews/workspace.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/manuscript/media-and-split.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/reviews/manuscript-layer.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/profile/local-profile.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/profile/account-security.css?v=10.5.38">
+<link rel="stylesheet" href="/static/css/shared/startup-hydration.css?v=10.5.38">
+</head>
+<body>
+<div id="app" class="app-shell">
+  <header class="topbar">
+    <button id="brandButton" class="brand-button" aria-label="{{i18n:static.attr.aria.label.b5ab11fa}}" title="{{i18n:static.attr.title.e638fbc6}}">
+      <span class="brand-mark" aria-hidden="true"></span><span class="brand-name">{{i18n:static.text.text.89a1a86c}}</span><svg class="brand-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+    </button>
+    <nav class="main-tabs" aria-label="{{i18n:static.attr.aria.label.ae171502}}">
+      <button class="main-tab active" data-view="manuscript">{{i18n:static.text.text.da1bbe03}}</button>
+      <button class="main-tab" data-view="canvas">{{i18n:static.text.text.4393b9e5}}</button>
+      <button class="main-tab" data-view="maps">{{i18n:static.text.text.b83e4478}}</button>
+      <button class="main-tab" data-view="reviews">{{i18n:reviews.title}}</button>
+      <button class="main-tab" data-view="tasks">{{i18n:static.text.text.dcef2bbd}}</button>
+    </nav>
+    <div class="top-actions">
+      <span id="globalSaveState" class="save-state">{{i18n:static.text.text.7289b6f3}}</span>
+      <div class="global-history-controls" role="group" aria-label="{{i18n:static.attr.aria.label.11631504}}">
+        <button id="undoBtn" class="icon-button global-history-button" aria-label="{{i18n:global.undo_title}}" aria-describedby="undoTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H4V2"/><path d="M4.5 7.5A8 8 0 1 1 5.8 17"/></svg></button>
+        <button id="redoBtn" class="icon-button global-history-button" aria-label="{{i18n:global.redo_title}}" aria-describedby="redoTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 7h5V2"/><path d="M19.5 7.5A8 8 0 1 0 18.2 17"/></svg></button>
+      </div>
+      <button id="quickOpenBtn" class="icon-button" aria-label="{{i18n:global.quick_open_title}}" aria-describedby="quickOpenTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="m15.8 8.2-2.4 5.2-5.2 2.4 2.4-5.2z"/></svg></button>
+      <button id="themeBtn" class="icon-button" aria-label="{{i18n:global.theme_title}}" aria-describedby="themeTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 5a7 7 0 0 0 0 14z" class="theme-fill"/></svg></button>
+      <div class="user-profile-control">
+        <button id="userAvatarButton" class="user-avatar-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="{{i18n:user.avatar}}"><span id="userAvatar" class="user-avatar" aria-hidden="true"></span></button>
+        <div id="userProfilePopover" class="user-profile-popover hidden" role="menu" aria-label="{{i18n:profile.menu_label}}"></div>
+      </div>
+    </div>
+  </header>
+
+  <main id="manuscriptView" class="view active manuscript-layout">
+    <aside class="book-nav">
+      <div class="nav-section-head tabs-head">
+        <div class="tabs-head-title"><button id="toggleBookNavBtn" class="bare-button nav-collapse-button" type="button" title="{{i18n:static.attr.title.b6621481}}" aria-label="{{i18n:static.attr.aria.label.2fb6c813}}"><span aria-hidden="true">☰</span></button><span class="nav-section-label">{{i18n:static.text.text.5a25bbca}}</span></div>
+        <div class="tabs-head-actions"><button id="tabsToggleBtn" class="bare-button tabs-toggle-button" type="button" title="{{i18n:static.attr.title.01273ff1}}" aria-label="{{i18n:static.attr.aria.label.d2e98a4f}}"><span aria-hidden="true">▾</span></button><button id="tabsMenuBtn" class="manuscript-item-more nav-section-more" type="button" aria-haspopup="menu" aria-label="{{i18n:static.attr.aria.label.75315b86}}"><span aria-hidden="true">⋮</span></button></div>
+      </div>
+      <div id="documentList" class="document-list"></div>
+      <div class="document-navigation">
+        <div id="selectedDocumentNavTitle" class="selected-document-nav-title">{{i18n:static.text.text.09d7de49}}</div>
+        <div id="fullDocumentControl" class="full-document-control">
+          <button id="bookViewBtn" class="full-document-row" title="{{i18n:static.attr.title.3ff06974}}">{{i18n:static.text.text.d9f08098}}</button>
+          <button id="navigatorMenuBtn" data-testid="manuscript-navigator-menu" class="manuscript-item-more full-document-menu" type="button" aria-haspopup="menu" aria-label="{{i18n:static.attr.aria.label.8d787862}}"><span aria-hidden="true">⋮</span></button>
+        </div>
+        <div id="manuscriptNavToolbar" class="manuscript-nav-toolbar">
+          <div id="manuscriptNavMode" class="manuscript-nav-mode" role="group" aria-label="{{i18n:static.attr.aria.label.d9d6e844}}"><button id="chaptersNavMode" type="button" class="active">{{i18n:static.text.text.ceaaeb15}}</button><button id="scenesNavMode" type="button">{{i18n:static.text.text.8814fc51}}</button></div>
+        </div>
+      </div>
+      <button id="collapsedFullTextBtn" class="collapsed-full-text" type="button" title="{{i18n:static.attr.title.22f3c388}}" aria-label="{{i18n:static.attr.aria.label.e3405787}}">F</button>
+      <div id="chapterTree" class="chapter-tree"></div>
+    </aside>
+
+    <section id="manuscriptPrimaryPane" class="document-area">
+      <div class="document-toolbar">
+        <div class="toolbar-title-group manuscript-title-group"><div id="activeDocumentTitle" class="active-document-title toolbar-title-text">{{i18n:static.text.text.da1bbe03}}</div><button id="editActiveDocumentBtn" class="toolbar-title-pencil" type="button" title="{{i18n:static.attr.title.5a761ca7}}" aria-label="{{i18n:static.attr.aria.label.596d577d}}">✎</button></div>
+        <div class="toolbar-spacer"></div>
+        <div class="manuscript-view-control">
+          <button id="viewBtn" class="toolbar-button view-menu-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-describedby="viewTooltip">
+            <span>{{i18n:static.text.text.fb094718}}</span>
+            <svg class="view-menu-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+          </button>
+          <div id="viewPopover" class="view-popover hidden" role="menu" aria-label="{{i18n:static.attr.aria.label.519a2d18}}">
+            <button id="viewFocusBtn" class="view-popover-action view-popover-toggle" type="button" role="menuitemcheckbox" aria-checked="false"><span>{{i18n:static.text.text.17ed2ebe}}</span><span class="view-popover-check" aria-hidden="true">✓</span></button>
+            <button id="viewSplitBtn" class="view-popover-action" type="button" role="menuitem">{{i18n:static.text.text.3f361551}}</button>
+            <button id="viewChaptersBtn" class="view-popover-action view-popover-toggle" type="button" role="menuitemcheckbox" aria-checked="true"><span>{{i18n:static.text.text.cce95284}}</span><span class="view-popover-check" aria-hidden="true">✓</span></button>
+            <button id="viewScenesBtn" data-testid="manuscript-view-scenes" class="view-popover-action view-popover-toggle" type="button" role="menuitemcheckbox" aria-checked="true"><span>{{i18n:static.text.text.43b40754}}</span><span class="view-popover-check" aria-hidden="true">✓</span></button>
+            <button id="viewFindReplaceBtn" class="view-popover-action" type="button" role="menuitem">{{i18n:static.attr.aria.label.8c65233c}}</button>
+            <div class="view-popover-divider"></div>
+            <div class="view-text-size" role="group" aria-labelledby="viewTextSizeLabel">
+              <div class="view-text-size-head"><span id="viewTextSizeLabel">{{i18n:static.text.text.b811ff3e}}</span><output id="viewTextSizeValue">{{i18n:static.text.text.393678aa}}</output></div>
+              <div class="view-text-size-row"><span class="view-size-a small" aria-hidden="true">A</span><input id="manuscriptTextSize" type="range" min="11" max="28" step="0.5" value="14" aria-label="{{i18n:static.attr.aria.label.4dd54972}}"><span class="view-size-a large" aria-hidden="true">A</span></div>
+            </div>
+            <div class="view-font-field">
+              <label for="manuscriptFont">{{i18n:static.text.text.ea8e08aa}}</label>
+              <select id="manuscriptFont" aria-label="{{i18n:static.attr.aria.label.28deb7aa}}">
+                <option value="arial">{{i18n:static.text.text.a38eb173}}</option>
+                <option value="times">{{i18n:static.text.text.e237a7a1}}</option>
+                <option value="verdana">{{i18n:static.text.text.b9b3ebb1}}</option>
+                <option value="courier">{{i18n:static.text.text.43601c08}}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <button id="commentsBtn" class="toolbar-button icon-only tool-icon-button comments-manuscript-button" type="button" aria-pressed="false" aria-label="{{i18n:static.attr.aria.label.294edc0d}}" aria-describedby="commentsTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h10l4 4v13H5z"/><path d="M15 3.5v4h4"/><path d="M8 11h8M8 14h6M8 17h4"/></svg></button>
+        <button id="markupBtn" class="toolbar-button icon-only tool-icon-button markup-manuscript-button" type="button" aria-pressed="false" aria-label="{{i18n:static.attr.aria.label.f7dad5e9}}" aria-describedby="markupTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 15 8.7-8.7 2 2L9 17H7z"/><path d="m15.2 6.8 1.6-1.6 2 2-1.6 1.6"/><path d="M5 19h10"/></svg></button>
+        <button id="manuscriptImageBtn" class="toolbar-button icon-only tool-icon-button manuscript-image-tool-button" type="button" aria-pressed="false" aria-label="{{i18n:manuscript.images}}" aria-describedby="manuscriptImageTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><circle cx="9" cy="9" r="1.5"/><path d="m5.5 17 4.5-4.5 3.2 3.1 2.3-2.3 3 3.7"/></svg></button>
+        <button id="checkpointBtn" class="toolbar-button icon-only checkpoint-button" type="button" aria-pressed="false" aria-label="{{i18n:static.attr.aria.label.222d805c}}" aria-describedby="checkpointTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4"/><path d="M6 5h11l-2.5 3L17 11H6"/></svg></button>
+        <button id="manuscriptReviewsBtn" class="toolbar-button icon-only tool-icon-button manuscript-reviews-tool-button" type="button" aria-pressed="false" aria-label="{{i18n:reviews.title}}" aria-describedby="manuscriptReviewsTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h10l4 4v13H5z"/><path d="M15 3.5v4h4"/><path d="m8.2 13.2 2.1 2.1 4.4-4.4"/></svg></button>
+        <button id="cutsBtn" class="toolbar-button icon-only tool-icon-button cuts-manuscript-button" type="button" aria-pressed="false" aria-label="{{i18n:static.attr.aria.label.043e7e92}}" aria-describedby="cutsTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="7" r="2.6"/><circle cx="6" cy="17" r="2.6"/><path d="M8.25 8.35 20 17M8.25 15.65 20 7"/></svg></button>
+        <button id="editorsEyeBtn" class="toolbar-button icon-only editors-eye-button" type="button" aria-pressed="false" aria-label="{{i18n:static.attr.aria.label.18bfeb9b}}" aria-describedby="editorsEyeTooltip"><svg class="editors-eye-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="editors-eye-outline" d="M2.6 12s3.35-5 9.4-5 9.4 5 9.4 5-3.35 5-9.4 5-9.4-5-9.4-5Z"/><circle class="editors-eye-pupil" cx="12" cy="12" r="2.7"/><path class="editors-eye-spark editors-eye-spark-a" d="M18.6 3.1v3.2M17 4.7h3.2"/><path class="editors-eye-spark editors-eye-spark-b" d="M5.3 4.1v2M4.3 5.1h2"/></svg></button>
+      </div>
+      <div id="checkpointCompareToolbar" class="checkpoint-context-toolbar hidden" role="toolbar" aria-label="{{i18n:static.attr.aria.label.3f86f5d8}}">
+        <span class="checkpoint-context-label">{{i18n:static.text.text.80dcef25}} <span aria-hidden="true">↔</span></span>
+        <select id="checkpointSplitSelect" class="compact-select" aria-label="{{i18n:static.attr.aria.label.ac83cb38}}"></select>
+        <label class="checkpoint-context-check"><input id="checkpointSplitShowDiff" type="checkbox"> {{i18n:static.text.text.7b46dd2a}}</label>
+        <div class="checkpoint-context-nav" role="group" aria-label="{{i18n:static.attr.aria.label.49388079}}"><button id="checkpointSplitPrev" class="bare-button" title="{{i18n:static.attr.title.88d0ea54}}">↑</button><span id="checkpointSplitChangeCounter">{{i18n:static.text.text.6398703d}}</span><button id="checkpointSplitNext" class="bare-button" title="{{i18n:static.attr.title.8c0adeb6}}">↓</button></div>
+        <label class="checkpoint-context-check"><input id="checkpointSplitLinked" type="checkbox" checked> {{i18n:static.text.text.76854a38}}</label>
+        <div class="toolbar-spacer"></div>
+        <button id="checkpointSplitApply" class="toolbar-button">{{i18n:static.text.text.85234453}}</button>
+      </div>
+      <div id="historyCompareToolbar" class="checkpoint-context-toolbar history-context-toolbar hidden" role="toolbar" aria-label="{{i18n:static.attr.aria.label.ca9abc3f}}">
+        <span class="checkpoint-context-label">{{i18n:static.text.text.80dcef25}} <span aria-hidden="true">↔</span></span>
+        <select id="historySplitSelect" class="compact-select" aria-label="{{i18n:static.attr.aria.label.2a40e1c0}}"></select>
+        <label class="checkpoint-context-check"><input id="historySplitShowDiff" type="checkbox"> {{i18n:static.text.text.7b46dd2a}}</label>
+        <div class="checkpoint-context-nav" role="group" aria-label="{{i18n:static.attr.aria.label.49388079}}"><button id="historySplitPrev" class="bare-button" title="{{i18n:static.attr.title.88d0ea54}}">↑</button><span id="historySplitChangeCounter">{{i18n:static.text.text.6398703d}}</span><button id="historySplitNext" class="bare-button" title="{{i18n:static.attr.title.8c0adeb6}}">↓</button></div>
+        <label class="checkpoint-context-check"><input id="historySplitLinked" type="checkbox" checked> {{i18n:static.text.text.76854a38}}</label>
+        <div class="toolbar-spacer"></div>
+        <button id="historySplitKeep" class="toolbar-button" title="{{i18n:static.attr.title.9b2749ef}}">{{i18n:static.text.text.2c393265}}</button>
+        <button id="historySplitRestore" class="toolbar-button">{{i18n:static.text.text.b8bac353}}</button>
+      </div>
+      <div id="documentScroller" class="document-scroller">
+        <button id="bookmarkBtn" class="viewport-bookmark-button bookmark-manuscript-button hidden" type="button" aria-label="{{i18n:static.attr.aria.label.c863c2a7}}" aria-describedby="bookmarkTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10v17l-5-3.4-5 3.4z"/></svg></button>
+        <article id="manuscriptPaper" class="paper" contenteditable="true" spellcheck="true">
+          <div class="chapter-title-row"><button id="chapterTitleBookmark" class="inline-bookmark-button chapter-title-bookmark hidden" type="button" aria-label="{{i18n:static.attr.aria.label.d1ac5303}}"></button><div id="chapterTitle" class="chapter-title" aria-label="{{i18n:static.attr.aria.label.6e2efeae}}"></div></div>
+          <div id="editor" class="editor" role="textbox" aria-multiline="true"></div>
+          <div class="paper-end" contenteditable="false"></div>
+        </article>
+      </div>
+      <footer class="statusbar"><span id="saveState">{{i18n:static.text.text.7289b6f3}}</span><span id="sceneStatus"></span><span id="wordCount">{{i18n:static.text.text.c6e2a28a}}</span></footer>
+    </section>
+
+    <div id="splitResizer" class="split-resizer hidden" role="separator" aria-orientation="vertical" aria-label="{{i18n:static.attr.aria.label.6fd6a021}}" tabindex="0" title="{{i18n:static.attr.title.6e073b9a}}"></div>
+
+    <section id="splitPane" class="split-pane hidden">
+      <div class="split-head"><b id="splitTitle">{{i18n:static.text.text.aba54466}}</b><div class="split-head-actions"><button id="splitTaskAdd" class="bare-button hidden" title="{{i18n:static.attr.title.ecaade85}}" aria-label="{{i18n:static.attr.aria.label.cb677583}}">+</button><button id="closeSplitBtn" class="bare-button ui-close-button" aria-label="{{i18n:ui.close}}">×</button></div></div>
+      <div id="splitBody" class="split-body"></div>
+    </section>
+
+    <aside id="checkpointPanel" class="right-panel checkpoint-panel hidden" aria-label="{{i18n:static.attr.aria.label.222d805c}}">
+      <div class="panel-head"><b>{{i18n:static.text.text.06ef98e4}}</b><button id="closeCheckpointPanel" class="bare-button ui-close-button" aria-label="{{i18n:static.attr.aria.label.2a535405}}">×</button></div>
+      <div class="checkpoint-panel-tools">
+        <input id="checkpointSearch" type="search" autocomplete="off" placeholder="{{i18n:static.attr.placeholder.9a2bc7b8}}" aria-label="{{i18n:static.attr.aria.label.11f37762}}">
+        <div class="checkpoint-panel-filter-row"><select id="checkpointScopeFilter" aria-label="{{i18n:static.attr.aria.label.e1dcb604}}"><option value="current">{{i18n:static.text.text.d8679cfa}}</option><option value="chapters">{{i18n:static.text.text.ceaaeb15}}</option><option value="book">{{i18n:static.text.text.f601d37b}}</option><option value="all">{{i18n:static.text.text.51bdb1fb}}</option></select><button id="checkpointCreateBtn">{{i18n:static.text.text.bed126f0}}</button></div>
+      </div>
+      <div id="checkpointList" class="checkpoint-list"></div>
+    </aside>
+
+    <aside id="cutsPanel" class="right-panel cuts-panel hidden" aria-label="{{i18n:static.attr.aria.label.043e7e92}}">
+      <div class="panel-head"><b>{{i18n:static.text.text.4222fcf7}}</b><button id="closeCutsPanel" class="bare-button ui-close-button" aria-label="{{i18n:static.attr.aria.label.831aaa09}}">×</button></div>
+      <div class="cuts-panel-tools">
+        <input id="cutsSearch" type="search" autocomplete="off" placeholder="{{i18n:static.attr.placeholder.4fdcafa4}}" aria-label="{{i18n:static.attr.aria.label.dcc391f7}}">
+        <div class="cuts-panel-action-row">
+          <button id="cutSelectionBtn" class="cuts-cut-button" type="button">{{i18n:static.text.text.a0592999}}</button>
+          <button id="cutInsertBtn" class="cuts-insert-button" type="button">{{i18n:static.text.text.2af55e24}}</button>
+        </div>
+      </div>
+      <div id="cutsList" class="cuts-list"></div>
+    </aside>
+
+    <aside id="commentsPanel" class="right-panel comments-panel hidden" aria-label="{{i18n:static.attr.aria.label.294edc0d}}">
+      <div class="panel-head"><b>{{i18n:static.text.text.68e1f7ea}}</b><button id="closeCommentsPanel" class="bare-button ui-close-button" aria-label="{{i18n:static.attr.aria.label.900ff21d}}">×</button></div>
+      <div class="comments-panel-tools">
+        <input id="commentsSearch" type="search" autocomplete="off" placeholder="{{i18n:static.attr.placeholder.59269097}}" aria-label="{{i18n:static.attr.aria.label.e7827dc4}}">
+        <div class="comments-nav-row">
+          <select id="commentsStatus" aria-label="{{i18n:static.attr.aria.label.c821cea3}}"><option value="open">{{i18n:static.text.text.4494b221}}</option><option value="resolved">{{i18n:static.text.text.32868f18}}</option><option value="all">{{i18n:static.text.text.51bdb1fb}}</option></select>
+          <div class="comments-nav-controls"><button id="commentsPrev" class="bare-button comments-chevron-button comments-chevron-up" type="button" title="{{i18n:static.attr.title.7a8acace}}" aria-label="{{i18n:static.attr.aria.label.01976662}}"><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg></button><span id="commentsCounter">0 / 0</span><button id="commentsNext" class="bare-button comments-chevron-button" type="button" title="{{i18n:static.attr.title.6e3ffdcc}}" aria-label="{{i18n:static.attr.aria.label.3e013f85}}"><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg></button></div>
+        </div>
+      </div>
+      <div id="commentsList" class="comments-list"></div>
+      <div id="commentsDetail" class="comments-detail"></div>
+    </aside>
+
+    <aside id="markupPanel" data-testid="markup-panel" class="right-panel markup-panel hidden" aria-label="{{i18n:static.attr.aria.label.f7dad5e9}}">
+      <div class="panel-head"><b>{{i18n:static.text.text.1095201f}}</b><button data-close-panel class="bare-button ui-close-button" aria-label="{{i18n:static.attr.aria.label.88b10fbc}}">×</button></div>
+      <div class="panel-section markup-marker-section">
+        <input id="markerSearch" class="marker-search" type="search" placeholder="{{i18n:static.attr.placeholder.fd0934fc}}" aria-label="{{i18n:static.attr.aria.label.bea6c9e1}}">
+        <button id="newLabelBtn" data-testid="marker-new" class="full-soft marker-new-fixed">{{i18n:static.text.text.1065e699}}</button>
+        <div id="labelList" class="marker-list"></div>
+      </div>
+    </aside>
+
+    <aside id="manuscriptImagePanel" class="right-panel manuscript-image-panel hidden" aria-label="{{i18n:manuscript.images}}">
+      <div class="panel-head"><b>{{i18n:manuscript.images}}</b><button id="closeManuscriptImagePanel" class="bare-button ui-close-button" aria-label="{{i18n:ui.close}}">×</button></div>
+      <div id="manuscriptImageEmpty" class="panel-section manuscript-image-empty">
+        <button id="manuscriptAddImage" class="full-soft" type="button">{{i18n:manuscript.image_add}}</button>
+      </div>
+      <div id="manuscriptImageInspector" class="panel-section manuscript-image-inspector hidden">
+        <div class="manuscript-image-size-head"><label for="manuscriptImageSize">{{i18n:manuscript.image_size}}</label><span id="manuscriptImageSizeValue">100%</span></div>
+        <input id="manuscriptImageSize" class="manuscript-image-size-slider" type="range" min="5" max="100" step="1" value="100">
+        <div id="manuscriptImageOccurrenceControls">
+          <div class="field"><label for="manuscriptImageFooter">{{i18n:manuscript.image_footer}} <span class="optional-label">{{i18n:manuscript.optional_parenthetical}}</span></label><textarea id="manuscriptImageFooter" rows="2" maxlength="4000" placeholder="{{i18n:manuscript.image_footer_placeholder}}"></textarea></div>
+          <div class="field"><label for="manuscriptImageDescription">{{i18n:manuscript.image_description}} <span class="optional-label">{{i18n:manuscript.optional_parenthetical}}</span></label><textarea id="manuscriptImageDescription" rows="4" maxlength="12000" placeholder="{{i18n:manuscript.image_description_placeholder}}"></textarea></div>
+          <button id="manuscriptReplaceImage" class="full-soft" type="button">{{i18n:manuscript.image_replace}}</button>
+          <button id="manuscriptRemoveImage" class="full-soft danger manuscript-image-remove" type="button">{{i18n:manuscript.image_remove}}</button>
+        </div>
+      </div>
+      <input id="manuscriptImageFileInput" class="hidden" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif,image/bmp,.png,.jpg,.jpeg,.webp,.gif,.avif,.bmp">
+    </aside>
+
+    <aside id="manuscriptReviewsPanel" class="right-panel manuscript-reviews-panel hidden" aria-label="{{i18n:reviews.title}}">
+      <div class="panel-head"><b id="manuscriptReviewsPanelTitle">{{i18n:reviews.title}}</b><button id="closeManuscriptReviewsPanel" class="bare-button ui-close-button" aria-label="{{i18n:ui.close}}">×</button></div>
+      <div id="manuscriptReviewsPanelBody" class="manuscript-reviews-panel-body"></div>
+    </aside>
+
+    <div id="findPopover" class="find-popover hidden" role="dialog" aria-label="{{i18n:static.attr.aria.label.8c65233c}}">
+      <div class="find-row"><input id="findInput" autocomplete="off" placeholder="{{i18n:static.attr.placeholder.869ed2e5}}"><span id="findCounter" class="find-counter" role="status" aria-live="polite">0 / 0</span><button id="findPrev" class="bare-button" title="{{i18n:static.attr.title.59519d63}}">↑</button><button id="findNext" class="bare-button" title="{{i18n:static.attr.title.9e4ab8b1}}">↓</button><button id="findExpand" class="bare-button find-expand-button" title="{{i18n:static.attr.title.7f8039fe}}" aria-expanded="false" aria-label="{{i18n:static.attr.aria.label.cb69bdcd}}"><svg class="find-menu-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg></button><button id="findClose" class="bare-button ui-close-button" aria-label="{{i18n:ui.close}}">×</button></div>
+      <div id="replaceRow" class="replace-row hidden"><input id="replaceInput" autocomplete="off" placeholder="{{i18n:static.attr.placeholder.734fc24a}}"><button id="replaceOne">{{i18n:static.text.text.06bdc3b4}}</button><button id="replaceAll">{{i18n:static.text.text.2ce2549c}}</button></div>
+      <div id="findOptions" class="find-options"><label><input id="findCase" type="checkbox"> {{i18n:static.text.text.65645666}}</label><label><input id="findWhole" type="checkbox"> {{i18n:static.text.text.45d997eb}}</label><span id="findScopeLabel" class="find-scope-label">{{i18n:static.text.text.6a2cf500}}</span></div>
+    </div>
+  </main>
+
+  <main id="canvasView" class="view canvas-layout">
+    <aside id="canvasRail" class="canvas-rail expanded">
+      <div class="nav-section-head canvas-rail-head">
+        <div class="tabs-head-title"><button id="toggleRail" class="bare-button nav-collapse-button" type="button" title="{{i18n:static.attr.title.ffdc999f}}" aria-label="{{i18n:static.attr.aria.label.dd561bfa}}"><span aria-hidden="true">☰</span></button><span class="nav-section-label">{{i18n:static.text.text.b649cc9a}}</span></div>
+        <div class="nav-head-actions"><button id="addCanvas" class="manuscript-item-more nav-section-more canvas-collection-more" type="button" aria-haspopup="menu" title="{{i18n:static.attr.title.cd9d1da9}}" aria-label="{{i18n:static.attr.aria.label.13871d2f}}"><span aria-hidden="true">⋮</span></button></div>
+      </div>
+      <div id="canvasRailItems" class="canvas-items"></div>
+    </aside>
+    <section class="canvas-shell">
+      <div class="canvas-toolbar">
+        <div class="toolbar-title-group canvas-title-group"><input id="canvasName" class="canvas-name toolbar-title-text" aria-label="{{i18n:static.attr.aria.label.d1ac1450}}" placeholder="{{i18n:static.attr.placeholder.288a39c6}}" readonly><button id="editCanvasDetailsBtn" class="toolbar-title-pencil" type="button" title="{{i18n:static.attr.title.71b92833}}" aria-label="{{i18n:static.attr.aria.label.90ee9a53}}">✎</button></div>
+        <div class="toolbar-spacer"></div>
+        <div class="canvas-view-control manuscript-view-control">
+          <button id="canvasViewBtn" class="toolbar-button view-menu-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-describedby="canvasViewTooltip">
+            <span>{{i18n:static.text.text.fb094718}}</span>
+            <svg class="view-menu-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+          </button>
+          <div id="canvasViewPopover" class="view-popover canvas-view-popover hidden" role="menu" aria-label="{{i18n:static.attr.aria.label.3b8764cf}}">
+            <button id="canvasLegendToggle" class="view-popover-action view-popover-toggle" type="button" role="menuitemcheckbox" aria-checked="false"><span>{{i18n:static.text.text.b79aac4a}}</span><span class="view-popover-check" aria-hidden="true">✓</span></button>
+            <button id="canvasSnapToggle" class="view-popover-action view-popover-toggle" type="button" role="menuitemcheckbox" aria-checked="true"><span>{{i18n:static.text.text.8cc52d9c}}</span><span class="view-popover-check" aria-hidden="true">✓</span></button>
+            <div class="view-popover-divider"></div>
+            <div class="canvas-view-zoom" role="group" aria-label="{{i18n:static.attr.aria.label.2a89056e}}">
+              <div class="canvas-view-zoom-head"><span>{{i18n:static.text.text.51fdf519}}</span></div>
+              <div class="canvas-view-zoom-controls">
+                <button id="canvasZoomOut" class="view-zoom-button" type="button" aria-label="{{i18n:static.attr.aria.label.e2af7e39}}">−</button>
+                <button id="canvasZoomValue" class="view-zoom-value" type="button" title="{{i18n:static.attr.title.6573a6b8}}">100%</button>
+                <button id="canvasZoomIn" class="view-zoom-button" type="button" aria-label="{{i18n:static.attr.aria.label.34bafa5c}}">+</button>
+                <button id="canvasZoomFit" class="view-zoom-button view-zoom-fit" type="button" aria-label="{{i18n:static.attr.aria.label.d25a8e49}}" title="{{i18n:static.attr.title.828dfff2}}"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"/></svg></button>
+              </div>
+            </div>
+            <div class="view-popover-divider"></div>
+            <div class="view-text-size" role="group" aria-labelledby="canvasTextSizeLabel">
+              <div class="view-text-size-head"><span id="canvasTextSizeLabel">{{i18n:static.text.text.b811ff3e}}</span><output id="canvasTextSizeValue">{{i18n:static.text.text.783ce59a}}</output></div>
+              <div class="view-text-size-row"><span class="view-size-a small" aria-hidden="true">A</span><input id="canvasTextSize" type="range" min="11" max="28" step="0.5" value="20.5" aria-label="{{i18n:static.attr.aria.label.8b40b29a}}"><span class="view-size-a large" aria-hidden="true">A</span></div>
+            </div>
+            <div class="view-font-field">
+              <label for="canvasFont">{{i18n:static.text.text.ea8e08aa}}</label>
+              <select id="canvasFont" aria-label="{{i18n:static.attr.aria.label.3ca74113}}">
+                <option value="arial">{{i18n:static.text.text.a38eb173}}</option>
+                <option value="times">{{i18n:static.text.text.e237a7a1}}</option>
+                <option value="verdana">{{i18n:static.text.text.b9b3ebb1}}</option>
+                <option value="courier">{{i18n:static.text.text.43601c08}}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <button id="addNodePanelBtn" class="toolbar-button icon-only tool-icon-button canvas-tool-button" type="button" aria-label="{{i18n:static.attr.aria.label.ce76f95d}}" aria-describedby="canvasAddCardTooltip" aria-haspopup="menu" aria-expanded="false" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="13" height="14" rx="1.5"/><path d="M10.5 9.5v5M8 12h5"/></svg></button>
+        <div id="canvasCardPalette" class="canvas-card-palette hidden" role="menu" aria-label="{{i18n:static.attr.aria.label.1b334f8a}}"></div>
+        <button id="addFigureBtn" class="toolbar-button icon-only tool-icon-button canvas-tool-button" type="button" aria-label="{{i18n:static.attr.aria.label.bd7e8a13}}" aria-describedby="canvasAddFigureTooltip" aria-haspopup="menu" aria-expanded="false" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="9" height="7" rx="1"/><circle cx="16.5" cy="15.5" r="4"/></svg></button>
+        <div id="canvasFigurePalette" class="canvas-card-palette canvas-figure-palette hidden" role="menu" aria-label="{{i18n:static.attr.aria.label.2bb0f243}}"></div>
+        <button id="addImage" class="toolbar-button icon-only tool-icon-button canvas-tool-button" type="button" aria-label="{{i18n:static.attr.aria.label.dade320d}}" aria-describedby="canvasAddImageTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><circle cx="9" cy="9" r="1.5"/><path d="m5.5 17 4.5-4.5 3.2 3.1 2.3-2.3 3 3.7"/></svg></button>
+        <input id="imageInput" type="file" accept="image/*" hidden>
+        <button id="canvasStructureBtn" class="toolbar-button icon-only tool-icon-button canvas-tool-button hidden" type="button" aria-pressed="false" aria-label="{{i18n:static.attr.aria.label.bea78815}}" aria-describedby="canvasStructureTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="6" width="5" height="4" rx="1"/><rect x="9.5" y="6" width="5" height="4" rx="1"/><rect x="15.5" y="6" width="5" height="4" rx="1"/><path d="M6 13.5h12M6 13.5v3.5M18 13.5v3.5"/></svg></button>
+      </div>
+      <section id="developmentalStructureDock" class="developmental-structure-dock hidden" aria-label="{{i18n:static.attr.aria.label.600fae9f}}">
+        <div class="developmental-structure-head"><b>{{i18n:static.text.text.04e15375}} <em id="developmentalStructureScope">{{i18n:static.text.text.441b513b}}</em></b><span id="developmentalStructureCount" class="developmental-structure-count"></span></div>
+        <div id="developmentalLaneViewport" class="developmental-lane-viewport" tabindex="0">
+          <div id="developmentalLaneItems" class="developmental-lane-items"></div>
+        </div>
+      </section>
+      <div class="canvas-mode-overlay" role="group" aria-label="{{i18n:static.attr.aria.label.123bfecb}}">
+        <div class="canvas-mode-toggle">
+          <button id="canvasHandMode" class="toolbar-button mode-button active" title="{{i18n:static.attr.title.7315640e}}" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 11.2V6.8a1.4 1.4 0 0 1 2.8 0v3.4-5a1.4 1.4 0 0 1 2.8 0v5-3.8a1.4 1.4 0 0 1 2.8 0v4.3-2.3a1.4 1.4 0 0 1 2.8 0v5.2c0 4.6-2.7 7.4-7 7.4h-.8c-2.2 0-3.7-.7-5.1-2.2l-3.5-3.6a1.6 1.6 0 0 1 2.2-2.3l3 2.4"/></svg></button>
+          <button id="canvasPointerMode" data-testid="canvas-pointer-mode" class="toolbar-button mode-button" title="{{i18n:static.attr.title.8a1b2a13}}" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5 18.7 13l-6.1 1.2-3.1 5.4L5 3.5Z"/></svg></button>
+        </div>
+      </div>
+      <aside id="canvasLegendDrawer" class="canvas-legend-drawer hidden" aria-label="{{i18n:static.attr.aria.label.bb085fe8}}">
+        <div class="canvas-legend-drawer-head"><b>{{i18n:static.text.text.b79aac4a}}</b><div><button id="legendDrawerAdd" class="bare-button" title="{{i18n:static.attr.title.dc96f320}}">+</button><button id="legendDrawerClose" class="bare-button ui-close-button" title="{{i18n:static.attr.title.c8afa85e}}">×</button></div></div>
+        <div id="canvasLegendDrawerList" class="canvas-legend-drawer-list"></div>
+      </aside>
+      <div id="canvasStage" data-testid="canvas-stage" class="canvas-stage hand-mode" tabindex="0">
+        <div id="canvasEmpty" class="workspace-empty hidden"><b>{{i18n:static.text.text.cdc8e7cb}}</b><p>{{i18n:static.text.text.7e7f739f}}</p><button id="emptyCreateCanvas">{{i18n:static.text.text.c0f0348d}}</button></div>
+        <div id="canvasSpace" class="canvas-space">
+          <div id="canvasWorld" class="canvas-world">
+            <div id="figures" class="canvas-figures"></div>
+            <div id="canvasGuides" class="canvas-guides"></div>
+            <svg id="edgeLayer" class="edge-layer"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z"/></marker></defs><g id="edges"></g><path id="edgePreview" class="edge-preview hidden"></path></svg>
+            <div id="selectionRect" data-testid="canvas-selection-rect" class="selection-rect hidden"></div>
+            <div id="nodes"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <aside id="canvasToolPanel" class="right-panel canvas-tool-panel hidden" aria-label="{{i18n:static.attr.aria.label.91324c76}}">
+      <div class="panel-head"><b id="canvasPanelTitle">{{i18n:static.text.text.74bf2480}}</b><button data-close-canvas-panel class="bare-button ui-close-button" aria-label="{{i18n:static.attr.aria.label.536107be}}">×</button></div>
+      <div id="canvasPanelBody" class="canvas-panel-body"></div>
+    </aside>
+  </main>
+
+  <main id="mapsView" class="view maps-layout">
+    <aside id="mapRail" class="maps-sidebar">
+      <div class="nav-section-head map-tree-head">
+        <div class="tabs-head-title"><button id="toggleMapRail" class="bare-button nav-collapse-button" type="button" title="{{i18n:static.attr.title.c11f14d0}}" aria-label="{{i18n:static.attr.aria.label.b508a5cd}}"><span aria-hidden="true">☰</span></button><span class="nav-section-label map-tree-title">{{i18n:static.text.text.b83e4478}}</span></div>
+        <div class="nav-head-actions"><button id="newMapBtn" class="manuscript-item-more nav-section-more map-collection-more" type="button" aria-haspopup="menu" title="{{i18n:static.attr.title.efa74a23}}" aria-label="{{i18n:static.attr.aria.label.b90ec81e}}"><span aria-hidden="true">⋮</span></button></div>
+      </div>
+      <div id="mapTree" class="map-tree"></div>
+    </aside>
+    <section class="map-workspace">
+      <div class="map-toolbar">
+        <div class="toolbar-title-group map-title-group"><div id="mapCurrentName" class="map-current-name toolbar-title-text"></div><button id="editMapDetailsBtn" class="toolbar-title-pencil" type="button" title="{{i18n:static.attr.title.62452cca}}" aria-label="{{i18n:static.attr.aria.label.7cd00482}}">✎</button></div>
+        <div class="toolbar-spacer"></div>
+        <div class="map-view-control manuscript-view-control">
+          <button id="mapViewBtn" class="toolbar-button view-menu-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-describedby="mapViewTooltip">
+            <span>{{i18n:static.text.text.fb094718}}</span>
+            <svg class="view-menu-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+          </button>
+          <div id="mapViewPopover" class="view-popover map-view-popover hidden" role="menu" aria-label="{{i18n:static.attr.aria.label.50106ca1}}">
+            <div class="map-view-cycle-row" role="group" aria-label="{{i18n:static.attr.aria.label.d1bbc099}}">
+              <button id="mapViewOrientation" class="map-view-cycle-button" type="button" aria-label="{{i18n:static.attr.aria.label.ad4f6298}}" data-state="horizontal"><svg viewBox="0 0 20 20" aria-hidden="true"><path class="map-view-icon-horizontal" d="M3 10h14M5.5 7.5 3 10l2.5 2.5M14.5 7.5 17 10l-2.5 2.5"/><path class="map-view-icon-vertical" d="M10 3v14M7.5 5.5 10 3l2.5 2.5M7.5 14.5 10 17l2.5-2.5"/></svg><span class="map-view-cycle-value">{{i18n:static.text.text.e10645bd}}</span></button>
+              <button id="mapViewLayout" class="map-view-cycle-button" type="button" aria-label="{{i18n:static.attr.aria.label.edc7078b}}" data-state="scaled"><svg viewBox="0 0 20 20" aria-hidden="true"><path class="map-view-icon-scaled" d="M3 13h14M4 10v6M8 11v5M12 10v6M16 11v5"/><path class="map-view-icon-schematic" d="M3.5 13h13M5 10.5v5M10 10.5v5M15 10.5v5"/></svg><span class="map-view-cycle-value">{{i18n:static.text.text.3224f3ca}}</span></button>
+              <button id="mapViewLabels" class="map-view-cycle-button" type="button" aria-label="{{i18n:static.attr.aria.label.6b1c84e9}}" data-state="minimal"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 15 7.8 5h1.7l3.8 10M5.5 11h6.1"/><path class="map-view-icon-label-extra" d="M15.5 7h3M15.5 10h3M15.5 13h3"/><path class="map-view-icon-label-hidden" d="M3.5 3.5 16.5 16.5"/></svg><span class="map-view-cycle-value">{{i18n:static.text.text.159f8a8e}}</span></button>
+            </div>
+            <div class="view-popover-divider"></div>
+            <div class="canvas-view-zoom" role="group" aria-label="{{i18n:static.attr.aria.label.f7a78ca9}}"><div class="canvas-view-zoom-head"><span>{{i18n:static.text.text.51fdf519}}</span></div><div class="canvas-view-zoom-controls"><button id="mapZoomOut" class="view-zoom-button" type="button" aria-label="{{i18n:static.attr.aria.label.e2af7e39}}">−</button><button id="mapZoomReset" class="view-zoom-value" type="button" title="{{i18n:static.attr.title.6573a6b8}}">100%</button><button id="mapZoomIn" class="view-zoom-button" type="button" aria-label="{{i18n:static.attr.aria.label.34bafa5c}}">+</button><button id="mapZoomFit" class="view-zoom-button view-zoom-fit" type="button" aria-label="{{i18n:static.attr.aria.label.e1492035}}" title="{{i18n:static.attr.title.f7e09b87}}"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"/></svg></button></div></div>
+            <div class="view-popover-divider"></div>
+            <div class="view-text-size map-ruler-scale" role="group" aria-labelledby="mapRulerScaleLabel"><div class="view-text-size-head"><span id="mapRulerScaleLabel">{{i18n:static.text.text.5bcc3929}}</span><output id="mapRulerScaleValue">100%</output></div><div class="view-text-size-row"><span class="map-ruler-scale-icon compact" aria-hidden="true">↔</span><input id="mapRulerScale" type="range" min="60" max="180" step="5" value="100" aria-label="{{i18n:static.attr.aria.label.809db157}}"><span class="map-ruler-scale-icon wide" aria-hidden="true">↔</span></div></div>
+            <div class="view-popover-divider"></div>
+            <div class="view-text-size" role="group" aria-labelledby="mapTextSizeLabel"><div class="view-text-size-head"><span id="mapTextSizeLabel">{{i18n:static.text.text.b811ff3e}}</span><output id="mapTextSizeValue">{{i18n:static.text.text.df9381ca}}</output></div><div class="view-text-size-row"><span class="view-size-a small" aria-hidden="true">A</span><input id="mapTextSize" type="range" min="11" max="28" step="0.5" value="16" aria-label="{{i18n:static.attr.aria.label.1d691769}}"><span class="view-size-a large" aria-hidden="true">A</span></div></div>
+            <div class="view-font-field"><label for="mapFont">{{i18n:static.text.text.ea8e08aa}}</label><select id="mapFont" aria-label="{{i18n:static.attr.aria.label.cfb7db77}}"><option value="arial">{{i18n:static.text.text.a38eb173}}</option><option value="times">{{i18n:static.text.text.e237a7a1}}</option><option value="verdana">{{i18n:static.text.text.b9b3ebb1}}</option><option value="courier">{{i18n:static.text.text.43601c08}}</option></select></div>
+          </div>
+        </div>
+        <button id="mapMetroViewBtn" class="toolbar-button icon-only hidden metro-view-button tool-icon-button" aria-label="{{i18n:static.attr.aria.label.144064d2}}" aria-describedby="mapRendererTooltip"><span class="metro-view-icon" aria-hidden="true"></span></button>
+      </div>
+      <div id="mapStage" class="map-stage" tabindex="0">
+        <div id="mapEmpty" class="workspace-empty hidden"><b>{{i18n:static.text.text.deaf985c}}</b><p>{{i18n:static.text.text.2b5bab25}}</p><button id="emptyCreateMap" class="hidden" type="button">{{i18n:map.empty_create}}</button></div>
+        <div id="mapWorld" class="map-world">
+          <svg id="mapSvg" class="map-svg" xmlns="http://www.w3.org/2000/svg" aria-label="{{i18n:static.attr.aria.label.3276541a}}"></svg>
+        </div>
+        <div id="mapTooltip" class="map-tooltip hidden" role="tooltip"></div>
+      </div>
+    </section>
+    <aside id="mapInspector" class="right-panel map-inspector hidden">
+      <div class="panel-head"><b id="mapInspectorTitle">{{i18n:static.text.text.d5c32e27}}</b><button data-close-map-inspector class="bare-button ui-close-button" aria-label="{{i18n:ui.close}}">×</button></div>
+      <div id="mapInspectorBody"></div>
+    </aside>
+  </main>
+
+  <main id="tasksView" class="view simple-workspace">
+    <section class="workspace-wrap">
+      <div class="workspace-head"><div><h1>{{i18n:static.text.text.dcef2bbd}}</h1></div><button id="newTaskBtn">{{i18n:static.text.text.c41260fd}}</button></div>
+      <div class="task-filter"><button data-task-filter="open" class="active">{{i18n:static.text.text.4494b221}}</button><button data-task-filter="later">{{i18n:static.text.text.85356d65}}</button><button data-task-filter="done">{{i18n:static.text.text.cf2125f5}}</button><button data-task-filter="archived">{{i18n:static.text.text.5aca47d3}}</button><button data-task-filter="all">{{i18n:static.text.text.51bdb1fb}}</button></div>
+      <div class="task-search"><input id="taskSearch" type="search" autocomplete="off" placeholder="{{i18n:tasks.search_placeholder}}" aria-label="{{i18n:tasks.search_label}}"></div>
+      <div id="taskList" class="task-list"></div>
+    </section>
+  </main>
+
+  <main id="reviewsView" class="view reviews-layout" aria-label="{{i18n:reviews.title}}">
+    <aside id="reviewRail" class="review-sidebar">
+      <div class="nav-section-head review-rail-head">
+        <div class="tabs-head-title"><button id="toggleReviewRail" class="bare-button nav-collapse-button" type="button" title="{{i18n:reviews.title}}" aria-label="{{i18n:reviews.title}}"><span aria-hidden="true">☰</span></button><span class="nav-section-label review-rail-title">{{i18n:reviews.title}}</span></div>
+        <div class="nav-head-actions"><button id="reviewCollectionMore" class="manuscript-item-more nav-section-more review-collection-more" type="button" aria-haspopup="menu" aria-label="{{i18n:reviews.more_actions}}"><span aria-hidden="true">⋮</span></button></div>
+      </div>
+      <div id="reviewList" class="review-nav-list"></div>
+    </aside>
+    <section class="review-workspace-shell">
+      <div class="review-toolbar">
+        <div class="toolbar-title-group review-title-group"><div id="reviewCurrentName" class="review-current-name toolbar-title-text"></div><button id="editReviewDetailsBtn" class="toolbar-title-pencil hidden" type="button" title="{{i18n:reviews.details}}" aria-label="{{i18n:reviews.details}}">✎</button></div>
+        <div class="toolbar-spacer"></div>
+        <button id="reviewParticipantsBtn" class="toolbar-button icon-only tool-icon-button review-toolbar-button hidden" type="button" aria-pressed="false" aria-label="{{i18n:reviews.participants}}" aria-describedby="reviewParticipantsTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.5 18c.7-3.1 2.5-4.7 5.5-4.7s4.8 1.6 5.5 4.7"/><circle cx="17" cy="9" r="2.2"/><path d="M15.5 13.8c2.8-.5 4.6.9 5 3.2"/></svg></button>
+        <button id="reviewMarkersBtn" class="toolbar-button icon-only tool-icon-button review-toolbar-button hidden" type="button" aria-pressed="false" aria-label="{{i18n:reviews.markers}}" aria-describedby="reviewMarkersTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 15 8.7-8.7 2 2L9 17H7z"/><path d="m15.2 6.8 1.6-1.6 2 2-1.6 1.6"/><path d="M5 19h10"/></svg></button>
+        <button id="reviewQuestionsBtn" class="toolbar-button icon-only tool-icon-button review-toolbar-button hidden" type="button" aria-pressed="false" aria-label="{{i18n:reviews.questionnaires}}" aria-describedby="reviewQuestionsTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="4" width="13" height="16" rx="1.8"/><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4.2"/><path d="M9.2 4V3h5.6v1"/></svg></button>
+        <button id="reviewStateBtn" class="toolbar-button icon-only tool-icon-button review-toolbar-button hidden" type="button" aria-pressed="false" aria-label="{{i18n:reviews.rounds_history}}" aria-describedby="reviewStateTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 7.5 10 12l-4.5 4.5"/><path d="M12 7.5 16.5 12 12 16.5"/></svg></button>
+      </div>
+      <div id="reviewStage" class="review-stage">
+        <div id="reviewEmpty" class="workspace-empty hidden"><b>{{i18n:reviews.empty_title}}</b><p>{{i18n:reviews.empty_body}}</p><button id="emptyCreateReview" type="button">{{i18n:reviews.create}}</button></div>
+        <div id="reviewOverview" class="review-overview hidden"></div>
+      </div>
+    </section>
+    <aside id="reviewMarkersPanel" class="right-panel review-markers-panel hidden" aria-label="{{i18n:reviews.review_markers}}">
+      <div class="panel-head"><b>{{i18n:reviews.review_markers}}</b><button id="closeReviewMarkersPanel" class="bare-button ui-close-button" aria-label="{{i18n:ui.close}}">×</button></div>
+      <div id="reviewMarkersPanelBody" class="review-tool-panel-body"></div>
+    </aside>
+    <aside id="reviewParticipantsPanel" class="right-panel review-participants-panel hidden" aria-label="{{i18n:reviews.participants}}">
+      <div class="panel-head"><b>{{i18n:reviews.participants}}</b><button id="closeReviewParticipantsPanel" class="bare-button ui-close-button" aria-label="{{i18n:ui.close}}">×</button></div>
+      <div id="reviewParticipantsPanelBody" class="review-tool-panel-body"></div>
+    </aside>
+    <aside id="reviewQuestionsPanel" class="right-panel review-questions-panel hidden" aria-label="{{i18n:reviews.questionnaires}}">
+      <div class="panel-head"><b>{{i18n:reviews.questionnaires}}</b><button id="closeReviewQuestionsPanel" class="bare-button ui-close-button" aria-label="{{i18n:ui.close}}">×</button></div>
+      <div id="reviewQuestionsPanelBody" class="review-tool-panel-body"></div>
+    </aside>
+    <aside id="reviewStatePanel" class="right-panel review-state-panel hidden" aria-label="{{i18n:reviews.rounds_history}}">
+      <div class="panel-head"><b>{{i18n:reviews.rounds_history}}</b><button id="closeReviewStatePanel" class="bare-button ui-close-button" aria-label="{{i18n:ui.close}}">×</button></div>
+      <div id="reviewStatePanelBody" class="review-tool-panel-body"></div>
+    </aside>
+  </main>
+</div>
+
+<section id="reviewerMode" class="reviewer-mode hidden" aria-label="{{i18n:reviews.reviewer_mode}}">
+  <header class="reviewer-mode-toolbar">
+    <div class="reviewer-mode-identity">
+      <b id="reviewerModeReviewName"></b>
+      <span id="reviewerModeParticipant" class="reviewer-mode-participant"></span>
+    </div>
+    <div class="toolbar-spacer"></div>
+    <div class="reviewer-view-control">
+      <button id="reviewerViewBtn" class="toolbar-button view-menu-button" type="button" aria-haspopup="menu" aria-expanded="false">
+        <span>{{i18n:reviews.reviewer_view}}</span>
+        <svg class="view-menu-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg>
+      </button>
+      <div id="reviewerViewPopover" class="view-popover hidden" role="menu" aria-label="{{i18n:reviews.reviewer_view}}">
+        <div class="view-text-size" role="group" aria-labelledby="reviewerTextSizeLabel">
+          <div class="view-text-size-head"><span id="reviewerTextSizeLabel">{{i18n:reviews.reviewer_text_size}}</span><output id="reviewerTextSizeValue">14 px</output></div>
+          <div class="view-text-size-row"><span class="view-size-a small" aria-hidden="true">A</span><input id="reviewerTextSize" type="range" min="11" max="28" step="0.5" value="14" aria-label="{{i18n:reviews.reviewer_text_size}}"><span class="view-size-a large" aria-hidden="true">A</span></div>
+        </div>
+        <div class="view-font-field">
+          <label for="reviewerFont">{{i18n:reviews.reviewer_font}}</label>
+          <select id="reviewerFont" aria-label="{{i18n:reviews.reviewer_font}}">
+            <option value="arial">Arial</option>
+            <option value="times">Times New Roman</option>
+            <option value="verdana">Verdana</option>
+            <option value="courier">Courier New</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <button id="reviewerBookmarkBtn" class="toolbar-button icon-only tool-icon-button bookmark-manuscript-button" type="button" aria-label="{{i18n:reviews.bookmark_go}}" aria-describedby="reviewerBookmarkTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10v17l-5-3.4-5 3.4z"/></svg></button>
+    <button id="exitReviewerMode" class="bare-button" type="button">{{i18n:reviews.reviewer_exit}}</button>
+  </header>
+  <div class="reviewer-mode-scroller">
+    <article id="reviewerPaper" class="reviewer-paper"></article>
+    <section id="reviewerFeedbackForm" class="reviewer-feedback-form hidden"></section>
+  </div>
+  <div id="reviewSelectionToolbar" class="selection-toolbar review-selection-toolbar hidden" role="toolbar" aria-label="{{i18n:reviews.annotation_tools}}">
+    <button id="reviewHighlightSelection" type="button">{{i18n:reviews.marker}}</button>
+    <button id="reviewCommentSelection" type="button">{{i18n:reviews.comment}}</button>
+    <button id="reviewSuggestSelection" type="button">{{i18n:reviews.suggestion}}</button>
+    <button id="reviewBookmarkSelection" type="button" class="selection-bookmark-button" aria-label="{{i18n:reviews.bookmark_selection}}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10v17l-5-3.4-5 3.4z"/></svg></button>
+  </div>
+  <div id="reviewMarkerPicker" class="selection-highlight-picker hidden" role="menu" aria-label="{{i18n:reviews.available_markers}}">
+    <div id="reviewMarkerPickerList" class="selection-highlight-marker-list"></div>
+  </div>
+</section>
+
+<input id="importInput" type="file" accept=".doc,.docx,.txt" hidden>
+<input id="documentImportInput" type="file" accept=".doc,.docx,.txt" hidden>
+
+<div id="selectionToolbar" data-testid="manuscript-selection-toolbar" class="selection-toolbar hidden" role="toolbar" aria-label="{{i18n:static.attr.aria.label.32898fd3}}">
+  <button type="button" data-testid="manuscript-selection-style" data-selection-action="style" class="selection-style-button" title="{{i18n:static.attr.title.d1cf7940}}">{{i18n:static.text.text.a57485e9}}</button>
+  <button type="button" data-selection-command="bold" title="{{i18n:static.attr.title.8c5a2c20}}"><b>B</b></button>
+  <button type="button" data-selection-command="italic" title="{{i18n:static.attr.title.b04bd7bc}}"><i>I</i></button>
+  <button type="button" data-selection-command="underline" title="{{i18n:static.attr.title.ded6fe05}}"><u>U</u></button>
+  <span class="selection-separator"></span>
+  <button type="button" data-selection-action="scene">{{i18n:static.text.text.93b756fd}}</button>
+  <button type="button" data-selection-action="cuts">{{i18n:static.text.text.38887a0b}}</button>
+  <button type="button" data-testid="manuscript-selection-highlight" data-selection-action="highlight">{{i18n:static.text.text.0def5c6f}}</button>
+  <button type="button" data-selection-action="comment">{{i18n:static.text.text.19e1f568}}</button>
+  <button id="selectionBookmarkBtn" type="button" data-selection-action="bookmark" class="selection-bookmark-button" aria-label="{{i18n:static.attr.aria.label.ce68c71a}}" aria-describedby="selectionBookmarkTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10v17l-5-3.4-5 3.4z"/></svg></button>
+  <button type="button" data-selection-action="more" title="{{i18n:static.attr.title.5ee9f4cb}}">⋮</button>
+</div>
+<div id="selectionHighlightPicker" data-testid="manuscript-highlight-picker" class="selection-highlight-picker hidden" role="menu" aria-label="{{i18n:static.attr.aria.label.86802f70}}">
+  <div id="selectionHighlightMarkerList" class="selection-highlight-marker-list"></div>
+  <button id="selectionHighlightNewMarker" type="button" class="selection-highlight-new">{{i18n:static.text.text.1065e699}}</button>
+</div>
+
+<div id="commentComposer" class="comment-composer hidden" role="dialog" aria-label="{{i18n:static.attr.aria.label.7d4b69ed}}"><textarea id="commentCreateText" placeholder="{{i18n:static.attr.placeholder.ce7bd6ff}}" aria-label="{{i18n:static.attr.aria.label.d14058a0}}"></textarea><div class="comment-composer-actions"><button id="commentCreateCancel" type="button" class="bare-button">{{i18n:static.text.text.d7604484}}</button><button id="commentCreateSubmit" type="button">{{i18n:static.text.text.3125ad62}}</button></div></div>
+<div id="commentHoverCard" class="comment-hover-card hidden" role="tooltip"></div>
+<div id="markupHoverCard" class="markup-hover-card hidden" role="tooltip"></div>
+<div id="markerPanelHoverCard" class="marker-panel-hover-card hidden" role="tooltip"></div>
+<div id="checkpointPanelHoverCard" class="checkpoint-panel-hover-card hidden" role="tooltip"></div>
+<div id="structurePanelHoverCard" class="marker-panel-hover-card structure-panel-hover-card hidden" role="tooltip"></div>
+<div id="contextMenu" class="context-menu hidden"></div>
+<div id="projectMenu" class="project-menu project-app-menu hidden" role="menu" aria-label="{{i18n:static.attr.aria.label.748278a8}}"></div>
+<div id="projectSubmenu" class="project-menu project-submenu hidden" role="menu" aria-label="{{i18n:static.attr.aria.label.e6558fb8}}"></div>
+<input id="projectImportInput" type="file" accept=".breadmaker,.zip" hidden>
+<input id="projectJsonImportInput" type="file" accept=".breadmaker.json,.json,application/json" hidden>
+<input id="cutsImportInput" type="file" accept=".breadcuts" hidden>
+<div id="modal" class="modal hidden"><div class="modal-card"><div class="modal-head"><b id="modalTitle"></b><button id="modalClose" class="bare-button ui-close-button" aria-label="{{i18n:ui.close}}">×</button></div><div id="modalBody"></div><div id="modalActions" class="modal-actions"></div></div></div>
+<div id="quickOpen" class="quick-open hidden"><input id="quickOpenInput" placeholder="{{i18n:static.attr.placeholder.ea58c061}}"><div id="quickOpenResults"></div></div>
+<div id="undoTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:global.undo_title}}</b><span>{{i18n:global.undo_hint}}</span><small>{{i18n:global.undo_shortcut}}</small></div>
+<div id="redoTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:global.redo_title}}</b><span>{{i18n:global.redo_hint}}</span><small>{{i18n:global.redo_shortcut}}</small></div>
+<div id="quickOpenTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:global.quick_open_title}}</b><span>{{i18n:global.quick_open_hint}}</span><small>{{i18n:global.quick_open_shortcut}}</small></div>
+<div id="themeTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:global.theme_title}}</b><span>{{i18n:global.theme_hint}}</span><small id="themeTooltipStatus"></small></div>
+<div id="reviewerBookmarkTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:reviews.bookmark}}</b><span id="reviewerBookmarkTooltipText">{{i18n:reviews.bookmark_hint}}</span><small id="reviewerBookmarkTooltipStatus"></small></div>
+<div id="reviewParticipantsTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:reviews.participants}}</b><span id="reviewParticipantsTooltipText"></span><small id="reviewParticipantsTooltipStatus"></small></div>
+<div id="reviewMarkersTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:reviews.markers}}</b><span id="reviewMarkersTooltipText">{{i18n:reviews.review_markers_hint}}</span><small id="reviewMarkersTooltipStatus"></small></div>
+<div id="reviewQuestionsTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:reviews.questionnaires}}</b><span id="reviewQuestionsTooltipText"></span><small id="reviewQuestionsTooltipStatus"></small></div>
+<div id="reviewStateTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:reviews.rounds_history}}</b><span id="reviewStateTooltipText"></span><small id="reviewStateTooltipStatus"></small></div>
+<div id="reviewItemHoverCard" class="checkpoint-panel-hover-card review-item-hover-card hidden" role="tooltip"></div>
+<div id="viewTooltip" class="editors-eye-tooltip manuscript-tool-tooltip view-tooltip hidden" role="tooltip">
+  <b>{{i18n:static.text.text.fb094718}}</b>
+  <span><strong>{{i18n:static.text.text.17ed2ebe}}</strong> {{i18n:static.text.text.3a2b1768}}</span>
+  <span><strong>{{i18n:static.text.text.aba54466}}</strong> {{i18n:static.text.text.f3069a77}}</span>
+  <span><strong>{{i18n:static.text.text.cce95284}}</strong> {{i18n:static.text.text.4d972cf5}}</span>
+  <span><strong>{{i18n:static.text.text.43b40754}}</strong> {{i18n:static.text.text.ba01a903}}</span>
+  <span><strong>{{i18n:static.text.text.b811ff3e}}</strong> {{i18n:static.text.text.71627a38}}</span>
+  <span><strong>{{i18n:static.text.text.ea8e08aa}}</strong> {{i18n:static.text.text.83fbfc3e}}</span>
+</div>
+<div id="canvasViewTooltip" class="editors-eye-tooltip manuscript-tool-tooltip view-tooltip hidden" role="tooltip">
+  <b>{{i18n:static.text.text.fb094718}}</b>
+  <span><strong>{{i18n:static.text.text.b79aac4a}}</strong> {{i18n:static.text.text.b86c6172}}</span>
+  <span><strong>{{i18n:static.text.text.8cc52d9c}}</strong> {{i18n:static.text.text.8971dcb6}}</span>
+  <span><strong>{{i18n:static.text.text.51fdf519}}</strong> {{i18n:static.text.text.49d366cc}}</span>
+  <span><strong>{{i18n:static.text.text.b811ff3e}}</strong> {{i18n:static.text.text.18455b16}}</span>
+  <span><strong>{{i18n:static.text.text.ea8e08aa}}</strong> {{i18n:static.text.text.2ec63e68}}</span>
+</div>
+<div id="mapViewTooltip" class="editors-eye-tooltip manuscript-tool-tooltip view-tooltip hidden" role="tooltip">
+  <b>{{i18n:static.text.text.fb094718}}</b>
+  <span><strong>{{i18n:static.text.text.dee8429a}}</strong>, <strong>{{i18n:static.text.text.560fd263}}</strong>{{i18n:static.text.text.dfca726d}} <strong>{{i18n:static.text.text.3de2d57c}}</strong> {{i18n:static.text.text.002d587c}}</span>
+  <span><strong>{{i18n:static.text.text.51fdf519}}</strong> {{i18n:static.text.text.f7c61403}}</span>
+  <span><strong>{{i18n:static.text.text.b811ff3e}}</strong> {{i18n:static.text.text.b301aaa5}}</span>
+  <span><strong>{{i18n:static.text.text.ea8e08aa}}</strong> {{i18n:static.text.text.8a84ba0f}}</span>
+</div>
+<div id="mapRendererTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:static.text.text.e3828cc8}}</b><span>{{i18n:static.text.text.babcf0ef}}</span></div>
+<div id="canvasStructureTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:static.text.text.185fa2ff}}</b><span>{{i18n:static.text.text.1f1a9732}}</span></div>
+<div id="canvasAddCardTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:static.text.text.74bf2480}}</b><span>{{i18n:static.text.text.883e202c}}</span></div>
+<div id="canvasAddFigureTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:static.text.text.7b426251}}</b><span>{{i18n:static.text.text.60cac9df}}</span></div>
+<div id="canvasAddImageTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:static.text.text.d5232a10}}</b><span>{{i18n:static.text.text.25b39c74}}</span></div>
+<div id="bookmarkTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip">
+  <b>{{i18n:static.text.text.106e3d94}}</b>
+  <span id="bookmarkTooltipText">{{i18n:manuscript.bookmark_go_tooltip}}</span>
+</div>
+<div id="selectionBookmarkTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip">
+  <b id="selectionBookmarkTooltipTitle">{{i18n:static.attr.aria.label.ce68c71a}}</b>
+  <span id="selectionBookmarkTooltipText">{{i18n:manuscript.bookmark_selection_tooltip}}</span>
+</div>
+<div id="manuscriptImageTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:manuscript.images}}</b><span>{{i18n:manuscript.images_tooltip}}</span></div>
+<div id="manuscriptReviewsTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:reviews.title}}</b><span>{{i18n:manuscript.reviews_tooltip}}</span></div>
+<div id="commentsTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip">
+  <b>{{i18n:static.text.text.68e1f7ea}}</b>
+  <span>{{i18n:static.text.text.7d3fb344}}</span>
+  <small id="commentsTooltipStatus"></small>
+</div>
+<div id="markupTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip">
+  <b>{{i18n:static.text.text.1095201f}}</b>
+  <span>{{i18n:static.text.text.c88cee61}}</span>
+</div>
+<div id="checkpointTooltip" class="editors-eye-tooltip checkpoint-tooltip hidden" role="tooltip">
+  <b>{{i18n:static.text.text.06ef98e4}}</b>
+  <span>{{i18n:static.text.text.6f8d0ad1}}</span>
+  <small id="checkpointTooltipStatus"></small>
+</div>
+<div id="cutsTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip">
+  <b>{{i18n:static.text.text.4222fcf7}}</b>
+  <span>{{i18n:static.text.text.88c85bf2}}</span>
+  <small id="cutsTooltipStatus"></small>
+</div>
+<div id="editorsEyeTooltip" class="editors-eye-tooltip hidden" role="tooltip">
+  <b>{{i18n:static.text.text.1017eaca}}</b>
+  <span>{{i18n:static.text.text.943ac9ff}}</span>
+  <small id="editorsEyeTooltipStatus"></small>
+</div>
+
+<div id="breadReviewDropOverlay" class="breadreview-drop-overlay hidden" aria-hidden="true">
+  <div class="breadreview-drop-card">
+    <b>{{i18n:reviews.drop_open}}</b>
+    <span>{{i18n:reviews.drop_hint}}</span>
+  </div>
+</div>
+<div id="toast" class="toast hidden"></div>
+<script src="/static/js/core/i18n.js?v=10.5.38"></script>
+<script src="/static/js/core/runtime.js?v=10.5.38"></script>
+<script src="/static/js/core/state.js?v=10.5.38"></script>
+<script src="/static/js/core/typography.js?v=10.5.38"></script>
+<script src="/static/js/core/ui.js?v=10.5.38"></script>
+<script src="/static/js/features/account/security.js?v=10.5.38"></script>
+<script src="/static/js/core/collections.js?v=10.5.38"></script>
+<script src="/static/js/core/routing.js?v=10.5.38"></script>
+<script src="/static/js/core/history.js?v=10.5.38"></script>
+<script src="/static/js/features/reviews/view.js?v=10.5.38"></script>
+<script src="/static/js/features/reviews/reader.js?v=10.5.38"></script>
+<script src="/static/js/features/reviews/workspace.js?v=10.5.38"></script>
+<script src="/static/js/features/reviews/details.js?v=10.5.38"></script>
+<script src="/static/js/features/reviews/panels.js?v=10.5.38"></script>
+<script src="/static/js/features/reviews/lifecycle.js?v=10.5.38"></script>
+<script src="/static/js/core/recovery.js?v=10.5.38"></script>
+<script src="/static/js/core/boot.js?v=10.5.38"></script>
+<script src="/static/js/features/projects/menu.js?v=10.5.38"></script>
+<script src="/static/js/features/projects/settings.js?v=10.5.38"></script>
+<script src="/static/js/features/projects/backups.js?v=10.5.38"></script>
+<script src="/static/js/features/projects/lifecycle.js?v=10.5.38"></script>
+<script src="/static/js/features/projects/export_recovery.js?v=10.5.38"></script>
+<script src="/static/js/features/manuscript/view.js?v=10.5.38"></script>
+<script src="/static/js/features/manuscript/bookmarks.js?v=10.5.38"></script>
+<script src="/static/js/features/manuscript/navigation.js?v=10.5.38"></script>
+<script src="/static/js/features/manuscript/rendering.js?v=10.5.38"></script>
+<script src="/static/js/features/manuscript/history.js?v=10.5.38"></script>
+<script src="/static/js/features/manuscript/workspace.js?v=10.5.38"></script>
+<script src="/static/js/features/manuscript/persistence.js?v=10.5.38"></script>
+<script src="/static/js/features/manuscript/editing.js?v=10.5.38"></script>
+<script src="/static/js/features/manuscript/scenes.js?v=10.5.38"></script>
+<script src="/static/js/features/manuscript/annotations.js?v=10.5.38"></script>
+<script src="/static/js/features/manuscript/find_replace.js?v=10.5.38"></script>
+<script src="/static/js/features/tasks.js?v=10.5.38"></script>
+<script src="/static/js/features/linking.js?v=10.5.38"></script>
+<script src="/static/js/features/canvas/hierarchy.js?v=10.5.38"></script>
+<script src="/static/js/features/canvas/nodes.js?v=10.5.38"></script>
+<script src="/static/js/features/canvas/connectors.js?v=10.5.38"></script>
+<script src="/static/js/features/maps/view.js?v=10.5.38"></script>
+<script src="/static/js/features/maps/workspace.js?v=10.5.38"></script>
+<script src="/static/js/features/maps/metro.js?v=10.5.38"></script>
+<script src="/static/js/features/split_view.js?v=10.5.38"></script>
+<script src="/static/js/features/manuscript/imports.js?v=10.5.38"></script>
+<script src="/static/js/features/checkpoints/workspace.js?v=10.5.38"></script>
+<script src="/static/js/features/durability/history.js?v=10.5.38"></script>
+<script src="/static/js/features/notes/comments.js?v=10.5.38"></script>
+<script src="/static/js/core/quick_open.js?v=10.5.38"></script>
+<script src="/static/app.js?v=10.5.38"></script>
+</body>
+</html>

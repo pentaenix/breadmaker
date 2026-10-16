@@ -1,0 +1,480 @@
+{
+  "allowed_runtime_native_bridges": [
+    "native_projects",
+    "native_assets",
+    "native_history",
+    "native_backups"
+  ],
+  "format": 1,
+  "helper_only_imports": [
+    {
+      "file": "src/api/durability/backup_destinations.py",
+      "modules": [
+        "workspace.models"
+      ]
+    },
+    {
+      "file": "src/api/durability/backup_inventory.py",
+      "modules": [
+        "workspace.models"
+      ]
+    },
+    {
+      "file": "src/api/durability/recovery.py",
+      "modules": [
+        "workspace.models"
+      ]
+    },
+    {
+      "file": "src/api/project_management/members.py",
+      "modules": [
+        "workspace.models"
+      ]
+    },
+    {
+      "file": "src/api/project_management/profiles.py",
+      "modules": [
+        "workspace.models"
+      ]
+    },
+    {
+      "file": "src/api/project_management/projects.py",
+      "modules": [
+        "workspace.models"
+      ]
+    }
+  ],
+  "local_engine_dependencies": [
+    {
+      "file": "src/api/annotations/routes.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/canvas/developmental.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/canvas/edges.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/canvas/lifecycle.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/canvas/nodes.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/canvas/populate.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/canvas/registry.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/canvas/structure.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/canvas/versions.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/checkpoints/apply.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/checkpoints/capture.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/checkpoints/comparison.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/checkpoints/lifecycle.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/checkpoints/restore.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/checkpoints/restore_support.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/comments/routes.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/durability/backups.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/durability/cuts.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/durability/history.py",
+      "modules": [
+        "revision_store.local_store",
+        "revision_store.restore",
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/durability/recovery_backups.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/durability/undo.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/find_replace/routes.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/icon_markers/routes.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/import_export/docx_export.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/import_export/docx_import.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/import_export/pdf_export.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/manuscript/anchors.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/manuscript/chapter_structure.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/manuscript/chapters.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/manuscript/document.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/manuscript/images.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/manuscript/scenes.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/maps/anchors.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/maps/items.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/maps/junctions.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/maps/layout.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/maps/lifecycle.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/maps/lines.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/maps/populate.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/project_management/destructive_actions.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/project_management/health.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/project_management/json_transfer.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/project_management/metadata.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/project_management/packages.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/reviews/domain.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/reviews/feedback.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/reviews/lifecycle.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/reviews/markers.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/reviews/participants.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/reviews/portable.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/reviews/presets.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/reviews/questionnaires.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/reviews/reader.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/reviews/snapshots.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/tasks/duplication.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/tasks/lifecycle.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/tasks/milestones.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/workspace_tools/bookmark.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/workspace_tools/documents.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/workspace_tools/references.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/api/workspace_tools/ui_state.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/backend/diagnostics.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/backend/environment.py",
+      "modules": [
+        "workspace"
+      ]
+    },
+    {
+      "file": "src/backend/history_runtime.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/backend/lifecycle.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/backend/local_history.py",
+      "modules": [
+        "revision_store.local_store",
+        "storage"
+      ]
+    },
+    {
+      "file": "src/backend/portable_review_runtime.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/backend/project_activation.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/backend/recovery_runtime.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/backend/request_pipeline.py",
+      "modules": [
+        "storage"
+      ]
+    },
+    {
+      "file": "src/backend/runtime_routes.py",
+      "modules": [
+        "workspace"
+      ]
+    }
+  ],
+  "purpose": "Milestone-1 freeze of direct API/backend dependencies on local SQLite/filesystem/revision implementations.",
+  "rule": "New local_engine_dependencies are forbidden. Existing entries are migration debt and may only shrink as hosted adapters replace them."
+}

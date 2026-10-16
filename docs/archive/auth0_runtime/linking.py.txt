@@ -1,0 +1,569 @@
+from __future__ import annotations
+
+"""Explicit dual-proof Auth0 account linking for hosted Breadmaker.
+
+Checkpoint 9 intentionally has no product UI. This module provides the server-side
+security boundary that the future Security UI will call:
+
+1. the current Breadmaker session proves the primary account;
+2. that primary proof must be recent;
+3. a separate OIDC transaction forces fresh Auth0 authentication for the identity to
+   attach (``prompt=login`` + ``max_age=0``);
+4. both primary and secondary Auth0 identifiers are derived from trusted server state,
+   never from email strings or browser-supplied user ids;
+5. a dedicated least-privilege Management API operator performs the provider-side link;
+6. only after Auth0 succeeds is the secondary identity attached to the existing
+   Breadmaker ``usr_`` account.
+
+The operation never merges two existing Breadmaker users. If the secondary identity is
+already owned by another internal account, linking fails closed before Auth0 is mutated.
+"""
+
+import json
+import os
+import secrets
+import threading
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from dataclasses import dataclass
+from typing import Any, Callable
+
+from auth.accounts import AccountIdentityError, AccountIdentityService, ExternalIdentity
+from auth.apple import AppleAuth0IdentityMapper, AppleAuth0IdentityError
+from auth.auth0 import Auth0BoundaryConfig, Auth0BoundaryError
+from auth.database import DatabaseAuth0IdentityMapper, DatabaseAuth0IdentityError
+from auth.google import GoogleAuth0IdentityError, GoogleAuth0IdentityMapper
+from auth.oidc import OidcAuthorizationRequest, OidcError, VerifiedOidcIdentity
+
+
+class AccountLinkingError(RuntimeError):
+    """Stable non-secret account-linking failure."""
+
+
+_LINK_CALLBACK_PATH = '/auth/link/callback'
+_LINK_TRANSACTION_TTL_SECONDS = 300
+_LINK_TRANSACTION_MAX_ACTIVE = 4096
+_LINK_TRANSACTION_MAX_PER_USER = 8
+_PRIMARY_REAUTH_MAX_AGE_SECONDS = 300
+_SECONDARY_AUTH_SKEW_SECONDS = 60
+_MAX_JSON_BYTES = 1024 * 1024
+_MANAGEMENT_SCOPE = 'update:users'
+
+
+@dataclass(frozen=True)
+class AccountLinkTransaction:
+    state: str
+    primary_user_id: str
+    primary_session_id: str
+    primary_issuer: str
+    primary_subject: str
+    return_path: str
+    created_at: float
+    expires_at: float
+
+
+@dataclass(frozen=True)
+class AccountLinkResult:
+    user_id: str
+    primary_subject: str
+    secondary_subject: str
+    secondary_provider: str
+    authenticated_at: float
+    return_path: str
+
+
+@dataclass(frozen=True)
+class _SecondaryIdentity:
+    issuer: str
+    subject: str
+    management_provider: str
+    provider_subject: str
+    breadmaker_provider: str
+    email: str
+    email_verified: bool
+    authenticated_at: float
+
+
+class AccountLinkTransactionStore:
+    """Single-process, single-use binding between the primary session and link OIDC state."""
+
+    def __init__(
+        self, *, ttl_seconds: int = _LINK_TRANSACTION_TTL_SECONDS,
+        max_active: int = _LINK_TRANSACTION_MAX_ACTIVE,
+        max_per_user: int = _LINK_TRANSACTION_MAX_PER_USER,
+        now: Callable[[], float] = time.time,
+    ):
+        ttl = int(ttl_seconds)
+        capacity = int(max_active)
+        per_user = int(max_per_user)
+        if ttl < 60 or ttl > 600:
+            raise AccountLinkingError('ACCOUNT_LINK_TRANSACTION_TTL_INVALID')
+        if capacity < 16 or capacity > 65536 or per_user < 1 or per_user > capacity:
+            raise AccountLinkingError('ACCOUNT_LINK_TRANSACTION_CAPACITY_INVALID')
+        self.ttl_seconds = ttl
+        self.max_active = capacity
+        self.max_per_user = per_user
+        self._now = now
+        self._items: dict[str, AccountLinkTransaction] = {}
+        self._lock = threading.RLock()
+
+    def bind(
+        self,
+        request: OidcAuthorizationRequest,
+        *,
+        primary_user_id: str,
+        primary_session_id: str,
+        primary: ExternalIdentity,
+    ) -> AccountLinkTransaction:
+        state = str(request.state or '').strip()
+        user_id = str(primary_user_id or '').strip()
+        session_id = str(primary_session_id or '').strip()
+        if not state or not user_id.startswith('usr_') or not session_id.startswith('ses_'):
+            raise AccountLinkingError('ACCOUNT_LINK_TRANSACTION_INVALID')
+        now = float(self._now())
+        expires_at = min(float(request.expires_at), now + self.ttl_seconds)
+        item = AccountLinkTransaction(
+            state=state,
+            primary_user_id=user_id,
+            primary_session_id=session_id,
+            primary_issuer=str(primary.issuer),
+            primary_subject=str(primary.subject),
+            return_path=str(request.return_path),
+            created_at=now,
+            expires_at=expires_at,
+        )
+        with self._lock:
+            self._prune_locked(now)
+            is_new = state not in self._items
+            if is_new and len(self._items) >= self.max_active:
+                raise AccountLinkingError('ACCOUNT_LINK_TRANSACTION_CAPACITY_EXCEEDED')
+            if is_new and sum(1 for tx in self._items.values() if tx.primary_user_id == user_id) >= self.max_per_user:
+                raise AccountLinkingError('ACCOUNT_LINK_TRANSACTION_USER_CAPACITY_EXCEEDED')
+            self._items[state] = item
+        return item
+
+    @staticmethod
+    def _validated_state(state: str) -> str:
+        value = str(state or '').strip()
+        if not value:
+            raise AccountLinkingError('ACCOUNT_LINK_STATE_REQUIRED')
+        if len(value) > 256 or any(ch not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_' for ch in value):
+            raise AccountLinkingError('ACCOUNT_LINK_STATE_INVALID_OR_REPLAYED')
+        return value
+
+    def consume(self, state: str) -> AccountLinkTransaction:
+        value = self._validated_state(state)
+        now = float(self._now())
+        with self._lock:
+            item = self._items.pop(value, None)
+            self._prune_locked(now)
+        if item is None:
+            raise AccountLinkingError('ACCOUNT_LINK_STATE_INVALID_OR_REPLAYED')
+        if now >= item.expires_at:
+            raise AccountLinkingError('ACCOUNT_LINK_STATE_EXPIRED')
+        return item
+
+    def consume_for_principal(self, state: str, *, principal) -> AccountLinkTransaction:
+        """Consume a link transaction only for the session that created it.
+
+        Ownership is checked before removal so a leaked state value presented from a
+        different authenticated session cannot cancel the legitimate user's link flow.
+        """
+        value = self._validated_state(state)
+        user_id = str(getattr(principal, 'user_id', '') or '').strip()
+        session_id = str(getattr(principal, 'session_id', '') or '').strip()
+        if not user_id.startswith('usr_') or not session_id.startswith('ses_'):
+            raise AccountLinkingError('ACCOUNT_LINK_PRIMARY_SESSION_REQUIRED')
+        now = float(self._now())
+        with self._lock:
+            self._prune_locked(now)
+            item = self._items.get(value)
+            if item is None:
+                raise AccountLinkingError('ACCOUNT_LINK_STATE_INVALID_OR_REPLAYED')
+            if now >= item.expires_at:
+                self._items.pop(value, None)
+                raise AccountLinkingError('ACCOUNT_LINK_STATE_EXPIRED')
+            if user_id != item.primary_user_id or session_id != item.primary_session_id:
+                raise AccountLinkingError('ACCOUNT_LINK_PRIMARY_SESSION_CHANGED')
+            self._items.pop(value, None)
+        return item
+
+    def _prune_locked(self, now: float) -> None:
+        for key, item in list(self._items.items()):
+            if now >= item.expires_at:
+                self._items.pop(key, None)
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ANN001
+        return None
+
+
+class Auth0AccountLinkManagementClient:
+    """Narrow server-only Auth0 Management API client for one operation: link identity."""
+
+    def __init__(
+        self,
+        *,
+        issuer: str,
+        client_id: str,
+        client_secret_ref: str,
+        secret_loader: Callable[[str], str],
+        timeout_seconds: float = 5.0,
+    ):
+        self.issuer = str(issuer or '').strip()
+        self.client_id = str(client_id or '').strip()
+        self.client_secret_ref = str(client_secret_ref or '').strip()
+        self.secret_loader = secret_loader
+        self.timeout_seconds = float(timeout_seconds)
+        if not self.issuer.startswith('https://') and not self.issuer.startswith('http://127.0.0.1') and not self.issuer.startswith('http://localhost'):
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_ISSUER_INVALID')
+        if not self.client_id or len(self.client_id) > 1024:
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_CLIENT_ID_INVALID')
+        if not self.client_secret_ref or len(self.client_secret_ref) > 256 or any(ch.isspace() for ch in self.client_secret_ref):
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_SECRET_REF_INVALID')
+        if not (0.5 <= self.timeout_seconds <= 30.0):
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_TIMEOUT_INVALID')
+        self._opener = urllib.request.build_opener(_NoRedirect())
+
+    def metadata(self) -> dict[str, Any]:
+        return {
+            'authority': 'auth0_management_api',
+            'server_only': True,
+            'scope': _MANAGEMENT_SCOPE,
+            'operation': 'link_user_identity',
+            'browser_token_exposure': False,
+            'client_secret_ref': self.client_secret_ref,
+            'client_secret_value_exposed': False,
+        }
+
+    def link(self, *, primary_subject: str, secondary_provider: str, secondary_provider_subject: str) -> None:
+        if self.client_id == 'checkpoint9-link-operator-not-configured':
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_CONFIG_UNAVAILABLE')
+        primary = _clean_subject(primary_subject, 'ACCOUNT_LINK_PRIMARY_SUBJECT_INVALID')
+        provider = _clean_provider(secondary_provider)
+        secondary = _clean_provider_subject(secondary_provider_subject)
+        if _subject_provider(primary) not in {'google-oauth2', 'apple', 'auth0'}:
+            raise AccountLinkingError('ACCOUNT_LINK_PRIMARY_PROVIDER_INVALID')
+
+        token = self._management_token()
+        url = f"{self.issuer.rstrip('/')}/api/v2/users/{urllib.parse.quote(primary, safe='')}/identities"
+        payload = json.dumps({'provider': provider, 'user_id': secondary}, separators=(',', ':')).encode('utf-8')
+        response = self._request_json(
+            url,
+            method='POST',
+            data=payload,
+            headers={
+                'Authorization': f'Bearer {token}',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+        )
+        if not isinstance(response, list):
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_RESPONSE_INVALID')
+        # Auth0 returns the primary profile's identities array. Require evidence that
+        # the requested secondary now exists instead of treating any 2xx body as proof.
+        found = False
+        for item in response:
+            if not isinstance(item, dict):
+                continue
+            if str(item.get('provider') or '') != provider:
+                continue
+            returned_id = str(item.get('user_id') or '')
+            if returned_id == secondary or returned_id == f'{provider}|{secondary}':
+                found = True
+                break
+        if not found:
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_RESULT_MISMATCH')
+
+    def unlink(self, *, primary_subject: str, secondary_provider: str, secondary_provider_subject: str) -> None:
+        """Compensate a just-created Auth0 link when Breadmaker cannot commit ownership."""
+        if self.client_id == 'checkpoint9-link-operator-not-configured':
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_CONFIG_UNAVAILABLE')
+        primary = _clean_subject(primary_subject, 'ACCOUNT_LINK_PRIMARY_SUBJECT_INVALID')
+        provider = _clean_provider(secondary_provider)
+        secondary = _clean_provider_subject(secondary_provider_subject)
+        token = self._management_token()
+        url = (
+            f"{self.issuer.rstrip('/')}/api/v2/users/{urllib.parse.quote(primary, safe='')}/"
+            f"identities/{urllib.parse.quote(provider, safe='')}/{urllib.parse.quote(secondary, safe='')}"
+        )
+        response = self._request_json(
+            url, method='DELETE', data=b'',
+            headers={'Authorization': f'Bearer {token}', 'Accept': 'application/json'},
+        )
+        if not isinstance(response, list):
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_ROLLBACK_RESPONSE_INVALID')
+        for item in response:
+            if not isinstance(item, dict) or str(item.get('provider') or '') != provider:
+                continue
+            returned_id = str(item.get('user_id') or '')
+            if returned_id == secondary or returned_id == f'{provider}|{secondary}':
+                raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_ROLLBACK_RESULT_MISMATCH')
+
+    def _management_token(self) -> str:
+        try:
+            secret = str(self.secret_loader(self.client_secret_ref) or '')
+        except Exception as exc:
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_SECRET_UNAVAILABLE') from exc
+        if not secret or len(secret) > 16384:
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_SECRET_UNAVAILABLE')
+        token_url = f"{self.issuer.rstrip('/')}/oauth/token"
+        body = urllib.parse.urlencode({
+            'grant_type': 'client_credentials',
+            'client_id': self.client_id,
+            'client_secret': secret,
+            'audience': f"{self.issuer.rstrip('/')}/api/v2/",
+            'scope': _MANAGEMENT_SCOPE,
+        }).encode('utf-8')
+        payload = self._request_json(
+            token_url,
+            method='POST',
+            data=body,
+            headers={'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded'},
+        )
+        if not isinstance(payload, dict):
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_TOKEN_RESPONSE_INVALID')
+        token = str(payload.get('access_token') or '')
+        token_type = str(payload.get('token_type') or '').lower()
+        if not token or len(token) > 64 * 1024 or token_type != 'bearer':
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_TOKEN_RESPONSE_INVALID')
+        return token
+
+    def _request_json(self, url: str, *, method: str, data: bytes, headers: dict[str, str]) -> Any:
+        request = urllib.request.Request(url, data=data, method=method, headers=headers)
+        try:
+            with self._opener.open(request, timeout=self.timeout_seconds) as response:
+                raw = response.read(_MAX_JSON_BYTES + 1)
+        except urllib.error.HTTPError as exc:
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_REJECTED') from exc
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_UNAVAILABLE') from exc
+        if len(raw) > _MAX_JSON_BYTES:
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_RESPONSE_TOO_LARGE')
+        try:
+            return json.loads(raw.decode('utf-8'), parse_constant=lambda _value: (_ for _ in ()).throw(ValueError('non-finite JSON')))
+        except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_RESPONSE_INVALID') from exc
+
+
+class HostedAuth0AccountLinkingService:
+    """Orchestrate dual-proof linking without trusting email or browser identity input."""
+
+    def __init__(
+        self,
+        *,
+        boundary: Auth0BoundaryConfig,
+        oidc,
+        accounts: AccountIdentityService,
+        management: Auth0AccountLinkManagementClient,
+        transactions: AccountLinkTransactionStore | None = None,
+        now: Callable[[], float] = time.time,
+    ):
+        self.boundary = boundary
+        self.oidc = oidc
+        self.accounts = accounts
+        self.management = management
+        self.transactions = transactions or AccountLinkTransactionStore(now=now)
+        self._now = now
+        self.google = GoogleAuth0IdentityMapper(boundary)
+        self.apple = AppleAuth0IdentityMapper(boundary)
+        self.database = DatabaseAuth0IdentityMapper(boundary)
+
+    def metadata(self) -> dict[str, Any]:
+        return {
+            'enabled': True,
+            'checkpoint': 9,
+            'dual_proof_required': True,
+            'primary_proof': 'fresh_breadmaker_session',
+            'secondary_proof': 'fresh_auth0_oidc',
+            'automatic_link_by_email': False,
+            'browser_supplied_user_ids': False,
+            'existing_breadmaker_user_merge': False,
+            'callback_uri': self.boundary.callback_uri,
+            'management': self.management.metadata(),
+        }
+
+    def begin(self, *, principal, return_path: str = '/') -> OidcAuthorizationRequest:
+        user_id = str(getattr(principal, 'user_id', '') or '')
+        session_id = str(getattr(principal, 'session_id', '') or '')
+        authenticated_at = float(getattr(principal, 'authenticated_at', 0.0) or 0.0)
+        now = float(self._now())
+        if not user_id.startswith('usr_') or not session_id.startswith('ses_'):
+            raise AccountLinkingError('ACCOUNT_LINK_PRIMARY_SESSION_REQUIRED')
+        if authenticated_at <= 0 or authenticated_at > now + _SECONDARY_AUTH_SKEW_SECONDS or now - authenticated_at > _PRIMARY_REAUTH_MAX_AGE_SECONDS:
+            raise AccountLinkingError('ACCOUNT_LINK_PRIMARY_REAUTH_REQUIRED')
+        primary = self.accounts.primary_identity_for_user(user_id)
+        if primary is None:
+            raise AccountLinkingError('ACCOUNT_LINK_PRIMARY_IDENTITY_MISSING')
+        request = self.oidc.begin_authorization(return_path=return_path, force_reauthentication=True)
+        try:
+            self.transactions.bind(
+                request,
+                primary_user_id=user_id,
+                primary_session_id=session_id,
+                primary=primary,
+            )
+        except AccountLinkingError:
+            self.oidc.transactions.discard(request.state)
+            raise
+        return request
+
+    def complete(self, *, principal, code: str, state: str) -> AccountLinkResult:
+        # Bind state consumption to the session that created the link transaction. A
+        # callback from another authenticated session must not burn the legitimate flow.
+        tx = self.transactions.consume_for_principal(state, principal=principal)
+        user_id = str(getattr(principal, 'user_id', '') or '')
+        session_id = str(getattr(principal, 'session_id', '') or '')
+
+        try:
+            identity, return_path = self.oidc.complete_authorization(code=code, state=state)
+        except (OidcError, Auth0BoundaryError) as exc:
+            raise AccountLinkingError('ACCOUNT_LINK_SECONDARY_AUTH_REJECTED') from exc
+        secondary = self._secondary(identity, tx)
+        if secondary.subject == tx.primary_subject:
+            raise AccountLinkingError('ACCOUNT_LINK_SAME_IDENTITY')
+
+        if return_path != tx.return_path:
+            raise AccountLinkingError('ACCOUNT_LINK_RETURN_PATH_MISMATCH')
+
+        existing = self.accounts.resolve_external_identity(secondary.issuer, secondary.subject)
+        if existing is not None and existing.user_id != tx.primary_user_id:
+            # Do not turn identity linking into an implicit merge of two Breadmaker
+            # profiles/projects. That requires its own explicit data-merge design.
+            raise AccountLinkingError('ACCOUNT_LINK_EXISTING_ACCOUNT_CONFLICT')
+
+        self.management.link(
+            primary_subject=tx.primary_subject,
+            secondary_provider=secondary.management_provider,
+            secondary_provider_subject=secondary.provider_subject,
+        )
+        try:
+            self.accounts.link_external_identity_to_user(
+                tx.primary_user_id,
+                secondary.issuer,
+                secondary.subject,
+                provider=secondary.breadmaker_provider,
+                email=secondary.email,
+                email_verified=secondary.email_verified,
+            )
+        except AccountIdentityError as exc:
+            # Cross-system mutation is compensated immediately: Auth0 must not stay
+            # linked if Breadmaker failed to record the ownership mapping.
+            try:
+                self.management.unlink(
+                    primary_subject=tx.primary_subject,
+                    secondary_provider=secondary.management_provider,
+                    secondary_provider_subject=secondary.provider_subject,
+                )
+            except AccountLinkingError as rollback_exc:
+                raise AccountLinkingError('ACCOUNT_LINK_LOCAL_COMMIT_ROLLBACK_FAILED') from rollback_exc
+            raise AccountLinkingError(str(exc)) from exc
+        return AccountLinkResult(
+            user_id=tx.primary_user_id,
+            primary_subject=tx.primary_subject,
+            secondary_subject=secondary.subject,
+            secondary_provider=secondary.breadmaker_provider,
+            authenticated_at=secondary.authenticated_at,
+            return_path=return_path,
+        )
+
+    def _secondary(self, identity: VerifiedOidcIdentity, tx: AccountLinkTransaction) -> _SecondaryIdentity:
+        if identity.issuer != tx.primary_issuer or identity.issuer != self.boundary.issuer:
+            raise AccountLinkingError('ACCOUNT_LINK_ISSUER_MISMATCH')
+        auth_time = float(identity.authenticated_at or 0.0)
+        now = float(self._now())
+        if (
+            auth_time <= 0
+            or auth_time < tx.created_at - _SECONDARY_AUTH_SKEW_SECONDS
+            or auth_time > now + _SECONDARY_AUTH_SKEW_SECONDS
+            or now - auth_time > _LINK_TRANSACTION_TTL_SECONDS + _SECONDARY_AUTH_SKEW_SECONDS
+        ):
+            raise AccountLinkingError('ACCOUNT_LINK_SECONDARY_FRESH_AUTH_REQUIRED')
+        subject = str(identity.subject or '')
+        try:
+            if subject.startswith('google-oauth2|'):
+                profile = self.google.map_verified_identity(identity)
+                return _SecondaryIdentity(profile.issuer, profile.subject, 'google-oauth2', profile.provider_subject, 'google', profile.email, profile.email_verified, auth_time)
+            if subject.startswith('apple|'):
+                profile = self.apple.map_verified_identity(identity)
+                return _SecondaryIdentity(profile.issuer, profile.subject, 'apple', profile.provider_subject, 'apple', profile.email, profile.email_verified, auth_time)
+            if subject.startswith('auth0|'):
+                profile = self.database.map_verified_identity(identity)
+                return _SecondaryIdentity(profile.issuer, profile.subject, 'auth0', profile.provider_subject, 'email_password', profile.email, True, auth_time)
+        except (GoogleAuth0IdentityError, AppleAuth0IdentityError, DatabaseAuth0IdentityError) as exc:
+            raise AccountLinkingError(str(exc)) from exc
+        raise AccountLinkingError('ACCOUNT_LINK_SECONDARY_PROVIDER_NOT_ALLOWED')
+
+
+def _clean_subject(value: str, code: str) -> str:
+    subject = str(value or '').strip()
+    if not subject or len(subject) > 1024 or '|' not in subject or any(ord(ch) < 0x20 or ord(ch) == 0x7f for ch in subject):
+        raise AccountLinkingError(code)
+    return subject
+
+
+def _subject_provider(subject: str) -> str:
+    return str(subject).split('|', 1)[0]
+
+
+def _clean_provider(value: str) -> str:
+    provider = str(value or '').strip()
+    if provider not in {'google-oauth2', 'apple', 'auth0'}:
+        raise AccountLinkingError('ACCOUNT_LINK_SECONDARY_PROVIDER_INVALID')
+    return provider
+
+
+def _clean_provider_subject(value: str) -> str:
+    subject = str(value or '').strip()
+    if not subject or len(subject) > 1024 or any(ord(ch) < 0x20 or ord(ch) == 0x7f for ch in subject):
+        raise AccountLinkingError('ACCOUNT_LINK_SECONDARY_SUBJECT_INVALID')
+    return subject
+
+
+def _default_link_secret_reference(environment: str) -> str:
+    if environment == 'development':
+        return 'env:BREADMAKER_AUTH0_LINK_MGMT_CLIENT_SECRET'
+    project = str(os.environ.get('BREADMAKER_GCP_PROJECT_ID') or '').strip()
+    if environment == 'staging' and project:
+        return f'secretmanager:projects/{project}/secrets/breadmaker-auth0-link-client-secret/versions/latest'
+    return ''
+
+
+def build_account_linking_service(*, boundary: Auth0BoundaryConfig, accounts: AccountIdentityService, secret_loader: Callable[[str], str]) -> HostedAuth0AccountLinkingService:
+    """Build account linking for an explicitly enabled hosted Auth0 environment."""
+    if boundary.environment not in {'development', 'staging'}:
+        raise AccountLinkingError('ACCOUNT_LINK_HOSTED_ENVIRONMENT_NOT_ENABLED')
+    link_boundary = boundary.for_callback_path(_LINK_CALLBACK_PATH)
+    oidc = link_boundary.build_oidc_client(secret_loader=secret_loader)
+    management_client_id = str(os.environ.get('BREADMAKER_AUTH0_LINK_MGMT_CLIENT_ID') or '').strip()
+    if not management_client_id:
+        if boundary.environment == 'development':
+            # Keep the localhost sandbox bootable before management credentials exist.
+            management_client_id = 'checkpoint9-link-operator-not-configured'
+        else:
+            raise AccountLinkingError('ACCOUNT_LINK_MANAGEMENT_CLIENT_ID_REQUIRED')
+    management_secret_ref = str(
+        os.environ.get('BREADMAKER_AUTH0_LINK_MGMT_CLIENT_SECRET_REF')
+        or _default_link_secret_reference(boundary.environment)
+    )
+    management = Auth0AccountLinkManagementClient(
+        issuer=boundary.issuer,
+        client_id=management_client_id,
+        client_secret_ref=management_secret_ref,
+        secret_loader=secret_loader,
+    )
+    return HostedAuth0AccountLinkingService(
+        boundary=link_boundary,
+        oidc=oidc,
+        accounts=accounts,
+        management=management,
+    )
+
+
+def build_development_account_linking_service(*, boundary: Auth0BoundaryConfig, accounts: AccountIdentityService, secret_loader: Callable[[str], str]) -> HostedAuth0AccountLinkingService:
+    if boundary.environment != 'development':
+        raise AccountLinkingError('ACCOUNT_LINK_LOCAL_SANDBOX_DEVELOPMENT_ONLY')
+    return build_account_linking_service(boundary=boundary, accounts=accounts, secret_loader=secret_loader)

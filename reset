@@ -1,0 +1,12 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")"
+
+if [ "$#" -ne 1 ] || [ "$1" != "--confirm" ]; then
+  echo "DANGER: this permanently deletes all Breadmaker-managed application data." >&2
+  echo "External files imported from or exported to are not touched." >&2
+  echo "To proceed, run exactly: ./reset --confirm" >&2
+  exit 2
+fi
+
+exec "${PYTHON:-python3}" scripts/reset_workspace.py --confirm

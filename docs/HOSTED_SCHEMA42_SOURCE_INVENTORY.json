@@ -1,0 +1,4959 @@
+{
+  "format": 1,
+  "schema_version": 42,
+  "table_count": 54,
+  "tables": {
+    "annotations": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "block_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "chapter_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "'highlight'",
+          "name": "annotation_type",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "label_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "start_offset",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "end_offset",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "''",
+          "name": "selected_text",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "prefix_context",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "suffix_context",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "thread_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "''",
+          "name": "body",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'open'",
+          "name": "status",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "stale",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "label_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "markup_labels"
+        },
+        {
+          "from": "chapter_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "chapters"
+        },
+        {
+          "from": "block_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "manuscript_blocks"
+        },
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "bookmarks": {
+      "columns": [
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "target_type",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "chapter_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "scene_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "start_block_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "end_block_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "start_offset",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "end_offset",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "''",
+          "name": "start_selected_text",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "start_prefix_context",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "start_suffix_context",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "end_selected_text",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "end_prefix_context",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "end_suffix_context",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "stale",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "end_block_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "manuscript_blocks"
+        },
+        {
+          "from": "start_block_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "manuscript_blocks"
+        },
+        {
+          "from": "scene_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "scenes"
+        },
+        {
+          "from": "chapter_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "chapters"
+        },
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "canvas_edges": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "canvas_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "from_node_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "to_node_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "'right'",
+          "name": "from_port",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'left'",
+          "name": "to_port",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "label",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "color",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "marker_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "'solid'",
+          "name": "line_style",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'arrow'",
+          "name": "end_style",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "1.5",
+          "name": "line_width",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": "'curved'",
+          "name": "route_style",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "developmental_hidden",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "marker_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "markup_labels"
+        },
+        {
+          "from": "to_node_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "canvas_nodes"
+        },
+        {
+          "from": "from_node_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "canvas_nodes"
+        },
+        {
+          "from": "canvas_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "canvases"
+        }
+      ]
+    },
+    "canvas_nodes": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "canvas_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "'free'",
+          "name": "node_type",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'rect'",
+          "name": "shape",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "icon",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "100",
+          "name": "x",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": "100",
+          "name": "y",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": null,
+          "name": "lane_position",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "220",
+          "name": "w",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": "130",
+          "name": "h",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": "''",
+          "name": "title",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "body",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'full'",
+          "name": "display_mode",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'left'",
+          "name": "text_align",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "color",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "text_color",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "figure_fill_color",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "figure_stroke_color",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "1.0",
+          "name": "figure_border_width",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": "'back'",
+          "name": "figure_layer",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0.02",
+          "name": "figure_line_x1",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": "0.5",
+          "name": "figure_line_y1",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": "0.98",
+          "name": "figure_line_x2",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": "0.5",
+          "name": "figure_line_y2",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": null,
+          "name": "label_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "chapter_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "scene_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "''",
+          "name": "image_path",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "icon_marker_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "developmental_hidden",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "icon_marker_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "icon_markers"
+        },
+        {
+          "from": "scene_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "scenes"
+        },
+        {
+          "from": "chapter_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "chapters"
+        },
+        {
+          "from": "label_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "markup_labels"
+        },
+        {
+          "from": "canvas_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "canvases"
+        }
+      ]
+    },
+    "canvas_version_items": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "version_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "entity_type",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "entity_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "''",
+          "name": "title",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "x",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": "0",
+          "name": "y",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": null,
+          "name": "lane_position",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "1",
+          "name": "placed",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "version_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "canvas_versions"
+        }
+      ]
+    },
+    "canvas_versions": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "canvas_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "name",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'{}'",
+          "name": "workspace_json",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "canvas_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "canvases"
+        }
+      ]
+    },
+    "canvases": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "parent_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "name",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'blank'",
+          "name": "canvas_type",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'chapters'",
+          "name": "developmental_scope",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "parent_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "canvases"
+        },
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "chapters": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "tab_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "title",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "is_implicit",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "''",
+          "name": "content_html",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "content_hash",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "tab_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "document_tabs"
+        },
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "checkpoint_asset_refs": {
+      "columns": [
+        {
+          "default": null,
+          "name": "checkpoint_id",
+          "not_null": true,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "asset_path",
+          "not_null": true,
+          "pk_position": 2,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "asset_hash",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "asset_hash",
+          "on_delete": "RESTRICT",
+          "to_column": "hash",
+          "to_table": "checkpoint_assets"
+        },
+        {
+          "from": "checkpoint_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "checkpoints"
+        }
+      ]
+    },
+    "checkpoint_assets": {
+      "columns": [
+        {
+          "default": null,
+          "name": "hash",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "payload",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "BLOB"
+        },
+        {
+          "default": null,
+          "name": "byte_size",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": []
+    },
+    "checkpoints": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "scope",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "name",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "source_tab_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "''",
+          "name": "source_tab_title",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "source_tab_created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "source_chapter_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "''",
+          "name": "source_chapter_title",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "source_chapter_created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "source_chapter_position",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "current_source_chapter_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "''",
+          "name": "current_source_chapter_created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "snapshot_blob",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "BLOB"
+        },
+        {
+          "default": null,
+          "name": "snapshot_hash",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "word_count",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "is_safety",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "1",
+          "name": "include_scenes",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "1",
+          "name": "include_markup",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "1",
+          "name": "include_notes",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "comment_messages": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "thread_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "body",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "thread_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "comment_threads"
+        },
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "comment_threads": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "'open'",
+          "name": "status",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "cuts": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "title",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "content_html",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "source_chapter_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "note",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "source_label",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "source_project",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "source_chapter",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "source_scene",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "source_chapter_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "chapters"
+        },
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "document_tabs": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "parent_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "title",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "is_manuscript",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "parent_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "document_tabs"
+        },
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "icon_markers": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "name",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "icon",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "manuscript_blocks": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "tab_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "chapter_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "scene_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": "'paragraph'",
+          "name": "block_type",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'body'",
+          "name": "semantic_style",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "content_html",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "text_content",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "image_path",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "100",
+          "name": "image_width",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "''",
+          "name": "image_footer",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "image_description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "image_row_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "content_hash",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "scene_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "scenes"
+        },
+        {
+          "from": "chapter_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "chapters"
+        },
+        {
+          "from": "tab_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "document_tabs"
+        },
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "map_items": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "line_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "'stop'",
+          "name": "item_type",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "title",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "short_label",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "planned_start",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": null,
+          "name": "planned_end",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": null,
+          "name": "schematic_start",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": null,
+          "name": "schematic_end",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": null,
+          "name": "start_anchor_type",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "start_anchor_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "start_block_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "start_offset",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "end_anchor_type",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "end_anchor_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "end_block_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "end_offset",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "''",
+          "name": "excerpt",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "label_offset",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": "0",
+          "name": "label_pinned",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "break_after",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "source_key",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "end_block_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "manuscript_blocks"
+        },
+        {
+          "from": "start_block_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "manuscript_blocks"
+        },
+        {
+          "from": "line_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "map_lines"
+        }
+      ]
+    },
+    "map_junctions": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "map_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "from_line_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "from_item_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "'point'",
+          "name": "from_edge",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "from_planned_position",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": null,
+          "name": "from_schematic_position",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": null,
+          "name": "to_line_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "to_item_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "'point'",
+          "name": "to_edge",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "to_planned_position",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": null,
+          "name": "to_schematic_position",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": null,
+          "name": "kind",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "to_item_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "map_items"
+        },
+        {
+          "from": "to_line_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "map_lines"
+        },
+        {
+          "from": "from_item_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "map_items"
+        },
+        {
+          "from": "from_line_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "map_lines"
+        },
+        {
+          "from": "map_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "story_maps"
+        }
+      ]
+    },
+    "map_lines": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "map_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "name",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "color",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "1",
+          "name": "visible",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "'manual'",
+          "name": "provenance",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "source_template_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "layout_locked",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "lane_offset",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": "0.0",
+          "name": "planned_start",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": "1.0",
+          "name": "planned_end",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": "0.0",
+          "name": "schematic_start",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": "1.0",
+          "name": "schematic_end",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "map_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "story_maps"
+        }
+      ]
+    },
+    "markup_labels": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "name",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "color",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "projects": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_uid",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "title",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "1",
+          "name": "project_generation",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        }
+      ],
+      "foreign_keys": []
+    },
+    "questionnaire_questions": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "questionnaire_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "prompt",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "required",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "questionnaire_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "questionnaires"
+        }
+      ]
+    },
+    "questionnaires": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "name",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "references_map": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "source_type",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "source_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "target_type",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "target_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "start_block_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "end_block_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "start_offset",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "end_offset",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "''",
+          "name": "excerpt",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "relationship",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "end_block_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "manuscript_blocks"
+        },
+        {
+          "from": "start_block_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "manuscript_blocks"
+        },
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "review_anchors": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "review_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "snapshot_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "start_block_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "end_block_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "start_offset",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "end_offset",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "''",
+          "name": "selected_text",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "prefix_context",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "suffix_context",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "context_hash",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "snapshot_id",
+          "on_delete": "CASCADE",
+          "to_column": "snapshot_id",
+          "to_table": "review_snapshot_blocks"
+        },
+        {
+          "from": "end_block_id",
+          "on_delete": "CASCADE",
+          "to_column": "source_block_id",
+          "to_table": "review_snapshot_blocks"
+        },
+        {
+          "from": "snapshot_id",
+          "on_delete": "CASCADE",
+          "to_column": "snapshot_id",
+          "to_table": "review_snapshot_blocks"
+        },
+        {
+          "from": "start_block_id",
+          "on_delete": "CASCADE",
+          "to_column": "source_block_id",
+          "to_table": "review_snapshot_blocks"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "review_id",
+          "to_table": "review_snapshots"
+        },
+        {
+          "from": "snapshot_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_snapshots"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "reviews"
+        }
+      ]
+    },
+    "review_comment_replies": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "review_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "comment_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "author_kind",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "participant_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "body",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "review_id",
+          "to_table": "review_participants"
+        },
+        {
+          "from": "participant_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_participants"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "review_id",
+          "to_table": "review_comments"
+        },
+        {
+          "from": "comment_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_comments"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "reviews"
+        }
+      ]
+    },
+    "review_comments": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "review_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "participant_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "anchor_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "body",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "tag",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'open'",
+          "name": "status",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "resolved_at",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "review_id",
+          "to_table": "review_anchors"
+        },
+        {
+          "from": "anchor_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_anchors"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "review_id",
+          "to_table": "review_participants"
+        },
+        {
+          "from": "participant_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_participants"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "reviews"
+        }
+      ]
+    },
+    "review_events": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "review_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "participant_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'local'",
+          "name": "origin",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "event_type",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "entity_type",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "entity_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'{}'",
+          "name": "payload_json",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "review_id",
+          "to_table": "review_participants"
+        },
+        {
+          "from": "participant_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_participants"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "reviews"
+        }
+      ]
+    },
+    "review_general_feedback": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "review_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "snapshot_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "participant_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "body",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "review_id",
+          "to_table": "review_participants"
+        },
+        {
+          "from": "participant_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_participants"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "review_id",
+          "to_table": "review_snapshots"
+        },
+        {
+          "from": "snapshot_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_snapshots"
+        },
+        {
+          "from": "snapshot_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_snapshots"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "reviews"
+        }
+      ]
+    },
+    "review_highlights": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "review_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "participant_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "anchor_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "tag",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'open'",
+          "name": "status",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "resolved_at",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "review_id",
+          "to_table": "review_anchors"
+        },
+        {
+          "from": "anchor_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_anchors"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "review_id",
+          "to_table": "review_participants"
+        },
+        {
+          "from": "participant_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_participants"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "reviews"
+        }
+      ]
+    },
+    "review_imports": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "review_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "participant_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "package_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "format_version",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "payload_hash",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "imported_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "review_id",
+          "to_table": "review_participants"
+        },
+        {
+          "from": "participant_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_participants"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "reviews"
+        }
+      ]
+    },
+    "review_marker_labels": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "name",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "color",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "review_markers": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "review_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "marker_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "marker_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_marker_labels"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "reviews"
+        }
+      ]
+    },
+    "review_participants": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "review_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "display_name",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'not_started'",
+          "name": "status",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "started_at",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "completed_at",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "reviews"
+        }
+      ]
+    },
+    "review_question_answers": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "review_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "snapshot_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "question_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "participant_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "answer_text",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "review_id",
+          "to_table": "review_participants"
+        },
+        {
+          "from": "participant_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_participants"
+        },
+        {
+          "from": "snapshot_id",
+          "on_delete": "CASCADE",
+          "to_column": "snapshot_id",
+          "to_table": "review_snapshot_questions"
+        },
+        {
+          "from": "question_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_snapshot_questions"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "review_id",
+          "to_table": "review_snapshots"
+        },
+        {
+          "from": "snapshot_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_snapshots"
+        },
+        {
+          "from": "question_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_snapshot_questions"
+        },
+        {
+          "from": "snapshot_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_snapshots"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "reviews"
+        }
+      ]
+    },
+    "review_questionnaires": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "review_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "questionnaire_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "questionnaire_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "questionnaires"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "reviews"
+        }
+      ]
+    },
+    "review_scope_chapters": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "review_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "chapter_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "chapter_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "chapters"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "reviews"
+        }
+      ]
+    },
+    "review_scope_scenes": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "review_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "scene_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "scene_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "scenes"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "reviews"
+        }
+      ]
+    },
+    "review_snapshot_blocks": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "snapshot_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "source_block_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "source_tab_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "source_chapter_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "source_scene_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "ordinal",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": null,
+          "name": "block_type",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "semantic_style",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "content_html",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "text_content",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "image_path",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "100",
+          "name": "image_width",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "''",
+          "name": "image_footer",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "image_description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "image_row_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "content_hash",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "snapshot_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_snapshots"
+        }
+      ]
+    },
+    "review_snapshot_chapters": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "snapshot_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "source_chapter_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "source_tab_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "ordinal",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "title",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "is_implicit",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "snapshot_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_snapshots"
+        }
+      ]
+    },
+    "review_snapshot_checkpoints": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "snapshot_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "checkpoint_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "ordinal",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "source_chapter_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "checkpoint_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "checkpoints"
+        },
+        {
+          "from": "snapshot_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_snapshots"
+        }
+      ]
+    },
+    "review_snapshot_markers": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "snapshot_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "source_marker_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "name",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "color",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "snapshot_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_snapshots"
+        }
+      ]
+    },
+    "review_snapshot_questions": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "snapshot_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "source_questionnaire_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "source_question_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "questionnaire_name",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "prompt",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "required",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "snapshot_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_snapshots"
+        }
+      ]
+    },
+    "review_snapshot_scenes": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "snapshot_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "source_scene_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "source_tab_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "ordinal",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "title",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "snapshot_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_snapshots"
+        }
+      ]
+    },
+    "review_snapshots": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "review_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "round_number",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "'open'",
+          "name": "status",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "source_generation",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "scope_type",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "permission_read",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "permission_comment",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "permission_suggest",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "permission_feedback",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "content_hash",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "paused_at",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "closed_at",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "reviews"
+        }
+      ]
+    },
+    "review_suggestions": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "review_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "participant_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "anchor_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "operation",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "original_text",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "proposed_text",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'open'",
+          "name": "status",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "applied_generation",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "resolved_at",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "review_id",
+          "to_table": "review_anchors"
+        },
+        {
+          "from": "anchor_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_anchors"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "review_id",
+          "to_table": "review_participants"
+        },
+        {
+          "from": "participant_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "review_participants"
+        },
+        {
+          "from": "review_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "reviews"
+        }
+      ]
+    },
+    "reviews": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "name",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "'draft'",
+          "name": "status",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'private'",
+          "name": "reviewer_visibility",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "started_at",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "closed_at",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'manuscript'",
+          "name": "scope_type",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "1",
+          "name": "permission_read",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "permission_comment",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "permission_suggest",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "permission_feedback",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "scenes": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "tab_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "REAL"
+        },
+        {
+          "default": null,
+          "name": "title",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "tab_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "document_tabs"
+        },
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "storage_meta": {
+      "columns": [
+        {
+          "default": null,
+          "name": "key",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "value",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": []
+    },
+    "story_maps": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "name",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'horizontal'",
+          "name": "orientation",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'scaled'",
+          "name": "layout_mode",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'minimal'",
+          "name": "label_mode",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'chapters'",
+          "name": "ruler",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'#f3f3f1'",
+          "name": "background",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "task_milestones": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "task_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": "0",
+          "name": "position",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "title",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "0",
+          "name": "completed",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "task_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "tasks"
+        },
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "tasks": {
+      "columns": [
+        {
+          "default": null,
+          "name": "id",
+          "not_null": false,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "title",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "''",
+          "name": "description",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": "'open'",
+          "name": "status",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "archived_from_status",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "marker_id",
+          "not_null": false,
+          "pk_position": 0,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "created_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "marker_id",
+          "on_delete": "SET NULL",
+          "to_column": "id",
+          "to_table": "markup_labels"
+        },
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    },
+    "ui_state": {
+      "columns": [
+        {
+          "default": null,
+          "name": "project_id",
+          "not_null": true,
+          "pk_position": 1,
+          "type": "INTEGER"
+        },
+        {
+          "default": null,
+          "name": "key",
+          "not_null": true,
+          "pk_position": 2,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "value_json",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        },
+        {
+          "default": null,
+          "name": "updated_at",
+          "not_null": true,
+          "pk_position": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "from": "project_id",
+          "on_delete": "CASCADE",
+          "to_column": "id",
+          "to_table": "projects"
+        }
+      ]
+    }
+  }
+}

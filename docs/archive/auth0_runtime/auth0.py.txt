@@ -1,0 +1,227 @@
+from __future__ import annotations
+
+"""Auth0 boundary adapter for the provider-neutral OIDC engine.
+
+Checkpoint 4 deliberately does not expose login/callback HTTP routes. This module owns
+only the Auth0 application/configuration boundary: exact application origin/callback
+rules, environment separation, a symbolic client-secret reference, and construction of
+the generic :class:`auth.oidc.OidcClient` with an injected secret loader.
+
+The secret itself is never part of :class:`Auth0BoundaryConfig`, never returned by
+metadata(), and never belongs in OpenTofu state. Local Breadmaker does not instantiate
+this adapter.
+"""
+
+import urllib.parse
+from dataclasses import dataclass
+from typing import Callable
+
+from auth.oidc import OidcClient, OidcError, OidcProviderConfig, OidcTransactionStore
+
+
+class Auth0BoundaryError(RuntimeError):
+    """Stable non-secret Auth0 boundary/configuration error."""
+
+
+_ENVIRONMENTS = frozenset({'development', 'staging', 'production'})
+_CALLBACK_PATH = '/auth/callback'
+_ACCOUNT_LINK_CALLBACK_PATH = '/auth/link/callback'
+_STEP_UP_CALLBACK_PATH = '/auth/step-up/callback'
+_ALLOWED_CALLBACK_PATHS = frozenset({_CALLBACK_PATH, _ACCOUNT_LINK_CALLBACK_PATH, _STEP_UP_CALLBACK_PATH})
+_DEFAULT_LOGOUT_PATH = '/'
+_DEFAULT_SCOPES = ('openid', 'profile', 'email')
+
+
+def _is_loopback(hostname: str | None) -> bool:
+    return str(hostname or '').lower() in {'127.0.0.1', 'localhost', '::1'}
+
+
+def _decoded_variants(value: str) -> tuple[str, ...]:
+    current=str(value)
+    variants=[current]
+    for _ in range(4):
+        decoded=urllib.parse.unquote(current)
+        if decoded==current:break
+        variants.append(decoded);current=decoded
+    return tuple(variants)
+
+
+def _normalize_origin(value: str, *, environment: str) -> str:
+    raw = str(value or '').strip()
+    if not raw or '*' in raw:
+        raise Auth0BoundaryError('AUTH0_APPLICATION_ORIGIN_INVALID')
+    parts = urllib.parse.urlsplit(raw)
+    if parts.query or parts.fragment or parts.username or parts.password:
+        raise Auth0BoundaryError('AUTH0_APPLICATION_ORIGIN_INVALID')
+    if not parts.hostname or parts.path not in {'', '/'}:
+        raise Auth0BoundaryError('AUTH0_APPLICATION_ORIGIN_INVALID')
+    if parts.scheme == 'https':
+        pass
+    elif environment == 'development' and parts.scheme == 'http' and _is_loopback(parts.hostname):
+        pass
+    else:
+        raise Auth0BoundaryError('AUTH0_APPLICATION_ORIGIN_HTTPS_REQUIRED')
+    if environment in {'staging', 'production'} and _is_loopback(parts.hostname):
+        raise Auth0BoundaryError('AUTH0_APPLICATION_ORIGIN_LOOPBACK_FORBIDDEN')
+    port = f':{parts.port}' if parts.port is not None else ''
+    host = parts.hostname
+    if ':' in host and not host.startswith('['):
+        host = f'[{host}]'
+    return f'{parts.scheme}://{host}{port}'
+
+
+def _normalize_issuer(value: str, *, environment: str) -> str:
+    raw = str(value or '').strip()
+    if not raw or '*' in raw:
+        raise Auth0BoundaryError('AUTH0_ISSUER_INVALID')
+    parts = urllib.parse.urlsplit(raw)
+    if parts.query or parts.fragment or parts.username or parts.password or not parts.hostname:
+        raise Auth0BoundaryError('AUTH0_ISSUER_INVALID')
+    if parts.path not in {'', '/'}:
+        raise Auth0BoundaryError('AUTH0_ISSUER_PATH_INVALID')
+    if parts.scheme == 'https':
+        pass
+    elif environment == 'development' and parts.scheme == 'http' and _is_loopback(parts.hostname):
+        pass
+    else:
+        raise Auth0BoundaryError('AUTH0_ISSUER_HTTPS_REQUIRED')
+    if environment in {'staging', 'production'} and _is_loopback(parts.hostname):
+        raise Auth0BoundaryError('AUTH0_ISSUER_LOOPBACK_FORBIDDEN')
+    port = f':{parts.port}' if parts.port is not None else ''
+    host = parts.hostname
+    if ':' in host and not host.startswith('['):
+        host = f'[{host}]'
+    return f'{parts.scheme}://{host}{port}/'
+
+
+@dataclass(frozen=True)
+class Auth0BoundaryConfig:
+    """Non-secret Auth0 application boundary.
+
+    ``client_secret_ref`` is an opaque identifier resolved by the deployment/runtime
+    secret channel. It is not the secret value. The actual value is supplied only to
+    :meth:`build_oidc_client` through ``secret_loader``.
+    """
+
+    environment: str
+    issuer: str
+    client_id: str
+    application_origin: str
+    client_secret_ref: str
+    callback_path: str = _CALLBACK_PATH
+    logout_path: str = _DEFAULT_LOGOUT_PATH
+    scopes: tuple[str, ...] = _DEFAULT_SCOPES
+
+    def __post_init__(self) -> None:
+        environment = str(self.environment or '').strip().lower()
+        if environment not in _ENVIRONMENTS:
+            raise Auth0BoundaryError('AUTH0_ENVIRONMENT_INVALID')
+        client_id = str(self.client_id or '').strip()
+        secret_ref = str(self.client_secret_ref or '').strip()
+        if not client_id or len(client_id) > 1024:
+            raise Auth0BoundaryError('AUTH0_CLIENT_ID_INVALID')
+        if not secret_ref or len(secret_ref) > 256 or any(ch.isspace() for ch in secret_ref):
+            raise Auth0BoundaryError('AUTH0_CLIENT_SECRET_REF_INVALID')
+        callback_path = str(self.callback_path or '')
+        if callback_path not in _ALLOWED_CALLBACK_PATHS:
+            raise Auth0BoundaryError('AUTH0_CALLBACK_PATH_INVALID')
+        logout_path = str(self.logout_path or '').strip()
+        logout_parts = urllib.parse.urlsplit(logout_path)
+        logout_variants = _decoded_variants(logout_path)
+        if (
+            not logout_path.startswith('/')
+            or logout_parts.scheme
+            or logout_parts.netloc
+            or logout_parts.fragment
+            or any(
+                variant.startswith('//')
+                or '\\' in variant
+                or any(ord(ch) < 0x20 or ord(ch) == 0x7f for ch in variant)
+                for variant in logout_variants
+            )
+        ):
+            raise Auth0BoundaryError('AUTH0_LOGOUT_PATH_INVALID')
+        object.__setattr__(self, 'logout_path', logout_path)
+        scopes = tuple(dict.fromkeys(str(scope).strip() for scope in self.scopes if str(scope).strip()))
+        if scopes != _DEFAULT_SCOPES:
+            raise Auth0BoundaryError('AUTH0_SCOPE_SET_INVALID')
+        object.__setattr__(self, 'environment', environment)
+        object.__setattr__(self, 'issuer', _normalize_issuer(self.issuer, environment=environment))
+        object.__setattr__(self, 'client_id', client_id)
+        object.__setattr__(self, 'application_origin', _normalize_origin(self.application_origin, environment=environment))
+        object.__setattr__(self, 'client_secret_ref', secret_ref)
+        object.__setattr__(self, 'scopes', scopes)
+
+    @property
+    def callback_uri(self) -> str:
+        return f'{self.application_origin}{self.callback_path}'
+
+    @property
+    def logout_return_uri(self) -> str:
+        return f'{self.application_origin}{self.logout_path}'
+
+    @property
+    def allow_insecure_loopback(self) -> bool:
+        return self.environment == 'development'
+
+    def for_callback_path(self, callback_path: str) -> 'Auth0BoundaryConfig':
+        """Clone the same Auth0 application boundary for another exact callback.
+
+        Only explicitly reviewed server-owned authentication callbacks are admitted.
+        Wildcards and arbitrary runtime paths remain forbidden.
+        """
+        return Auth0BoundaryConfig(
+            environment=self.environment,
+            issuer=self.issuer,
+            client_id=self.client_id,
+            application_origin=self.application_origin,
+            client_secret_ref=self.client_secret_ref,
+            callback_path=callback_path,
+            logout_path=self.logout_path,
+            scopes=self.scopes,
+        )
+
+    def metadata(self) -> dict[str, object]:
+        return {
+            'broker': 'auth0',
+            'environment': self.environment,
+            'issuer': self.issuer,
+            'client_id': self.client_id,
+            'application_origin': self.application_origin,
+            'callback_uri': self.callback_uri,
+            'logout_return_uri': self.logout_return_uri,
+            'client_secret_ref': self.client_secret_ref,
+            'application_type': 'regular_web',
+            'universal_login': True,
+            'grant_types': ['authorization_code'],
+            'scopes': list(self.scopes),
+            'cross_origin_auth': False,
+            'browser_token_exposure': False,
+        }
+
+    def build_oidc_client(
+        self,
+        *,
+        secret_loader: Callable[[str], str],
+        transactions: OidcTransactionStore | None = None,
+    ) -> OidcClient:
+        try:
+            secret = str(secret_loader(self.client_secret_ref) or '')
+        except Exception as exc:  # secret-manager adapters must not leak backend detail
+            raise Auth0BoundaryError('AUTH0_CLIENT_SECRET_UNAVAILABLE') from exc
+        if not secret or len(secret) > 16384:
+            raise Auth0BoundaryError('AUTH0_CLIENT_SECRET_UNAVAILABLE')
+        try:
+            config = OidcProviderConfig(
+                issuer=self.issuer,
+                client_id=self.client_id,
+                client_secret=secret,
+                redirect_uri=self.callback_uri,
+                scopes=self.scopes,
+                token_endpoint_auth_method='client_secret_basic',
+                allow_insecure_loopback=self.allow_insecure_loopback,
+                require_same_origin_endpoints=True,
+            )
+        except OidcError as exc:
+            raise Auth0BoundaryError(str(exc)) from exc
+        return OidcClient(config, transactions=transactions)

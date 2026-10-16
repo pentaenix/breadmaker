@@ -1,0 +1,572 @@
+/* 5.3.0 Canvas UI alignment */
+.canvas-rail-head{height:43px;min-height:43px;padding:6px 8px 6px 7px;border-bottom:1px solid var(--line);text-transform:uppercase;letter-spacing:.04em}
+.canvas-rail{width:236px;min-width:196px}
+.canvas-rail-head .tabs-head-title{min-width:0}.canvas-collection-more{flex:none}
+.canvas-rail.collapsed{width:58px;min-width:58px}.canvas-rail.collapsed .canvas-rail-head{justify-content:center;padding-inline:5px}.canvas-rail.collapsed .canvas-rail-head .nav-section-label,.canvas-rail.collapsed .canvas-rail-head .nav-head-actions{display:none}.canvas-rail.collapsed #toggleRail{width:38px;height:31px}
+.canvas-view-control{position:relative;display:flex;align-items:center}.canvas-view-popover{width:254px}.canvas-tool-button svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.canvas-view-zoom{padding:4px 8px 7px}.canvas-view-zoom-head{font-size:11px;color:var(--muted);margin-bottom:6px}.canvas-view-zoom-controls{display:grid;grid-template-columns:34px 1fr 34px 34px;gap:5px;align-items:center}.view-zoom-button,.view-zoom-value{height:30px;border:1px solid var(--line);background:var(--surface);border-radius:5px}.view-zoom-fit{display:grid;place-items:center;padding:0}.view-zoom-fit svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.view-zoom-button:hover,.view-zoom-value:hover{background:var(--accent-soft);border-color:var(--line2)}.view-zoom-value{font-size:11px;font-variant-numeric:tabular-nums}
+#canvasTextSize{width:100%;height:18px;margin:0;-webkit-appearance:none;appearance:none;background:transparent;outline:0;accent-color:var(--accent);cursor:pointer}#canvasTextSize::-webkit-slider-runnable-track{height:4px;border-radius:999px;background:var(--line2)}#canvasTextSize::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:15px;height:15px;border-radius:50%;margin-top:-5.5px;border:2px solid var(--surface);background:var(--text);box-shadow:0 0 0 1px var(--line2)}#canvasTextSize::-moz-range-track{height:4px;border:0;border-radius:999px;background:var(--line2)}#canvasTextSize::-moz-range-thumb{width:13px;height:13px;border-radius:50%;border:2px solid var(--surface);background:var(--text);box-shadow:0 0 0 1px var(--line2)}#canvasTextSize:hover::-webkit-slider-thumb{background:var(--accent)}#canvasTextSize:hover::-moz-range-thumb{background:var(--accent)}
+.canvas-node:not(.routing-node):not(.label-node):not(.image-object){font-family:var(--canvas-font-family,Arial,sans-serif);font-size:var(--canvas-font-size,14px)}.canvas-node.label-node{font-family:var(--canvas-font-family,Arial,sans-serif)}
+
+/* 5.3.1 — Developmental Canvas apply preview */
+.modal-card:has(.developmental-apply-preview){width:min(900px,calc(100% - 30px))}
+.developmental-apply-preview{gap:12px;}
+.developmental-apply-copy{margin:0;color:var(--muted);line-height:1.5}
+.developmental-apply-summary{font-size:12px;color:var(--muted);padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface2)}
+.developmental-apply-summary.has-changes{color:var(--text);border-color:color-mix(in srgb,var(--accent) 38%,var(--line));background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
+.developmental-apply-warning{display:flex;flex-direction:column;gap:3px;padding:9px 10px;border:1px solid color-mix(in srgb,var(--danger) 42%,var(--line));border-radius:6px;background:color-mix(in srgb,var(--danger) 5%,var(--surface));font-size:12px;line-height:1.4}
+.developmental-apply-warning span{color:var(--muted)}
+.developmental-order-compare{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;min-height:260px}
+.developmental-order-column{min-width:0;border:1px solid var(--line);border-radius:7px;background:var(--surface);overflow:hidden}
+.developmental-order-head{height:38px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 11px;border-bottom:1px solid var(--line);background:var(--surface2)}
+.developmental-order-head b{font-size:12px}.developmental-order-head span{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.developmental-order-list{max-height:min(460px,52vh);padding:7px;}
+.developmental-order-group+.developmental-order-group{margin-top:5px}
+.developmental-order-row{display:grid;grid-template-columns:25px 50px minmax(0,1fr);align-items:center;gap:7px;min-height:31px;padding:4px 7px;border-radius:5px;border-left:2px solid transparent}
+.developmental-order-row.chapter{font-weight:700;background:var(--surface2)}
+.developmental-order-row.scene{margin-left:18px;color:var(--muted)}
+.developmental-order-row.changed{border-left-color:var(--accent);background:var(--accent-soft);color:var(--text)}
+.developmental-order-number{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+.developmental-order-kind{font-size:9px;text-transform:uppercase;letter-spacing:.045em;color:var(--muted)}
+.developmental-order-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.developmental-order-empty{padding:28px 12px;text-align:center;color:var(--muted);font-size:12px}
+.developmental-apply-safety{color:var(--muted);font-size:11px;line-height:1.4;}
+@media(max-width:700px){.developmental-order-compare{grid-template-columns:1fr}.developmental-order-list{max-height:32vh}}
+/* Icon toolbar buttons must still honor the shared hidden state. */
+
+/* 5.3.2 — Canvas creation is a deliberate modal flow. */
+.modal-card:has(.canvas-create-form){width:min(620px,calc(100% - 30px))}
+.canvas-create-form{display:flex;flex-direction:column;gap:2px}
+.canvas-create-types{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:6px}
+.canvas-create-type{min-width:0;min-height:92px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;padding:10px 11px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--text)}
+.canvas-create-type:hover{background:var(--surface2);border-color:var(--line2)}
+.canvas-create-type.active{border-color:var(--accent);background:var(--accent-soft)}
+.canvas-create-type b{font-size:12px}
+.canvas-create-type span{font-size:10.5px;line-height:1.4;color:var(--muted)}
+@media(max-width:620px){.canvas-create-types{grid-template-columns:1fr}.canvas-create-type{min-height:0}}
+
+/* 5.3.3 — Developmental Canvas chooses one manuscript structure and reads left-to-right. */
+.canvas-developmental-scope{margin-top:2px}.canvas-scope-options{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:6px}.canvas-scope-tooltip{min-width:0}.canvas-scope-option{width:100%;min-height:70px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:9px 10px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--text)}.canvas-scope-option:hover{background:var(--surface2);border-color:var(--line2)}.canvas-scope-option.active{border-color:var(--accent);background:var(--accent-soft)}.canvas-scope-option b{font-size:12px}.canvas-scope-option span{font-size:10.5px;line-height:1.35;color:var(--muted)}.canvas-scope-option.disabled{opacity:.42;cursor:not-allowed}.canvas-scope-option.disabled:hover{background:var(--surface);border-color:var(--line)}
+/* The comparison window itself never scrolls; only the two compact order lists do. */
+.modal-card:has(.developmental-apply-preview){width:min(880px,calc(100% - 24px));height:min(650px,calc(100% - 24px));max-height:none;overflow:hidden;display:flex;flex-direction:column}.modal-card:has(.developmental-apply-preview) #modalBody{min-height:0;overflow:hidden;display:flex;flex:1}.developmental-apply-preview{min-height:0;display:flex;flex:1;flex-direction:column;gap:8px}.developmental-apply-preview .developmental-apply-copy{margin:0;font-size:11px;line-height:1.35}.developmental-order-compare{min-height:0;flex:1}.developmental-order-column{min-height:0;display:flex;flex-direction:column}.developmental-order-list{min-height:0;max-height:none;flex:1;overflow:auto;padding:5px}.developmental-order-head{height:34px}.developmental-order-row{min-height:27px;padding:3px 6px}.developmental-order-row.scene{margin-left:14px}.developmental-apply-safety{margin:0}
+@media(max-width:700px){.canvas-scope-options{grid-template-columns:1fr}.developmental-order-compare{grid-template-columns:1fr;grid-template-rows:repeat(2,minmax(0,1fr));gap:7px}.developmental-order-list{max-height:none}.modal-card:has(.developmental-apply-preview){height:calc(100% - 16px)}}
+
+/* 5.4.0 — one Canvas engine, with optional Developmental/Timeline guides. */
+.canvas-guides{position:absolute;inset:0;width:6000px;height:4000px;pointer-events:none;z-index:0}
+.canvas-developmental-lane{position:absolute;left:42px;right:42px;top:46px;height:240px;border:1px solid color-mix(in srgb,var(--line) 78%,transparent);border-radius:10px;background:color-mix(in srgb,var(--surface) 62%,transparent);box-shadow:inset 0 -1px 0 color-mix(in srgb,var(--line) 70%,transparent)}
+.canvas-guide-title{position:absolute;left:22px;top:16px;text-transform:uppercase;letter-spacing:.08em;font-size:10px;font-weight:750;color:var(--muted)}
+.canvas-guide-subtitle{position:absolute;left:22px;top:36px;font-size:10.5px;color:color-mix(in srgb,var(--muted) 82%,transparent)}
+.canvas-developmental-desk-label{position:absolute;left:64px;top:318px;text-transform:uppercase;letter-spacing:.08em;font-size:10px;font-weight:700;color:color-mix(in srgb,var(--muted) 70%,transparent)}
+.canvas-developmental-insert-line{position:absolute;top:94px;height:176px;width:2px;border-radius:2px;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent)}
+.canvas-node.developmental-placed{box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+.canvas-node.developmental-missing{min-height:86px!important;border-style:dashed!important;border-color:color-mix(in srgb,var(--muted) 68%,transparent)!important;background:color-mix(in srgb,var(--surface2) 65%,transparent)!important;color:var(--muted)!important;opacity:.72;box-shadow:none!important;pointer-events:auto}
+.canvas-node.developmental-missing .node-title{text-decoration:line-through;text-decoration-thickness:1px}
+.developmental-missing-remove{position:absolute;right:5px;top:5px;width:24px;height:24px;border:0;border-radius:4px;background:transparent;color:var(--muted);font-size:16px;cursor:pointer}.developmental-missing-remove:hover{background:var(--surface);color:var(--text)}
+.canvas-version-nav{display:grid;grid-template-columns:34px 1fr 34px;gap:8px;align-items:center}.canvas-version-nav>div{min-width:0;display:flex;flex-direction:column;gap:2px;text-align:center}.canvas-version-nav>div b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.canvas-version-nav>button{height:30px}
+.canvas-version-missing-row{display:flex;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}.canvas-version-missing-row:first-of-type{border-top:0}.canvas-version-missing-row span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.developmental-apply-note{padding:7px 9px;border-radius:5px;background:var(--surface2);font-size:11px;color:var(--muted);margin-bottom:8px}
+
+/* =========================================================
+   5.4.1 — Developmental Structure Lane is a dock, not Canvas world geometry
+   ========================================================= */
+.developmental-structure-dock{
+  flex:none;
+  min-width:0;
+  height:118px;
+  padding:8px 10px 9px;
+  border-bottom:1px solid var(--line);
+  background:color-mix(in srgb,var(--surface) 96%,var(--bg));
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.developmental-structure-head{gap:12px;}
+.developmental-structure-head>div{min-width:0;display:flex;align-items:baseline;gap:10px;overflow:hidden}
+.developmental-structure-head b{flex:none;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.developmental-structure-head b em{font-style:italic;font-weight:400;text-transform:none;letter-spacing:0;color:color-mix(in srgb,var(--muted) 78%,transparent)}
+.developmental-structure-head span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;color:var(--muted)}
+
+.developmental-lane-viewport{min-width:0;flex:1;overflow-x:auto;overflow-y:hidden;scrollbar-gutter:stable;overscroll-behavior-x:contain;border:1px solid var(--line);border-radius:7px;background:color-mix(in srgb,var(--surface2) 72%,transparent);outline:0}
+.developmental-lane-viewport:focus-visible{border-color:var(--line2)}
+.developmental-lane-items{height:100%;width:max-content;min-width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;position:relative}
+.developmental-lane-empty{padding:0 8px;color:var(--muted);font-size:11px}
+.developmental-structural-tile,.developmental-planning-tile,.developmental-missing-tile{position:relative;flex:none;height:52px;border:1px solid var(--line2);background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.06);user-select:none;-webkit-user-select:none}
+.developmental-structural-tile{width:143px;border-radius:6px;display:flex;align-items:center;padding:0 9px;cursor:grab;font-family:var(--canvas-font-family,Arial,sans-serif)}
+.developmental-structural-tile:active{cursor:grabbing}
+.developmental-structural-tile.selected,.developmental-planning-tile.selected{outline:2px solid var(--accent);outline-offset:1px}
+.developmental-structural-tile .developmental-tile-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:700}
+.developmental-structural-tile .developmental-tile-kind{flex:none;margin-right:8px;font-size:9px;text-transform:uppercase;letter-spacing:.055em;color:var(--muted)}
+.developmental-planning-tile{width:220px;border-radius:4px;padding:12px 10px 4px;overflow:hidden;font-family:var(--canvas-font-family,Arial,sans-serif)}
+.developmental-planning-tile .node-drag-strip{display:block;position:absolute;left:0;right:0;top:0;height:8px;background:color-mix(in srgb,var(--line2) 48%,transparent);cursor:grab}
+.developmental-planning-tile .developmental-planning-title{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.developmental-planning-tile .developmental-planning-body{margin-top:2px;color:var(--muted);font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.developmental-planning-tile::after{content:var(--i18n-287cdd3aa816, "{{i18n:css.content.content.e1c6b5c4}}");position:absolute;right:6px;bottom:4px;font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:color-mix(in srgb,var(--muted) 75%,transparent)}
+.developmental-missing-tile{width:143px;border-style:dashed;border-radius:6px;display:flex;align-items:center;gap:7px;padding:0 34px 0 11px;color:var(--muted);opacity:.72}
+.developmental-missing-tile .developmental-tile-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;font-size:11px;font-weight:650}
+.developmental-missing-tile .developmental-missing-remove{right:4px;top:13px}
+.developmental-lane-insert{flex:none;width:2px;height:46px;margin:0 -5px;border-radius:2px;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent)}
+.canvas-shell.developmental-active .canvas-mode-overlay{top:171px}
+.canvas-node.developmental-unplaced{width:143px!important;min-width:143px!important;min-height:52px!important;height:52px!important;border-radius:6px!important;padding:0!important;display:flex!important;align-items:center!important;cursor:grab;outline:1px dashed color-mix(in srgb,var(--muted) 48%,transparent);outline-offset:3px;overflow:visible}
+.canvas-node.developmental-unplaced .node-drag-strip,.canvas-node.developmental-unplaced .node-body,.canvas-node.developmental-unplaced .node-resize-handle{display:none!important}
+.canvas-node.developmental-unplaced .node-inner{padding:0 9px!important;width:100%;overflow:hidden!important}
+.canvas-node.developmental-unplaced .node-title-line{align-items:center!important}
+.canvas-node.developmental-unplaced .node-title{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.canvas-node.developmental-unplaced .node-port{opacity:0}
+.canvas-node.developmental-unplaced:hover .node-port,.canvas-node.developmental-unplaced.selected .node-port{opacity:1}
+.canvas-developmental-desk-label{top:24px!important}
+/* Legacy 5.4 world-space lane is intentionally suppressed in 5.4.1. */
+.canvas-guides .canvas-developmental-lane,.canvas-guides .canvas-developmental-insert-line{display:none!important}
+.canvas-node.developmental-unplaced .developmental-desk-tile{width:100%;min-width:0;display:flex;align-items:center;padding:0 9px;overflow:hidden;font-family:var(--canvas-font-family,Arial,sans-serif)}
+.canvas-node.developmental-unplaced .developmental-desk-tile .developmental-tile-kind{flex:none;margin-right:8px;font-size:9px;text-transform:uppercase;letter-spacing:.055em;color:var(--muted)}
+.canvas-node.developmental-unplaced .developmental-desk-tile .developmental-tile-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:700}
+
+/* =========================================================
+   5.4.2 — Canvas UI follows Manuscript workspace standards
+   ========================================================= */
+/* Canvas toolbar behaves exactly like Manuscript when a right panel opens:
+   one row, fixed-size controls, horizontal overflow instead of compressed icons. */
+.canvas-toolbar{
+  min-width:0;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:thin;
+}
+.canvas-toolbar>*{flex-shrink:0}
+.canvas-toolbar>.toolbar-spacer{flex:1 1 auto;min-width:8px}
+.canvas-toolbar .toolbar-button,.canvas-toolbar .canvas-tool-button{flex:none}
+.canvas-toolbar .canvas-name{flex:0 1 230px;min-width:90px;max-width:300px}
+
+/* Canvas inspectors use the same desktop push-layout and compact panel frame as
+   Notes / Markup / Checkpoints / Cuts. Only small screens may overlay. */
+#canvasToolPanel.canvas-tool-panel{
+  width:290px;
+  min-width:255px;
+  flex:0 0 290px;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  font-size:14px;
+}
+#canvasToolPanel.canvas-tool-panel.hidden{display:none!important}
+#canvasToolPanel .panel-head{flex:none}
+#canvasPanelBody.canvas-panel-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden}
+#canvasPanelBody .canvas-panel-field{padding:13px;border-bottom:1px solid var(--line)}
+#canvasPanelBody .canvas-panel-field:last-child{border-bottom:0}
+#canvasPanelBody .canvas-panel-field>label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+#canvasPanelBody .canvas-panel-field>.panel-hint:first-child{margin-top:0}
+#canvasPanelBody .canvas-panel-field>.panel-hint:last-child{margin-bottom:0}
+#canvasPanelBody .full-soft{min-height:32px}
+@media(max-width:640px){
+  #canvasToolPanel.canvas-tool-panel{
+    position:absolute;
+    right:0;top:0;bottom:0;
+    z-index:35;
+    box-shadow:var(--shadow);
+  }
+}
+
+/* Proposed Order header is intentionally quiet; instructions live in the
+   toolbar tooltip instead of consuming horizontal lane space. */
+.developmental-structure-head{display:flex;align-items:center;gap:10px;min-width:0;padding:0 2px}
+.developmental-structure-head>b{flex:none;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.developmental-structure-count{margin-left:auto!important;flex:none;font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.canvas-shell.developmental-active .canvas-mode-overlay{top:53px}
+.canvas-shell.developmental-lane-open .canvas-mode-overlay{top:171px}
+
+/* One canonical compact size for structural tiles in both locations. */
+:root{--developmental-tile-width:143px;--developmental-tile-height:52px}
+.developmental-structural-tile,
+.developmental-missing-tile,
+.canvas-node.developmental-unplaced{
+  width:var(--developmental-tile-width)!important;
+  min-width:var(--developmental-tile-width)!important;
+  height:var(--developmental-tile-height)!important;
+  min-height:var(--developmental-tile-height)!important;
+  max-height:var(--developmental-tile-height)!important;
+  box-sizing:border-box;
+}
+
+/* =========================================================
+   5.4.4 — immediate Developmental ordering feedback
+   ========================================================= */
+/* A lifted lane tile leaves a full-size source slot behind until pointer-up.
+   The target slot opens to a full tile width before drop, so reordering reads
+   like moving cells rather than aiming at a 2px insertion marker. */
+.developmental-drag-source{visibility:hidden!important;pointer-events:none!important}
+.developmental-lane-drop-gap{
+  flex:none;
+  width:var(--developmental-gap-width,var(--developmental-tile-width));
+  height:52px;
+  box-sizing:border-box;
+  border:1px dashed color-mix(in srgb,var(--accent) 62%,var(--line));
+  border-radius:6px;
+  background:color-mix(in srgb,var(--accent) 7%,var(--surface2));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 8%,transparent);
+  animation:developmental-drop-gap-open 145ms cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes developmental-drop-gap-open{
+  from{width:0;opacity:.18}
+  to{width:var(--developmental-gap-width,var(--developmental-tile-width));opacity:1}
+}
+.developmental-drag-proxy{
+  position:fixed!important;
+  z-index:10020!important;
+  margin:0!important;
+  pointer-events:none!important;
+  transform:none!important;
+  transform-origin:0 0!important;
+  opacity:.94;
+  cursor:grabbing!important;
+  box-sizing:border-box;
+  box-shadow:0 10px 28px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.12)!important;
+  transition:none!important;
+}
+.developmental-drag-proxy .node-port,.developmental-drag-proxy .node-resize-handle,.developmental-drag-proxy button{display:none!important}
+
+/* Structural desk tiles use the whole canonical 52px height for alignment.
+   This keeps their label visually centered after leaving Structure Order. */
+.canvas-node.developmental-unplaced{justify-content:center!important}
+.canvas-node.developmental-unplaced .developmental-desk-tile{height:100%;box-sizing:border-box;align-items:center!important}
+.canvas-node.developmental-unplaced .developmental-desk-tile .developmental-tile-kind,
+.canvas-node.developmental-unplaced .developmental-desk-tile .developmental-tile-title{line-height:1.15}
+
+/* =========================================================
+   5.4.5 — Developmental contrast + Manuscript-style Versions
+   ========================================================= */
+/* Structural tiles derive readable foreground color from their background.
+   Secondary tile labels inherit the same foreground instead of forcing muted gray. */
+.developmental-structural-tile .developmental-tile-kind,
+.canvas-node.developmental-unplaced .developmental-desk-tile .developmental-tile-kind{color:currentColor;opacity:.7}
+.structure-auto-contrast-hint{margin-top:7px!important;margin-bottom:0!important}
+
+/* Structure Versions follows the Checkpoints panel language: fixed tools,
+   selectable rows, and a trailing actions menu instead of lateral arrows. */
+#canvasPanelBody:has(.canvas-version-panel){overflow:hidden!important}
+.canvas-version-panel{height:100%;min-height:0;display:flex;flex-direction:column}
+.canvas-version-panel-tools{padding:9px;border-bottom:1px solid var(--line);display:flex;justify-content:flex-end;gap:6px;flex:none}
+.canvas-version-panel-tools button{border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:6px 9px;font-weight:600}
+.canvas-version-panel-tools button:hover{background:var(--surface2)}
+.canvas-version-list{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:7px;display:flex;flex-direction:column;gap:7px}
+.canvas-version-list-row{display:flex;align-items:stretch;gap:0;width:100%;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--surface);flex:none;color:inherit}
+.canvas-version-list-row:hover{border-color:var(--line2);background:var(--surface2)}
+.canvas-version-list-row.active{border-color:var(--accent);background:var(--accent-soft)}
+.canvas-version-use,.canvas-version-more{border:0!important;background:transparent!important;color:var(--text);margin:0;box-shadow:none!important}
+.canvas-version-use{flex:1;min-width:0;text-align:left;padding:8px 9px}
+.canvas-version-more{width:32px;min-width:32px;padding:0;color:var(--muted);display:grid;place-items:center;font-size:17px;line-height:1;border-radius:0}
+.canvas-version-more:hover{background:color-mix(in srgb,var(--text) 5%,transparent)!important;color:var(--text)}
+.canvas-version-list-main{min-width:0;display:block}
+.canvas-version-list-main b,.canvas-version-list-main small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.canvas-version-list-main b{font-size:12px;line-height:1.42}
+.canvas-version-list-main small{margin-top:3px;color:var(--muted);font-size:10.5px;font-weight:400}
+.canvas-version-empty{margin:auto;padding:20px 12px;color:var(--muted);text-align:center;display:flex;flex-direction:column;gap:7px;align-items:center}
+.canvas-version-missing-section{border-top:1px solid var(--line);margin:4px -7px -7px;padding:12px 13px;background:color-mix(in srgb,var(--surface2) 55%,transparent)}
+.canvas-version-missing-section .section-label{margin-bottom:5px}
+
+
+/* 5.4.6 — Developmental controls live in one Manuscript-style Structure panel. */
+#canvasStructureBtn.active{background:var(--accent-soft);border-color:var(--accent)}
+.structure-panel{display:flex;flex-direction:column;min-height:100%}
+.structure-panel .canvas-panel-field{flex:none}
+.structure-toggle-row{display:flex!important;align-items:center;justify-content:space-between;gap:12px;margin:0!important}
+.structure-section-title{min-width:0;display:flex;align-items:center;gap:6px}
+.structure-toggle-row b,.structure-section-head b{font-size:12px;color:var(--text)}
+.structure-panel-versions{padding:0!important;min-height:0;display:flex;flex-direction:column}
+.structure-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 13px}
+.structure-add-version{flex:none;width:28px;height:28px;display:grid;place-items:center;padding:0!important;font-size:18px!important;line-height:1;font-weight:500;color:var(--text);border-radius:5px}
+.structure-panel .canvas-version-list{max-height:330px;border-top:1px solid var(--line);padding:7px;overflow-y:auto}
+.structure-panel-manuscript{margin-top:auto}
+.structure-review{margin-top:8px}
+.structure-review:disabled{opacity:.48;cursor:not-allowed}
+
+/* 5.4.10 — Structure descriptions use Manuscript's delayed control hover.
+   The interactive control itself is the only hover/focus target; section labels
+   do not reveal help. The standard quiet side-card appears after 300ms. */
+.structure-review-hover{display:block}
+.structure-review-hover .structure-review{width:100%}
+.structure-panel-hover-card{z-index:10080}
+.structure-switch{position:relative;flex:none;width:34px;height:20px;padding:0;border:1px solid var(--line2);border-radius:999px;background:var(--surface2);cursor:pointer;transition:background 120ms ease,border-color 120ms ease}
+.structure-switch>span{position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--muted);transition:transform 120ms ease,background 120ms ease}
+.structure-switch.active{background:var(--accent-soft);border-color:var(--accent)}
+.structure-switch.active>span{transform:translateX(14px);background:var(--accent)}
+.structure-switch:focus-visible{outline:2px solid color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:2px}
+
+/* 5.4.11 — Manuscript-first Canvas Card creation palette. */
+.canvas-card-palette{
+  position:fixed;
+  z-index:136;
+  display:grid;
+  
+  gap:4px;
+  padding:5px;
+  border:1px solid var(--line2);
+  border-radius:7px;
+  background:var(--surface);
+  box-shadow:var(--shadow);
+}
+.canvas-card-palette.hidden{display:none!important}
+.canvas-card-palette-button{
+  width:33px;
+  height:30px;
+  min-width:33px;
+  padding:0;
+  display:grid;
+  place-items:center;
+  border:1px solid transparent;
+  border-radius:5px;
+  background:transparent;
+  color:var(--text);
+}
+.canvas-card-palette-button:hover,.canvas-card-palette-button:focus-visible{background:var(--accent-soft);outline:0}
+.canvas-card-palette-button.active{border-color:var(--accent);background:var(--accent-soft)}
+.canvas-card-palette-button svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.canvas-card-palette-text{font-size:17px;font-weight:650;line-height:1}
+.canvas-stage.card-create-mode{cursor:crosshair}
+.canvas-card-draw-preview{
+  position:absolute;
+  pointer-events:none;
+  z-index:9;
+  box-sizing:border-box;
+  border:1px dashed var(--accent);
+  background:color-mix(in srgb,var(--accent) 7%,var(--surface));
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 10%,transparent) inset;
+}
+.canvas-card-draw-preview.text{background:transparent;border-style:dotted}
+
+/* 5.4.13 — background figures and containment selection. */
+.canvas-world>#figures{
+  position:absolute;
+  inset:0;
+  width:6000px;
+  height:4000px;
+  pointer-events:none;
+  z-index:0;
+}
+.canvas-world>#figures .canvas-node{pointer-events:auto}
+.canvas-card-palette{grid-template-columns:repeat(2,33px)}
+.canvas-stage.figure-create-mode{cursor:crosshair}
+.canvas-figure-draw-preview{
+  position:absolute;
+  pointer-events:none;
+  z-index:9;
+  box-sizing:border-box;
+  border:1px dashed #000;
+  background:transparent;
+}
+
+
+/* 5.4.14 — drawing tools are exclusive Canvas modes. Existing objects stay visible
+   but cannot be selected, moved, resized, edited, or connected until drawing ends. */
+.canvas-stage.card-create-mode #nodes .canvas-node,
+.canvas-stage.card-create-mode #figures .canvas-node,
+.canvas-stage.card-create-mode #edgeLayer,
+.canvas-stage.figure-create-mode #nodes .canvas-node,
+.canvas-stage.figure-create-mode #figures .canvas-node,
+.canvas-stage.figure-create-mode #edgeLayer{
+  pointer-events:none!important;
+}
+.canvas-view.canvas-creation-mode #developmentalLaneViewport{
+  pointer-events:none!important;
+}
+
+/* 5.5.0 — render the routed workspace immediately so reload does not flash Manuscript. */
+html[data-initial-view="canvas"] #manuscriptView,
+html[data-initial-view="maps"] #manuscriptView,
+html[data-initial-view="tasks"] #manuscriptView,
+html[data-initial-view="reviews"] #manuscriptView{display:none!important}
+html[data-initial-view="canvas"] #canvasView,
+html[data-initial-view="maps"] #mapsView,
+html[data-initial-view="tasks"] #tasksView,
+html[data-initial-view="reviews"] #reviewsView{display:flex}
+html[data-initial-view="canvas"] .main-tab[data-view="manuscript"],
+html[data-initial-view="maps"] .main-tab[data-view="manuscript"],
+html[data-initial-view="tasks"] .main-tab[data-view="manuscript"],
+html[data-initial-view="reviews"] .main-tab[data-view="manuscript"]{color:var(--muted);border-bottom-color:transparent;font-weight:normal}
+html[data-initial-view="canvas"] .main-tab[data-view="canvas"],
+html[data-initial-view="maps"] .main-tab[data-view="maps"],
+html[data-initial-view="tasks"] .main-tab[data-view="tasks"],
+html[data-initial-view="reviews"] .main-tab[data-view="reviews"]{color:var(--text);border-bottom-color:var(--text);font-weight:bold}
+
+/* Canvas rail follows the Manuscript row/action language. */
+.canvas-item{overflow:visible}
+.canvas-item-name{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis}
+.canvas-item-more{flex:none;width:26px;height:25px;padding:0;opacity:1}
+.canvas-rail.collapsed .canvas-item-more{display:none!important}
+
+/* Optional draw.io-style alignment help. */
+.canvas-snap-guide{position:absolute;pointer-events:none;z-index:10;background:var(--accent);opacity:.72}
+.canvas-snap-guide.vertical{top:0;bottom:0;width:1px}
+.canvas-snap-guide.horizontal{left:0;right:0;height:1px}
+
+/* Structure Order typography follows the Canvas text-size control proportionally. */
+.developmental-structural-tile .developmental-tile-title,
+.canvas-node.developmental-unplaced .developmental-desk-tile .developmental-tile-title{
+  font-size:clamp(9px,calc(var(--canvas-font-size,20.5px) * .585),16px)
+}
+
+
+/* 5.5.2 — top-bar titles use the same explicit Details affordance in Manuscript and Canvas. */
+.toolbar-title-group{display:flex;align-items:center;gap:2px;min-width:0;flex:0 1 270px}
+.toolbar-title-group .active-document-title,.toolbar-title-group .canvas-name{min-width:0;flex:0 1 auto}
+.toolbar-title-pencil{flex:none;width:27px;height:27px;padding:0;border:0;background:transparent;border-radius:5px;color:var(--muted);font-size:16px;line-height:1;cursor:pointer}
+.toolbar-title-pencil:hover{background:var(--surface2);color:var(--text)}
+.toolbar-title-pencil:disabled{opacity:.35;cursor:default;background:transparent;color:var(--muted)}
+.canvas-name[readonly]{cursor:default}
+.canvas-name[readonly]:focus{outline:0}
+.canvas-toolbar .canvas-title-group{flex:0 1 335px;min-width:116px;}
+.canvas-toolbar .canvas-title-group .canvas-name{flex:0 1 300px;min-width:82px;}
+@media(max-width:980px){.toolbar-title-group{max-width:180px}.canvas-toolbar .canvas-title-group{max-width:185px}.canvas-toolbar .canvas-title-group .canvas-name{max-width:150px}}
+
+/* 5.5.3 — keep the Canvas Details pencil attached to the visible title. */
+.canvas-toolbar .canvas-title-group{
+  flex:0 1 auto;
+  width:auto;
+  min-width:0;
+  max-width:335px;
+}
+.canvas-toolbar .canvas-title-group .canvas-name{
+  field-sizing:content;
+  width:auto;
+  min-width:0;
+  max-width:300px;
+  flex:0 1 auto;
+  padding:0;
+}
+@media(max-width:980px){
+  .canvas-toolbar .canvas-title-group{max-width:185px}
+  .canvas-toolbar .canvas-title-group .canvas-name{max-width:150px}
+}
+
+
+/* 5.5.6 — Canvas Card display modes. Hidden text remains stored; this is presentation only. */
+.card-display-field .section-label{margin-bottom:7px}
+.card-display-options{display:grid;grid-template-columns:repeat(3,42px);gap:6px;align-items:center}
+.card-display-option{width:42px;height:34px;padding:5px;border:1px solid var(--line);border-radius:5px;background:var(--surface);display:grid;place-items:center;color:var(--text);cursor:pointer}
+.card-display-option:hover,.card-display-option:focus-visible{background:var(--accent-soft);border-color:var(--line2);outline:0}
+.card-display-option.active{border-color:var(--accent);background:var(--accent-soft)}
+.card-display-glyph{position:relative;display:block;width:22px;height:17px;border:1px solid currentColor;border-radius:2px;opacity:.82;box-sizing:border-box}
+.card-display-glyph i{position:absolute;display:block;left:3px;right:3px;height:1px;background:currentColor;border-radius:999px}
+.card-display-glyph.full i:first-child,.card-display-glyph.header i:first-child{left:0;right:0;top:0;height:5px;border-radius:1px 1px 0 0;background:currentColor}
+.card-display-glyph.full i:nth-child(2){top:9px}.card-display-glyph.full i:nth-child(3){top:12px}
+.card-display-glyph.body i:nth-child(1){top:5px}.card-display-glyph.body i:nth-child(2){top:9px}.card-display-glyph.body i:nth-child(3){top:13px}
+.card-display-hover{position:fixed;z-index:1400;padding:5px 7px;border:1px solid var(--line2);border-radius:5px;background:var(--surface);box-shadow:0 4px 16px rgba(0,0,0,.12);font-size:11px;color:var(--text);white-space:nowrap;pointer-events:none}
+.canvas-node.card-display-header{min-height:0!important}
+.canvas-node.card-display-header .node-inner{padding-bottom:7px}
+.canvas-node.card-display-header .node-title-line{margin-bottom:0;padding-bottom:0;border-bottom:0}
+.canvas-node.card-display-body .node-body{margin-top:0}
+.split-canvas-node.card-display-header p,.split-canvas-node.card-display-body>b{display:none}
+.developmental-planning-tile.card-display-header .developmental-planning-title{margin-bottom:0}
+
+/* =========================================================
+   5.6.0 — Connector, routing-point, and Developmental polish
+   ========================================================= */
+/* Body-only display glyph keeps its three lines optically centered. */
+.card-display-glyph.body i:nth-child(1){top:4px}
+.card-display-glyph.body i:nth-child(2){top:8px}
+.card-display-glyph.body i:nth-child(3){top:12px}
+
+/* Routing Points are junctions, not tiny Cards. Incoming connectors land on
+   the center; the single exposed circle starts as many outgoing connectors as needed. */
+.canvas-node.routing-node,
+.split-canvas-node.routing-node{
+  width:12px!important;min-width:12px!important;max-width:12px!important;
+  height:12px!important;min-height:12px!important;max-height:12px!important;
+  padding:0!important;border:0!important;border-radius:50%!important;
+  background:transparent!important;box-shadow:none!important;overflow:visible!important;
+}
+.canvas-node.routing-node::before{display:none!important}
+.canvas-node.routing-node .routing-glyph,
+.split-canvas-node.routing-node .routing-glyph{
+  position:absolute!important;inset:2px!important;border:1.5px solid var(--muted)!important;
+  border-radius:50%!important;background:var(--surface)!important;transform:none!important;
+  pointer-events:none!important;
+}
+.canvas-node.routing-node.selected{outline:2px solid var(--accent)!important;outline-offset:3px!important;border-radius:50%!important}
+.canvas-node.routing-node .node-port{display:none!important}
+.canvas-node.routing-node .routing-output{
+  display:block!important;position:absolute!important;width:8px!important;height:8px!important;
+  left:15px!important;top:50%!important;right:auto!important;bottom:auto!important;
+  transform:translateY(-50%)!important;border:1.5px solid var(--muted)!important;
+  border-radius:50%!important;background:var(--surface)!important;opacity:0!important;cursor:crosshair!important;
+}
+.canvas-node.routing-node:hover .routing-output,
+.canvas-node.routing-node.selected .routing-output{opacity:1!important}
+
+/* Connector labels and endpoint handles are direct-manipulation affordances. */
+.edge-label{font-size:calc(var(--canvas-font-size,14px) * .78);font-family:var(--canvas-font-family,Arial,sans-serif);opacity:.7;pointer-events:auto;user-select:none}
+.edge-end-handle{opacity:0;pointer-events:none;stroke:var(--surface);stroke-width:1.5px}
+.edge-group:hover .edge-end-handle,.edge-group.selected .edge-end-handle{opacity:.9}
+.edge-group.selected .edge-end-hit{pointer-events:all}
+.edge-end-hit{fill:transparent;stroke:transparent;pointer-events:all;cursor:crosshair}
+.edge-hit{cursor:pointer}
+
+/* Compact visual Connector inspector. */
+.connector-choice-field>label,.connector-color-field>label{margin-bottom:7px}
+.connector-choice-group{display:flex;gap:6px;flex-wrap:wrap}
+.connector-choice{width:42px;height:32px;display:grid;place-items:center;padding:4px;border:1px solid var(--line);border-radius:5px;background:var(--surface);color:var(--text);cursor:pointer}
+.connector-choice:hover,.connector-choice:focus-visible{background:var(--accent-soft);border-color:var(--line2);outline:0}
+.connector-choice.active{border-color:var(--accent);background:var(--accent-soft)}
+.connector-choice svg{width:26px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}
+.connector-choice .connector-end-none-svg{width:28px;height:18px;display:block;overflow:visible;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.connector-line-icon,.connector-width-icon{display:block;width:27px;height:0;border-top:1.5px solid currentColor}
+.connector-line-icon.dashed{border-top-style:dashed}.connector-line-icon.dotted{border-top-style:dotted}
+.connector-width-icon{border-top-width:var(--connector-preview-width)}
+.connector-end-icon{position:relative;display:block;width:27px;height:15px}
+.connector-end-icon::before{content:"";position:absolute;left:2px;right:5px;top:7px;border-top:1.5px solid currentColor}
+.connector-end-icon.arrow::after{content:"";position:absolute;right:2px;top:4px;width:6px;height:6px;border-top:1.5px solid currentColor;border-right:1.5px solid currentColor;transform:rotate(45deg)}
+.connector-end-icon.circle::after{content:"";position:absolute;right:0;top:3px;width:7px;height:7px;border:1.5px solid currentColor;border-radius:50%;background:var(--surface)}
+.connector-choice.active .connector-end-icon.circle::after{background:var(--accent-soft)}
+.connector-end-icon.diamond::after{content:"";position:absolute;right:0;top:3px;width:7px;height:7px;border:1.5px solid currentColor;transform:rotate(45deg);background:var(--surface)}
+.connector-choice.active .connector-end-icon.diamond::after{background:var(--accent-soft)}
+.connector-color-field input[type=color]{width:42px;height:30px;padding:2px}
+
+/* Structure Order lives outside the transformed Canvas world, so mirror Canvas
+   zoom there. Free structural tiles inside the world scale naturally. */
+.developmental-structural-tile,.developmental-missing-tile{
+  width:var(--developmental-structure-tile-width,var(--developmental-tile-width))!important;
+  min-width:var(--developmental-structure-tile-width,var(--developmental-tile-width))!important;
+  height:var(--developmental-structure-tile-height,var(--developmental-tile-height))!important;
+  min-height:var(--developmental-structure-tile-height,var(--developmental-tile-height))!important;
+  max-height:none!important;
+  padding-left:var(--developmental-structure-padding,9px);padding-right:var(--developmental-structure-padding,9px);
+}
+.developmental-planning-tile{
+  width:var(--developmental-planning-tile-width,220px)!important;
+  height:var(--developmental-structure-tile-height,52px)!important;
+}
+.developmental-structural-tile .developmental-tile-title,.developmental-missing-tile .developmental-tile-title{font-size:var(--developmental-structure-title-size,12px)}
+.developmental-structural-tile .developmental-tile-kind{font-size:var(--developmental-structure-kind-size,9px);margin-right:var(--developmental-structure-kind-gap,8px)}
+.canvas-shell.developmental-active .developmental-structure-dock{height:var(--developmental-dock-height,118px)}
+.canvas-shell.developmental-lane-open .canvas-mode-overlay{top:var(--developmental-overlay-top,171px)}
+
+/* Developmental Canvas in Manuscript Split View. */
+.split-developmental-canvas{min-width:100%;min-height:100%;display:flex;flex-direction:column;background:var(--bg)}
+.split-developmental-lane{position:sticky;top:0;z-index:5;flex:none;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--surface)}
+.split-developmental-lane-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+.split-developmental-lane-track{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px}
+.split-developmental-tile{flex:none;min-width:118px;max-width:160px;height:42px;padding:0 8px;border:1px solid var(--line2);border-radius:5px;background:var(--surface2);display:flex;align-items:center;gap:6px;overflow:hidden}
+.split-developmental-tile small{flex:none;font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.split-developmental-tile b{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.split-developmental-workspace{position:relative;flex:1;min-height:520px;overflow:auto}
+.split-developmental-workspace .split-canvas-stage{min-width:1600px;min-height:1000px}
+
+/* v5.7.2 — Canvas navigator mirrors Manuscript hierarchy/reorder affordances. */
+.canvas-tree-toggle{width:16px;min-width:16px;height:22px;padding:0;border:0;background:transparent}
+.canvas-grip{display:inline-block}
+.canvas-item.dragging{opacity:.45}
+.canvas-item.drop-before{box-shadow:inset 0 2px 0 var(--accent)}
+.canvas-item.drop-after{box-shadow:inset 0 -2px 0 var(--accent)}
+.canvas-rail.collapsed .canvas-grip{display:none}
+
+/* 5.7.3 — direct Canvas nesting and outdent drag targets. */
+.canvas-rail{position:relative}
+.canvas-item.nest-hover{outline:1px dashed color-mix(in srgb,var(--accent) 60%,var(--line));outline-offset:-2px;background:color-mix(in srgb,var(--accent-soft) 68%,transparent)}
+.canvas-item.nest-ready{outline:2px solid var(--accent);outline-offset:-2px;background:var(--accent-soft);box-shadow:none}
+.canvas-item.nest-ready::after{content:var(--i18n-28858472a953, '{{i18n:css.content.content.9de0dfe2}}');flex:none;margin-left:auto;margin-right:2px;padding:2px 5px;border-radius:999px;background:var(--accent);color:var(--surface);font-size:9px;font-weight:700;letter-spacing:.01em}
+.canvas-item.nest-ready .canvas-item-more{display:none!important}
+.canvas-outdent-drop{position:absolute;z-index:24;left:0;top:43px;bottom:0;width:34px;border-right:1px dashed color-mix(in srgb,var(--accent) 42%,var(--line));background:color-mix(in srgb,var(--surface2) 88%,transparent);display:flex;align-items:center;justify-content:flex-start;flex-direction:column;gap:3px;padding-top:12px;color:var(--muted);pointer-events:auto}
+.canvas-outdent-drop span{font-size:18px;line-height:1}.canvas-outdent-drop b{font-size:8px;line-height:1.05;writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:.04em;text-transform:uppercase}
+.canvas-outdent-drop.ready{width:42px;color:var(--accent);background:color-mix(in srgb,var(--accent-soft) 90%,var(--surface2));border-right:2px solid var(--accent)}
+.canvas-rail.collapsed .canvas-outdent-drop{display:none}
+

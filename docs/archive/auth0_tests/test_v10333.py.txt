@@ -1,0 +1,157 @@
+from __future__ import annotations
+
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
+ROOT=Path(__file__).resolve().parents[1]
+
+
+def test_v10333_release_schema_preview_retirement_and_gate_docs_are_synchronized():
+    version=(ROOT/'VERSION').read_text(encoding='utf-8').strip()
+    assert version=='10.3.59'
+    assert 'APP_SCHEMA_VERSION = 42' in (ROOT/'src/workspace/constants.py').read_text(encoding='utf-8')
+    assert f'Implemented through **{version}**' in (ROOT/'docs/BREADMAKER_REVIEW_IMPLEMENTATION_PLAN.md').read_text(encoding='utf-8')
+    assert (ROOT/'docs/CHECKPOINT_11_SECURITY_GATE.md').is_file()
+    assert not (ROOT/'run-auth-ui-preview').exists()
+    assert not (ROOT/'static/dev').exists()
+
+
+def test_v10333_oidc_state_is_single_use_and_return_paths_reject_browser_normalization_tricks():
+    from auth.oidc import OidcError, OidcTransactionStore
+    now=[1_700_000_000.0]
+    store=OidcTransactionStore(ttl_seconds=60,now=lambda:now[0])
+    tx=store.begin(return_path='/p/'+'a'*32+'?view=manuscript')
+    assert store.consume(tx.state).return_path.startswith('/p/')
+    with pytest.raises(OidcError,match='OIDC_STATE_INVALID_OR_REPLAYED'):
+        store.consume(tx.state)
+    for bad in ('//evil.example/x','https://evil.example/x','/\\evil.example/x','/%5Cevil.example/x','/%2F%2Fevil.example/x','/ok#fragment','/bad\x00x'):
+        with pytest.raises(OidcError,match='OIDC_RETURN_PATH_INVALID'):
+            store.begin(return_path=bad)
+
+
+def test_v10333_auth0_logout_return_rejects_open_redirect_forms():
+    from auth.auth0 import Auth0BoundaryConfig, Auth0BoundaryError
+    base=dict(environment='development',issuer='https://tenant.example.test/',client_id='client',application_origin='http://127.0.0.1:8766',client_secret_ref='env:SECRET')
+    assert Auth0BoundaryConfig(**base,logout_path='/').logout_return_uri=='http://127.0.0.1:8766/'
+    for bad in ('//evil.example','/\\evil.example','/%5Cevil.example','/%2F%2Fevil.example','/ok#evil','https://evil.example'):
+        with pytest.raises(Auth0BoundaryError,match='AUTH0_LOGOUT_PATH_INVALID'):
+            Auth0BoundaryConfig(**base,logout_path=bad)
+
+
+def test_v10333_session_replacement_invalidates_pre_auth_cookie_and_changes_identity():
+    from auth.sessions import OpaqueSessionService
+    sessions=OpaqueSessionService(auth_mode='auth0',environment='development')
+    old,old_principal=sessions.issue('usr_attacker',auth_method='preauth')
+    fresh,fresh_principal=sessions.replace(old,'usr_real',auth_method='google',authenticated_at=1.0)
+    assert fresh != old and fresh_principal.session_id != old_principal.session_id
+    with sessions.bind(old) as principal: assert principal is None
+    with sessions.bind(fresh) as principal: assert principal and principal.user_id=='usr_real'
+    assert old not in repr(sessions._records) and fresh not in repr(sessions._records)
+
+
+def test_v10333_step_up_grant_is_bound_to_user_session_operation_target_and_single_use():
+    from auth.oidc import OidcAuthorizationRequest
+    from auth.security import AccountSecurityError, StepUpTransactionStore
+    now=1_700_000_000.0
+    store=StepUpTransactionStore(now=lambda:now)
+    req=OidcAuthorizationRequest('https://auth.example/','state','nonce','challenge','/',now+300)
+    principal=SimpleNamespace(user_id='usr_a',session_id='ses_a')
+    tx=store.bind_authorization(req,principal=principal,purpose='unlink_identity',target='apple|x')
+    store.issue_grant(tx,authenticated_at=now)
+    for wrong in (
+        SimpleNamespace(user_id='usr_b',session_id='ses_a'),
+        SimpleNamespace(user_id='usr_a',session_id='ses_b'),
+    ):
+        with pytest.raises(AccountSecurityError): store.consume_grant(principal=wrong,purpose='unlink_identity',target='apple|x')
+    with pytest.raises(AccountSecurityError): store.consume_grant(principal=principal,purpose='unlink_identity',target='apple|y')
+    store.consume_grant(principal=principal,purpose='unlink_identity',target='apple|x')
+    with pytest.raises(AccountSecurityError,match='SECURITY_STEP_UP_REQUIRED'):
+        store.consume_grant(principal=principal,purpose='unlink_identity',target='apple|x')
+
+
+def test_v10333_totp_replacement_does_not_delete_working_factor_if_new_enrollment_cannot_start():
+    from auth.accounts import ExternalIdentity
+    from auth.security import AccountSecurityError, HostedAuth0SecurityService, StepUpTransaction, StepUpTransactionStore
+    from auth.auth0 import Auth0BoundaryConfig
+    now=1_700_000_000.0
+    primary=ExternalIdentity('https://tenant.example.test/','google-oauth2|p','usr_a','google','a@example.test',True,1,1)
+    calls=[]
+    class Accounts:
+        def primary_identity_for_user(self,_): return primary
+        def identities_for_user(self,_): return [primary]
+    class Mgmt:
+        def metadata(self): return {}
+        def authentication_methods(self,_): return [{'id':'totp-1','type':'totp'}]
+        def delete_authentication_method(self,*_): calls.append('delete')
+    boundary=Auth0BoundaryConfig(environment='development',issuer='https://tenant.example.test/',client_id='client',application_origin='http://127.0.0.1:8766',client_secret_ref='env:S',callback_path='/auth/step-up/callback')
+    store=StepUpTransactionStore(now=lambda:now)
+    principal=SimpleNamespace(user_id='usr_a',session_id='ses_a')
+    store.issue_grant(StepUpTransaction('s','usr_a','ses_a','replace_totp','totp-1','/',now,now+300),authenticated_at=now)
+    service=HostedAuth0SecurityService(boundary=boundary,oidc=SimpleNamespace(),accounts=Accounts(),management=Mgmt(),intent_signer=SimpleNamespace(metadata=lambda:{}),step_up=store,now=lambda:now)
+    def fail_start(**_): raise AccountSecurityError('SECURITY_PROVIDER_UNAVAILABLE')
+    service.begin_step_up=fail_start
+    with pytest.raises(AccountSecurityError,match='SECURITY_PROVIDER_UNAVAILABLE'):
+        service.begin_totp_replacement_enrollment(principal=principal,method_id='totp-1')
+    assert calls==[]
+
+
+def test_v10333_account_linking_compensates_auth0_when_local_ownership_commit_fails():
+    source=(ROOT/'src/auth/linking.py').read_text(encoding='utf-8')
+    assert 'self.management.link(' in source
+    assert 'self.accounts.link_external_identity_to_user(' in source
+    assert 'self.management.unlink(' in source
+    assert source.index('self.management.link(') < source.index('self.accounts.link_external_identity_to_user(') < source.index('self.management.unlink(')
+    assert 'ACCOUNT_LINK_LOCAL_COMMIT_ROLLBACK_FAILED' in source
+
+
+def test_v10333_project_id_is_not_a_bearer_capability_and_direct_shell_is_authorized():
+    routes=(ROOT/'src/backend/runtime_routes.py').read_text(encoding='utf-8')
+    assert "runtime.identity.current_actor(project_id,require_membership=True)" in routes
+    assert "HTTPException(404,detail='PROJECT_NOT_FOUND'" in routes
+    assert 'Project IDs are routing identifiers, never bearer capabilities' in routes
+    pipeline=(ROOT/'src/backend/request_pipeline.py').read_text(encoding='utf-8')
+    assert 'origin' in pipeline.lower() and 'sec-fetch-site' in pipeline.lower()
+    assert "supplied!=expected" in pipeline and "BREADMAKER_PUBLIC_ORIGIN" in pipeline
+
+
+def test_v10333_provider_mapping_and_linking_never_use_email_as_account_identity():
+    accounts=(ROOT/'src/auth/accounts.py').read_text(encoding='utf-8')
+    linking=(ROOT/'src/auth/linking.py').read_text(encoding='utf-8')
+    assert 'resolve/create never searches by email' in accounts
+    assert "'automatic_link_by_email': False" in linking
+    assert 'ACCOUNT_LINK_EXISTING_ACCOUNT_CONFLICT' in linking
+    assert 'browser_supplied_user_ids' in linking
+
+
+def test_v10333_local_runtime_remains_accountless_and_real_auth_is_the_only_auth_ui_path():
+    local=(ROOT/'src/runtime/local.py').read_text(encoding='utf-8').lower()
+    assert 'auth0' not in local
+    routes=(ROOT/'src/backend/runtime_routes.py').read_text(encoding='utf-8')
+    assert '/__dev__/auth-ui-preview' not in routes
+    assert "runtime.mode in {'hosted_dev','hosted'}" in routes and "auth_mode')=='auth0'" in routes
+
+
+def test_v10333_totp_replacement_uses_transient_provider_marker_to_survive_interruption():
+    security=(ROOT/'src/auth/security.py').read_text(encoding='utf-8')
+    assert "breadmaker_totp_replacement_pending" in security
+    assert "payload={'app_metadata': {'breadmaker_totp_replacement_pending': bool(pending)}}" in security
+    start=security.index("def begin_totp_replacement_enrollment")
+    section=security[start:security.index("def revoke_session",start)]
+    assert section.index('set_totp_replacement_pending(primary.subject, True)') < section.index('delete_authentication_method(primary.subject, method_id)')
+    complete=security.index('def complete_step_up')
+    complete_section=security[complete:security.index('def consume_grant',complete)]
+    assert "if tx.purpose == 'replace_totp_enroll'" in complete_section
+    assert 'set_totp_replacement_pending(primary.subject, False)' in complete_section
+    action=(ROOT.parent/'breadmaker-cloud/auth0/actions/breadmaker-totp-policy.js').read_text(encoding='utf-8')
+    assert 'breadmaker_totp_replacement_pending' in action
+    assert 'asksForOtpEnrollment || replacementPending' in action
+
+
+def test_v10333_authenticated_project_shell_without_session_fails_closed_instead_of_500():
+    routes=(ROOT/'src/backend/runtime_routes.py').read_text(encoding='utf-8')
+    marker="if project_id and runtime.sessions.requires_authentication:"
+    section=routes[routes.index(marker):routes.index('return (STATIC/"index.html")',routes.index(marker))]
+    assert 'if runtime.sessions.current() is None:' in section
+    assert "HTTPException(401,detail='AUTHENTICATION_REQUIRED'" in section

@@ -1,0 +1,1238 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://breadmaker.app/schema/fragment-1.0.json",
+  "title": "Breadmaker Fragment JSON 1.0",
+  "type": "object",
+  "required": [
+    "format",
+    "schema_version",
+    "name"
+  ],
+  "properties": {
+    "format": {
+      "const": "breadmaker-fragment"
+    },
+    "schema_version": {
+      "const": "1.0"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "markers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/marker"
+      }
+    },
+    "manuscript": {
+      "type": "object",
+      "properties": {
+        "tabs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fragmentTab"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "canvases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/canvas"
+      }
+    },
+    "maps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/map"
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/task"
+      }
+    },
+    "cuts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/cut"
+      }
+    },
+    "mounts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/mount"
+      }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "ref": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+:[A-Za-z0-9_.:-]+$"
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$"
+    },
+    "link": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ref"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "target": {
+              "$ref": "#/$defs/ref"
+            },
+            "url": {
+              "type": "string",
+              "pattern": "^https?://"
+            },
+            "relationship": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          "oneOf": [
+            {
+              "required": [
+                "target"
+              ]
+            },
+            {
+              "required": [
+                "url"
+              ]
+            }
+          ],
+          "additionalProperties": true
+        }
+      ]
+    },
+    "position": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number",
+          "minimum": 12,
+          "maximum": 5000
+        },
+        "height": {
+          "type": "number",
+          "minimum": 12,
+          "maximum": 5000
+        }
+      },
+      "additionalProperties": true
+    },
+    "marker": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "color"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ref"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "description": {
+          "type": "string"
+        },
+        "color": {
+          "$ref": "#/$defs/color"
+        }
+      },
+      "additionalProperties": true
+    },
+    "scene": {
+      "type": "object",
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ref"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "description": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "chapter": {
+      "type": "object",
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ref"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "description": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "scenes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/scene"
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "tab": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ref"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "description": {
+          "type": "string"
+        },
+        "main": {
+          "type": "boolean"
+        },
+        "content": {
+          "type": "string"
+        },
+        "chapters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/chapter"
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "manuscript": {
+      "type": "object",
+      "properties": {
+        "tabs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/tab"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "card": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ref"
+        },
+        "type": {
+          "const": "card"
+        },
+        "title": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "display": {
+          "enum": [
+            "full",
+            "header",
+            "body"
+          ]
+        },
+        "shape": {
+          "enum": [
+            "card",
+            "text"
+          ]
+        },
+        "marker": {
+          "$ref": "#/$defs/ref"
+        },
+        "color": {
+          "$ref": "#/$defs/color"
+        },
+        "text_color": {
+          "$ref": "#/$defs/color"
+        },
+        "linked_to": {
+          "$ref": "#/$defs/ref"
+        },
+        "position": {
+          "$ref": "#/$defs/position"
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        },
+        "text_align": {
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ]
+        }
+      },
+      "not": {
+        "required": [
+          "marker",
+          "color"
+        ]
+      },
+      "additionalProperties": true
+    },
+    "figure": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ref"
+        },
+        "type": {
+          "const": "figure"
+        },
+        "shape": {
+          "enum": [
+            "rect",
+            "circle",
+            "triangle",
+            "oval",
+            "line"
+          ]
+        },
+        "position": {
+          "$ref": "#/$defs/position"
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        },
+        "fill_color": {
+          "$ref": "#/$defs/color"
+        },
+        "stroke_color": {
+          "$ref": "#/$defs/color"
+        },
+        "border_width": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 12
+        },
+        "layer": {
+          "enum": [
+            "back",
+            "front"
+          ]
+        },
+        "line_x1": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "line_y1": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "line_x2": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "line_y2": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "index": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "value"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ref"
+        },
+        "type": {
+          "const": "index"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
+        },
+        "position": {
+          "$ref": "#/$defs/position"
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "routing": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ref"
+        },
+        "type": {
+          "const": "routing"
+        },
+        "position": {
+          "$ref": "#/$defs/position"
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "node": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/card"
+        },
+        {
+          "$ref": "#/$defs/figure"
+        },
+        {
+          "$ref": "#/$defs/index"
+        },
+        {
+          "$ref": "#/$defs/routing"
+        }
+      ]
+    },
+    "layout": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "compact",
+            "horizontal",
+            "vertical",
+            "circular",
+            "manual"
+          ]
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ref"
+          }
+        },
+        "origin": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": true
+        },
+        "gap": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 500
+        }
+      },
+      "additionalProperties": true
+    },
+    "connector": {
+      "type": "object",
+      "required": [
+        "from",
+        "to"
+      ],
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/ref"
+        },
+        "to": {
+          "$ref": "#/$defs/ref"
+        },
+        "from_port": {
+          "enum": [
+            "top",
+            "right",
+            "bottom",
+            "left",
+            "top_left",
+            "top_right",
+            "bottom_left",
+            "bottom_right",
+            "center"
+          ]
+        },
+        "to_port": {
+          "enum": [
+            "top",
+            "right",
+            "bottom",
+            "left",
+            "top_left",
+            "top_right",
+            "bottom_left",
+            "bottom_right",
+            "center"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 180
+        },
+        "marker": {
+          "$ref": "#/$defs/ref"
+        },
+        "color": {
+          "$ref": "#/$defs/color"
+        },
+        "stroke": {
+          "enum": [
+            "solid",
+            "dashed",
+            "dotted"
+          ]
+        },
+        "end": {
+          "enum": [
+            "arrow",
+            "none",
+            "circle",
+            "diamond"
+          ]
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8
+        },
+        "route": {
+          "enum": [
+            "straight",
+            "curved"
+          ]
+        }
+      },
+      "not": {
+        "required": [
+          "marker",
+          "color"
+        ]
+      },
+      "additionalProperties": true
+    },
+    "canvas": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ref"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "description": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "normal",
+            "developmental"
+          ]
+        },
+        "parent": {
+          "$ref": "#/$defs/ref"
+        },
+        "developmental_scope": {
+          "enum": [
+            "chapters",
+            "scenes"
+          ]
+        },
+        "structure": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ref"
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "connectors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/connector"
+          }
+        },
+        "layout": {
+          "enum": [
+            "compact",
+            "horizontal",
+            "vertical",
+            "circular",
+            "manual"
+          ]
+        },
+        "layouts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/layout"
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "mapItem": {
+      "type": "object",
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ref"
+        },
+        "type": {
+          "enum": [
+            "stop",
+            "span"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "short_label": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string"
+        },
+        "start": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "end": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "anchor": {
+          "$ref": "#/$defs/ref"
+        },
+        "end_anchor": {
+          "$ref": "#/$defs/ref"
+        },
+        "excerpt": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "break_after": {
+          "type": "boolean"
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "mapLine": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ref"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "description": {
+          "type": "string"
+        },
+        "color": {
+          "$ref": "#/$defs/color"
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mapItem"
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "junctionSide": {
+      "type": "object",
+      "required": [
+        "line"
+      ],
+      "properties": {
+        "line": {
+          "$ref": "#/$defs/ref"
+        },
+        "item": {
+          "$ref": "#/$defs/ref"
+        },
+        "edge": {
+          "enum": [
+            "point",
+            "start",
+            "end"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "junction": {
+      "type": "object",
+      "required": [
+        "from",
+        "to"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "branch",
+            "merge"
+          ]
+        },
+        "from": {
+          "$ref": "#/$defs/junctionSide"
+        },
+        "to": {
+          "$ref": "#/$defs/junctionSide"
+        }
+      },
+      "additionalProperties": true
+    },
+    "map": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ref"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "description": {
+          "type": "string"
+        },
+        "orientation": {
+          "enum": [
+            "horizontal",
+            "vertical"
+          ]
+        },
+        "layout_mode": {
+          "enum": [
+            "scaled",
+            "schematic"
+          ]
+        },
+        "label_mode": {
+          "enum": [
+            "minimal",
+            "full",
+            "hidden"
+          ]
+        },
+        "ruler": {
+          "enum": [
+            "none",
+            "chapters",
+            "scenes",
+            "percent",
+            "pages"
+          ]
+        },
+        "background": {
+          "$ref": "#/$defs/color"
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mapLine"
+          }
+        },
+        "junctions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/junction"
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "subtask": {
+      "type": "object",
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ref"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "description": {
+          "type": "string"
+        },
+        "completed": {
+          "type": "boolean"
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "task": {
+      "type": "object",
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ref"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "open",
+            "later",
+            "done",
+            "archived"
+          ]
+        },
+        "marker": {
+          "$ref": "#/$defs/ref"
+        },
+        "subtasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/subtask"
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "target": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "tab",
+            "chapter",
+            "canvas",
+            "map",
+            "map_line",
+            "task"
+          ]
+        },
+        "current": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "path": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        },
+        "tab": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "map": {
+          "type": "string",
+          "maxLength": 240
+        }
+      },
+      "additionalProperties": true
+    },
+    "cut": {
+      "type": "object",
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ref"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "content": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 10000
+        },
+        "source_label": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "source_project": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "source_chapter": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "source_scene": {
+          "type": "string",
+          "maxLength": 240
+        }
+      },
+      "additionalProperties": true
+    },
+    "mount": {
+      "type": "object",
+      "required": [
+        "target"
+      ],
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/target"
+        },
+        "chapters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/chapter"
+          }
+        },
+        "scenes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/scene"
+          }
+        },
+        "canvases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/canvas"
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "connectors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/connector"
+          }
+        },
+        "layout": {
+          "enum": [
+            "compact",
+            "horizontal",
+            "vertical",
+            "circular",
+            "manual"
+          ]
+        },
+        "layouts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/layout"
+          }
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mapLine"
+          }
+        },
+        "junctions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/junction"
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mapItem"
+          }
+        },
+        "subtasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/subtask"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "fragmentTab": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/tab"
+        },
+        {
+          "properties": {
+            "main": {
+              "const": false
+            }
+          }
+        }
+      ]
+    }
+  },
+  "anyOf": [
+    {
+      "properties": {
+        "markers": {
+          "minItems": 1
+        }
+      },
+      "required": [
+        "markers"
+      ]
+    },
+    {
+      "properties": {
+        "manuscript": {
+          "type": "object",
+          "properties": {
+            "tabs": {
+              "type": "array",
+              "minItems": 1
+            }
+          },
+          "required": [
+            "tabs"
+          ]
+        }
+      },
+      "required": [
+        "manuscript"
+      ]
+    },
+    {
+      "properties": {
+        "canvases": {
+          "minItems": 1
+        }
+      },
+      "required": [
+        "canvases"
+      ]
+    },
+    {
+      "properties": {
+        "maps": {
+          "minItems": 1
+        }
+      },
+      "required": [
+        "maps"
+      ]
+    },
+    {
+      "properties": {
+        "tasks": {
+          "minItems": 1
+        }
+      },
+      "required": [
+        "tasks"
+      ]
+    },
+    {
+      "properties": {
+        "cuts": {
+          "minItems": 1
+        }
+      },
+      "required": [
+        "cuts"
+      ]
+    },
+    {
+      "properties": {
+        "mounts": {
+          "minItems": 1
+        }
+      },
+      "required": [
+        "mounts"
+      ]
+    }
+  ]
+}

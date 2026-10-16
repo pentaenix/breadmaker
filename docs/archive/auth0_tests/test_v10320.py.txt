@@ -1,0 +1,115 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def _identity(subject: str, *, issuer: str = 'https://tenant.example.test/', email: str = 'same@example.test', name: str = 'Google Writer'):
+    from auth.oidc import VerifiedOidcIdentity
+
+    return VerifiedOidcIdentity(
+        issuer=issuer,
+        subject=subject,
+        email=email,
+        email_verified=True,
+        display_name=name,
+        authenticated_at=1_700_000_000.0,
+    )
+
+
+def _mapper():
+    from auth.auth0 import Auth0BoundaryConfig
+    from auth.google import GoogleAuth0IdentityMapper
+
+    boundary = Auth0BoundaryConfig(
+        environment='production',
+        issuer='https://tenant.example.test',
+        client_id='client-id',
+        application_origin='https://app.example.test',
+        client_secret_ref='prod/auth0-client-secret',
+    )
+    return GoogleAuth0IdentityMapper(boundary)
+
+
+def test_v10320_checkpoint_five_google_mapping_is_documented_but_login_stays_disabled():
+    version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+    architecture = (ROOT / 'ARCHITECTURE.md').read_text(encoding='utf-8')
+    auth_readme = (ROOT / 'src/auth/README.md').read_text(encoding='utf-8')
+    routes = (ROOT / 'src/backend/runtime_routes.py').read_text(encoding='utf-8')
+    assert tuple(map(int, version.split('.'))) >= (10, 3, 20)
+    assert 'Checkpoint 5' in architecture and 'hosted login remains disabled' in architecture
+    assert 'google.py' in auth_readme and 'google-oauth2|' in auth_readme
+    # These checkpoints were dormant when released. Later checkpoints may add
+    # development-only hosted-auth routes without changing the historical mapper contract.
+    if tuple(map(int, version.split('.'))) <= (10, 3, 20):
+        assert "@router.get('/auth/login')" not in routes
+        assert "@router.get('/auth/callback')" not in routes
+
+
+def test_v10320_google_mapper_accepts_only_verified_auth0_google_subjects():
+    from auth.google import GoogleAuth0IdentityError
+
+    mapper = _mapper()
+    profile = mapper.map_verified_identity(_identity('google-oauth2|11223344556677889900'))
+    assert profile.issuer == 'https://tenant.example.test/'
+    assert profile.subject == 'google-oauth2|11223344556677889900'
+    assert profile.provider_subject == '11223344556677889900'
+    assert profile.email == 'same@example.test'
+    assert mapper.metadata()['identity_key'] == ['issuer', 'subject']
+    assert mapper.metadata()['email_authoritative'] is False
+    assert mapper.metadata()['automatic_link_by_email'] is False
+
+    with pytest.raises(GoogleAuth0IdentityError, match='GOOGLE_AUTH0_SUBJECT_PROVIDER_MISMATCH'):
+        mapper.map_verified_identity(_identity('auth0|local-user'))
+    with pytest.raises(GoogleAuth0IdentityError, match='GOOGLE_AUTH0_SUBJECT_INVALID'):
+        mapper.map_verified_identity(_identity('google-oauth2|'))
+    with pytest.raises(GoogleAuth0IdentityError, match='GOOGLE_AUTH0_ISSUER_MISMATCH'):
+        mapper.map_verified_identity(_identity('google-oauth2|123', issuer='https://other.example.test/'))
+
+
+def test_v10320_google_account_mapping_never_links_by_email(tmp_path):
+    from auth.accounts import HostedAccountIdentityStore
+    from workspace import Workspace
+
+    ws = Workspace(tmp_path / 'hosted-home')
+    ws.init()
+    store = HostedAccountIdentityStore(ws)
+    mapper = _mapper()
+
+    first = mapper.resolve_or_create_account(_identity('google-oauth2|google-a'), store)
+    second = mapper.resolve_or_create_account(_identity('google-oauth2|google-b'), store)
+    same = mapper.resolve_or_create_account(_identity('google-oauth2|google-a', name='Renamed Google Profile'), store)
+
+    assert first.user_id != second.user_id
+    assert same.user_id == first.user_id
+    assert first.email == second.email == 'same@example.test'
+    assert first.provider == second.provider == 'google'
+    assert ws.local_profile(first.user_id)['display_name'] == 'Google Writer'
+
+
+def test_v10320_google_login_has_no_google_api_scope_or_provider_token_owner():
+    metadata = _mapper().metadata()
+    assert metadata['identity_scopes'] == ['openid', 'profile', 'email']
+    assert metadata['google_api_scopes'] == []
+    assert metadata['provider_tokens_retained'] is False
+    assert metadata['google_drive_authorization_separate'] is True
+    source = (ROOT / 'src/auth/google.py').read_text(encoding='utf-8').lower()
+    assert 'drive.file' not in source
+    assert 'drive.readonly' not in source
+    assert 'refresh_token' not in source
+
+
+def test_v10320_local_runtime_remains_accountless(tmp_path, monkeypatch):
+    from runtime import build_runtime
+    from workspace import Workspace
+
+    monkeypatch.setenv('BREADMAKER_RUNTIME', 'local')
+    ws = Workspace(tmp_path / 'home')
+    runtime = build_runtime(ws)
+    assert runtime.sessions.requires_authentication is False
+    assert runtime.accounts.enabled is False
+    assert runtime.capabilities.supports('account_authentication') is False
+    assert not (ws.root / 'account-identities').exists()

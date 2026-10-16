@@ -1,0 +1,39 @@
+/* 5.2 Project menu + settings */
+.project-app-menu{min-width:252px;max-width:min(300px,calc(100vw - 12px));z-index:115;padding:5px}
+.project-submenu{min-width:224px;max-width:min(300px,calc(100vw - 12px));z-index:116;padding:5px;max-height:min(520px,calc(100vh - 16px));overflow:auto}
+.project-menu-current{display:flex;align-items:center;gap:8px;padding:8px 8px 7px;min-width:0}
+.project-menu-current-copy{flex:1;min-width:0}
+.project-menu-current-copy small{display:block;color:var(--muted);font-size:10px;margin-bottom:2px}
+.project-menu-current-copy b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.project-menu-pencil,.project-settings-pencil{width:27px!important;height:27px!important;padding:0!important;border:0!important;background:transparent!important;border-radius:5px!important;text-align:center!important;color:var(--muted)}
+.project-menu-pencil:hover,.project-settings-pencil:hover{background:var(--surface2)!important;color:var(--text)}
+.project-menu-item{display:flex!important;align-items:center;justify-content:space-between;gap:14px}
+.project-menu-item>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.project-menu-caret{color:var(--muted);font-size:16px;line-height:1}
+.project-menu-empty{padding:8px 9px;color:var(--muted);font-size:12px}
+.project-menu-project-label{max-width:235px}
+.project-menu-rename-input{width:100%;border:1px solid var(--accent);background:var(--surface);border-radius:4px;padding:4px 6px;outline:0;font-weight:600}
+.project-settings-overview{padding:2px 2px 14px}
+.project-settings-name{display:flex;align-items:center;gap:10px}
+.project-settings-name>div{flex:1;min-width:0}
+.project-settings-name small{display:block;color:var(--muted);font-size:10px;margin-bottom:2px}
+.project-settings-name h2{margin:0;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.project-settings-name p{margin:4px 0 0;color:var(--muted);font-size:11px}
+.project-settings-path{margin-top:8px;color:var(--muted);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.project-settings-section{border-top:1px solid var(--line);padding:12px 0 4px}
+.project-settings-section-title{font-size:10px;text-transform:uppercase;letter-spacing:.055em;color:var(--muted);font-weight:700;padding:0 2px 6px}
+.project-settings-row{width:100%;display:flex;align-items:center;gap:12px;border:0;background:transparent;text-align:left;padding:9px 8px;border-radius:6px}
+.import-destination-list{display:grid;gap:4px;margin-top:14px}
+.import-destination-row{padding:10px 8px}
+.project-settings-row:hover{background:var(--surface2)}
+.project-settings-row>span:first-child{flex:1;min-width:0}
+.project-settings-row b,.project-settings-row small{display:block}
+.project-settings-row b{font-size:12.5px}
+.project-settings-row small{color:var(--muted);font-size:10.5px;line-height:1.35;margin-top:2px}
+.project-settings-row-caret{color:var(--muted);font-size:17px}
+.project-settings-danger{margin-top:5px;border-top-color:color-mix(in srgb,var(--danger) 35%,var(--line))}
+.project-settings-danger .project-settings-section-title,.project-settings-row.danger b{color:var(--danger)}
+.modal-card:has(.project-settings-overview){width:min(610px,calc(100% - 30px))}
+@media(max-width:520px){.brand-name{display:none}.project-app-menu{min-width:238px}.project-submenu{min-width:210px}}
+.manuscript-import-progress{padding:2px 0 4px}.manuscript-import-file{margin:0 0 8px}.manuscript-import-progress #manuscriptImportProgressStatus{margin:0 0 9px}.manuscript-import-progress-track{height:7px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);overflow:hidden}.manuscript-import-progress-track>span{display:block;height:100%;width:0;background:var(--accent);transition:width .18s ease}.manuscript-import-progress.failed .manuscript-import-progress-track>span{background:var(--danger)}.manuscript-import-error{margin:10px 0 0;padding:9px 10px;border:1px solid color-mix(in srgb,var(--danger) 40%,var(--line));border-radius:6px;background:color-mix(in srgb,var(--danger) 5%,var(--surface));color:var(--danger);font-size:12px;line-height:1.45}.modal-head #modalClose:disabled{opacity:.35;cursor:default}
+

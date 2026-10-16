@@ -1,0 +1,115 @@
+/* 8.20.0 — Manuscript Reviews is a working layer, not a second Reviews workspace. */
+.manuscript-reviews-panel{display:flex;flex-direction:column;overflow:hidden}
+.manuscript-reviews-panel-body{min-height:0;flex:1;display:flex;flex-direction:column;overflow:hidden}
+.manuscript-review-list-tools{padding:10px;border-bottom:1px solid var(--line);background:var(--surface)}
+.manuscript-review-filter-group{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:3px;background:var(--surface2);border:1px solid var(--line);border-radius:7px}
+.manuscript-review-filter{min-width:0;border:0;background:transparent;color:var(--muted);padding:6px 7px;border-radius:5px;font-size:11.5px}
+.manuscript-review-filter:hover,.manuscript-review-filter:focus-visible{background:var(--surface);color:var(--text);outline:0}
+.manuscript-review-filter.active{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08);font-weight:600}
+.manuscript-review-list{min-height:0;overflow:auto;padding:5px 0 12px}
+.manuscript-review-row{width:100%;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;color:var(--text);padding:11px 12px;text-align:left;display:flex;align-items:flex-start;gap:9px}
+.manuscript-review-row:hover,.manuscript-review-row:focus-visible{background:var(--surface2);outline:0}
+.manuscript-review-row-main{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px}
+.manuscript-review-row-main b{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.manuscript-review-row-main>span{font-size:11px;color:var(--muted)}
+.manuscript-review-row-main small{font-size:10.5px;color:var(--muted);line-height:1.35}
+.manuscript-review-row-people{flex:none;max-width:82px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:10.5px;padding-top:2px}
+.manuscript-reviews-panel .manuscript-panel-empty{padding:28px 16px}
+.manuscript-reviews-panel .manuscript-panel-empty b{font-weight:500}
+.manuscript-review-detail-head{flex:none;padding:9px 10px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.manuscript-review-back{align-self:flex-start;padding:3px 0!important;color:var(--muted);font-size:11px}
+.manuscript-review-back:hover{color:var(--text);background:transparent!important}
+.manuscript-review-detail-title{display:flex;flex-direction:column;gap:2px;min-width:0}
+.manuscript-review-detail-title b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.manuscript-review-detail-title span{font-size:11px;color:var(--muted)}
+.manuscript-review-detail-heading-row{display:flex;align-items:flex-start;gap:8px}
+.manuscript-review-detail-heading-row .manuscript-review-detail-title{flex:1}
+.manuscript-review-detail-more{flex:none;margin-top:-2px}
+.manuscript-review-questions{flex:none;width:auto;margin:8px 10px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 9px;font-size:11px}
+.manuscript-review-questions span{color:var(--muted);font-variant-numeric:tabular-nums}
+.manuscript-review-navigation{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:10.5px}
+.manuscript-review-navigation>div{display:flex;align-items:center;gap:4px}
+.manuscript-review-navigation .bare-button{width:24px;height:23px;padding:0;border-radius:4px}
+#manuscriptReviewCounter{min-width:42px;text-align:center;font-variant-numeric:tabular-nums}
+.manuscript-review-feedback-list{min-height:0;overflow:auto;padding:4px 0 14px}
+.manuscript-review-feedback-card{position:relative;border-bottom:1px solid var(--line);background:transparent;display:flex;align-items:stretch}
+.manuscript-review-feedback-card:hover{background:var(--surface2)}
+.manuscript-review-feedback-card.active{background:var(--accent-soft);box-shadow:inset 2px 0 0 var(--accent)}
+.manuscript-review-feedback-main{min-width:0;flex:1;border:0;background:transparent;color:var(--text);padding:9px 8px 10px 11px;text-align:left;display:flex;flex-direction:column;gap:5px}
+.manuscript-review-feedback-main:focus-visible{outline:1px solid var(--accent);outline-offset:-2px}
+.manuscript-review-feedback-head{display:flex;justify-content:space-between;align-items:baseline;gap:7px}
+.manuscript-review-feedback-head b{font-size:11.5px;font-weight:600}
+.manuscript-review-feedback-head small{min-width:0;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:9.5px}
+.manuscript-review-feedback-location{color:var(--muted);font-size:9.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.manuscript-review-feedback-selection{font-size:10.5px;line-height:1.35;color:var(--muted);font-style:italic;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.manuscript-review-feedback-body{font-size:11.5px;line-height:1.42;white-space:pre-wrap;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.manuscript-review-feedback-more{align-self:flex-start;margin:6px 6px 0 0}
+.manuscript-review-inline{border-radius:3px;padding:0 1px;margin:0 -1px;cursor:pointer}
+.manuscript-review-inline-comment{cursor:text;background:color-mix(in srgb,var(--accent) 10%,transparent);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 58%,transparent);text-decoration-style:dotted;text-underline-offset:2px}
+.manuscript-review-inline-comment.is-selected{background:color-mix(in srgb,var(--accent) 18%,transparent);text-decoration-color:var(--accent)}
+.manuscript-review-inline-suggestion-source{cursor:pointer}
+.manuscript-review-inline-suggestion-source.operation-delete,.manuscript-review-inline-suggestion-source.operation-replace{color:var(--danger);text-decoration:line-through;text-decoration-thickness:1.35px;text-decoration-color:currentColor;background:color-mix(in srgb,var(--danger) 10%,transparent)}
+.manuscript-review-inline-suggestion-source.operation-replace.is-selected,.manuscript-review-inline-suggestion-source.operation-delete.is-selected{background:color-mix(in srgb,var(--danger) 17%,transparent)}
+.manuscript-review-inline-suggestion-proposed{display:inline;color:color-mix(in srgb,var(--accent) 82%,var(--text));background:color-mix(in srgb,var(--accent-soft) 68%,transparent);border:0;border-radius:2px;padding:0 2px;margin-left:3px;box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--accent) 82%,transparent);font-weight:500;white-space:pre-wrap;cursor:pointer}
+.manuscript-review-inline-suggestion-proposed.operation-insert{margin-left:2px}
+.manuscript-review-inline-suggestion-proposed.is-selected{background:color-mix(in srgb,var(--accent-soft) 100%,var(--surface));box-shadow:inset 0 -2px 0 var(--accent)}
+.manuscript-review-gutter-marker{position:absolute;left:-39px;z-index:7;min-width:20px;height:20px;padding:0;border:0;background:transparent;color:var(--muted);display:flex;align-items:center;gap:4px;cursor:pointer;overflow:visible}
+.manuscript-review-gutter-marker:hover,.manuscript-review-gutter-marker:focus-visible{color:var(--text);outline:0}
+.manuscript-review-gutter-marker.kind-highlight{left:-31px}
+.manuscript-review-gutter-marker.kind-comment{cursor:default}
+.manuscript-review-gutter-comment,.manuscript-review-gutter-mixed{position:static;width:16px;height:18px;display:grid;place-items:center;font-family:Arial,sans-serif;font-size:14px;font-weight:400;line-height:1;transform:none;pointer-events:none}
+.manuscript-review-gutter-count{position:static;min-width:12px;height:13px;padding:0 3px;display:grid;place-items:center;border:1px solid var(--line2);border-radius:7px;background:var(--surface);color:var(--muted);font-size:8px;font-weight:700;line-height:1;box-shadow:0 1px 2px rgba(0,0,0,.04);pointer-events:none}
+.manuscript-review-gutter-marker:hover .manuscript-review-gutter-count{color:var(--text);border-color:currentColor}
+.manuscript-review-gutter-swatch{width:10px;height:16px;border-radius:999px;background:var(--review-marker-color);box-shadow:0 0 0 1px rgba(0,0,0,.14);flex:none}
+.manuscript-review-gutter-change{width:3px;height:16px;border-radius:999px;background:color-mix(in srgb,var(--muted) 92%,var(--text));flex:none}
+.manuscript-review-hover-card{position:fixed;z-index:3200;min-width:min(280px,calc(100vw - 24px));max-width:min(340px,calc(100vw - 24px));display:flex;flex-direction:column;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);box-shadow:0 12px 24px rgba(0,0,0,.14)}
+.manuscript-review-hover-item{display:flex;flex-direction:column;gap:6px;padding:1px 0}
+.manuscript-review-hover-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.manuscript-review-hover-head>div{min-width:0}
+.manuscript-review-hover-head b,.manuscript-review-hover-head small{display:block}
+.manuscript-review-hover-head b{font-size:11px;line-height:1.25}
+.manuscript-review-hover-head small{margin-top:2px;color:var(--muted);font-size:9.5px;line-height:1.35}
+.manuscript-review-hover-body{font-size:11.5px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.manuscript-review-hover-more{margin-top:-2px}
+.manuscript-review-hover-actions{display:flex;align-items:center;gap:5px;padding-top:1px}
+.manuscript-review-hover-actions .review-command-button{min-height:25px;padding:4px 8px!important}
+.context-menu.review-hover-context{z-index:3300}
+::highlight(manuscript-review-focus){background:color-mix(in srgb,var(--accent) 34%,transparent)}
+.manuscript-review-feedback-modal{display:flex;flex-direction:column;gap:15px;max-height:min(62vh,620px);overflow:auto;padding-right:2px}
+.manuscript-review-form-section{display:flex;flex-direction:column;gap:8px}
+.manuscript-review-form-section+ .manuscript-review-form-section{border-top:1px solid var(--line);padding-top:13px}
+.manuscript-review-form-section h3{margin:0;font-size:12px}
+.manuscript-review-form-answer{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:start;padding:9px;border:1px solid var(--line);border-radius:6px;background:var(--surface2)}
+.manuscript-review-form-answer b{display:block;font-size:10.5px;margin-bottom:4px}
+.manuscript-review-form-answer p{margin:0;color:var(--text);font-size:11.5px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.manuscript-review-form-answer .quiet-button{width:auto;white-space:nowrap;padding:5px 7px;border:1px solid var(--line);border-radius:5px;background:var(--surface);font-size:10px}
+
+
+/* 8.20.5 — active Review work stays separate from completed feedback. */
+.manuscript-review-feedback-card.completed{background:transparent;opacity:.78}
+.manuscript-review-feedback-card.completed:hover{background:var(--surface2);opacity:1}
+.manuscript-review-feedback-card.completed .manuscript-review-feedback-main{cursor:default}
+.manuscript-review-completed-section{border-top:1px solid var(--line);margin-top:4px}
+.manuscript-review-completed-toggle{width:100%;height:34px;border:0;background:transparent;color:var(--muted);padding:0 11px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:10.5px;text-align:left}
+.manuscript-review-completed-toggle:hover,.manuscript-review-completed-toggle:focus-visible{background:var(--surface2);color:var(--text);outline:0}
+.manuscript-review-completed-toggle span:last-child{font-variant-numeric:tabular-nums}
+.manuscript-review-completed-list{border-top:1px solid var(--line)}
+.manuscript-review-active-empty{min-height:76px}
+
+
+/* 8.20.9 — Review decorations never rewrite the editable manuscript DOM. */
+::highlight(manuscript-review-comments){background:color-mix(in srgb,var(--accent) 10%,transparent);text-decoration:underline dotted color-mix(in srgb,var(--accent) 58%,transparent);text-underline-offset:2px}
+::highlight(manuscript-review-suggestion-delete),::highlight(manuscript-review-suggestion-replace){color:var(--danger);background:color-mix(in srgb,var(--danger) 10%,transparent);text-decoration:line-through;text-decoration-color:currentColor;text-decoration-thickness:1.35px}
+.manuscript-review-proposal-decoration{position:absolute;z-index:8;display:inline-block;box-sizing:border-box;width:max-content;min-width:12px;color:color-mix(in srgb,var(--accent) 82%,var(--text));background:color-mix(in srgb,var(--surface) 92%,var(--accent-soft));border-radius:3px;padding:1px 4px 2px;box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--accent) 82%,transparent),0 1px 2px rgba(0,0,0,.08);font:inherit;font-size:.92em;line-height:1.25;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:auto;cursor:default}
+.manuscript-review-proposal-decoration::before{content:'↳ ';color:var(--muted);font-weight:400}
+.manuscript-review-proposal-decoration.is-selected{background:color-mix(in srgb,var(--surface) 78%,var(--accent-soft));box-shadow:inset 0 -2px 0 var(--accent),0 1px 2px rgba(0,0,0,.08)}
+
+
+/* 8.20.11 — Review UI alignment and immediate configuration feedback. */
+.review-feedback-answer{position:relative;display:block;padding-right:36px}
+.review-feedback-answer>.review-feedback-line-more{position:absolute;top:5px;right:2px}
+.review-questionnaire-attach[data-pending="true"]{cursor:progress}
+
+/* 8.20.12 — Manuscript Review details transition immediately; data hydrates without a visible loading interstitial. */
+.manuscript-review-feedback-pending{min-height:72px}
+

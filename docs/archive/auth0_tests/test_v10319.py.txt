@@ -1,0 +1,131 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from oidc_fake import FakeOidcIssuer
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_v10319_checkpoint_four_auth0_boundary_is_documented_but_login_stays_disabled():
+    version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+    architecture = (ROOT / 'ARCHITECTURE.md').read_text(encoding='utf-8')
+    auth_readme = (ROOT / 'src/auth/README.md').read_text(encoding='utf-8')
+    auth0 = (ROOT / 'src/auth/auth0.py').read_text(encoding='utf-8')
+    routes = (ROOT / 'src/backend/runtime_routes.py').read_text(encoding='utf-8')
+    assert tuple(map(int, version.split('.'))) >= (10, 3, 19)
+    assert 'Checkpoint 4' in architecture and 'hosted login remains disabled' in architecture
+    assert 'Checkpoint 4' in auth_readme and 'class Auth0BoundaryConfig' in auth0
+    # Checkpoint 3/4 documented hosted login as disabled at that time. Later
+    # identity checkpoints legitimately add development-only routes, so preserve the
+    # historical architecture statement rather than forbidding future implementation.
+    assert 'hosted login remains disabled' in architecture
+
+
+def test_v10319_auth0_boundary_is_non_secret_exact_and_regular_web():
+    from auth.auth0 import Auth0BoundaryConfig
+
+    boundary = Auth0BoundaryConfig(
+        environment='production',
+        issuer='https://login.example.test',
+        client_id='client-public-id',
+        application_origin='https://app.example.test/',
+        client_secret_ref='breadmaker-auth0-hosted-web-client-secret',
+    )
+    assert boundary.issuer == 'https://login.example.test/'
+    assert boundary.application_origin == 'https://app.example.test'
+    assert boundary.callback_uri == 'https://app.example.test/auth/callback'
+    assert boundary.logout_return_uri == 'https://app.example.test/'
+    assert boundary.scopes == ('openid', 'profile', 'email')
+    metadata = boundary.metadata()
+    assert metadata['application_type'] == 'regular_web'
+    assert metadata['universal_login'] is True
+    assert metadata['grant_types'] == ['authorization_code']
+    assert metadata['cross_origin_auth'] is False
+    assert metadata['browser_token_exposure'] is False
+    assert 'secret-value' not in repr(boundary).lower()
+    assert not any('secret-value' in str(value) for value in metadata.values())
+
+
+def test_v10319_auth0_boundary_rejects_wildcards_and_non_https_hosted_origins():
+    from auth.auth0 import Auth0BoundaryConfig, Auth0BoundaryError
+
+    base = dict(
+        issuer='https://tenant.example.test',
+        client_id='client-id',
+        client_secret_ref='secret-ref',
+    )
+    with pytest.raises(Auth0BoundaryError, match='AUTH0_APPLICATION_ORIGIN_INVALID'):
+        Auth0BoundaryConfig(environment='production', application_origin='https://*.example.test', **base)
+    with pytest.raises(Auth0BoundaryError, match='AUTH0_APPLICATION_ORIGIN_HTTPS_REQUIRED'):
+        Auth0BoundaryConfig(environment='production', application_origin='http://app.example.test', **base)
+    with pytest.raises(Auth0BoundaryError, match='AUTH0_APPLICATION_ORIGIN_LOOPBACK_FORBIDDEN|AUTH0_APPLICATION_ORIGIN_HTTPS_REQUIRED'):
+        Auth0BoundaryConfig(environment='staging', application_origin='http://127.0.0.1:8000', **base)
+    with pytest.raises(Auth0BoundaryError, match='AUTH0_CALLBACK_PATH_INVALID'):
+        Auth0BoundaryConfig(environment='production', application_origin='https://app.example.test', callback_path='/anything', **base)
+    with pytest.raises(Auth0BoundaryError, match='AUTH0_SCOPE_SET_INVALID'):
+        Auth0BoundaryConfig(environment='production', application_origin='https://app.example.test', scopes=('openid', 'profile', 'email', 'offline_access'), **base)
+
+
+def test_v10319_auth0_adapter_delegates_to_generic_oidc_and_injects_secret_only_at_build_time():
+    from auth.auth0 import Auth0BoundaryConfig
+
+    with FakeOidcIssuer() as issuer:
+        refs: list[str] = []
+        boundary = Auth0BoundaryConfig(
+            environment='development',
+            issuer=issuer.issuer,
+            client_id=issuer.client_id,
+            application_origin=issuer.issuer,
+            client_secret_ref='test/auth0-client-secret',
+        )
+        assert boundary.callback_uri == issuer.redirect_uri
+
+        def load_secret(ref: str) -> str:
+            refs.append(ref)
+            return issuer.client_secret
+
+        client = boundary.build_oidc_client(secret_loader=load_secret)
+        request = client.begin_authorization(return_path='/manuscript')
+        code = issuer.issue_code(request)
+        identity, return_path = client.complete_authorization(code=code, state=request.state)
+        assert refs == ['test/auth0-client-secret']
+        assert identity.issuer == issuer.issuer
+        assert identity.subject == 'subject-123'
+        assert return_path == '/manuscript'
+        assert client.metadata()['browser_token_exposure'] is False
+        assert issuer.client_secret not in repr(boundary)
+
+
+def test_v10319_auth0_secret_loader_failures_are_sanitized():
+    from auth.auth0 import Auth0BoundaryConfig, Auth0BoundaryError
+
+    boundary = Auth0BoundaryConfig(
+        environment='production',
+        issuer='https://tenant.example.test',
+        client_id='client-id',
+        application_origin='https://app.example.test',
+        client_secret_ref='prod/auth0-secret',
+    )
+
+    def explode(_ref: str) -> str:
+        raise RuntimeError('super-sensitive-secret-value')
+
+    with pytest.raises(Auth0BoundaryError, match='AUTH0_CLIENT_SECRET_UNAVAILABLE') as exc:
+        boundary.build_oidc_client(secret_loader=explode)
+    assert 'super-sensitive-secret-value' not in str(exc.value)
+
+
+def test_v10319_local_runtime_remains_accountless_and_auth0_adapter_is_never_instantiated(tmp_path, monkeypatch):
+    from runtime import build_runtime
+    from workspace import Workspace
+
+    monkeypatch.setenv('BREADMAKER_RUNTIME', 'local')
+    ws = Workspace(tmp_path / 'home')
+    runtime = build_runtime(ws)
+    assert runtime.sessions.requires_authentication is False
+    assert runtime.accounts.enabled is False
+    assert runtime.capabilities.supports('account_authentication') is False
+    assert not (ws.root / 'account-identities').exists()

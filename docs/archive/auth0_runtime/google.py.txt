@@ -1,0 +1,118 @@
+from __future__ import annotations
+
+"""Google identity mapping behind the Auth0 broker.
+
+Checkpoint 5 remains deliberately dormant at the HTTP layer: no login/callback route
+is introduced here. The generic OIDC engine verifies the Auth0 ID token first; this
+module then constrains that already-verified identity to Auth0's Google social
+connection and maps it into Breadmaker's issuer+subject account registry.
+
+Security boundary:
+- Auth0 remains the OIDC issuer seen by Breadmaker.
+- only verified subjects beginning with ``google-oauth2|`` are accepted as Google;
+- the complete verified Auth0 ``sub`` remains the external identity subject;
+- email/name are mutable profile metadata and never account merge authority;
+- Google access/refresh tokens and Google Drive scopes are outside this mapper;
+- local Breadmaker never instantiates this owner.
+"""
+
+from dataclasses import dataclass
+from typing import Any
+
+from auth.accounts import AccountIdentityService, ExternalIdentity
+from auth.auth0 import Auth0BoundaryConfig
+from auth.oidc import VerifiedOidcIdentity
+
+
+class GoogleAuth0IdentityError(RuntimeError):
+    """Stable non-secret Google/Auth0 mapping failure."""
+
+
+_GOOGLE_CONNECTION = 'google-oauth2'
+_GOOGLE_SUBJECT_PREFIX = 'google-oauth2|'
+_IDENTITY_SCOPES = ('openid', 'profile', 'email')
+
+
+@dataclass(frozen=True)
+class GoogleAuth0Profile:
+    """Provider-constrained projection of a verified Auth0 OIDC identity."""
+
+    issuer: str
+    subject: str
+    provider_subject: str
+    email: str
+    email_verified: bool
+    display_name: str
+    authenticated_at: float | None
+
+    def public(self) -> dict[str, Any]:
+        return {
+            'issuer': self.issuer,
+            'subject': self.subject,
+            'provider': 'google',
+            'connection': _GOOGLE_CONNECTION,
+            'email': self.email,
+            'email_verified': self.email_verified,
+            'display_name': self.display_name,
+            'authenticated_at': self.authenticated_at,
+        }
+
+
+class GoogleAuth0IdentityMapper:
+    """Constrain verified Auth0 identities to Breadmaker's Google login method."""
+
+    connection_name = _GOOGLE_CONNECTION
+
+    def __init__(self, boundary: Auth0BoundaryConfig):
+        self.boundary = boundary
+
+    def metadata(self) -> dict[str, Any]:
+        return {
+            'broker': 'auth0',
+            'provider': 'google',
+            'connection': self.connection_name,
+            'identity_scopes': list(_IDENTITY_SCOPES),
+            'identity_key': ['issuer', 'subject'],
+            'subject_prefix': _GOOGLE_SUBJECT_PREFIX,
+            'email_authoritative': False,
+            'automatic_link_by_email': False,
+            'provider_tokens_retained': False,
+            'google_api_scopes': [],
+            'google_drive_authorization_separate': True,
+        }
+
+    def map_verified_identity(self, identity: VerifiedOidcIdentity) -> GoogleAuth0Profile:
+        if not isinstance(identity, VerifiedOidcIdentity):
+            raise GoogleAuth0IdentityError('GOOGLE_IDENTITY_NOT_VERIFIED_OIDC')
+        if identity.issuer != self.boundary.issuer:
+            raise GoogleAuth0IdentityError('GOOGLE_AUTH0_ISSUER_MISMATCH')
+        subject = str(identity.subject or '')
+        if not subject.startswith(_GOOGLE_SUBJECT_PREFIX):
+            raise GoogleAuth0IdentityError('GOOGLE_AUTH0_SUBJECT_PROVIDER_MISMATCH')
+        provider_subject = subject[len(_GOOGLE_SUBJECT_PREFIX):]
+        if not provider_subject or provider_subject.isspace() or any(ord(ch) < 0x20 or ord(ch) == 0x7f for ch in provider_subject):
+            raise GoogleAuth0IdentityError('GOOGLE_AUTH0_SUBJECT_INVALID')
+        return GoogleAuth0Profile(
+            issuer=identity.issuer,
+            subject=subject,
+            provider_subject=provider_subject,
+            email=str(identity.email or '').strip()[:320],
+            email_verified=bool(identity.email_verified),
+            display_name=str(identity.display_name or '').strip()[:160],
+            authenticated_at=identity.authenticated_at,
+        )
+
+    def resolve_or_create_account(
+        self,
+        identity: VerifiedOidcIdentity,
+        accounts: AccountIdentityService,
+    ) -> ExternalIdentity:
+        profile = self.map_verified_identity(identity)
+        return accounts.resolve_or_create_external_identity(
+            profile.issuer,
+            profile.subject,
+            provider='google',
+            display_name=profile.display_name,
+            email=profile.email,
+            email_verified=profile.email_verified,
+        )

@@ -1,0 +1,3793 @@
+{
+  "version": 5,
+  "description": "Explicit backend dependencies. Platform and feature package domains aggregate focused owners; platform dependencies point to canonical modules and feature dependencies are lazy calls to canonical feature owners.",
+  "platform_domains": [
+    {
+      "module": "project_management",
+      "platform_dependencies": [
+        {
+          "module": "auth",
+          "symbol": "identity",
+          "local": "identity_service"
+        },
+        {
+          "module": "backend",
+          "symbol": "client_leases",
+          "local": "client_leases"
+        },
+        {
+          "module": "backend",
+          "symbol": "danger_challenges",
+          "local": "danger_challenges"
+        },
+        {
+          "module": "backend",
+          "symbol": "diagnostics",
+          "local": "diagnostics"
+        },
+        {
+          "module": "backend",
+          "symbol": "diagnostics",
+          "local": "diagnostics"
+        },
+        {
+          "module": "backend",
+          "symbol": "diagnostics",
+          "local": "diagnostics"
+        },
+        {
+          "module": "backend",
+          "symbol": "diagnostics",
+          "local": "diagnostics"
+        },
+        {
+          "module": "backend",
+          "symbol": "local_history",
+          "local": "local_history"
+        },
+        {
+          "module": "backend",
+          "symbol": "recovery_runtime",
+          "local": "recovery_runtime"
+        },
+        {
+          "module": "backend",
+          "symbol": "recovery_runtime",
+          "local": "recovery_runtime"
+        },
+        {
+          "module": "backend",
+          "symbol": "request_pipeline",
+          "local": "request_pipeline"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "_HOSTED_LIMITS",
+          "local": "_HOSTED_LIMITS"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "_HOSTED_LIMITS",
+          "local": "_HOSTED_LIMITS"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.project_activation",
+          "symbol": "activate_project",
+          "local": "_activate_project"
+        },
+        {
+          "module": "backend.project_activation",
+          "symbol": "activate_project",
+          "local": "_activate_project"
+        },
+        {
+          "module": "backend.project_activation",
+          "symbol": "activate_project",
+          "local": "_activate_project"
+        },
+        {
+          "module": "backend.project_activation",
+          "symbol": "activate_project",
+          "local": "_activate_project"
+        },
+        {
+          "module": "backend.project_activation",
+          "symbol": "activate_project",
+          "local": "_activate_project"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_project_id",
+          "local": "_bound_project_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_project_id",
+          "local": "_bound_project_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_user_id",
+          "local": "_bound_user_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_user_id",
+          "local": "_bound_user_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_user_id",
+          "local": "_bound_user_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_user_id",
+          "local": "_bound_user_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_enforce_hosted_new_project_quota",
+          "local": "_enforce_hosted_new_project_quota"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_enforce_hosted_new_project_quota",
+          "local": "_enforce_hosted_new_project_quota"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_enforce_hosted_new_project_quota",
+          "local": "_enforce_hosted_new_project_quota"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_enforce_hosted_new_project_quota",
+          "local": "_enforce_hosted_new_project_quota"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_profile_request_user_id",
+          "local": "_profile_request_user_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_profile_request_user_id",
+          "local": "_profile_request_user_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_project_is_current_for_bound_actor",
+          "local": "_project_is_current_for_bound_actor"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_public_project_record",
+          "local": "_public_project_record"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_public_project_record",
+          "local": "_public_project_record"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_public_project_record",
+          "local": "_public_project_record"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_public_project_record",
+          "local": "_public_project_record"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_public_project_records",
+          "local": "_public_project_records"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_require_project_permission",
+          "local": "_require_project_permission"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_require_project_permission",
+          "local": "_require_project_permission"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_require_project_permission",
+          "local": "_require_project_permission"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_require_project_permission",
+          "local": "_require_project_permission"
+        },
+        {
+          "module": "formats",
+          "symbol": "fragment_json",
+          "local": "fragment_json"
+        },
+        {
+          "module": "formats.project_json",
+          "symbol": "exporter",
+          "local": "project_json_exporter"
+        },
+        {
+          "module": "formats.project_json",
+          "symbol": "importer",
+          "local": "project_json_importer"
+        },
+        {
+          "module": "formats.project_json",
+          "symbol": "validation",
+          "local": "project_json_validation"
+        },
+        {
+          "module": "runtime.native",
+          "symbol": "require_native_assets",
+          "local": "require_native_assets"
+        },
+        {
+          "module": "runtime.native",
+          "symbol": "require_native_backups",
+          "local": "require_native_backups"
+        },
+        {
+          "module": "runtime.native",
+          "symbol": "require_native_projects",
+          "local": "require_native_projects"
+        },
+        {
+          "module": "runtime.native",
+          "symbol": "require_native_projects",
+          "local": "require_native_projects"
+        },
+        {
+          "module": "runtime.native",
+          "symbol": "require_native_projects",
+          "local": "require_native_projects"
+        },
+        {
+          "module": "security.image_security",
+          "symbol": "UnsafeImage",
+          "local": "UnsafeImage"
+        },
+        {
+          "module": "security.image_security",
+          "symbol": "UnsafeImage",
+          "local": "UnsafeImage"
+        },
+        {
+          "module": "security.image_security",
+          "symbol": "inspect_hosted_image_bytes",
+          "local": "inspect_hosted_image_bytes"
+        },
+        {
+          "module": "security.image_security",
+          "symbol": "inspect_hosted_image_bytes",
+          "local": "inspect_hosted_image_bytes"
+        },
+        {
+          "module": "storage",
+          "symbol": "assets",
+          "local": "storage_assets"
+        },
+        {
+          "module": "storage",
+          "symbol": "context",
+          "local": "storage_context"
+        },
+        {
+          "module": "storage",
+          "symbol": "context",
+          "local": "storage_context"
+        },
+        {
+          "module": "storage",
+          "symbol": "coordination",
+          "local": "storage_coordination"
+        },
+        {
+          "module": "storage",
+          "symbol": "coordination",
+          "local": "storage_coordination"
+        },
+        {
+          "module": "storage",
+          "symbol": "database",
+          "local": "storage_database"
+        },
+        {
+          "module": "storage",
+          "symbol": "database",
+          "local": "storage_database"
+        },
+        {
+          "module": "storage",
+          "symbol": "integrity",
+          "local": "storage_integrity"
+        },
+        {
+          "module": "storage",
+          "symbol": "invariants",
+          "local": "storage_invariants"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "undo",
+          "local": "storage_undo"
+        },
+        {
+          "module": "storage",
+          "symbol": "undo",
+          "local": "storage_undo"
+        },
+        {
+          "module": "storage",
+          "symbol": "undo",
+          "local": "storage_undo"
+        },
+        {
+          "module": "workspace.filesystem",
+          "symbol": "safe_name",
+          "local": "safe_name"
+        },
+        {
+          "module": "workspace.filesystem",
+          "symbol": "safe_name",
+          "local": "safe_name"
+        },
+        {
+          "module": "workspace.models",
+          "symbol": "WorkspaceError",
+          "local": "WorkspaceError"
+        },
+        {
+          "module": "workspace.models",
+          "symbol": "WorkspaceError",
+          "local": "WorkspaceError"
+        },
+        {
+          "module": "workspace.models",
+          "symbol": "WorkspaceError",
+          "local": "WorkspaceError"
+        },
+        {
+          "module": "workspace.models",
+          "symbol": "WorkspaceError",
+          "local": "WorkspaceError"
+        },
+        {
+          "module": "workspace.models",
+          "symbol": "WorkspaceError",
+          "local": "WorkspaceError"
+        }
+      ],
+      "feature_dependencies": [
+        {
+          "symbol": "_developmental_version_snapshot_tx",
+          "owner": "canvas.developmental"
+        },
+        {
+          "symbol": "_sync_developmental_canvases_tx",
+          "owner": "canvas.developmental"
+        },
+        {
+          "symbol": "sync_developmental_canvases",
+          "owner": "canvas.developmental"
+        }
+      ]
+    }
+  ],
+  "domains": [
+    {
+      "module": "manuscript",
+      "platform_dependencies": [
+        {
+          "module": "backend.configuration",
+          "symbol": "_canvas_config_raw",
+          "local": "_canvas_config_raw"
+        },
+        {
+          "module": "backend.configuration",
+          "symbol": "_feature_flags_raw",
+          "local": "_feature_flags_raw"
+        },
+        {
+          "module": "backend.configuration",
+          "symbol": "_metro_view_config_raw",
+          "local": "_metro_view_config_raw"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_BLOCK_TYPES",
+          "local": "VALID_BLOCK_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_BLOCK_TYPES",
+          "local": "VALID_BLOCK_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_SEMANTIC_STYLES",
+          "local": "VALID_SEMANTIC_STYLES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_SEMANTIC_STYLES",
+          "local": "VALID_SEMANTIC_STYLES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "sanitize_inline_html",
+          "local": "sanitize_inline_html"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "sanitize_inline_html",
+          "local": "sanitize_inline_html"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "sanitize_inline_html",
+          "local": "sanitize_inline_html"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_project",
+          "local": "_bound_project"
+        },
+        {
+          "module": "security",
+          "symbol": "content_security",
+          "local": "content_security"
+        },
+        {
+          "module": "security",
+          "symbol": "content_security",
+          "local": "content_security"
+        },
+        {
+          "module": "storage",
+          "symbol": "database",
+          "local": "storage_database"
+        },
+        {
+          "module": "storage",
+          "symbol": "invariants",
+          "local": "storage_invariants"
+        },
+        {
+          "module": "storage",
+          "symbol": "invariants",
+          "local": "storage_invariants"
+        },
+        {
+          "module": "storage",
+          "symbol": "invariants",
+          "local": "storage_invariants"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "workspace.filesystem",
+          "symbol": "safe_name",
+          "local": "safe_name"
+        },
+        {
+          "module": "workspace.filesystem",
+          "symbol": "safe_name",
+          "local": "safe_name"
+        }
+      ],
+      "feature_dependencies": [
+        {
+          "symbol": "_cut_chapter_label",
+          "owner": "durability.cuts"
+        },
+        {
+          "symbol": "_cut_chapter_label",
+          "owner": "durability.cuts"
+        },
+        {
+          "symbol": "_cut_image_figure_html",
+          "owner": "durability.cuts"
+        },
+        {
+          "symbol": "_detach_map_anchors_for_removed_manuscript",
+          "owner": "maps.anchors"
+        },
+        {
+          "symbol": "_detach_map_anchors_for_removed_manuscript",
+          "owner": "maps.anchors"
+        },
+        {
+          "symbol": "_detach_map_anchors_for_removed_manuscript",
+          "owner": "maps.anchors"
+        },
+        {
+          "symbol": "_detach_map_anchors_for_removed_manuscript",
+          "owner": "maps.anchors"
+        },
+        {
+          "symbol": "_maybe_external_backup",
+          "owner": "durability.backups"
+        },
+        {
+          "symbol": "_maybe_external_backup",
+          "owner": "durability.backups"
+        },
+        {
+          "symbol": "_maybe_external_backup",
+          "owner": "durability.backups"
+        },
+        {
+          "symbol": "_move_split_anchors",
+          "owner": "durability.cuts"
+        },
+        {
+          "symbol": "_review_rows",
+          "owner": "reviews.lifecycle"
+        },
+        {
+          "symbol": "_split_inline_html",
+          "owner": "durability.cuts"
+        },
+        {
+          "symbol": "sync_developmental_canvases",
+          "owner": "canvas.developmental"
+        },
+        {
+          "symbol": "sync_developmental_canvases",
+          "owner": "canvas.developmental"
+        },
+        {
+          "symbol": "sync_developmental_canvases",
+          "owner": "canvas.developmental"
+        },
+        {
+          "symbol": "sync_developmental_canvases",
+          "owner": "canvas.developmental"
+        }
+      ]
+    },
+    {
+      "module": "annotations",
+      "platform_dependencies": [
+        {
+          "module": "backend.content",
+          "symbol": "VALID_ANNOTATION_TYPES",
+          "local": "VALID_ANNOTATION_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "normalize_color",
+          "local": "normalize_color"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        }
+      ],
+      "feature_dependencies": []
+    },
+    {
+      "module": "comments",
+      "platform_dependencies": [
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        }
+      ],
+      "feature_dependencies": [
+        {
+          "symbol": "_clean_comment_body",
+          "owner": "annotations.routes"
+        },
+        {
+          "symbol": "_comment_payload",
+          "owner": "annotations.routes"
+        },
+        {
+          "symbol": "_create_comment_thread",
+          "owner": "annotations.routes"
+        }
+      ]
+    },
+    {
+      "module": "reviews",
+      "platform_dependencies": [
+        {
+          "module": "auth",
+          "symbol": "identity",
+          "local": "identity_service"
+        },
+        {
+          "module": "auth.sessions",
+          "symbol": "AuthenticationError",
+          "local": "AuthenticationError"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "_ALLOWED_INLINE",
+          "local": "_ALLOWED_INLINE"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "_html_from_text",
+          "local": "_html_from_text"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "sanitize_inline_html",
+          "local": "sanitize_inline_html"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "APP_VERSION",
+          "local": "APP_VERSION"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "_HOSTED_LIMITS",
+          "local": "_HOSTED_LIMITS"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.portable_review_runtime",
+          "symbol": "_TEMP_PORTABLE_REVIEWS",
+          "local": "_TEMP_PORTABLE_REVIEWS"
+        },
+        {
+          "module": "backend.portable_review_runtime",
+          "symbol": "_TEMP_PORTABLE_REVIEW_LOCK",
+          "local": "_TEMP_PORTABLE_REVIEW_LOCK"
+        },
+        {
+          "module": "backend.portable_review_runtime",
+          "symbol": "_TemporaryPortableReviewState",
+          "local": "_TemporaryPortableReviewState"
+        },
+        {
+          "module": "backend.portable_review_runtime",
+          "symbol": "current_portable_review_passphrase",
+          "local": "current_portable_review_passphrase"
+        },
+        {
+          "module": "backend.portable_review_runtime",
+          "symbol": "current_portable_review_path",
+          "local": "current_portable_review_path"
+        },
+        {
+          "module": "backend.portable_review_runtime",
+          "symbol": "current_portable_review_path",
+          "local": "current_portable_review_path"
+        },
+        {
+          "module": "backend.portable_review_runtime",
+          "symbol": "set_portable_review_passphrase",
+          "local": "set_portable_review_passphrase"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_project_id",
+          "local": "_bound_project_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_project_id",
+          "local": "_bound_project_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_user_id",
+          "local": "_bound_user_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_require_project_permission",
+          "local": "_require_project_permission"
+        },
+        {
+          "module": "formats",
+          "symbol": "breadreview",
+          "local": "breadreview"
+        },
+        {
+          "module": "formats",
+          "symbol": "breadreview",
+          "local": "breadreview"
+        },
+        {
+          "module": "security",
+          "symbol": "content_security",
+          "local": "content_security"
+        },
+        {
+          "module": "security.image_security",
+          "symbol": "UnsafeImage",
+          "local": "UnsafeImage"
+        },
+        {
+          "module": "security.image_security",
+          "symbol": "inspect_hosted_image_bytes",
+          "local": "inspect_hosted_image_bytes"
+        },
+        {
+          "module": "storage",
+          "symbol": "assets",
+          "local": "storage_assets"
+        },
+        {
+          "module": "storage",
+          "symbol": "invariants",
+          "local": "storage_invariants"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "workspace.filesystem",
+          "symbol": "safe_name",
+          "local": "safe_name"
+        }
+      ],
+      "feature_dependencies": [
+        {
+          "symbol": "_capture_book_checkpoint",
+          "owner": "checkpoints.capture"
+        },
+        {
+          "symbol": "_capture_chapter_checkpoint",
+          "owner": "checkpoints.capture"
+        },
+        {
+          "symbol": "_checkpoint_row",
+          "owner": "checkpoints.lineage"
+        },
+        {
+          "symbol": "_checkpoint_word_count",
+          "owner": "checkpoints.capture"
+        },
+        {
+          "symbol": "_detach_map_anchors_for_removed_manuscript",
+          "owner": "maps.anchors"
+        },
+        {
+          "symbol": "_encode_checkpoint_snapshot",
+          "owner": "checkpoints.capture"
+        },
+        {
+          "symbol": "_insert_checkpoint",
+          "owner": "checkpoints.capture"
+        },
+        {
+          "symbol": "_normalize_image_rows",
+          "owner": "manuscript.images"
+        },
+        {
+          "symbol": "_split_inline_html",
+          "owner": "durability.cuts"
+        },
+        {
+          "symbol": "reanchor_block_annotations",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "reanchor_block_bookmark",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "rehome_deleted_block_refs",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "repair_stale_annotations",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "repair_stale_bookmark",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "save_upload_limited",
+          "owner": "import_export.uploads"
+        }
+      ]
+    },
+    {
+      "module": "tasks",
+      "platform_dependencies": [
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        }
+      ],
+      "feature_dependencies": []
+    },
+    {
+      "module": "canvas",
+      "platform_dependencies": [
+        {
+          "module": "backend.content",
+          "symbol": "CONTENT_CARD_SHAPES",
+          "local": "CONTENT_CARD_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "CONTENT_CARD_SHAPES",
+          "local": "CONTENT_CARD_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "CONTENT_CARD_SHAPES",
+          "local": "CONTENT_CARD_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "CONTENT_CARD_SHAPES",
+          "local": "CONTENT_CARD_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "CONTENT_CARD_SHAPES",
+          "local": "CONTENT_CARD_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "CONTENT_CARD_SHAPES",
+          "local": "CONTENT_CARD_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "CONTENT_CARD_SHAPES",
+          "local": "CONTENT_CARD_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "CONTENT_CARD_SHAPES",
+          "local": "CONTENT_CARD_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "DEVELOPMENTAL_FREE_Y",
+          "local": "DEVELOPMENTAL_FREE_Y"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "DEVELOPMENTAL_FREE_Y",
+          "local": "DEVELOPMENTAL_FREE_Y"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "DEVELOPMENTAL_FREE_Y",
+          "local": "DEVELOPMENTAL_FREE_Y"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "DEVELOPMENTAL_FREE_Y",
+          "local": "DEVELOPMENTAL_FREE_Y"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "DEVELOPMENTAL_FREE_Y",
+          "local": "DEVELOPMENTAL_FREE_Y"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "DEVELOPMENTAL_FREE_Y",
+          "local": "DEVELOPMENTAL_FREE_Y"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "DEVELOPMENTAL_FREE_Y",
+          "local": "DEVELOPMENTAL_FREE_Y"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "DEVELOPMENTAL_FREE_Y",
+          "local": "DEVELOPMENTAL_FREE_Y"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "DEVELOPMENTAL_LANE_START_X",
+          "local": "DEVELOPMENTAL_LANE_START_X"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "DEVELOPMENTAL_LANE_START_X",
+          "local": "DEVELOPMENTAL_LANE_START_X"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "DEVELOPMENTAL_LANE_START_X",
+          "local": "DEVELOPMENTAL_LANE_START_X"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "DEVELOPMENTAL_LANE_START_X",
+          "local": "DEVELOPMENTAL_LANE_START_X"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "DEVELOPMENTAL_LANE_START_X",
+          "local": "DEVELOPMENTAL_LANE_START_X"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "DEVELOPMENTAL_LANE_START_X",
+          "local": "DEVELOPMENTAL_LANE_START_X"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "DEVELOPMENTAL_LANE_START_X",
+          "local": "DEVELOPMENTAL_LANE_START_X"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "DEVELOPMENTAL_LANE_START_X",
+          "local": "DEVELOPMENTAL_LANE_START_X"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "FIGURE_NODE_SHAPES",
+          "local": "FIGURE_NODE_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "FIGURE_NODE_SHAPES",
+          "local": "FIGURE_NODE_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "FIGURE_NODE_SHAPES",
+          "local": "FIGURE_NODE_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "FIGURE_NODE_SHAPES",
+          "local": "FIGURE_NODE_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "FIGURE_NODE_SHAPES",
+          "local": "FIGURE_NODE_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "FIGURE_NODE_SHAPES",
+          "local": "FIGURE_NODE_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "FIGURE_NODE_SHAPES",
+          "local": "FIGURE_NODE_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "FIGURE_NODE_SHAPES",
+          "local": "FIGURE_NODE_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_CANVAS_TYPES",
+          "local": "VALID_CANVAS_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_CANVAS_TYPES",
+          "local": "VALID_CANVAS_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_CANVAS_TYPES",
+          "local": "VALID_CANVAS_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_CANVAS_TYPES",
+          "local": "VALID_CANVAS_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_CANVAS_TYPES",
+          "local": "VALID_CANVAS_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_CANVAS_TYPES",
+          "local": "VALID_CANVAS_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_CANVAS_TYPES",
+          "local": "VALID_CANVAS_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_CANVAS_TYPES",
+          "local": "VALID_CANVAS_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_NODE_SHAPES",
+          "local": "VALID_NODE_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_NODE_SHAPES",
+          "local": "VALID_NODE_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_NODE_SHAPES",
+          "local": "VALID_NODE_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_NODE_SHAPES",
+          "local": "VALID_NODE_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_NODE_SHAPES",
+          "local": "VALID_NODE_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_NODE_SHAPES",
+          "local": "VALID_NODE_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_NODE_SHAPES",
+          "local": "VALID_NODE_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_NODE_SHAPES",
+          "local": "VALID_NODE_SHAPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_NODE_TYPES",
+          "local": "VALID_NODE_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_NODE_TYPES",
+          "local": "VALID_NODE_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_NODE_TYPES",
+          "local": "VALID_NODE_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_NODE_TYPES",
+          "local": "VALID_NODE_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_NODE_TYPES",
+          "local": "VALID_NODE_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_NODE_TYPES",
+          "local": "VALID_NODE_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_NODE_TYPES",
+          "local": "VALID_NODE_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_NODE_TYPES",
+          "local": "VALID_NODE_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "normalize_color",
+          "local": "normalize_color"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "normalize_color",
+          "local": "normalize_color"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "normalize_color",
+          "local": "normalize_color"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "normalize_color",
+          "local": "normalize_color"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "normalize_color",
+          "local": "normalize_color"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "normalize_color",
+          "local": "normalize_color"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "normalize_color",
+          "local": "normalize_color"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "normalize_color",
+          "local": "normalize_color"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "STORY_TEMPLATES_CONFIG",
+          "local": "STORY_TEMPLATES_CONFIG"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "STORY_TEMPLATES_CONFIG",
+          "local": "STORY_TEMPLATES_CONFIG"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "STORY_TEMPLATES_CONFIG",
+          "local": "STORY_TEMPLATES_CONFIG"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "STORY_TEMPLATES_CONFIG",
+          "local": "STORY_TEMPLATES_CONFIG"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "STORY_TEMPLATES_CONFIG",
+          "local": "STORY_TEMPLATES_CONFIG"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "STORY_TEMPLATES_CONFIG",
+          "local": "STORY_TEMPLATES_CONFIG"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "STORY_TEMPLATES_CONFIG",
+          "local": "STORY_TEMPLATES_CONFIG"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "STORY_TEMPLATES_CONFIG",
+          "local": "STORY_TEMPLATES_CONFIG"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "security",
+          "symbol": "content_security",
+          "local": "content_security"
+        },
+        {
+          "module": "security",
+          "symbol": "content_security",
+          "local": "content_security"
+        },
+        {
+          "module": "security",
+          "symbol": "content_security",
+          "local": "content_security"
+        },
+        {
+          "module": "security",
+          "symbol": "content_security",
+          "local": "content_security"
+        },
+        {
+          "module": "security",
+          "symbol": "content_security",
+          "local": "content_security"
+        },
+        {
+          "module": "security",
+          "symbol": "content_security",
+          "local": "content_security"
+        },
+        {
+          "module": "security",
+          "symbol": "content_security",
+          "local": "content_security"
+        },
+        {
+          "module": "security",
+          "symbol": "content_security",
+          "local": "content_security"
+        },
+        {
+          "module": "storage",
+          "symbol": "database",
+          "local": "storage_database"
+        },
+        {
+          "module": "storage",
+          "symbol": "database",
+          "local": "storage_database"
+        },
+        {
+          "module": "storage",
+          "symbol": "database",
+          "local": "storage_database"
+        },
+        {
+          "module": "storage",
+          "symbol": "database",
+          "local": "storage_database"
+        },
+        {
+          "module": "storage",
+          "symbol": "database",
+          "local": "storage_database"
+        },
+        {
+          "module": "storage",
+          "symbol": "database",
+          "local": "storage_database"
+        },
+        {
+          "module": "storage",
+          "symbol": "database",
+          "local": "storage_database"
+        },
+        {
+          "module": "storage",
+          "symbol": "database",
+          "local": "storage_database"
+        },
+        {
+          "module": "storage",
+          "symbol": "invariants",
+          "local": "storage_invariants"
+        },
+        {
+          "module": "storage",
+          "symbol": "invariants",
+          "local": "storage_invariants"
+        },
+        {
+          "module": "storage",
+          "symbol": "invariants",
+          "local": "storage_invariants"
+        },
+        {
+          "module": "storage",
+          "symbol": "invariants",
+          "local": "storage_invariants"
+        },
+        {
+          "module": "storage",
+          "symbol": "invariants",
+          "local": "storage_invariants"
+        },
+        {
+          "module": "storage",
+          "symbol": "invariants",
+          "local": "storage_invariants"
+        },
+        {
+          "module": "storage",
+          "symbol": "invariants",
+          "local": "storage_invariants"
+        },
+        {
+          "module": "storage",
+          "symbol": "invariants",
+          "local": "storage_invariants"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        }
+      ],
+      "feature_dependencies": [
+        {
+          "symbol": "_next_scene_position",
+          "owner": "manuscript.scenes"
+        },
+        {
+          "symbol": "_sync_scene_outline_to_manuscript",
+          "owner": "manuscript.scenes"
+        },
+        {
+          "symbol": "_sync_scene_outline_to_manuscript",
+          "owner": "manuscript.scenes"
+        }
+      ]
+    },
+    {
+      "module": "icon_markers",
+      "platform_dependencies": [
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        }
+      ],
+      "feature_dependencies": []
+    },
+    {
+      "module": "maps",
+      "platform_dependencies": [
+        {
+          "module": "backend.content",
+          "symbol": "normalize_color",
+          "local": "normalize_color"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "normalize_color",
+          "local": "normalize_color"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "storage",
+          "symbol": "context",
+          "local": "storage_context"
+        },
+        {
+          "module": "storage",
+          "symbol": "database",
+          "local": "storage_database"
+        },
+        {
+          "module": "storage",
+          "symbol": "database",
+          "local": "storage_database"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        }
+      ],
+      "feature_dependencies": [
+        {
+          "symbol": "_describe_ref",
+          "owner": "workspace_tools.references"
+        },
+        {
+          "symbol": "_entity_exists",
+          "owner": "workspace_tools.references"
+        },
+        {
+          "symbol": "_story_template",
+          "owner": "canvas.populate"
+        },
+        {
+          "symbol": "_story_template_catalog_raw",
+          "owner": "canvas.populate"
+        }
+      ]
+    },
+    {
+      "module": "workspace_tools",
+      "platform_dependencies": [
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "storage",
+          "symbol": "database",
+          "local": "storage_database"
+        },
+        {
+          "module": "storage",
+          "symbol": "invariants",
+          "local": "storage_invariants"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        }
+      ],
+      "feature_dependencies": [
+        {
+          "symbol": "_bookmark_context_values",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "_bookmark_payload",
+          "owner": "manuscript.navigation"
+        },
+        {
+          "symbol": "_detach_map_anchors_for_removed_manuscript",
+          "owner": "maps.anchors"
+        },
+        {
+          "symbol": "repair_orphaned_bookmark",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "sync_developmental_canvases",
+          "owner": "canvas.developmental"
+        }
+      ]
+    },
+    {
+      "module": "find_replace",
+      "platform_dependencies": [
+        {
+          "module": "backend.content",
+          "symbol": "_html_from_text",
+          "local": "_html_from_text"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "sanitize_inline_html",
+          "local": "sanitize_inline_html"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        }
+      ],
+      "feature_dependencies": [
+        {
+          "symbol": "reanchor_block_annotations",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "reanchor_block_bookmark",
+          "owner": "manuscript.anchors"
+        }
+      ]
+    },
+    {
+      "module": "checkpoints",
+      "platform_dependencies": [
+        {
+          "module": "backend.content",
+          "symbol": "VALID_BLOCK_TYPES",
+          "local": "VALID_BLOCK_TYPES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "VALID_SEMANTIC_STYLES",
+          "local": "VALID_SEMANTIC_STYLES"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "sanitize_inline_html",
+          "local": "sanitize_inline_html"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "security",
+          "symbol": "content_security",
+          "local": "content_security"
+        },
+        {
+          "module": "storage",
+          "symbol": "assets",
+          "local": "storage_assets"
+        },
+        {
+          "module": "storage",
+          "symbol": "assets",
+          "local": "storage_assets"
+        },
+        {
+          "module": "storage",
+          "symbol": "invariants",
+          "local": "storage_invariants"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "undo",
+          "local": "storage_undo"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        }
+      ],
+      "feature_dependencies": [
+        {
+          "symbol": "_clean_comment_body",
+          "owner": "annotations.routes"
+        },
+        {
+          "symbol": "_context_match_head",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "_context_match_tail",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "_detach_map_anchors_for_removed_manuscript",
+          "owner": "maps.anchors"
+        },
+        {
+          "symbol": "_ensure_implicit_tab_chapter",
+          "owner": "manuscript.scenes"
+        },
+        {
+          "symbol": "_next_scene_title",
+          "owner": "manuscript.scenes"
+        },
+        {
+          "symbol": "_sync_scene_outline_to_manuscript",
+          "owner": "manuscript.scenes"
+        },
+        {
+          "symbol": "best_anchor_position",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "best_anchor_position",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "reanchor_block_bookmark",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "rehome_deleted_block_refs",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "repair_orphaned_bookmark",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "repair_orphaned_bookmark",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "repair_stale_bookmark",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "sync_developmental_canvases",
+          "owner": "canvas.developmental"
+        }
+      ]
+    },
+    {
+      "module": "durability",
+      "platform_dependencies": [
+        {
+          "module": "backend",
+          "symbol": "diagnostics",
+          "local": "diagnostics"
+        },
+        {
+          "module": "backend",
+          "symbol": "diagnostics",
+          "local": "diagnostics"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "_text_from_inline_html",
+          "local": "_text_from_inline_html"
+        },
+        {
+          "module": "backend.content",
+          "symbol": "sanitize_inline_html",
+          "local": "sanitize_inline_html"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "APP_VERSION",
+          "local": "APP_VERSION"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "_HOSTED_LIMITS",
+          "local": "_HOSTED_LIMITS"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "_HOSTED_LIMITS",
+          "local": "_HOSTED_LIMITS"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "queue_remote_history",
+          "local": "_queue_remote_history"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "queue_remote_history",
+          "local": "_queue_remote_history"
+        },
+        {
+          "module": "backend.project_activation",
+          "symbol": "activate_project",
+          "local": "_activate_project"
+        },
+        {
+          "module": "backend.project_activation",
+          "symbol": "activate_project",
+          "local": "_activate_project"
+        },
+        {
+          "module": "backend.project_activation",
+          "symbol": "activate_project",
+          "local": "_activate_project"
+        },
+        {
+          "module": "backend.recovery_runtime",
+          "symbol": "_BACKUP_DESTINATION_RECONCILE",
+          "local": "_BACKUP_DESTINATION_RECONCILE"
+        },
+        {
+          "module": "backend.recovery_runtime",
+          "symbol": "_BACKUP_DESTINATION_RECONCILE_LOCK",
+          "local": "_BACKUP_DESTINATION_RECONCILE_LOCK"
+        },
+        {
+          "module": "backend.recovery_runtime",
+          "symbol": "_BACKUP_DESTINATION_RECONCILE_PROJECTS",
+          "local": "_BACKUP_DESTINATION_RECONCILE_PROJECTS"
+        },
+        {
+          "module": "backend.recovery_runtime",
+          "symbol": "_BACKUP_DESTINATION_WAKE",
+          "local": "_BACKUP_DESTINATION_WAKE"
+        },
+        {
+          "module": "backend.recovery_runtime",
+          "symbol": "_BACKUP_DESTINATION_WAKE",
+          "local": "_BACKUP_DESTINATION_WAKE"
+        },
+        {
+          "module": "backend.recovery_runtime",
+          "symbol": "_BACKUP_DESTINATION_WAKE",
+          "local": "_BACKUP_DESTINATION_WAKE"
+        },
+        {
+          "module": "backend.recovery_runtime",
+          "symbol": "_ensure_recovery_scheduler",
+          "local": "_ensure_recovery_scheduler"
+        },
+        {
+          "module": "backend.recovery_runtime",
+          "symbol": "_ensure_recovery_scheduler",
+          "local": "_ensure_recovery_scheduler"
+        },
+        {
+          "module": "backend.recovery_runtime",
+          "symbol": "current_recovery_mode",
+          "local": "_current_recovery_mode"
+        },
+        {
+          "module": "backend.recovery_runtime",
+          "symbol": "current_recovery_mode",
+          "local": "_current_recovery_mode"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_project",
+          "local": "_bound_project"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_project",
+          "local": "_bound_project"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_project",
+          "local": "_bound_project"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_project_id",
+          "local": "_bound_project_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_project_id",
+          "local": "_bound_project_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_project_id",
+          "local": "_bound_project_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_user_id",
+          "local": "_bound_user_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_user_id",
+          "local": "_bound_user_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_enforce_hosted_new_project_quota",
+          "local": "_enforce_hosted_new_project_quota"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_enforce_hosted_project_storage",
+          "local": "_enforce_hosted_project_storage"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_profile_request_user_id",
+          "local": "_profile_request_user_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_public_project_record",
+          "local": "_public_project_record"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_public_project_record",
+          "local": "_public_project_record"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_public_project_record",
+          "local": "_public_project_record"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_public_project_records",
+          "local": "_public_project_records"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_require_hosted_project_management",
+          "local": "_require_hosted_project_management"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_require_hosted_project_management",
+          "local": "_require_hosted_project_management"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_require_hosted_project_management",
+          "local": "_require_hosted_project_management"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_require_hosted_project_management",
+          "local": "_require_hosted_project_management"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_require_hosted_project_management",
+          "local": "_require_hosted_project_management"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_require_hosted_project_management",
+          "local": "_require_hosted_project_management"
+        },
+        {
+          "module": "revision_store.local_store",
+          "symbol": "RevisionStoreCorruption",
+          "local": "RevisionStoreCorruption"
+        },
+        {
+          "module": "revision_store.local_store",
+          "symbol": "RevisionStoreError",
+          "local": "RevisionStoreError"
+        },
+        {
+          "module": "revision_store.restore",
+          "symbol": "HistoryRestoreCorruption",
+          "local": "HistoryRestoreCorruption"
+        },
+        {
+          "module": "revision_store.restore",
+          "symbol": "HistoryRestoreError",
+          "local": "HistoryRestoreError"
+        },
+        {
+          "module": "revision_store.restore",
+          "symbol": "HistoryRestoreStale",
+          "local": "HistoryRestoreStale"
+        },
+        {
+          "module": "revision_store.restore",
+          "symbol": "restore_local_revision",
+          "local": "restore_local_revision"
+        },
+        {
+          "module": "runtime.native",
+          "symbol": "require_native_backups",
+          "local": "require_native_backups"
+        },
+        {
+          "module": "runtime.native",
+          "symbol": "require_native_backups",
+          "local": "require_native_backups"
+        },
+        {
+          "module": "runtime.native",
+          "symbol": "require_native_history",
+          "local": "require_native_history"
+        },
+        {
+          "module": "runtime.native",
+          "symbol": "require_native_projects",
+          "local": "require_native_projects"
+        },
+        {
+          "module": "runtime.native",
+          "symbol": "require_native_projects",
+          "local": "require_native_projects"
+        },
+        {
+          "module": "security",
+          "symbol": "content_security",
+          "local": "content_security"
+        },
+        {
+          "module": "security",
+          "symbol": "content_security",
+          "local": "content_security"
+        },
+        {
+          "module": "security.image_security",
+          "symbol": "UnsafeImage",
+          "local": "UnsafeImage"
+        },
+        {
+          "module": "security.image_security",
+          "symbol": "inspect_hosted_image_bytes",
+          "local": "inspect_hosted_image_bytes"
+        },
+        {
+          "module": "storage",
+          "symbol": "context",
+          "local": "storage_context"
+        },
+        {
+          "module": "storage",
+          "symbol": "coordination",
+          "local": "storage_coordination"
+        },
+        {
+          "module": "storage",
+          "symbol": "history",
+          "local": "storage_history"
+        },
+        {
+          "module": "storage",
+          "symbol": "integrity",
+          "local": "storage_integrity"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "recovery",
+          "local": "storage_recovery"
+        },
+        {
+          "module": "storage",
+          "symbol": "undo",
+          "local": "storage_undo"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "workspace.filesystem",
+          "symbol": "safe_name",
+          "local": "safe_name"
+        },
+        {
+          "module": "workspace.models",
+          "symbol": "WorkspaceError",
+          "local": "WorkspaceError"
+        },
+        {
+          "module": "workspace.models",
+          "symbol": "WorkspaceError",
+          "local": "WorkspaceError"
+        },
+        {
+          "module": "workspace.models",
+          "symbol": "WorkspaceError",
+          "local": "WorkspaceError"
+        },
+        {
+          "module": "workspace.models",
+          "symbol": "WorkspaceError",
+          "local": "WorkspaceError"
+        },
+        {
+          "module": "workspace.models",
+          "symbol": "WorkspaceError",
+          "local": "WorkspaceError"
+        }
+      ],
+      "feature_dependencies": [
+        {
+          "symbol": "_bookmark_context_values",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "_capture_book_checkpoint",
+          "owner": "checkpoints.capture"
+        },
+        {
+          "symbol": "_capture_chapter_checkpoint",
+          "owner": "checkpoints.capture"
+        },
+        {
+          "symbol": "_checkpoint_compare_rows",
+          "owner": "checkpoints.comparison"
+        },
+        {
+          "symbol": "_checkpoint_meta",
+          "owner": "checkpoints.lineage"
+        },
+        {
+          "symbol": "_checkpoint_row",
+          "owner": "checkpoints.lineage"
+        },
+        {
+          "symbol": "_insert_checkpoint",
+          "owner": "checkpoints.capture"
+        },
+        {
+          "symbol": "_normalize_image_rows",
+          "owner": "manuscript.images"
+        },
+        {
+          "symbol": "save_upload_limited",
+          "owner": "import_export.uploads"
+        }
+      ]
+    },
+    {
+      "module": "import_export",
+      "platform_dependencies": [
+        {
+          "module": "backend",
+          "symbol": "diagnostics",
+          "local": "diagnostics"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "_delete_polymorphic_references",
+          "local": "_delete_polymorphic_references"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "allrows",
+          "local": "allrows"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "one",
+          "local": "one"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.data_access",
+          "symbol": "project",
+          "local": "project"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.dependencies",
+          "symbol": "feature_call",
+          "local": "feature_call"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "_HOSTED_LIMITS",
+          "local": "_HOSTED_LIMITS"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "_HOSTED_LIMITS",
+          "local": "_HOSTED_LIMITS"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "_HOSTED_LIMITS",
+          "local": "_HOSTED_LIMITS"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "_HOSTED_LIMITS",
+          "local": "_HOSTED_LIMITS"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "_HOSTED_LIMITS",
+          "local": "_HOSTED_LIMITS"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.history_runtime",
+          "symbol": "commit",
+          "local": "commit"
+        },
+        {
+          "module": "backend.project_activation",
+          "symbol": "activate_project",
+          "local": "_activate_project"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_project_id",
+          "local": "_bound_project_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_user_id",
+          "local": "_bound_user_id"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_enforce_hosted_new_project_quota",
+          "local": "_enforce_hosted_new_project_quota"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_enforce_hosted_project_storage",
+          "local": "_enforce_hosted_project_storage"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_enforce_hosted_project_storage",
+          "local": "_enforce_hosted_project_storage"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_enforce_hosted_project_storage",
+          "local": "_enforce_hosted_project_storage"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_project_is_current_for_bound_actor",
+          "local": "_project_is_current_for_bound_actor"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_public_project_record",
+          "local": "_public_project_record"
+        },
+        {
+          "module": "security.image_security",
+          "symbol": "UnsafeImage",
+          "local": "UnsafeImage"
+        },
+        {
+          "module": "security.image_security",
+          "symbol": "inspect_hosted_image_bytes",
+          "local": "inspect_hosted_image_bytes"
+        },
+        {
+          "module": "storage",
+          "symbol": "context",
+          "local": "storage_context"
+        },
+        {
+          "module": "storage",
+          "symbol": "invariants",
+          "local": "storage_invariants"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "mutations",
+          "local": "storage_mutations"
+        },
+        {
+          "module": "storage",
+          "symbol": "values",
+          "local": "storage_values"
+        },
+        {
+          "module": "workspace.filesystem",
+          "symbol": "safe_name",
+          "local": "safe_name"
+        },
+        {
+          "module": "workspace.filesystem",
+          "symbol": "safe_name",
+          "local": "safe_name"
+        }
+      ],
+      "feature_dependencies": [
+        {
+          "symbol": "_detach_map_anchors_for_removed_manuscript",
+          "owner": "maps.anchors"
+        },
+        {
+          "symbol": "_normalize_project_image_ext",
+          "owner": "durability.cuts"
+        },
+        {
+          "symbol": "_primary_manuscript_tab",
+          "owner": "checkpoints.capture"
+        },
+        {
+          "symbol": "_primary_manuscript_tab",
+          "owner": "checkpoints.capture"
+        },
+        {
+          "symbol": "_store_content_addressed_image_blob",
+          "owner": "durability.cuts"
+        },
+        {
+          "symbol": "_store_content_addressed_image_blob",
+          "owner": "durability.cuts"
+        },
+        {
+          "symbol": "repair_orphaned_bookmark",
+          "owner": "manuscript.anchors"
+        },
+        {
+          "symbol": "sync_developmental_canvases",
+          "owner": "canvas.developmental"
+        },
+        {
+          "symbol": "verified_full_backup",
+          "owner": "durability.backups"
+        }
+      ]
+    }
+  ]
+}

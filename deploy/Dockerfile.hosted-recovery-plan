@@ -1,0 +1,14 @@
+# Read-only M10B operator image: source allowlist, non-root, no web listener.
+# This is deliberately distinct from the web/backup-write images.
+FROM python:3.14.7-slim-trixie
+WORKDIR /app
+COPY requirements.txt requirements-hosted.txt ./
+RUN python -m pip install --no-cache-dir -r requirements-hosted.txt
+COPY src ./src
+RUN groupadd --system --gid 10001 breadmaker \
+    && useradd --system --uid 10001 --gid 10001 --home-dir /nonexistent --shell /usr/sbin/nologin breadmaker
+ENV PYTHONPATH=/app/src \
+    PYTHONDONTWRITEBYTECODE=1 \
+    BREADMAKER_OPERATOR_MODE=recovery_plan_read_only
+USER 10001:10001
+CMD ["python", "-m", "hosted.backup_job_cli", "plan"]

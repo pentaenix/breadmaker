@@ -1,0 +1,56 @@
+/* 8.19.2 — Manuscript toolbar/navigation polish. */
+.viewport-bookmark-button{position:sticky;top:1px;left:1px;z-index:28;display:grid;place-items:center;width:27px;height:27px;margin:-28px 0 -2px -24px;padding:5px;border:0;border-radius:6px;background:transparent;color:var(--muted);opacity:.62;cursor:pointer;transition:opacity .12s ease,background .12s ease,color .12s ease}
+.viewport-bookmark-button svg{width:15px;height:15px;display:block;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linejoin:round}
+.viewport-bookmark-button.has-bookmark svg{fill:color-mix(in srgb,currentColor 10%,transparent)}
+.viewport-bookmark-button:hover,.viewport-bookmark-button:focus-visible{opacity:1;color:var(--text);background:color-mix(in srgb,var(--surface) 78%,transparent);outline:0}
+.manuscript-image-tool-button svg,.manuscript-reviews-tool-button svg{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.manuscript-image-tool-button.active,.manuscript-reviews-tool-button.active{background:var(--accent-soft);border-color:var(--accent)}
+.manuscript-stub-panel{overflow:hidden}
+
+/* 8.19.10 — Manuscript image insertion, deletion, drag/drop, and caption-layout polish. */
+/* Manuscript images: atomic block content, never inline text layout. */
+.manuscript-image-wrap{padding:8px 0 10px;user-select:none}
+.manuscript-image-figure{display:block;width:100%;margin:10px auto;position:relative;cursor:grab;border-radius:2px;text-align:center}
+.manuscript-image-figure:active{cursor:grabbing}
+.manuscript-image{display:block;height:auto;margin:0 auto;max-width:100%;object-fit:contain;outline:1px solid transparent;outline-offset:5px;border-radius:2px}
+.manuscript-image-wrap.image-selected .manuscript-image{outline-color:var(--accent)}
+.manuscript-image-footer{display:block;width:min(86%,64ch);margin:7px auto 0;text-align:center;font-size:.88em;line-height:1.45;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}
+.manuscript-image-footer:empty{display:none}
+.manuscript-image-drop-indicator{position:fixed;z-index:190;height:2px;background:#111;border-radius:1px;pointer-events:none;box-shadow:0 0 0 1px color-mix(in srgb,var(--surface) 58%,transparent)}
+.manuscript-image-description-tooltip{position:fixed;z-index:180;max-width:320px;padding:7px 9px;border:1px solid var(--line2);border-radius:6px;background:var(--surface);box-shadow:var(--shadow);font-size:12px;line-height:1.45;color:var(--text);pointer-events:none;white-space:pre-wrap}
+.manuscript-image-panel{overflow:auto}
+.manuscript-image-empty{border-bottom:0}
+.manuscript-image-size-head{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--muted);margin:1px 0 6px}
+.manuscript-image-size-head label{color:inherit}
+.manuscript-image-size-slider{width:100%;margin:0 0 12px;accent-color:var(--accent)}
+.manuscript-image-inspector textarea{resize:vertical}
+.manuscript-image-remove{margin-top:8px}
+.reviewer-image-figure,.split-image-figure{display:block;width:100%;margin:18px auto;text-align:center}
+.reviewer-image-figure .reviewer-image,.split-image-figure .split-image{display:block;max-width:100%;height:auto;margin:0 auto}
+.reviewer-image-figure figcaption,.split-image-figure figcaption{width:min(86%,64ch);margin:7px auto 0;color:var(--muted);font-size:.88em;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.cut-information-content figure{display:block;width:100%;margin:10px auto;text-align:center;max-width:100%}
+.cut-information-content figure img{display:block;max-width:100%;height:auto;margin:0 auto}
+.cut-information-content figcaption{width:min(86%,64ch);margin:6px auto 0;color:var(--muted);font-size:.92em;white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* 8.19.8 — Full Tab in Manuscript Split View. */
+.split-tab-chapter-title{
+  margin:2.2em 0 1em;
+  padding-top:1.1em;
+  border-top:1px solid var(--line2);
+  font-size:1.22em;
+  line-height:1.3;
+}
+/* 8.19.13 — deliberately constrained image rows. The row owns width; members stay equal. */
+.manuscript-image-row{display:flex;align-items:flex-start;gap:12px;margin:10px auto;position:relative;outline:1px solid transparent;outline-offset:6px;border-radius:3px}
+.manuscript-image-row.image-row-selected{outline-color:var(--accent)}
+.manuscript-image-row>.manuscript-image-wrap{flex:1 1 0;min-width:0;padding:0}
+.manuscript-image-row .manuscript-image-figure{width:100%;margin:0 auto}
+.manuscript-image-row .manuscript-image{width:100%!important;max-width:100%}
+.manuscript-image-row .manuscript-image-footer{width:100%;max-width:100%;padding:0 4px;box-sizing:border-box}
+.manuscript-image-row-drop-indicator{position:fixed;z-index:191;width:2px;background:#111;border-radius:1px;pointer-events:none;box-shadow:0 0 0 1px color-mix(in srgb,var(--surface) 58%,transparent)}
+.readonly-image-row{display:flex;align-items:flex-start;gap:12px;margin:10px auto;max-width:100%}
+.readonly-image-row>figure{flex:1 1 0;min-width:0;margin:0!important}
+.readonly-image-row>figure img{width:100%!important;max-width:100%}
+.readonly-image-row>figure figcaption{width:100%;max-width:100%;box-sizing:border-box}
+.readonly-image-row .checkpoint-image-figure{width:100%!important;margin:0!important}
+

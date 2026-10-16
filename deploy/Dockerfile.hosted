@@ -1,0 +1,41 @@
+# The build must supply the reviewed multi-platform index digest through the
+# production pipeline. Never substitute a mutable tag or an invented hash.
+ARG PYTHON_BASE_DIGEST
+FROM python:3.14.7-slim-trixie@sha256:${PYTHON_BASE_DIGEST}
+
+WORKDIR /app
+COPY requirements.txt requirements-hosted.txt ./
+RUN python -m pip install --no-cache-dir -r requirements-hosted.txt
+
+# Hosted images are assembled from an allowlist. Never COPY the working tree: an
+# operator may legitimately have local .env files, OAuth backup credentials, project
+# databases, verification reports, or other private state beside the source checkout.
+COPY src ./src
+COPY static ./static
+COPY locales ./locales
+COPY config ./config
+COPY VERSION ./VERSION
+COPY scripts/assert_hosted_image_stack.py ./scripts/assert_hosted_image_stack.py
+RUN python scripts/assert_hosted_image_stack.py
+
+RUN groupadd --system --gid 10001 breadmaker \
+    && useradd --system --uid 10001 --gid 10001 --home-dir /nonexistent --shell /usr/sbin/nologin breadmaker \
+    && mkdir -p /tmp/breadmaker && chmod 1777 /tmp/breadmaker
+
+ENV PYTHONPATH=/app/src \
+    BREADMAKER_RUNTIME=hosted \
+    BREADMAKER_AUTH_MODE=identity_platform \
+    BREADMAKER_ENV=staging \
+    BREADMAKER_UVICORN_NO_ACCESS_LOG=1 \
+    BREADMAKER_ENFORCE_PUBLIC_HOST=1 \
+    BREADMAKER_WORKERS=1 \
+    TMPDIR=/tmp/breadmaker \
+    PYTHONDONTWRITEBYTECODE=1
+
+EXPOSE 8080
+USER 10001:10001
+
+# One worker is a cost/memory default, not a security or project-write lock.
+# A Cloud Run replica can disappear at any point; Uvicorn handles SIGTERM and the
+# FastAPI hosted lifespan owns no persistent in-process work to flush.
+CMD ["python", "-m", "uvicorn", "src.server:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1", "--timeout-graceful-shutdown", "8", "--no-access-log", "--no-proxy-headers", "--no-server-header"]

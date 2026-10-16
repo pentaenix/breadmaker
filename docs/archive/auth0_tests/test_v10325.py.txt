@@ -1,0 +1,61 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+ROOT=Path(__file__).resolve().parents[1]
+
+
+def test_v10325_release_docs_review_plan_and_ui_assets_are_in_sync():
+    version=(ROOT/'VERSION').read_text().strip()
+    assert tuple(map(int,version.split('.'))) >= (10,3,25)
+    assert f'Implemented through **{version}**' in (ROOT/'docs/BREADMAKER_REVIEW_IMPLEMENTATION_PLAN.md').read_text()
+    index=(ROOT/'static/index.html').read_text()
+    assert f'/static/css/profile/account-security.css?v={version}' in index
+    assert f'/static/js/features/account/security.js?v={version}' in index
+    assert 'Checkpoint 10.6' in (ROOT/'README.md').read_text()
+
+
+def test_v10325_security_ui_is_account_auth0_only_and_local_runtime_stays_accountless():
+    ui=(ROOT/'static/js/features/account/security.js').read_text()
+    assert "runtimeSupports('account_sessions')" in ui
+    assert "state.runtime?.auth?.auth_mode==='auth0'" in ui
+    lowered=ui.lower()
+    for forbidden in ('password_input','password_value','totp_secret','totp_code','recovery_code','access_token','refresh_token','client_secret'):
+        assert forbidden not in lowered
+    local=(ROOT/'src/runtime/local.py').read_text().lower()
+    assert 'auth0' not in local and 'account_security' not in local
+
+
+def test_v10325_ui_never_receives_server_step_up_grants_or_sensitive_auth_material():
+    ui=(ROOT/'static/js/features/account/security.js').read_text().lower()
+    assert 'step-up/prepare' in ui
+    for forbidden in ('client_secret','access_token','refresh_token','totp_secret','recovery_code'):
+        assert forbidden not in ui
+    routes=(ROOT/'src/backend/runtime_routes.py').read_text()
+    for route in ('/api/auth/link/prepare','/api/auth/security/step-up/prepare','/api/auth/security/totp/enable/prepare','/api/auth/security/password/change/prepare','/api/auth/security/totp/replace/prepare'):
+        assert route in routes
+    assert "{'authorization_url':tx.authorization_url}" in routes
+    assert "{'redirect_url':ticket}" in routes
+
+
+def test_v10325_account_menu_exposes_security_only_through_auth0_capability_gate():
+    ui=(ROOT/'static/js/core/ui.js').read_text()
+    assert 'accountSecurityAvailable?.()' in ui
+    assert 'accountSecurityMenu' in ui and 'openAccountSecurity()' in ui
+
+
+def test_v10325_security_ui_covers_linking_totp_password_sessions_and_global_logout():
+    ui=(ROOT/'static/js/features/account/security.js').read_text()
+    for needle in ('/api/auth/link/prepare','unlink_identity','change_password','enable_totp','replace_totp','disable_optional_totp','revoke_session','sign_out_all_sessions','/api/auth/security/sign-out-everywhere'):
+        assert needle in ui
+
+def test_v10325_signup_entry_uses_auth0_screen_hint_without_hosting_credentials():
+    hosted=(ROOT/'src/auth/hosted_login.py').read_text()
+    routes=(ROOT/'src/backend/runtime_routes.py').read_text()
+    assert "def begin_signup" in hosted
+    assert "if signup:" in hosted
+    assert "extra['screen_hint'] = 'signup'" in hosted
+    assert "@router.get('/auth/signup')" in routes
+    assert '_AUTH0_LOGIN.begin_signup' in routes
+

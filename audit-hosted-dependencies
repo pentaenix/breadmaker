@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# M12 supply-chain checkpoint: scans the complete hosted Python requirements set.
+# Separate from test harness so a networked operator can obtain an explicit result.
+set -euo pipefail
+cd "$(dirname "$0")"
+if [[ ! -x .venv/bin/python ]]; then
+  echo 'HOSTED_DEPENDENCY_AUDIT_UNAVAILABLE: run ./verify-release first to install the pinned audit tool in .venv.' >&2
+  exit 2
+fi
+exec .venv/bin/python -m pip_audit --strict --progress-spinner=off --desc=off -r requirements-hosted.txt

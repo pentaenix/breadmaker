@@ -1,0 +1,166 @@
+from __future__ import annotations
+
+from pathlib import Path
+from types import SimpleNamespace
+from urllib.parse import parse_qs, urlsplit
+
+import pytest
+
+ROOT=Path(__file__).resolve().parents[1]
+
+
+def _external(subject='google-oauth2|primary', user_id='usr_primary', provider='google', created=1.0):
+    from auth.accounts import ExternalIdentity
+    return ExternalIdentity('https://tenant.example.test/',subject,user_id,provider,'writer@example.test',True,created,created)
+
+
+def _verified(subject, auth_time=1_700_000_001.0):
+    from auth.oidc import VerifiedOidcIdentity
+    return VerifiedOidcIdentity(
+        issuer='https://tenant.example.test/',subject=subject,email='writer@example.test',
+        email_verified=True,display_name='Writer',authenticated_at=auth_time,
+    )
+
+
+def _boundary(callback='/auth/link/callback'):
+    from auth.auth0 import Auth0BoundaryConfig
+    return Auth0BoundaryConfig(
+        environment='development',issuer='https://tenant.example.test/',client_id='client',
+        application_origin='http://127.0.0.1:8766',client_secret_ref='env:SECRET',callback_path=callback,
+    )
+
+
+def test_v10323_release_review_plan_and_checkpoint_docs_are_in_sync():
+    version=(ROOT/'VERSION').read_text().strip()
+    assert tuple(map(int,version.split('.'))) >= (10,3,23)
+    plan=(ROOT/'docs/BREADMAKER_REVIEW_IMPLEMENTATION_PLAN.md').read_text()
+    assert f'Implemented through **{version}**' in plan
+    assert 'Identity Checkpoint 9' in (ROOT/'README.md').read_text()
+    assert 'Checkpoint 10.5' in (ROOT/'SECURITY.md').read_text()
+
+
+def test_v10323_oidc_can_force_fresh_reauthentication_without_changing_normal_login():
+    from auth.oidc import OidcClient, OidcProviderConfig
+    config=OidcProviderConfig(
+        issuer='https://tenant.example.test/',client_id='client',client_secret='secret',
+        redirect_uri='https://app.example.test/auth/link/callback',
+    )
+    client=OidcClient(config)
+    client._get_discovery=lambda **_kw:{'authorization_endpoint':'https://tenant.example.test/authorize'}
+    normal=client.begin_authorization()
+    forced=client.begin_authorization(force_reauthentication=True)
+    normal_q=parse_qs(urlsplit(normal.authorization_url).query)
+    forced_q=parse_qs(urlsplit(forced.authorization_url).query)
+    assert 'prompt' not in normal_q and 'max_age' not in normal_q
+    assert forced_q['prompt']==['login']
+    assert forced_q['max_age']==['0']
+
+
+def test_v10323_auth0_boundary_allows_only_reviewed_exact_callbacks():
+    from auth.auth0 import Auth0BoundaryConfig, Auth0BoundaryError
+    normal=_boundary('/auth/callback')
+    link=normal.for_callback_path('/auth/link/callback')
+    step_up=normal.for_callback_path('/auth/step-up/callback')
+    assert normal.callback_uri=='http://127.0.0.1:8766/auth/callback'
+    assert link.callback_uri=='http://127.0.0.1:8766/auth/link/callback'
+    assert step_up.callback_uri=='http://127.0.0.1:8766/auth/step-up/callback'
+    with pytest.raises(Auth0BoundaryError,match='AUTH0_CALLBACK_PATH_INVALID'):
+        normal.for_callback_path('/auth/arbitrary')
+
+
+def test_v10323_link_begin_requires_fresh_primary_session_and_forces_second_proof():
+    from auth.linking import HostedAuth0AccountLinkingService, AccountLinkingError
+    from auth.oidc import OidcAuthorizationRequest
+    now=1_700_000_100.0
+    primary=_external(created=1.0)
+    class Accounts:
+        def primary_identity_for_user(self,user_id): return primary if user_id=='usr_primary' else None
+    class Oidc:
+        def begin_authorization(self,*,return_path,force_reauthentication):
+            assert force_reauthentication is True
+            return OidcAuthorizationRequest('https://auth.example/','state','nonce','challenge',return_path,now+300)
+    class Mgmt:
+        def metadata(self): return {'scope':'update:users'}
+    service=HostedAuth0AccountLinkingService(boundary=_boundary(),oidc=Oidc(),accounts=Accounts(),management=Mgmt(),now=lambda:now)
+    fresh=SimpleNamespace(user_id='usr_primary',session_id='ses_primary',authenticated_at=now-10)
+    assert service.begin(principal=fresh,return_path='/reviews').state=='state'
+    stale=SimpleNamespace(user_id='usr_primary',session_id='ses_stale',authenticated_at=now-301)
+    with pytest.raises(AccountLinkingError,match='ACCOUNT_LINK_PRIMARY_REAUTH_REQUIRED'):
+        service.begin(principal=stale)
+
+
+def test_v10323_secondary_owned_by_another_breadmaker_user_is_rejected_before_auth0_mutation():
+    from auth.linking import HostedAuth0AccountLinkingService, AccountLinkingError, AccountLinkTransactionStore
+    from auth.oidc import OidcAuthorizationRequest
+    now=1_700_000_100.0
+    primary=_external(created=1.0)
+    secondary=_external('apple|secondary','usr_other','apple',created=2.0)
+    class Accounts:
+        def primary_identity_for_user(self,user_id): return primary
+        def resolve_external_identity(self,issuer,subject): return secondary if subject=='apple|secondary' else None
+    class Oidc:
+        def begin_authorization(self,*,return_path,force_reauthentication): return OidcAuthorizationRequest('https://auth/','state','nonce','challenge',return_path,now+300)
+        def complete_authorization(self,*,code,state): return _verified('apple|secondary',now),'/settings'
+    class Mgmt:
+        called=False
+        def metadata(self): return {}
+        def link(self,**kwargs): self.called=True
+    mgmt=Mgmt();service=HostedAuth0AccountLinkingService(boundary=_boundary(),oidc=Oidc(),accounts=Accounts(),management=mgmt,transactions=AccountLinkTransactionStore(now=lambda:now),now=lambda:now)
+    principal=SimpleNamespace(user_id='usr_primary',session_id='ses_primary',authenticated_at=now)
+    service.begin(principal=principal,return_path='/settings')
+    with pytest.raises(AccountLinkingError,match='ACCOUNT_LINK_EXISTING_ACCOUNT_CONFLICT'):
+        service.complete(principal=principal,code='code',state='state')
+    assert mgmt.called is False
+
+
+def test_v10323_successful_link_derives_provider_ids_and_attaches_only_after_auth0_success():
+    from auth.linking import HostedAuth0AccountLinkingService, AccountLinkTransactionStore
+    from auth.oidc import OidcAuthorizationRequest
+    now=1_700_000_100.0
+    primary=_external(created=1.0)
+    calls=[]
+    class Accounts:
+        def primary_identity_for_user(self,user_id): return primary
+        def resolve_external_identity(self,issuer,subject): return None
+        def link_external_identity_to_user(self,user_id,issuer,subject,**kw):
+            calls.append(('attach',user_id,issuer,subject,kw))
+            return _external(subject,user_id,kw['provider'],created=now)
+    class Oidc:
+        def begin_authorization(self,*,return_path,force_reauthentication): return OidcAuthorizationRequest('https://auth/','state','nonce','challenge',return_path,now+300)
+        def complete_authorization(self,*,code,state): return _verified('google-oauth2|secondary-123',now),'/settings'
+    class Mgmt:
+        def metadata(self): return {'scope':'update:users'}
+        def link(self,**kwargs): calls.append(('provider',kwargs))
+    service=HostedAuth0AccountLinkingService(boundary=_boundary(),oidc=Oidc(),accounts=Accounts(),management=Mgmt(),transactions=AccountLinkTransactionStore(now=lambda:now),now=lambda:now)
+    principal=SimpleNamespace(user_id='usr_primary',session_id='ses_primary',authenticated_at=now)
+    service.begin(principal=principal,return_path='/settings')
+    result=service.complete(principal=principal,code='code',state='state')
+    assert calls[0]==('provider',{'primary_subject':'google-oauth2|primary','secondary_provider':'google-oauth2','secondary_provider_subject':'secondary-123'})
+    assert calls[1][0:4]==('attach','usr_primary','https://tenant.example.test/','google-oauth2|secondary-123')
+    assert result.user_id=='usr_primary'
+    assert result.secondary_provider=='google'
+
+
+def test_v10323_link_operator_is_server_only_update_users_and_ui_is_still_absent():
+    from auth.linking import Auth0AccountLinkManagementClient
+    client=Auth0AccountLinkManagementClient(
+        issuer='https://tenant.example.test/',client_id='link-client',client_secret_ref='env:LINK_SECRET',secret_loader=lambda _:'secret'
+    )
+    meta=client.metadata()
+    assert meta['scope']=='update:users'
+    assert meta['server_only'] is True
+    assert meta['browser_token_exposure'] is False
+    routes=(ROOT/'src/backend/runtime_routes.py').read_text()
+    assert "@router.post('/api/auth/link/start')" in routes
+    assert "@router.get('/auth/link/callback')" in routes
+    assert "runtime.mode in {'hosted_dev','hosted'}" in routes
+    index=(ROOT/'static/index.html').read_text().lower()
+    assert 'link auth0 account' not in index
+
+
+def test_v10323_local_runtime_still_cannot_instantiate_auth0_or_linking():
+    local=(ROOT/'src/runtime/local.py').read_text().lower()
+    assert 'auth0' not in local
+    assert 'linking' not in local
+    assert 'nullsessionservice()' in local
+    assert 'nullaccountidentityservice()' in local

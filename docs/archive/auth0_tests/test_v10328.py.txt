@@ -1,0 +1,112 @@
+from __future__ import annotations
+
+import re
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
+from auth.auth0 import Auth0BoundaryConfig
+from auth.hosted_login import HostedAuth0LoginError, HostedAuth0LoginService
+
+ROOT=Path(__file__).resolve().parents[1]
+
+
+class _FakeTransactions:
+    def __init__(self):
+        self.discarded=[]
+
+    def discard(self,state):
+        self.discarded.append(state)
+
+
+class _FakeOidc:
+    def __init__(self):
+        self.calls=[]
+        self.transactions=_FakeTransactions()
+
+    def begin_authorization(self, **kwargs):
+        self.calls.append(kwargs)
+        index=len(self.calls)
+        return SimpleNamespace(
+            authorization_url='https://tenant.example/authorize',
+            state=f'state_{index}',
+            expires_at=9_999_999_999.0,
+            return_path=kwargs['return_path'],
+        )
+
+
+def _service():
+    boundary=Auth0BoundaryConfig(
+        environment='development',
+        issuer='https://tenant.example/',
+        client_id='breadmaker-dev',
+        application_origin='http://127.0.0.1:8766',
+        client_secret_ref='env:BREADMAKER_AUTH0_CLIENT_SECRET',
+    )
+    fake=_FakeOidc()
+    return HostedAuth0LoginService(boundary=boundary,oidc=fake,accounts=object()),fake
+
+
+def test_v10328_release_schema_and_real_auth_only_boundary_are_synchronized():
+    version=(ROOT/'VERSION').read_text(encoding='utf-8').strip()
+    assert tuple(map(int,version.split('.'))) >= (10,3,28)
+    assert 'SCHEMA_VERSION = 42' in (ROOT/'src/storage/schema.py').read_text(encoding='utf-8')
+    assert 'APP_SCHEMA_VERSION = 42' in (ROOT/'src/workspace/constants.py').read_text(encoding='utf-8')
+    assert f'Implemented through **{version}**' in (ROOT/'docs/BREADMAKER_REVIEW_IMPLEMENTATION_PLAN.md').read_text(encoding='utf-8')
+    routes=(ROOT/'src/backend/runtime_routes.py').read_text(encoding='utf-8')
+    assert "@router.get('/auth/language')" in routes
+
+
+def test_v10328_language_selector_uses_single_use_opaque_context_and_preserves_return_path():
+    service,fake=_service()
+    project='/p/'+'a'*32
+    service.begin(return_path=project,locale='es',browser_binding='binding_token_abcdefghijklmnopqrstuvwxyz012345')
+    first=fake.calls[-1]
+    extra=first['extra_authorization_params']
+    assert first['return_path']==project
+    assert extra['ui_locales']=='es'
+    context=extra['ext-bm-lang-state']
+    assert re.fullmatch(r'[A-Za-z0-9_-]{20,128}',context)
+    assert project not in context
+
+    service.restart_for_locale(locale='ja',context=context,browser_binding='binding_token_abcdefghijklmnopqrstuvwxyz012345')
+    second=fake.calls[-1]
+    assert second['return_path']==project
+    assert second['extra_authorization_params']['ui_locales']=='ja'
+    assert second['extra_authorization_params']['ext-bm-lang-state'] != context
+    assert fake.transactions.discarded == ['state_1']
+    with pytest.raises(HostedAuth0LoginError,match='AUTH0_LOGIN_BROWSER_BINDING_INVALID'):
+        service._browser_bindings.consume(
+            state='state_1',browser_binding='binding_token_abcdefghijklmnopqrstuvwxyz012345',
+        )
+
+    with pytest.raises(HostedAuth0LoginError,match='AUTH0_LANGUAGE_CONTEXT_INVALID'):
+        service.restart_for_locale(locale='fr',context=context,browser_binding='binding_token_abcdefghijklmnopqrstuvwxyz012345')
+
+
+def test_v10328_locale_whitelist_and_signup_restart_are_server_owned():
+    service,fake=_service()
+    with pytest.raises(HostedAuth0LoginError,match='AUTH0_UI_LOCALE_INVALID'):
+        service.begin(return_path='/',locale='../../evil',browser_binding='binding_token_abcdefghijklmnopqrstuvwxyz012345')
+    assert not fake.calls
+
+    service.begin(return_path='/reviews',locale='fr',browser_binding='binding_token_abcdefghijklmnopqrstuvwxyz012345')
+    context=fake.calls[-1]['extra_authorization_params']['ext-bm-lang-state']
+    service.restart_as_signup(context=context,browser_binding='binding_token_abcdefghijklmnopqrstuvwxyz012345')
+    call=fake.calls[-1]
+    assert call['return_path']=='/reviews'
+    assert call['extra_authorization_params']['ui_locales']=='fr'
+    assert call['extra_authorization_params']['screen_hint']=='signup'
+
+
+def test_v10328_real_auth_launcher_never_falls_back_from_auth0_mode():
+    launcher=(ROOT/'run-hosted-auth-dev').read_text(encoding='utf-8')
+    assert 'BREADMAKER_AUTH_MODE=auth0' in launcher
+    assert 'BREADMAKER_AUTH0_ISSUER' in launcher
+    assert 'BREADMAKER_AUTH0_CLIENT_ID' in launcher
+    assert 'BREADMAKER_AUTH0_CLIENT_SECRET' in launcher
+    assert launcher.split('BREADMAKER_AUTH_MODE=',1)[1].split('\n',1)[0]=='auth0'
+    assert 'developer' not in launcher.split('BREADMAKER_AUTH_MODE=',1)[1].split('\n',1)[0]
+    local=(ROOT/'src/runtime/local.py').read_text(encoding='utf-8').lower()
+    assert 'auth0' not in local

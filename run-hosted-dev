@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")"
+export BREADMAKER_RUNTIME=hosted_dev
+export BREADMAKER_AUTH_MODE=developer
+export BREADMAKER_HOSTED_DEV_ALLOW_UNAUTHENTICATED=1
+export BREADMAKER_HOSTED_DEV_NAME="${BREADMAKER_HOSTED_DEV_NAME:-Developer}"
+export BREADMAKER_HOME="${BREADMAKER_HOSTED_HOME:-$HOME/.breadmaker-studio-dev-schema42}"
+exec ./run

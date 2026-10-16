@@ -1,0 +1,2101 @@
+{
+  "schema": 3,
+  "generated_for": "10.3.68",
+  "platform_domains": [
+    {
+      "module": "api.project_management",
+      "file": "src/api/project_management/__init__.py",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/profile",
+          "function": "get_local_profile",
+          "line": 49,
+          "file": "src/api/project_management/profiles.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/profiles",
+          "function": "get_local_profiles",
+          "line": 54,
+          "file": "src/api/project_management/profiles.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/profiles",
+          "function": "create_local_profile",
+          "line": 58,
+          "file": "src/api/project_management/profiles.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/profiles/{user_id}/activate",
+          "function": "activate_local_profile",
+          "line": 69,
+          "file": "src/api/project_management/profiles.py"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/profile",
+          "function": "update_local_profile",
+          "line": 93,
+          "file": "src/api/project_management/profiles.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/profiles/{user_id}/avatar",
+          "function": "get_local_profile_avatar",
+          "line": 102,
+          "file": "src/api/project_management/profiles.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/profile/avatar",
+          "function": "update_local_profile_avatar",
+          "line": 110,
+          "file": "src/api/project_management/profiles.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/profile/avatar",
+          "function": "delete_local_profile_avatar",
+          "line": 123,
+          "file": "src/api/project_management/profiles.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/workspace",
+          "function": "workspace_state",
+          "line": 15,
+          "file": "src/api/project_management/workspace.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/identity/current",
+          "function": "current_identity",
+          "line": 28,
+          "file": "src/api/project_management/workspace.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/project/metadata",
+          "function": "project_metadata",
+          "line": 15,
+          "file": "src/api/project_management/metadata.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/danger/challenge",
+          "function": "danger_challenge",
+          "line": 37,
+          "file": "src/api/project_management/destructive_actions.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/projects/{project_id}",
+          "function": "delete_workspace_project",
+          "line": 44,
+          "file": "src/api/project_management/destructive_actions.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/danger/delete-all-data",
+          "function": "delete_all_breadmaker_data",
+          "line": 75,
+          "file": "src/api/project_management/destructive_actions.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/projects",
+          "function": "create_workspace_project",
+          "line": 17,
+          "file": "src/api/project_management/projects.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/projects/{project_id}/activate",
+          "function": "activate_workspace_project",
+          "line": 30,
+          "file": "src/api/project_management/projects.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/projects/{project_id}",
+          "function": "rename_workspace_project",
+          "line": 37,
+          "file": "src/api/project_management/projects.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/projects/{project_id}/members",
+          "function": "list_project_members",
+          "line": 35,
+          "file": "src/api/project_management/members.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/projects/{project_id}/members",
+          "function": "add_project_member",
+          "line": 40,
+          "file": "src/api/project_management/members.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/projects/{project_id}/members/{user_id}",
+          "function": "remove_project_member",
+          "line": 51,
+          "file": "src/api/project_management/members.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/projects/{project_id}/export",
+          "function": "export_workspace_project",
+          "line": 28,
+          "file": "src/api/project_management/packages.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/data/export",
+          "function": "export_all_breadmaker_data",
+          "line": 41,
+          "file": "src/api/project_management/packages.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/projects/import",
+          "function": "import_workspace_project",
+          "line": 56,
+          "file": "src/api/project_management/packages.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/projects/import-json/preview",
+          "function": "preview_json_project",
+          "line": 67,
+          "file": "src/api/project_management/json_transfer.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/projects/import-json",
+          "function": "import_json_project",
+          "line": 73,
+          "file": "src/api/project_management/json_transfer.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/json-import/preview",
+          "function": "preview_any_json",
+          "line": 151,
+          "file": "src/api/project_management/json_transfer.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/json-import",
+          "function": "import_any_json",
+          "line": 163,
+          "file": "src/api/project_management/json_transfer.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/projects/{project_id}/export-json",
+          "function": "export_json_project",
+          "line": 198,
+          "file": "src/api/project_management/json_transfer.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/assets/{asset_path:path}",
+          "function": "project_asset",
+          "line": 18,
+          "file": "src/api/project_management/assets.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/project/health",
+          "function": "project_health",
+          "line": 20,
+          "file": "src/api/project_management/health.py"
+        }
+      ]
+    }
+  ],
+  "domains": [
+    {
+      "module": "api.manuscript",
+      "file": "src/api/manuscript/__init__.py",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/bootstrap",
+          "function": "bootstrap",
+          "line": 29,
+          "file": "src/api/manuscript/document.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/project/title",
+          "function": "update_project",
+          "line": 58,
+          "file": "src/api/manuscript/document.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/chapters/{cid}",
+          "function": "get_chapter",
+          "line": 68,
+          "file": "src/api/manuscript/document.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/book",
+          "function": "get_book",
+          "line": 79,
+          "file": "src/api/manuscript/document.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/chapters",
+          "function": "create_chapter",
+          "line": 107,
+          "file": "src/api/manuscript/document.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/chapters/{cid}/title",
+          "function": "update_chapter_title",
+          "line": 129,
+          "file": "src/api/manuscript/document.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/chapters/{cid}",
+          "function": "update_chapter_metadata",
+          "line": 142,
+          "file": "src/api/manuscript/document.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/manuscript/images/insert",
+          "function": "insert_manuscript_image",
+          "line": 93,
+          "file": "src/api/manuscript/images.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/manuscript/images/{block_id}/move",
+          "function": "move_manuscript_image",
+          "line": 131,
+          "file": "src/api/manuscript/images.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/chapters/{cid}/split",
+          "function": "split_chapter_at_block",
+          "line": 22,
+          "file": "src/api/manuscript/chapter_structure.py"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/chapters/{cid}/blocks",
+          "function": "save_blocks",
+          "line": 33,
+          "file": "src/api/manuscript/chapters.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/chapters/{cid}/dissolve",
+          "function": "dissolve_chapter_boundary",
+          "line": 87,
+          "file": "src/api/manuscript/chapters.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/chapters/{cid}",
+          "function": "delete_chapter",
+          "line": 180,
+          "file": "src/api/manuscript/chapters.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/chapters/{cid}/permanent",
+          "function": "delete_chapter_permanently",
+          "line": 215,
+          "file": "src/api/manuscript/chapters.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/chapters/reorder",
+          "function": "reorder_chapters",
+          "line": 249,
+          "file": "src/api/manuscript/chapters.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/scenes",
+          "function": "create_scene",
+          "line": 99,
+          "file": "src/api/manuscript/scenes.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/scenes/{sid}/extend",
+          "function": "extend_scene",
+          "line": 160,
+          "file": "src/api/manuscript/scenes.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/scenes/{sid}/remove-blocks",
+          "function": "remove_scene_blocks",
+          "line": 189,
+          "file": "src/api/manuscript/scenes.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/scenes/{sid}",
+          "function": "update_scene",
+          "line": 221,
+          "file": "src/api/manuscript/scenes.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/scenes/{sid}",
+          "function": "delete_scene",
+          "line": 236,
+          "file": "src/api/manuscript/scenes.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/scenes/{sid}/cut",
+          "function": "cut_scene",
+          "line": 248,
+          "file": "src/api/manuscript/scenes.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/scenes/{sid}/manuscript",
+          "function": "get_scene_manuscript",
+          "line": 290,
+          "file": "src/api/manuscript/scenes.py"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/scenes/{sid}/blocks",
+          "function": "save_scene_blocks",
+          "line": 304,
+          "file": "src/api/manuscript/scenes.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/scenes/{sid}/move",
+          "function": "move_scene",
+          "line": 371,
+          "file": "src/api/manuscript/scenes.py"
+        }
+      ]
+    },
+    {
+      "module": "api.annotations",
+      "file": "src/api/annotations/__init__.py",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/labels",
+          "function": "create_label",
+          "line": 37,
+          "file": "src/api/annotations/routes.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/labels/{lid}",
+          "function": "update_label",
+          "line": 53,
+          "file": "src/api/annotations/routes.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/labels/{lid}/usage",
+          "function": "label_usage",
+          "line": 79,
+          "file": "src/api/annotations/routes.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/labels/{lid}",
+          "function": "delete_label",
+          "line": 90,
+          "file": "src/api/annotations/routes.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/annotations/batch",
+          "function": "create_annotations",
+          "line": 152,
+          "file": "src/api/annotations/routes.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/annotations/clear-highlights",
+          "function": "clear_highlights",
+          "line": 166,
+          "file": "src/api/annotations/routes.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/annotations/{aid}",
+          "function": "update_annotation",
+          "line": 212,
+          "file": "src/api/annotations/routes.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/annotations",
+          "function": "list_annotations",
+          "line": 224,
+          "file": "src/api/annotations/routes.py"
+        }
+      ]
+    },
+    {
+      "module": "api.comments",
+      "file": "src/api/comments/__init__.py",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/comments",
+          "function": "create_comment",
+          "line": 34,
+          "file": "src/api/comments/routes.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/comments",
+          "function": "list_comments",
+          "line": 40,
+          "file": "src/api/comments/routes.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/comments/{tid}",
+          "function": "get_comment",
+          "line": 57,
+          "file": "src/api/comments/routes.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/comments/{tid}",
+          "function": "update_comment_thread",
+          "line": 64,
+          "file": "src/api/comments/routes.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/comments/{tid}",
+          "function": "delete_comment_thread",
+          "line": 86,
+          "file": "src/api/comments/routes.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/comments/{tid}/delete",
+          "function": "delete_comment_thread_action",
+          "line": 91,
+          "file": "src/api/comments/routes.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/comments/{tid}/messages",
+          "function": "reply_to_comment",
+          "line": 98,
+          "file": "src/api/comments/routes.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/comment-messages/{mid}",
+          "function": "update_comment_message",
+          "line": 109,
+          "file": "src/api/comments/routes.py"
+        }
+      ]
+    },
+    {
+      "module": "api.reviews",
+      "file": "src/api/reviews/__init__.py",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/reviews/populate-options",
+          "function": "review_populate_options",
+          "line": 79,
+          "file": "src/api/reviews/presets.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/populate",
+          "function": "populate_reviews",
+          "line": 83,
+          "file": "src/api/reviews/presets.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/portable-review/open-temporary",
+          "function": "portable_review_open_temporary",
+          "line": 246,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/portable-review/unlock",
+          "function": "portable_review_unlock",
+          "line": 265,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/portable-review/package",
+          "function": "portable_review_package",
+          "line": 280,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/portable-review/close-temporary",
+          "function": "portable_review_close_temporary",
+          "line": 286,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/portable-review/import-current",
+          "function": "portable_review_import_current",
+          "line": 291,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/portable-review/status",
+          "function": "portable_review_status",
+          "line": 306,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/portable-review/reader",
+          "function": "portable_review_reader",
+          "line": 317,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/portable-review/begin",
+          "function": "portable_review_begin",
+          "line": 320,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/portable-review/complete",
+          "function": "portable_review_complete",
+          "line": 328,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/portable-review/bookmark",
+          "function": "portable_review_bookmark_set",
+          "line": 342,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/portable-review/bookmark",
+          "function": "portable_review_bookmark_clear",
+          "line": 347,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/portable-review/highlights",
+          "function": "portable_review_highlight",
+          "line": 351,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/portable-review/comments",
+          "function": "portable_review_comment",
+          "line": 359,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/portable-review/suggestions",
+          "function": "portable_review_suggestion",
+          "line": 366,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/portable-review/feedback",
+          "function": "portable_review_feedback",
+          "line": 376,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/portable-review/assets/{asset_name}",
+          "function": "portable_review_asset",
+          "line": 387,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/reviews/{rid}/participants/{participant_id}/breadreview",
+          "function": "export_breadreview",
+          "line": 421,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/participants/{participant_id}/breadreview",
+          "function": "export_breadreview_secure",
+          "line": 425,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/import-breadreview",
+          "function": "import_breadreview",
+          "line": 556,
+          "file": "src/api/reviews/portable.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/reviews/{rid}/participants",
+          "function": "list_review_participants",
+          "line": 14,
+          "file": "src/api/reviews/reader.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/reviews/{rid}/participants/{participant_id}/reader",
+          "function": "review_participant_reader",
+          "line": 20,
+          "file": "src/api/reviews/reader.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/participants/{participant_id}/begin",
+          "function": "begin_review_participant",
+          "line": 45,
+          "file": "src/api/reviews/reader.py"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/reviews/{rid}/participants/{participant_id}/bookmark",
+          "function": "set_review_participant_bookmark",
+          "line": 58,
+          "file": "src/api/reviews/reader.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/reviews/{rid}/participants/{participant_id}/bookmark",
+          "function": "clear_review_participant_bookmark",
+          "line": 66,
+          "file": "src/api/reviews/reader.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/participants/{participant_id}/complete",
+          "function": "complete_review_participant",
+          "line": 73,
+          "file": "src/api/reviews/reader.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/reviews/{rid}/feedback",
+          "function": "review_feedback_for_writer",
+          "line": 84,
+          "file": "src/api/reviews/reader.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/reviews/{rid}/manuscript-round",
+          "function": "review_manuscript_round",
+          "line": 90,
+          "file": "src/api/reviews/reader.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/questionnaires",
+          "function": "list_questionnaires",
+          "line": 15,
+          "file": "src/api/reviews/questionnaires.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/questionnaires",
+          "function": "create_questionnaire",
+          "line": 20,
+          "file": "src/api/reviews/questionnaires.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/questionnaires/populate",
+          "function": "populate_questionnaire",
+          "line": 29,
+          "file": "src/api/reviews/questionnaires.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/questionnaires/{questionnaire_id}",
+          "function": "update_questionnaire",
+          "line": 45,
+          "file": "src/api/reviews/questionnaires.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/questionnaires/{questionnaire_id}",
+          "function": "delete_questionnaire",
+          "line": 58,
+          "file": "src/api/reviews/questionnaires.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/questionnaires/{questionnaire_id}/questions",
+          "function": "create_questionnaire_question",
+          "line": 66,
+          "file": "src/api/reviews/questionnaires.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/questionnaire-questions/{question_id}",
+          "function": "update_questionnaire_question",
+          "line": 76,
+          "file": "src/api/reviews/questionnaires.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/questionnaire-questions/{question_id}",
+          "function": "delete_questionnaire_question",
+          "line": 87,
+          "file": "src/api/reviews/questionnaires.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/questionnaires",
+          "function": "attach_review_questionnaire",
+          "line": 145,
+          "file": "src/api/reviews/questionnaires.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/reviews/{rid}/questionnaires/{questionnaire_id}",
+          "function": "detach_review_questionnaire",
+          "line": 162,
+          "file": "src/api/reviews/questionnaires.py"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/reviews/{rid}/participants/{participant_id}/feedback",
+          "function": "save_review_feedback",
+          "line": 136,
+          "file": "src/api/reviews/feedback.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/participants/{participant_id}/highlights",
+          "function": "create_review_highlight",
+          "line": 164,
+          "file": "src/api/reviews/feedback.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/participants/{participant_id}/comments",
+          "function": "create_review_comment",
+          "line": 175,
+          "file": "src/api/reviews/feedback.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/participants/{participant_id}/suggestions",
+          "function": "create_review_suggestion",
+          "line": 186,
+          "file": "src/api/reviews/feedback.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/reviews/{rid}/feedback/{kind}/{item_id}/status",
+          "function": "update_review_feedback_item_status",
+          "line": 217,
+          "file": "src/api/reviews/feedback.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/feedback/{kind}/{item_id}/task",
+          "function": "create_task_from_review_feedback",
+          "line": 231,
+          "file": "src/api/reviews/feedback.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/review-items/{kind}/{item_id}",
+          "function": "get_review_item_context",
+          "line": 258,
+          "file": "src/api/reviews/feedback.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/suggestions/{suggestion_id}/reject",
+          "function": "reject_review_suggestion",
+          "line": 297,
+          "file": "src/api/reviews/feedback.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/suggestions/{suggestion_id}/accept",
+          "function": "accept_review_suggestion",
+          "line": 306,
+          "file": "src/api/reviews/feedback.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/participants",
+          "function": "create_review_participant",
+          "line": 12,
+          "file": "src/api/reviews/participants.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/participants/populate",
+          "function": "populate_review_participants",
+          "line": 23,
+          "file": "src/api/reviews/participants.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/review-participants/{participant_id}",
+          "function": "update_review_participant",
+          "line": 35,
+          "file": "src/api/reviews/participants.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/review-participants/{participant_id}/status",
+          "function": "update_review_participant_status",
+          "line": 49,
+          "file": "src/api/reviews/participants.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/review-participants/{participant_id}",
+          "function": "delete_review_participant",
+          "line": 67,
+          "file": "src/api/reviews/participants.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/review-markers",
+          "function": "list_review_markers",
+          "line": 43,
+          "file": "src/api/reviews/markers.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/review-markers",
+          "function": "create_review_marker",
+          "line": 48,
+          "file": "src/api/reviews/markers.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/review-markers/{marker_id}",
+          "function": "update_review_marker",
+          "line": 57,
+          "file": "src/api/reviews/markers.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/review-markers/{marker_id}",
+          "function": "delete_review_marker",
+          "line": 71,
+          "file": "src/api/reviews/markers.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/review-markers/populate",
+          "function": "populate_review_markers",
+          "line": 79,
+          "file": "src/api/reviews/markers.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/markers/{marker_id}",
+          "function": "attach_review_marker",
+          "line": 115,
+          "file": "src/api/reviews/markers.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/reviews/{rid}/markers/{marker_id}",
+          "function": "detach_review_marker",
+          "line": 126,
+          "file": "src/api/reviews/markers.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/reviews",
+          "function": "list_reviews",
+          "line": 64,
+          "file": "src/api/reviews/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews",
+          "function": "create_review",
+          "line": 70,
+          "file": "src/api/reviews/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/reorder",
+          "function": "reorder_reviews",
+          "line": 84,
+          "file": "src/api/reviews/lifecycle.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/reviews/{rid}",
+          "function": "get_review",
+          "line": 95,
+          "file": "src/api/reviews/lifecycle.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/reviews/{rid}",
+          "function": "update_review",
+          "line": 102,
+          "file": "src/api/reviews/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/duplicate",
+          "function": "duplicate_review",
+          "line": 139,
+          "file": "src/api/reviews/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/start",
+          "function": "start_review",
+          "line": 158,
+          "file": "src/api/reviews/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/checkpoint/update",
+          "function": "update_review_checkpoint",
+          "line": 167,
+          "file": "src/api/reviews/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/pause",
+          "function": "pause_review",
+          "line": 235,
+          "file": "src/api/reviews/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/resume",
+          "function": "resume_review",
+          "line": 240,
+          "file": "src/api/reviews/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/rounds/{snapshot_id}/close",
+          "function": "close_review_round",
+          "line": 245,
+          "file": "src/api/reviews/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/rounds/{snapshot_id}/reopen",
+          "function": "reopen_review_round",
+          "line": 250,
+          "file": "src/api/reviews/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/archive",
+          "function": "archive_review",
+          "line": 255,
+          "file": "src/api/reviews/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/reviews/{rid}/unarchive",
+          "function": "unarchive_review",
+          "line": 263,
+          "file": "src/api/reviews/lifecycle.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/reviews/{rid}/snapshot",
+          "function": "get_review_snapshot",
+          "line": 271,
+          "file": "src/api/reviews/lifecycle.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/reviews/{rid}",
+          "function": "delete_review",
+          "line": 279,
+          "file": "src/api/reviews/lifecycle.py"
+        }
+      ]
+    },
+    {
+      "module": "api.tasks",
+      "file": "src/api/tasks/__init__.py",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/tasks",
+          "function": "list_tasks",
+          "line": 14,
+          "file": "src/api/tasks/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/tasks",
+          "function": "create_task",
+          "line": 28,
+          "file": "src/api/tasks/lifecycle.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/tasks/{tid}",
+          "function": "update_task",
+          "line": 39,
+          "file": "src/api/tasks/lifecycle.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/tasks/{tid}",
+          "function": "delete_task",
+          "line": 64,
+          "file": "src/api/tasks/lifecycle.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/tasks/{tid}/milestones",
+          "function": "list_task_milestones",
+          "line": 21,
+          "file": "src/api/tasks/milestones.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/tasks/{tid}/milestones",
+          "function": "create_task_milestone",
+          "line": 30,
+          "file": "src/api/tasks/milestones.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/task-milestones/{mid}",
+          "function": "update_task_milestone",
+          "line": 40,
+          "file": "src/api/tasks/milestones.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/task-milestones/{mid}",
+          "function": "delete_task_milestone",
+          "line": 58,
+          "file": "src/api/tasks/milestones.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/tasks/{tid}/milestones/reorder",
+          "function": "reorder_task_milestones",
+          "line": 68,
+          "file": "src/api/tasks/milestones.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/tasks/{tid}/duplicate",
+          "function": "duplicate_task",
+          "line": 13,
+          "file": "src/api/tasks/duplication.py"
+        }
+      ]
+    },
+    {
+      "module": "api.canvas",
+      "file": "src/api/canvas/__init__.py",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/canvas-populate",
+          "function": "canvas_populate_catalog",
+          "line": 173,
+          "file": "src/api/canvas/populate.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/canvases/{cid}/populate",
+          "function": "populate_canvas",
+          "line": 194,
+          "file": "src/api/canvas/populate.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/canvases",
+          "function": "create_canvas",
+          "line": 38,
+          "file": "src/api/canvas/registry.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/canvases/{cid}",
+          "function": "get_canvas",
+          "line": 56,
+          "file": "src/api/canvas/registry.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/canvases/{cid}/versions",
+          "function": "canvas_versions",
+          "line": 49,
+          "file": "src/api/canvas/versions.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/canvases/{cid}/versions/{vid}",
+          "function": "canvas_version_detail",
+          "line": 59,
+          "file": "src/api/canvas/versions.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/canvases/{cid}/versions",
+          "function": "create_canvas_version",
+          "line": 65,
+          "file": "src/api/canvas/versions.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/canvases/{cid}/versions/{vid}",
+          "function": "rename_canvas_version",
+          "line": 81,
+          "file": "src/api/canvas/versions.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/canvases/{cid}/versions/{vid}/update",
+          "function": "update_canvas_version",
+          "line": 91,
+          "file": "src/api/canvas/versions.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/canvases/{cid}/versions/{vid}/activate",
+          "function": "activate_canvas_version",
+          "line": 101,
+          "file": "src/api/canvas/versions.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/canvases/{cid}/versions/{vid}",
+          "function": "delete_canvas_version",
+          "line": 199,
+          "file": "src/api/canvas/versions.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/canvases/{cid}/versions/{vid}/items/{item_id}",
+          "function": "delete_canvas_version_item",
+          "line": 210,
+          "file": "src/api/canvas/versions.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/canvases/{cid}/developmental-layout",
+          "function": "update_developmental_layout",
+          "line": 218,
+          "file": "src/api/canvas/versions.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/canvases/{cid}/developmental-promote/{node_id}",
+          "function": "promote_developmental_planning_card",
+          "line": 259,
+          "file": "src/api/canvas/versions.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/canvases/{cid}",
+          "function": "update_canvas",
+          "line": 36,
+          "file": "src/api/canvas/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/canvases/reorder",
+          "function": "reorder_canvases",
+          "line": 58,
+          "file": "src/api/canvas/lifecycle.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/canvases/{cid}",
+          "function": "delete_canvas",
+          "line": 72,
+          "file": "src/api/canvas/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/canvases/{cid}/nodes",
+          "function": "create_node",
+          "line": 43,
+          "file": "src/api/canvas/nodes.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/canvases/{cid}/nodes/positions",
+          "function": "update_canvas_node_positions",
+          "line": 90,
+          "file": "src/api/canvas/nodes.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/nodes/{nid}",
+          "function": "update_node",
+          "line": 106,
+          "file": "src/api/canvas/nodes.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/nodes/{nid}",
+          "function": "delete_node",
+          "line": 196,
+          "file": "src/api/canvas/nodes.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/canvases/{cid}/nodes/delete-batch",
+          "function": "delete_canvas_nodes_batch",
+          "line": 206,
+          "file": "src/api/canvas/nodes.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/canvases/{cid}/edges",
+          "function": "create_edge",
+          "line": 51,
+          "file": "src/api/canvas/edges.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/edges/{eid}",
+          "function": "update_edge",
+          "line": 68,
+          "file": "src/api/canvas/edges.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/edges/{eid}",
+          "function": "delete_edge",
+          "line": 94,
+          "file": "src/api/canvas/edges.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/developmental/preflight",
+          "function": "developmental_preflight",
+          "line": 180,
+          "file": "src/api/canvas/structure.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/developmental/apply",
+          "function": "developmental_apply",
+          "line": 198,
+          "file": "src/api/canvas/structure.py"
+        }
+      ]
+    },
+    {
+      "module": "api.icon_markers",
+      "file": "src/api/icon_markers/__init__.py",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/icon-markers",
+          "function": "list_icon_markers",
+          "line": 41,
+          "file": "src/api/icon_markers/routes.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/icon-markers",
+          "function": "create_icon_marker",
+          "line": 47,
+          "file": "src/api/icon_markers/routes.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/icon-markers/{mid}",
+          "function": "update_icon_marker",
+          "line": 58,
+          "file": "src/api/icon_markers/routes.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/icon-markers/{mid}",
+          "function": "delete_icon_marker",
+          "line": 72,
+          "file": "src/api/icon_markers/routes.py"
+        }
+      ]
+    },
+    {
+      "module": "api.maps",
+      "file": "src/api/maps/__init__.py",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/scenes/{scene_id}/map-memberships",
+          "function": "scene_map_memberships",
+          "line": 18,
+          "file": "src/api/maps/lifecycle.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/maps",
+          "function": "list_maps",
+          "line": 28,
+          "file": "src/api/maps/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/maps",
+          "function": "create_map",
+          "line": 33,
+          "file": "src/api/maps/lifecycle.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/maps/{mid}",
+          "function": "get_map",
+          "line": 41,
+          "file": "src/api/maps/lifecycle.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/maps/{mid}",
+          "function": "update_map",
+          "line": 46,
+          "file": "src/api/maps/lifecycle.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/maps/{mid}",
+          "function": "delete_map",
+          "line": 66,
+          "file": "src/api/maps/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/maps/{mid}/duplicate",
+          "function": "duplicate_map",
+          "line": 79,
+          "file": "src/api/maps/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/maps/reorder",
+          "function": "reorder_maps",
+          "line": 104,
+          "file": "src/api/maps/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/maps/{mid}/lines",
+          "function": "create_map_line",
+          "line": 17,
+          "file": "src/api/maps/lines.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/map-lines/{lid}",
+          "function": "update_map_line",
+          "line": 28,
+          "file": "src/api/maps/lines.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/map-lines/{lid}",
+          "function": "delete_map_line",
+          "line": 55,
+          "file": "src/api/maps/lines.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/maps/{mid}/lines/reorder",
+          "function": "reorder_map_lines",
+          "line": 67,
+          "file": "src/api/maps/lines.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/map-lines/{lid}/items",
+          "function": "create_map_item",
+          "line": 31,
+          "file": "src/api/maps/items.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/map-items/{iid}",
+          "function": "update_map_item",
+          "line": 47,
+          "file": "src/api/maps/items.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/map-items/{iid}",
+          "function": "delete_map_item",
+          "line": 69,
+          "file": "src/api/maps/items.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/maps/{mid}/junctions",
+          "function": "create_map_junction",
+          "line": 50,
+          "file": "src/api/maps/junctions.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/map-junctions/{jid}",
+          "function": "update_map_junction",
+          "line": 63,
+          "file": "src/api/maps/junctions.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/map-junctions/{jid}",
+          "function": "delete_map_junction",
+          "line": 79,
+          "file": "src/api/maps/junctions.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/maps/{mid}/auto-arrange",
+          "function": "auto_arrange_map",
+          "line": 14,
+          "file": "src/api/maps/layout.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/map-lines/{lid}/sync",
+          "function": "sync_source_map_line",
+          "line": 111,
+          "file": "src/api/maps/populate.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/map-populate",
+          "function": "map_populate_catalog",
+          "line": 130,
+          "file": "src/api/maps/populate.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/maps/{mid}/populate",
+          "function": "populate_map",
+          "line": 144,
+          "file": "src/api/maps/populate.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/map-lines/{lid}/populate",
+          "function": "populate_existing_map_line",
+          "line": 175,
+          "file": "src/api/maps/populate.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/map-lines/{lid}/duplicate-manual",
+          "function": "duplicate_map_line_as_manual",
+          "line": 184,
+          "file": "src/api/maps/populate.py"
+        }
+      ]
+    },
+    {
+      "module": "api.workspace_tools",
+      "file": "src/api/workspace_tools/__init__.py",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/references",
+          "function": "create_reference",
+          "line": 73,
+          "file": "src/api/workspace_tools/references.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/references",
+          "function": "list_references",
+          "line": 100,
+          "file": "src/api/workspace_tools/references.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/references/{rid}",
+          "function": "delete_reference",
+          "line": 119,
+          "file": "src/api/workspace_tools/references.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/bookmark",
+          "function": "get_bookmark",
+          "line": 15,
+          "file": "src/api/workspace_tools/bookmark.py"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/bookmark",
+          "function": "set_bookmark",
+          "line": 20,
+          "file": "src/api/workspace_tools/bookmark.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/bookmark",
+          "function": "delete_bookmark",
+          "line": 56,
+          "file": "src/api/workspace_tools/bookmark.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/ui-state",
+          "function": "get_ui_state_batch",
+          "line": 26,
+          "file": "src/api/workspace_tools/ui_state.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/ui-state/{key}",
+          "function": "get_ui_state",
+          "line": 55,
+          "file": "src/api/workspace_tools/ui_state.py"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/ui-state/{key}",
+          "function": "put_ui_state",
+          "line": 65,
+          "file": "src/api/workspace_tools/ui_state.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/documents",
+          "function": "create_document",
+          "line": 19,
+          "file": "src/api/workspace_tools/documents.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/documents/{did}",
+          "function": "rename_document",
+          "line": 32,
+          "file": "src/api/workspace_tools/documents.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/documents/{did}/make-manuscript",
+          "function": "make_document_manuscript",
+          "line": 46,
+          "file": "src/api/workspace_tools/documents.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/documents/{did}",
+          "function": "delete_document",
+          "line": 60,
+          "file": "src/api/workspace_tools/documents.py"
+        }
+      ]
+    },
+    {
+      "module": "api.find_replace",
+      "file": "src/api/find_replace/__init__.py",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/find",
+          "function": "find_text",
+          "line": 53,
+          "file": "src/api/find_replace/routes.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/replace",
+          "function": "replace_text",
+          "line": 82,
+          "file": "src/api/find_replace/routes.py"
+        }
+      ]
+    },
+    {
+      "module": "api.checkpoints",
+      "file": "src/api/checkpoints/__init__.py",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/checkpoints",
+          "function": "list_checkpoints",
+          "line": 23,
+          "file": "src/api/checkpoints/lifecycle.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/checkpoints",
+          "function": "create_checkpoint",
+          "line": 36,
+          "file": "src/api/checkpoints/lifecycle.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/checkpoints/{cid}",
+          "function": "get_checkpoint",
+          "line": 45,
+          "file": "src/api/checkpoints/lifecycle.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/checkpoints/{cid}",
+          "function": "update_checkpoint",
+          "line": 50,
+          "file": "src/api/checkpoints/lifecycle.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/checkpoints/{cid}",
+          "function": "delete_checkpoint",
+          "line": 60,
+          "file": "src/api/checkpoints/lifecycle.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/checkpoints/compare/versions",
+          "function": "compare_checkpoints",
+          "line": 143,
+          "file": "src/api/checkpoints/comparison.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/checkpoints/{cid}/preflight",
+          "function": "preflight_checkpoint",
+          "line": 68,
+          "file": "src/api/checkpoints/apply.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/checkpoints/{cid}/apply",
+          "function": "apply_checkpoint",
+          "line": 73,
+          "file": "src/api/checkpoints/apply.py"
+        }
+      ]
+    },
+    {
+      "module": "api.durability",
+      "file": "src/api/durability/__init__.py",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/cuts",
+          "function": "cuts",
+          "line": 165,
+          "file": "src/api/durability/cuts.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/cuts",
+          "function": "create_cut",
+          "line": 175,
+          "file": "src/api/durability/cuts.py"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/cuts/{cid}",
+          "function": "update_cut",
+          "line": 188,
+          "file": "src/api/durability/cuts.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/cuts/{cid}/insert",
+          "function": "insert_cut",
+          "line": 196,
+          "file": "src/api/durability/cuts.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/cuts/{cid}",
+          "function": "delete_cut",
+          "line": 230,
+          "file": "src/api/durability/cuts.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/cuts/export",
+          "function": "export_cuts_package",
+          "line": 238,
+          "file": "src/api/durability/cuts.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/cuts/import",
+          "function": "import_cuts_package",
+          "line": 263,
+          "file": "src/api/durability/cuts.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/history/v2/revisions/{revision_id}/assets/{asset_path:path}",
+          "function": "history_v2_revision_asset",
+          "line": 148,
+          "file": "src/api/durability/history.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/history/v2",
+          "function": "history_v2",
+          "line": 158,
+          "file": "src/api/durability/history.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/history/v2/revisions/{revision_id}/compare-current",
+          "function": "history_v2_compare_current",
+          "line": 165,
+          "file": "src/api/durability/history.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/history/v2/revisions/{revision_id}/checkpoint",
+          "function": "history_v2_save_as_checkpoint",
+          "line": 192,
+          "file": "src/api/durability/history.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/history/v2/revisions/{revision_id}/restore",
+          "function": "history_v2_restore",
+          "line": 212,
+          "file": "src/api/durability/history.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/autocommit",
+          "function": "auto_commit",
+          "line": 248,
+          "file": "src/api/durability/history.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/history/sync",
+          "function": "history_remote_sync",
+          "line": 261,
+          "file": "src/api/durability/history.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/history/retention",
+          "function": "history_retention_get",
+          "line": 275,
+          "file": "src/api/durability/history.py"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/history/retention",
+          "function": "history_retention_put",
+          "line": 281,
+          "file": "src/api/durability/history.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/history/gc",
+          "function": "history_gc_run",
+          "line": 291,
+          "file": "src/api/durability/history.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/history/repair-local",
+          "function": "history_remote_repair",
+          "line": 300,
+          "file": "src/api/durability/history.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/undo/begin",
+          "function": "undo_begin",
+          "line": 14,
+          "file": "src/api/durability/undo.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/undo/finish/{token}",
+          "function": "undo_finish",
+          "line": 26,
+          "file": "src/api/durability/undo.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/undo/apply/{token}",
+          "function": "undo_apply",
+          "line": 32,
+          "file": "src/api/durability/undo.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/undo/rollback/{token}",
+          "function": "undo_rollback",
+          "line": 37,
+          "file": "src/api/durability/undo.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/history/edit-baseline",
+          "function": "edit_history_baseline",
+          "line": 11,
+          "file": "src/api/durability/history_baseline.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/recovery/status",
+          "function": "recovery_status",
+          "line": 15,
+          "file": "src/api/durability/recovery.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/trash/{trash_id}/restore",
+          "function": "restore_trash_project",
+          "line": 22,
+          "file": "src/api/durability/recovery.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/backup-destinations/pick-folder",
+          "function": "backup_destination_pick_folder",
+          "line": 120,
+          "file": "src/api/durability/backup_destinations.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/backup-destinations",
+          "function": "backup_destination_list",
+          "line": 132,
+          "file": "src/api/durability/backup_destinations.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/backup-destinations",
+          "function": "backup_destination_add",
+          "line": 140,
+          "file": "src/api/durability/backup_destinations.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/backup-destinations/google-drive/config",
+          "function": "backup_destination_google_drive_config",
+          "line": 157,
+          "file": "src/api/durability/backup_destinations.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/backup-destinations/google-drive/oauth/start",
+          "function": "backup_destination_google_drive_oauth_start",
+          "line": 164,
+          "file": "src/api/durability/backup_destinations.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/backup-destinations/google-drive/oauth/callback",
+          "function": "backup_destination_google_drive_oauth_callback",
+          "line": 175,
+          "file": "src/api/durability/backup_destinations.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/backup-destinations/google-drive/oauth/status/{state}",
+          "function": "backup_destination_google_drive_oauth_status",
+          "line": 193,
+          "file": "src/api/durability/backup_destinations.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/backup-destinations/webdav",
+          "function": "backup_destination_add_webdav",
+          "line": 199,
+          "file": "src/api/durability/backup_destinations.py"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/backup-destinations/{destination_id}/webdav",
+          "function": "backup_destination_reconnect_webdav",
+          "line": 212,
+          "file": "src/api/durability/backup_destinations.py"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/backup-destinations/{destination_id}",
+          "function": "backup_destination_update",
+          "line": 224,
+          "file": "src/api/durability/backup_destinations.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/backup-destinations/{destination_id}",
+          "function": "backup_destination_remove",
+          "line": 239,
+          "file": "src/api/durability/backup_destinations.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/backup-destinations/{destination_id}/now",
+          "function": "backup_destination_now",
+          "line": 245,
+          "file": "src/api/durability/backup_destinations.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/backup-destinations/catch-up",
+          "function": "backup_destination_catch_up",
+          "line": 260,
+          "file": "src/api/durability/backup_destinations.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/recovery-backups/update",
+          "function": "recovery_backups_update",
+          "line": 16,
+          "file": "src/api/durability/recovery_backups.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/backup-destinations/{destination_id}/backups",
+          "function": "backup_destination_backups",
+          "line": 17,
+          "file": "src/api/durability/backup_inventory.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/backup-destinations/{destination_id}/discover",
+          "function": "backup_destination_discover",
+          "line": 23,
+          "file": "src/api/durability/backup_inventory.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/backup-destinations/{destination_id}/backups/{filename}/restore-as-project",
+          "function": "backup_destination_restore",
+          "line": 29,
+          "file": "src/api/durability/backup_inventory.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/integrity/deep",
+          "function": "deep_integrity",
+          "line": 72,
+          "file": "src/api/durability/backups.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/backup",
+          "function": "manual_backup",
+          "line": 75,
+          "file": "src/api/durability/backups.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/backups",
+          "function": "list_backups",
+          "line": 100,
+          "file": "src/api/durability/backups.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/backups/{filename}/restore-as-project",
+          "function": "restore_backup_as_project",
+          "line": 114,
+          "file": "src/api/durability/backups.py"
+        }
+      ]
+    },
+    {
+      "module": "api.import_export",
+      "file": "src/api/import_export/__init__.py",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/import/readiness",
+          "function": "import_readiness",
+          "line": 172,
+          "file": "src/api/import_export/docx_import.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/import",
+          "function": "import_file",
+          "line": 178,
+          "file": "src/api/import_export/docx_import.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/import/new-project",
+          "function": "import_file_as_new_project",
+          "line": 189,
+          "file": "src/api/import_export/docx_import.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/documents/import",
+          "function": "import_document_tabs",
+          "line": 223,
+          "file": "src/api/import_export/docx_import.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/export/docx",
+          "function": "export_docx",
+          "line": 33,
+          "file": "src/api/import_export/docx_export.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/export/pdf",
+          "function": "export_pdf",
+          "line": 154,
+          "file": "src/api/import_export/pdf_export.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/assets",
+          "function": "upload_asset",
+          "line": 18,
+          "file": "src/api/import_export/assets.py"
+        }
+      ]
+    }
+  ]
+}

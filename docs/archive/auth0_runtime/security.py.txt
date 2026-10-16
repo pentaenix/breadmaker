@@ -1,0 +1,962 @@
+from __future__ import annotations
+
+"""Checkpoint 10 hosted account-security operations.
+
+This module deliberately contains no product UI. It freezes the server-side security
+mechanics that Checkpoint 10.5 will present:
+
+* single-use, session-bound Auth0 reauthentication (step-up) transactions;
+* server-side short-lived grants scoped to one sensitive operation and target;
+* linked-identity inspection and unlinking without email authority;
+* Auth0-owned TOTP inspection/enrollment/replacement/optional removal;
+* authenticated database-password change handoff to Auth0 Universal Login;
+* Breadmaker session inspection/revocation and Auth0 + Breadmaker sign-out-everywhere.
+
+Passwords, TOTP seeds, recovery codes, OAuth tokens, and session-cookie values never
+become Breadmaker account state. Local Breadmaker never instantiates this module.
+"""
+
+import hashlib
+import hmac
+import json
+import os
+import secrets
+import threading
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from dataclasses import dataclass
+from typing import Any, Callable
+
+from auth.accounts import AccountIdentityError, AccountIdentityService, ExternalIdentity
+from auth.auth0 import Auth0BoundaryConfig
+from auth.oidc import OidcAuthorizationRequest, OidcError, VerifiedOidcIdentity
+
+
+class AccountSecurityError(RuntimeError):
+    """Stable, non-secret account-security failure."""
+
+
+_STEP_UP_CALLBACK_PATH = '/auth/step-up/callback'
+_STEP_UP_TTL_SECONDS = 300
+_STEP_UP_AUTH_SKEW_SECONDS = 60
+_GRANT_TTL_SECONDS = 300
+_STEP_UP_MAX_TRANSACTIONS = 4096
+_STEP_UP_MAX_TRANSACTIONS_PER_USER = 16
+_STEP_UP_MAX_GRANTS = 4096
+_STEP_UP_MAX_GRANTS_PER_USER = 16
+_MAX_JSON_BYTES = 1024 * 1024
+_SECURITY_SCOPES = (
+    'read:authentication_methods',
+    'delete:authentication_methods',
+    'delete:sessions',
+    'create:user_tickets',
+    'update:users',
+)
+_ALLOWED_PURPOSES = frozenset({
+    'unlink_identity',
+    'change_password',
+    'enable_totp',
+    'replace_totp',
+    'replace_totp_enroll',
+    'disable_optional_totp',
+    'revoke_session',
+    'sign_out_all_sessions',
+})
+_PUBLIC_STEP_UP_PURPOSES = _ALLOWED_PURPOSES - {'replace_totp_enroll'}
+
+
+@dataclass(frozen=True)
+class StepUpTransaction:
+    state: str
+    user_id: str
+    session_id: str
+    purpose: str
+    target: str
+    return_path: str
+    created_at: float
+    expires_at: float
+
+
+@dataclass(frozen=True)
+class StepUpResult:
+    user_id: str
+    session_id: str
+    purpose: str
+    target: str
+    authenticated_at: float
+    return_path: str
+
+
+@dataclass(frozen=True)
+class _StepUpGrant:
+    grant_id: str
+    user_id: str
+    session_id: str
+    purpose: str
+    target: str
+    authenticated_at: float
+    created_at: float
+    expires_at: float
+
+
+class StepUpTransactionStore:
+    """Single-process, single-use step-up transactions and grants.
+
+    Development and Checkpoint-12 staging are explicitly single-worker. Production and
+    horizontal staging remain blocked until these stores move to shared atomic state.
+    """
+
+    def __init__(
+        self, *, max_transactions: int = _STEP_UP_MAX_TRANSACTIONS,
+        max_transactions_per_user: int = _STEP_UP_MAX_TRANSACTIONS_PER_USER,
+        max_grants: int = _STEP_UP_MAX_GRANTS,
+        max_grants_per_user: int = _STEP_UP_MAX_GRANTS_PER_USER,
+        now: Callable[[], float] = time.time,
+    ):
+        tx_capacity = int(max_transactions)
+        per_user = int(max_transactions_per_user)
+        grant_capacity = int(max_grants)
+        grant_per_user = int(max_grants_per_user)
+        if (
+            tx_capacity < 16 or tx_capacity > 65536
+            or per_user < 1 or per_user > tx_capacity
+            or grant_capacity < 16 or grant_capacity > 65536
+            or grant_per_user < 1 or grant_per_user > grant_capacity
+        ):
+            raise AccountSecurityError('SECURITY_STEP_UP_CAPACITY_INVALID')
+        self.max_transactions = tx_capacity
+        self.max_transactions_per_user = per_user
+        self.max_grants = grant_capacity
+        self.max_grants_per_user = grant_per_user
+        self._now = now
+        self._transactions: dict[str, StepUpTransaction] = {}
+        self._grants: dict[tuple[str, str, str], _StepUpGrant] = {}
+        self._lock = threading.RLock()
+
+    def bind_authorization(
+        self,
+        request: OidcAuthorizationRequest,
+        *,
+        principal,
+        purpose: str,
+        target: str = '',
+    ) -> StepUpTransaction:
+        user_id = str(getattr(principal, 'user_id', '') or '').strip()
+        session_id = str(getattr(principal, 'session_id', '') or '').strip()
+        purpose = _clean_purpose(purpose)
+        target = _clean_target(target)
+        if not user_id.startswith('usr_') or not session_id.startswith('ses_'):
+            raise AccountSecurityError('SECURITY_STEP_UP_SESSION_REQUIRED')
+        state = str(request.state or '').strip()
+        if not state or len(state) > 256 or any(ch not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_' for ch in state):
+            raise AccountSecurityError('SECURITY_STEP_UP_STATE_INVALID')
+        now = float(self._now())
+        item = StepUpTransaction(
+            state=state,
+            user_id=user_id,
+            session_id=session_id,
+            purpose=purpose,
+            target=target,
+            return_path=str(request.return_path),
+            created_at=now,
+            expires_at=min(float(request.expires_at), now + _STEP_UP_TTL_SECONDS),
+        )
+        with self._lock:
+            self._prune_locked(now)
+            is_new = state not in self._transactions
+            if is_new and len(self._transactions) >= self.max_transactions:
+                raise AccountSecurityError('SECURITY_STEP_UP_TRANSACTION_CAPACITY_EXCEEDED')
+            if is_new and sum(1 for tx in self._transactions.values() if tx.user_id == user_id) >= self.max_transactions_per_user:
+                raise AccountSecurityError('SECURITY_STEP_UP_TRANSACTION_USER_CAPACITY_EXCEEDED')
+            self._transactions[state] = item
+        return item
+
+    @staticmethod
+    def _validated_transaction_state(state: str) -> str:
+        value = str(state or '').strip()
+        if not value:
+            raise AccountSecurityError('SECURITY_STEP_UP_STATE_REQUIRED')
+        if len(value) > 256 or any(ch not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_' for ch in value):
+            raise AccountSecurityError('SECURITY_STEP_UP_STATE_INVALID_OR_REPLAYED')
+        return value
+
+    def consume_transaction(self, state: str) -> StepUpTransaction:
+        value = self._validated_transaction_state(state)
+        now = float(self._now())
+        with self._lock:
+            item = self._transactions.pop(value, None)
+            self._prune_locked(now)
+        if item is None:
+            raise AccountSecurityError('SECURITY_STEP_UP_STATE_INVALID_OR_REPLAYED')
+        if now >= item.expires_at:
+            raise AccountSecurityError('SECURITY_STEP_UP_STATE_EXPIRED')
+        return item
+
+    def consume_transaction_for_principal(self, state: str, *, principal) -> StepUpTransaction:
+        """Consume step-up state only for the exact user/session that created it.
+
+        A mismatched authenticated session is rejected without deleting the legitimate
+        user's transaction, mirroring one-shot grant ownership semantics.
+        """
+        value = self._validated_transaction_state(state)
+        user_id = str(getattr(principal, 'user_id', '') or '').strip()
+        session_id = str(getattr(principal, 'session_id', '') or '').strip()
+        if not user_id.startswith('usr_') or not session_id.startswith('ses_'):
+            raise AccountSecurityError('SECURITY_STEP_UP_SESSION_REQUIRED')
+        now = float(self._now())
+        with self._lock:
+            self._prune_locked(now)
+            item = self._transactions.get(value)
+            if item is None:
+                raise AccountSecurityError('SECURITY_STEP_UP_STATE_INVALID_OR_REPLAYED')
+            if now >= item.expires_at:
+                self._transactions.pop(value, None)
+                raise AccountSecurityError('SECURITY_STEP_UP_STATE_EXPIRED')
+            if user_id != item.user_id or session_id != item.session_id:
+                raise AccountSecurityError('SECURITY_STEP_UP_SESSION_MISMATCH')
+            self._transactions.pop(value, None)
+        return item
+
+    def issue_grant(self, tx: StepUpTransaction, *, authenticated_at: float) -> _StepUpGrant:
+        now = float(self._now())
+        grant = _StepUpGrant(
+            grant_id='sup_' + secrets.token_hex(16),
+            user_id=tx.user_id,
+            session_id=tx.session_id,
+            purpose=tx.purpose,
+            target=tx.target,
+            authenticated_at=float(authenticated_at),
+            created_at=now,
+            expires_at=now + _GRANT_TTL_SECONDS,
+        )
+        key = (grant.session_id, grant.purpose, grant.target)
+        with self._lock:
+            self._prune_locked(now)
+            is_new = key not in self._grants
+            if is_new and len(self._grants) >= self.max_grants:
+                raise AccountSecurityError('SECURITY_STEP_UP_GRANT_CAPACITY_EXCEEDED')
+            if is_new and sum(1 for item in self._grants.values() if item.user_id == grant.user_id) >= self.max_grants_per_user:
+                raise AccountSecurityError('SECURITY_STEP_UP_GRANT_USER_CAPACITY_EXCEEDED')
+            self._grants[key] = grant
+        return grant
+
+    def consume_grant(self, *, principal, purpose: str, target: str = '') -> _StepUpGrant:
+        session_id = str(getattr(principal, 'session_id', '') or '').strip()
+        user_id = str(getattr(principal, 'user_id', '') or '').strip()
+        purpose = _clean_purpose(purpose)
+        target = _clean_target(target)
+        if not session_id.startswith('ses_') or not user_id.startswith('usr_'):
+            raise AccountSecurityError('SECURITY_STEP_UP_SESSION_REQUIRED')
+        now = float(self._now())
+        key = (session_id, purpose, target)
+        with self._lock:
+            self._prune_locked(now)
+            grant = self._grants.get(key)
+            if grant is None:
+                raise AccountSecurityError('SECURITY_STEP_UP_REQUIRED')
+            if now >= grant.expires_at:
+                self._grants.pop(key, None)
+                raise AccountSecurityError('SECURITY_STEP_UP_EXPIRED')
+            if grant.user_id != user_id or grant.session_id != session_id:
+                # A mismatched server principal must not burn the legitimate user's
+                # one-shot grant. Validate ownership before atomically consuming it.
+                raise AccountSecurityError('SECURITY_STEP_UP_SESSION_MISMATCH')
+            self._grants.pop(key, None)
+        return grant
+
+    def has_grant(self, *, principal, purpose: str, target: str = '') -> bool:
+        session_id = str(getattr(principal, 'session_id', '') or '').strip()
+        user_id = str(getattr(principal, 'user_id', '') or '').strip()
+        try:
+            purpose = _clean_purpose(purpose)
+            target = _clean_target(target)
+        except AccountSecurityError:
+            return False
+        now = float(self._now())
+        key = (session_id, purpose, target)
+        with self._lock:
+            self._prune_locked(now)
+            grant = self._grants.get(key)
+            return bool(grant and grant.user_id == user_id and grant.session_id == session_id)
+
+    def _prune_locked(self, now: float) -> None:
+        for key, item in list(self._transactions.items()):
+            if now >= item.expires_at:
+                self._transactions.pop(key, None)
+        for key, item in list(self._grants.items()):
+            if now >= item.expires_at:
+                self._grants.pop(key, None)
+
+
+class SecurityIntentSigner:
+    """Sign one-way Auth0 Action intents so query parameters cannot self-authorize."""
+
+    def __init__(self, *, client_id: str, secret_ref: str, secret_loader: Callable[[str], str], now: Callable[[], float] = time.time):
+        self.client_id = str(client_id or '').strip()
+        self.secret_ref = str(secret_ref or '').strip()
+        self.secret_loader = secret_loader
+        self._now = now
+        if not self.client_id or len(self.client_id) > 1024:
+            raise AccountSecurityError('SECURITY_INTENT_CLIENT_INVALID')
+        if not self.secret_ref or len(self.secret_ref) > 256 or any(ch.isspace() for ch in self.secret_ref):
+            raise AccountSecurityError('SECURITY_INTENT_SECRET_REF_INVALID')
+
+    def parameters(self, intent: str, *, subject: str) -> dict[str, str]:
+        value = str(intent or '').strip()
+        if value != 'totp-enroll':
+            raise AccountSecurityError('SECURITY_INTENT_INVALID')
+        try:
+            secret = str(self.secret_loader(self.secret_ref) or '')
+        except Exception as exc:
+            raise AccountSecurityError('SECURITY_INTENT_SECRET_UNAVAILABLE') from exc
+        if len(secret) < 32 or len(secret) > 16384:
+            raise AccountSecurityError('SECURITY_INTENT_SECRET_UNAVAILABLE')
+        bound_subject = _clean_subject(subject, 'SECURITY_INTENT_SUBJECT_INVALID')
+        subject_hash = hashlib.sha256(bound_subject.encode('utf-8')).hexdigest()
+        timestamp = str(int(self._now()))
+        nonce = secrets.token_urlsafe(18)
+        message = f'v2\n{value}\n{timestamp}\n{nonce}\n{self.client_id}\n{subject_hash}'.encode('utf-8')
+        signature = hmac.new(secret.encode('utf-8'), message, hashlib.sha256).hexdigest()
+        return {
+            'ext-breadmaker-security': value,
+            'ext-breadmaker-security-ts': timestamp,
+            'ext-breadmaker-security-nonce': nonce,
+            'ext-breadmaker-security-user': subject_hash,
+            'ext-breadmaker-security-sig': signature,
+        }
+
+    def metadata(self) -> dict[str, Any]:
+        return {
+            'algorithm': 'HMAC-SHA256',
+            'version': 2,
+            'subject_bound': True,
+            'secret_ref': self.secret_ref,
+            'secret_value_exposed': False,
+            'max_age_seconds': _STEP_UP_TTL_SECONDS,
+        }
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ANN001
+        return None
+
+
+class Auth0SecurityManagementClient:
+    """Dedicated least-privilege Auth0 operator for Checkpoint 10 operations."""
+
+    def __init__(
+        self,
+        *,
+        issuer: str,
+        client_id: str,
+        client_secret_ref: str,
+        secret_loader: Callable[[str], str],
+        timeout_seconds: float = 5.0,
+    ):
+        self.issuer = str(issuer or '').strip()
+        self.client_id = str(client_id or '').strip()
+        self.client_secret_ref = str(client_secret_ref or '').strip()
+        self.secret_loader = secret_loader
+        self.timeout_seconds = float(timeout_seconds)
+        if not self.issuer.startswith('https://') and not self.issuer.startswith('http://127.0.0.1') and not self.issuer.startswith('http://localhost'):
+            raise AccountSecurityError('SECURITY_MANAGEMENT_ISSUER_INVALID')
+        if not self.client_id or len(self.client_id) > 1024:
+            raise AccountSecurityError('SECURITY_MANAGEMENT_CLIENT_ID_INVALID')
+        if not self.client_secret_ref or len(self.client_secret_ref) > 256 or any(ch.isspace() for ch in self.client_secret_ref):
+            raise AccountSecurityError('SECURITY_MANAGEMENT_SECRET_REF_INVALID')
+        if not (0.5 <= self.timeout_seconds <= 30.0):
+            raise AccountSecurityError('SECURITY_MANAGEMENT_TIMEOUT_INVALID')
+        self._opener = urllib.request.build_opener(_NoRedirect())
+
+    def metadata(self) -> dict[str, Any]:
+        return {
+            'authority': 'auth0_management_api',
+            'server_only': True,
+            'scopes': list(_SECURITY_SCOPES),
+            'operations': [
+                'read_authentication_methods',
+                'delete_authentication_method',
+                'set_totp_replacement_pending',
+                'unlink_identity',
+                'create_password_change_ticket',
+                'delete_user_sessions',
+            ],
+            'browser_token_exposure': False,
+            'client_secret_ref': self.client_secret_ref,
+            'client_secret_value_exposed': False,
+        }
+
+    def authentication_methods(self, user_subject: str) -> list[dict[str, Any]]:
+        subject = _clean_subject(user_subject, 'SECURITY_MANAGEMENT_USER_INVALID')
+        url = f"{self.issuer.rstrip('/')}/api/v2/users/{urllib.parse.quote(subject, safe='')}/authentication-methods"
+        payload = self._request_json(url, method='GET')
+        if not isinstance(payload, list):
+            raise AccountSecurityError('SECURITY_MANAGEMENT_RESPONSE_INVALID')
+        out: list[dict[str, Any]] = []
+        for item in payload:
+            if not isinstance(item, dict):
+                continue
+            method_id = str(item.get('id') or '').strip()
+            method_type = str(item.get('type') or '').strip()
+            if not method_id or not method_type:
+                continue
+            out.append({
+                'id': method_id[:512],
+                'type': method_type[:80],
+                'confirmed': bool(item.get('confirmed', True)),
+                'name': str(item.get('name') or '').strip()[:80],
+            })
+        return out
+
+    def delete_authentication_method(self, user_subject: str, method_id: str) -> None:
+        subject = _clean_subject(user_subject, 'SECURITY_MANAGEMENT_USER_INVALID')
+        method = _clean_method_id(method_id)
+        url = f"{self.issuer.rstrip('/')}/api/v2/users/{urllib.parse.quote(subject, safe='')}/authentication-methods/{urllib.parse.quote(method, safe='')}"
+        self._request_empty(url, method='DELETE', accepted={204})
+
+    def set_totp_replacement_pending(self, user_subject: str, pending: bool) -> None:
+        """Persist only the transient replacement-recovery marker in Auth0 app_metadata.
+
+        This is deliberately not an ``mfa_enabled`` flag. Auth0's enrolled factors remain
+        the source of truth. The marker exists only so deleting the old TOTP factor cannot
+        downgrade a social login if the replacement enrollment is interrupted midway.
+        """
+        subject = _clean_subject(user_subject, 'SECURITY_MANAGEMENT_USER_INVALID')
+        url = f"{self.issuer.rstrip('/')}/api/v2/users/{urllib.parse.quote(subject, safe='')}"
+        payload = self._request_json(
+            url,
+            method='PATCH',
+            payload={'app_metadata': {'breadmaker_totp_replacement_pending': bool(pending)}},
+        )
+        if not isinstance(payload, dict):
+            raise AccountSecurityError('SECURITY_MANAGEMENT_RESPONSE_INVALID')
+        metadata = payload.get('app_metadata')
+        if not isinstance(metadata, dict) or metadata.get('breadmaker_totp_replacement_pending') is not bool(pending):
+            raise AccountSecurityError('SECURITY_MANAGEMENT_RESPONSE_INVALID')
+
+    def unlink_identity(self, *, primary_subject: str, secondary_subject: str) -> None:
+        primary = _clean_subject(primary_subject, 'SECURITY_PRIMARY_IDENTITY_INVALID')
+        secondary = _clean_subject(secondary_subject, 'SECURITY_SECONDARY_IDENTITY_INVALID')
+        provider, provider_user_id = _split_provider_subject(secondary)
+        if provider not in {'google-oauth2', 'apple', 'auth0'}:
+            raise AccountSecurityError('SECURITY_SECONDARY_PROVIDER_INVALID')
+        url = (
+            f"{self.issuer.rstrip('/')}/api/v2/users/{urllib.parse.quote(primary, safe='')}"
+            f"/identities/{urllib.parse.quote(provider, safe='')}/{urllib.parse.quote(provider_user_id, safe='')}"
+        )
+        payload = self._request_json(url, method='DELETE')
+        if not isinstance(payload, list):
+            raise AccountSecurityError('SECURITY_MANAGEMENT_RESPONSE_INVALID')
+
+    def create_password_change_ticket(self, *, user_subject: str, application_client_id: str, ttl_seconds: int = 300) -> str:
+        subject = _clean_subject(user_subject, 'SECURITY_PASSWORD_IDENTITY_INVALID')
+        client_id = str(application_client_id or '').strip()
+        ttl = int(ttl_seconds)
+        if not client_id or len(client_id) > 1024:
+            raise AccountSecurityError('SECURITY_PASSWORD_CLIENT_INVALID')
+        if ttl < 60 or ttl > 900:
+            raise AccountSecurityError('SECURITY_PASSWORD_TICKET_TTL_INVALID')
+        url = f"{self.issuer.rstrip('/')}/api/v2/tickets/password-change"
+        payload = self._request_json(
+            url,
+            method='POST',
+            payload={'user_id': subject, 'client_id': client_id, 'ttl_sec': ttl},
+        )
+        ticket = str(payload.get('ticket') or '') if isinstance(payload, dict) else ''
+        parts = urllib.parse.urlsplit(ticket)
+        if not ticket or parts.scheme != 'https' or not parts.hostname:
+            raise AccountSecurityError('SECURITY_PASSWORD_TICKET_RESPONSE_INVALID')
+        return ticket
+
+    def delete_user_sessions(self, user_subject: str) -> None:
+        subject = _clean_subject(user_subject, 'SECURITY_MANAGEMENT_USER_INVALID')
+        url = f"{self.issuer.rstrip('/')}/api/v2/users/{urllib.parse.quote(subject, safe='')}/sessions"
+        self._request_empty(url, method='DELETE', accepted={202, 204})
+
+    def _management_token(self) -> str:
+        if self.client_id == 'checkpoint10-security-operator-not-configured':
+            raise AccountSecurityError('SECURITY_MANAGEMENT_CONFIG_UNAVAILABLE')
+        try:
+            secret = str(self.secret_loader(self.client_secret_ref) or '')
+        except Exception as exc:
+            raise AccountSecurityError('SECURITY_MANAGEMENT_SECRET_UNAVAILABLE') from exc
+        if not secret or len(secret) > 16384:
+            raise AccountSecurityError('SECURITY_MANAGEMENT_SECRET_UNAVAILABLE')
+        url = f"{self.issuer.rstrip('/')}/oauth/token"
+        body = urllib.parse.urlencode({
+            'grant_type': 'client_credentials',
+            'client_id': self.client_id,
+            'client_secret': secret,
+            'audience': f"{self.issuer.rstrip('/')}/api/v2/",
+            'scope': ' '.join(_SECURITY_SCOPES),
+        }).encode('utf-8')
+        payload = self._request_json(
+            url,
+            method='POST',
+            raw_body=body,
+            headers={'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded'},
+            include_management_auth=False,
+        )
+        token = str(payload.get('access_token') or '') if isinstance(payload, dict) else ''
+        token_type = str(payload.get('token_type') or '').lower() if isinstance(payload, dict) else ''
+        if not token or len(token) > 64 * 1024 or token_type != 'bearer':
+            raise AccountSecurityError('SECURITY_MANAGEMENT_TOKEN_RESPONSE_INVALID')
+        return token
+
+    def _request_json(
+        self,
+        url: str,
+        *,
+        method: str,
+        payload: dict[str, Any] | None = None,
+        raw_body: bytes | None = None,
+        headers: dict[str, str] | None = None,
+        include_management_auth: bool = True,
+    ) -> Any:
+        request_headers = dict(headers or {'Accept': 'application/json'})
+        data = raw_body
+        if payload is not None:
+            data = json.dumps(payload, separators=(',', ':')).encode('utf-8')
+            request_headers.setdefault('Content-Type', 'application/json')
+            request_headers.setdefault('Accept', 'application/json')
+        if include_management_auth:
+            request_headers['Authorization'] = f'Bearer {self._management_token()}'
+        request = urllib.request.Request(url, data=data, method=method, headers=request_headers)
+        try:
+            with self._opener.open(request, timeout=self.timeout_seconds) as response:
+                raw = response.read(_MAX_JSON_BYTES + 1)
+        except urllib.error.HTTPError as exc:
+            raise AccountSecurityError('SECURITY_MANAGEMENT_REJECTED') from exc
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            raise AccountSecurityError('SECURITY_MANAGEMENT_UNAVAILABLE') from exc
+        if len(raw) > _MAX_JSON_BYTES:
+            raise AccountSecurityError('SECURITY_MANAGEMENT_RESPONSE_TOO_LARGE')
+        try:
+            return json.loads(raw.decode('utf-8'), parse_constant=lambda _value: (_ for _ in ()).throw(ValueError('non-finite JSON')))
+        except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+            raise AccountSecurityError('SECURITY_MANAGEMENT_RESPONSE_INVALID') from exc
+
+    def _request_empty(self, url: str, *, method: str, accepted: set[int]) -> None:
+        token = self._management_token()
+        request = urllib.request.Request(
+            url,
+            method=method,
+            headers={'Authorization': f'Bearer {token}', 'Accept': 'application/json'},
+        )
+        try:
+            with self._opener.open(request, timeout=self.timeout_seconds) as response:
+                status = int(getattr(response, 'status', 0) or response.getcode())
+                response.read(1024)
+        except urllib.error.HTTPError as exc:
+            raise AccountSecurityError('SECURITY_MANAGEMENT_REJECTED') from exc
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            raise AccountSecurityError('SECURITY_MANAGEMENT_UNAVAILABLE') from exc
+        if status not in accepted:
+            raise AccountSecurityError('SECURITY_MANAGEMENT_RESPONSE_INVALID')
+
+
+class HostedAuth0SecurityService:
+    def __init__(
+        self,
+        *,
+        boundary: Auth0BoundaryConfig,
+        oidc,
+        accounts: AccountIdentityService,
+        management: Auth0SecurityManagementClient,
+        intent_signer: SecurityIntentSigner,
+        step_up: StepUpTransactionStore | None = None,
+        now: Callable[[], float] = time.time,
+    ):
+        self.boundary = boundary
+        self.oidc = oidc
+        self.accounts = accounts
+        self.management = management
+        self.intent_signer = intent_signer
+        self.step_up = step_up or StepUpTransactionStore(now=now)
+        self._now = now
+
+    def metadata(self) -> dict[str, Any]:
+        return {
+            'enabled': True,
+            'checkpoint': 10,
+            'ui_implemented': False,
+            'step_up_callback_uri': self.boundary.callback_uri,
+            'step_up_ttl_seconds': _STEP_UP_TTL_SECONDS,
+            'grant_ttl_seconds': _GRANT_TTL_SECONDS,
+            'recovery_owner': 'auth0_universal_login',
+            'recovery_codes_visible_to_breadmaker': False,
+            'passwords_visible_to_breadmaker': False,
+            'totp_secret_visible_to_breadmaker': False,
+            'management': self.management.metadata(),
+            'security_intent': self.intent_signer.metadata(),
+        }
+
+    def validate_step_up_target(self, *, principal, purpose: str, target: str = '') -> str:
+        purpose = _clean_purpose(purpose)
+        target = _clean_target(target)
+        user_id = self._principal_user(principal)
+        identities = self.accounts.identities_for_user(user_id)
+        primary = self.accounts.primary_identity_for_user(user_id)
+        if primary is None:
+            raise AccountSecurityError('SECURITY_PRIMARY_IDENTITY_REQUIRED')
+
+        if purpose == 'unlink_identity':
+            secondary = self._identity_for_subject(identities, target)
+            if secondary is None:
+                raise AccountSecurityError('SECURITY_LINKED_IDENTITY_NOT_FOUND')
+            if secondary.subject == primary.subject:
+                raise AccountSecurityError('SECURITY_PRIMARY_IDENTITY_UNLINK_FORBIDDEN')
+            if len(identities) < 2:
+                raise AccountSecurityError('SECURITY_LAST_IDENTITY_UNLINK_FORBIDDEN')
+        elif purpose == 'change_password':
+            identity = self._identity_for_subject(identities, target)
+            if identity is None or identity.provider != 'email_password' or not identity.subject.startswith('auth0|'):
+                raise AccountSecurityError('SECURITY_PASSWORD_IDENTITY_REQUIRED')
+        elif purpose in {'disable_optional_totp', 'replace_totp'}:
+            if any(identity.provider == 'email_password' for identity in identities) and purpose == 'disable_optional_totp':
+                raise AccountSecurityError('SECURITY_MANDATORY_TOTP_CANNOT_DISABLE')
+            method = self._totp_method(primary.subject, target)
+            target = str(method['id'])
+        elif purpose == 'revoke_session':
+            if not target.startswith('ses_'):
+                raise AccountSecurityError('SECURITY_SESSION_TARGET_INVALID')
+        elif purpose in {'enable_totp', 'replace_totp_enroll', 'sign_out_all_sessions'}:
+            if target:
+                raise AccountSecurityError('SECURITY_STEP_UP_TARGET_UNEXPECTED')
+        return target
+
+    def begin_step_up(self, *, principal, purpose: str, target: str = '', return_path: str = '/', sessions=None, internal: bool = False) -> OidcAuthorizationRequest:
+        purpose = _clean_purpose(purpose)
+        if not internal and purpose not in _PUBLIC_STEP_UP_PURPOSES:
+            raise AccountSecurityError('SECURITY_STEP_UP_PURPOSE_INTERNAL')
+        target = self.validate_step_up_target(principal=principal, purpose=purpose, target=target)
+        if purpose == 'revoke_session':
+            if sessions is None:
+                raise AccountSecurityError('SECURITY_SESSION_REGISTRY_REQUIRED')
+            user_id = self._principal_user(principal)
+            owned_session_ids = {str(item.get('session_id') or '') for item in sessions.sessions_for_user(user_id)}
+            if target not in owned_session_ids:
+                raise AccountSecurityError('SECURITY_SESSION_TARGET_NOT_OWNED')
+        extra: dict[str, str] | None = None
+        if purpose in {'enable_totp', 'replace_totp_enroll'}:
+            primary = self.accounts.primary_identity_for_user(self._principal_user(principal))
+            if primary is None:
+                raise AccountSecurityError('SECURITY_PRIMARY_IDENTITY_REQUIRED')
+            extra = self.intent_signer.parameters('totp-enroll', subject=primary.subject)
+        try:
+            request = self.oidc.begin_authorization(
+                return_path=return_path,
+                force_reauthentication=(purpose != 'replace_totp_enroll'),
+                extra_authorization_params=extra,
+            )
+        except OidcError as exc:
+            raise AccountSecurityError(str(exc)) from exc
+        try:
+            self.step_up.bind_authorization(request, principal=principal, purpose=purpose, target=target)
+        except AccountSecurityError:
+            self.oidc.transactions.discard(request.state)
+            raise
+        return request
+
+    def complete_step_up(self, *, principal, code: str, state: str) -> StepUpResult:
+        tx = self.step_up.consume_transaction_for_principal(state, principal=principal)
+        user_id = self._principal_user(principal)
+        session_id = str(getattr(principal, 'session_id', '') or '')
+        try:
+            identity, return_path = self.oidc.complete_authorization(code=code, state=state)
+        except OidcError as exc:
+            raise AccountSecurityError(str(exc)) from exc
+        if return_path != tx.return_path:
+            raise AccountSecurityError('SECURITY_STEP_UP_RETURN_PATH_MISMATCH')
+        mapped = self.accounts.resolve_external_identity(identity.issuer, identity.subject)
+        if mapped is None or mapped.user_id != user_id:
+            raise AccountSecurityError('SECURITY_STEP_UP_IDENTITY_MISMATCH')
+        auth_time = self._fresh_auth_time(identity, tx)
+        if tx.purpose == 'replace_totp_enroll':
+            primary = self.accounts.primary_identity_for_user(user_id)
+            if primary is None:
+                raise AccountSecurityError('SECURITY_PRIMARY_IDENTITY_REQUIRED')
+            # Auth0 has now completed replacement enrollment. Clear the transient
+            # recovery marker before issuing the internal grant. If this write fails,
+            # fail closed: the newly enrolled factor still exists and the marker keeps
+            # future social logins in an MFA-enforced state.
+            self.management.set_totp_replacement_pending(primary.subject, False)
+        self.step_up.issue_grant(tx, authenticated_at=auth_time)
+        return StepUpResult(user_id, session_id, tx.purpose, tx.target, auth_time, return_path)
+
+    def consume_grant(self, *, principal, purpose: str, target: str = '') -> float:
+        grant = self.step_up.consume_grant(principal=principal, purpose=purpose, target=target)
+        return grant.authenticated_at
+
+    def security_snapshot(self, *, principal, sessions) -> dict[str, Any]:
+        user_id = self._principal_user(principal)
+        identities = self.accounts.identities_for_user(user_id)
+        primary = self.accounts.primary_identity_for_user(user_id)
+        if primary is None:
+            raise AccountSecurityError('SECURITY_PRIMARY_IDENTITY_REQUIRED')
+        methods = self.management.authentication_methods(primary.subject)
+        has_database = any(identity.provider == 'email_password' for identity in identities)
+        return {
+            'identities': [
+                {
+                    **identity.public(),
+                    'primary': identity.subject == primary.subject and identity.issuer == primary.issuer,
+                    'can_unlink': len(identities) > 1 and identity.subject != primary.subject,
+                }
+                for identity in identities
+            ],
+            'sessions': sessions.sessions_for_user(user_id),
+            'current_session_id': str(getattr(principal, 'session_id', '') or ''),
+            'mfa': {
+                'methods': methods,
+                'totp_enrolled': any(method.get('type') == 'totp' for method in methods),
+                'totp_mandatory': has_database,
+                'totp_can_disable': not has_database,
+                'owner': 'auth0',
+                'recovery_code_owner': 'auth0',
+            },
+            'recovery': {
+                'owner': 'auth0_universal_login',
+                'recovery_codes_supported': True,
+                'email_only_mfa_reset_allowed': False,
+                'password_reset_disables_mfa': False,
+            },
+        }
+
+    def unlink_identity(self, *, principal, subject: str) -> ExternalIdentity:
+        user_id = self._principal_user(principal)
+        subject = self.validate_step_up_target(principal=principal, purpose='unlink_identity', target=subject)
+        self.consume_grant(principal=principal, purpose='unlink_identity', target=subject)
+        primary = self.accounts.primary_identity_for_user(user_id)
+        if primary is None:
+            raise AccountSecurityError('SECURITY_PRIMARY_IDENTITY_REQUIRED')
+        # Remove local authorization first so a provider-side partial failure can never
+        # leave a now-detached secondary credential trusted by Breadmaker. If Auth0
+        # rejects/fails, restore the exact ownership mapping before returning failure.
+        try:
+            removed = self.accounts.unlink_external_identity_from_user(user_id, primary.issuer, subject)
+        except AccountIdentityError as exc:
+            raise AccountSecurityError(str(exc)) from exc
+        try:
+            self.management.unlink_identity(primary_subject=primary.subject, secondary_subject=subject)
+        except AccountSecurityError:
+            try:
+                self.accounts.link_external_identity_to_user(
+                    user_id,
+                    removed.issuer,
+                    removed.subject,
+                    provider=removed.provider,
+                    email=removed.email,
+                    email_verified=removed.email_verified,
+                )
+            except AccountIdentityError as rollback_exc:
+                raise AccountSecurityError('SECURITY_IDENTITY_UNLINK_ROLLBACK_FAILED') from rollback_exc
+            raise
+        return removed
+
+    def create_password_change_ticket(self, *, principal, subject: str) -> str:
+        subject = self.validate_step_up_target(principal=principal, purpose='change_password', target=subject)
+        self.consume_grant(principal=principal, purpose='change_password', target=subject)
+        return self.management.create_password_change_ticket(
+            user_subject=subject,
+            application_client_id=self.boundary.client_id,
+            ttl_seconds=300,
+        )
+
+    def disable_optional_totp(self, *, principal, method_id: str) -> None:
+        user_id = self._principal_user(principal)
+        primary = self.accounts.primary_identity_for_user(user_id)
+        if primary is None:
+            raise AccountSecurityError('SECURITY_PRIMARY_IDENTITY_REQUIRED')
+        method_id = self.validate_step_up_target(principal=principal, purpose='disable_optional_totp', target=method_id)
+        self.consume_grant(principal=principal, purpose='disable_optional_totp', target=method_id)
+        self._totp_method(primary.subject, method_id)
+        # Explicit optional-MFA disable must clear any interrupted replacement marker
+        # before the factor is removed. Otherwise a stale recovery marker could force
+        # reenrollment after a user deliberately disabled social TOTP.
+        self.management.set_totp_replacement_pending(primary.subject, False)
+        self.management.delete_authentication_method(primary.subject, method_id)
+
+    def begin_totp_replacement_enrollment(self, *, principal, method_id: str, return_path: str = '/') -> OidcAuthorizationRequest:
+        user_id = self._principal_user(principal)
+        primary = self.accounts.primary_identity_for_user(user_id)
+        if primary is None:
+            raise AccountSecurityError('SECURITY_PRIMARY_IDENTITY_REQUIRED')
+        method_id = self.validate_step_up_target(principal=principal, purpose='replace_totp', target=method_id)
+        self.consume_grant(principal=principal, purpose='replace_totp', target=method_id)
+        self._totp_method(primary.subject, method_id)
+        # Prepare the provider enrollment transaction before deleting the working factor.
+        # Discovery/network failure must not destroy the user's current TOTP method.
+        request = self.begin_step_up(
+            principal=principal, purpose='replace_totp_enroll', return_path=return_path, internal=True
+        )
+        # Mark replacement pending *before* deleting the old factor. Auth0 enrolled
+        # factors remain the source of truth; this transient app_metadata marker only
+        # prevents an interrupted replacement from turning a previously protected
+        # social identity into a no-MFA login. A later login will be forced to enroll.
+        self.management.set_totp_replacement_pending(primary.subject, True)
+        try:
+            self.management.delete_authentication_method(primary.subject, method_id)
+        except AccountSecurityError:
+            # The old factor should still exist when DELETE fails. Best-effort cleanup
+            # avoids leaving a needless marker, but failure to clear remains safe because
+            # hasOtp is challenged before pending replacement is considered by the Action.
+            try:
+                self.management.set_totp_replacement_pending(primary.subject, False)
+            except AccountSecurityError:
+                pass
+            raise
+        return request
+
+    def revoke_session(self, *, principal, sessions, session_id: str) -> bool:
+        user_id = self._principal_user(principal)
+        target = self.validate_step_up_target(principal=principal, purpose='revoke_session', target=session_id)
+        self.consume_grant(principal=principal, purpose='revoke_session', target=target)
+        return bool(sessions.revoke_session_id(user_id, target))
+
+    def sign_out_everywhere(self, *, principal, sessions) -> int:
+        user_id = self._principal_user(principal)
+        self.validate_step_up_target(principal=principal, purpose='sign_out_all_sessions')
+        self.consume_grant(principal=principal, purpose='sign_out_all_sessions')
+        primary = self.accounts.primary_identity_for_user(user_id)
+        if primary is None:
+            raise AccountSecurityError('SECURITY_PRIMARY_IDENTITY_REQUIRED')
+        # Fail closed: do not claim "everywhere" after only local revocation. Ask
+        # Auth0 to terminate its sessions first, then revoke every Breadmaker cookie.
+        self.management.delete_user_sessions(primary.subject)
+        return int(sessions.revoke_user(user_id))
+
+    def _principal_user(self, principal) -> str:
+        user_id = str(getattr(principal, 'user_id', '') or '').strip()
+        if not user_id.startswith('usr_'):
+            raise AccountSecurityError('SECURITY_AUTHENTICATION_REQUIRED')
+        return user_id
+
+    @staticmethod
+    def _identity_for_subject(identities: list[ExternalIdentity], subject: str) -> ExternalIdentity | None:
+        return next((item for item in identities if item.subject == subject), None)
+
+    def _totp_method(self, primary_subject: str, method_id: str) -> dict[str, Any]:
+        method_id = _clean_method_id(method_id)
+        methods = self.management.authentication_methods(primary_subject)
+        method = next((item for item in methods if item.get('id') == method_id), None)
+        if method is None or method.get('type') != 'totp':
+            raise AccountSecurityError('SECURITY_TOTP_METHOD_NOT_FOUND')
+        return method
+
+    def _fresh_auth_time(self, identity: VerifiedOidcIdentity, tx: StepUpTransaction) -> float:
+        auth_time = float(identity.authenticated_at or 0.0)
+        now = float(self._now())
+        if (
+            auth_time <= 0
+            or auth_time < tx.created_at - _STEP_UP_AUTH_SKEW_SECONDS
+            or auth_time > now + _STEP_UP_AUTH_SKEW_SECONDS
+            or now - auth_time > _STEP_UP_TTL_SECONDS + _STEP_UP_AUTH_SKEW_SECONDS
+        ):
+            raise AccountSecurityError('SECURITY_STEP_UP_FRESH_AUTH_REQUIRED')
+        return auth_time
+
+
+def _default_security_secret_reference(environment: str, secret_id: str, development_name: str) -> str:
+    if environment == 'development':
+        return f'env:{development_name}'
+    project = str(os.environ.get('BREADMAKER_GCP_PROJECT_ID') or '').strip()
+    if environment == 'staging' and project:
+        return f'secretmanager:projects/{project}/secrets/{secret_id}/versions/latest'
+    return ''
+
+
+def build_account_security_service(
+    *,
+    boundary: Auth0BoundaryConfig,
+    accounts: AccountIdentityService,
+    secret_loader: Callable[[str], str],
+) -> HostedAuth0SecurityService:
+    if boundary.environment not in {'development', 'staging'}:
+        raise AccountSecurityError('SECURITY_HOSTED_ENVIRONMENT_NOT_ENABLED')
+    security_boundary = boundary.for_callback_path(_STEP_UP_CALLBACK_PATH)
+    oidc = security_boundary.build_oidc_client(secret_loader=secret_loader)
+    client_id = str(os.environ.get('BREADMAKER_AUTH0_SECURITY_MGMT_CLIENT_ID') or '').strip()
+    if not client_id:
+        if boundary.environment == 'development':
+            client_id = 'checkpoint10-security-operator-not-configured'
+        else:
+            raise AccountSecurityError('SECURITY_MANAGEMENT_CLIENT_ID_REQUIRED')
+    secret_ref = str(
+        os.environ.get('BREADMAKER_AUTH0_SECURITY_MGMT_CLIENT_SECRET_REF')
+        or _default_security_secret_reference(
+            boundary.environment, 'breadmaker-auth0-security-client-secret', 'BREADMAKER_AUTH0_SECURITY_MGMT_CLIENT_SECRET',
+        )
+    )
+    management = Auth0SecurityManagementClient(
+        issuer=boundary.issuer,
+        client_id=client_id,
+        client_secret_ref=secret_ref,
+        secret_loader=secret_loader,
+    )
+    intent_secret_ref = str(
+        os.environ.get('BREADMAKER_AUTH0_SECURITY_INTENT_SECRET_REF')
+        or _default_security_secret_reference(
+            boundary.environment, 'breadmaker-auth0-security-intent-secret', 'BREADMAKER_AUTH0_SECURITY_INTENT_SECRET',
+        )
+    )
+    signer = SecurityIntentSigner(
+        client_id=boundary.client_id,
+        secret_ref=intent_secret_ref,
+        secret_loader=secret_loader,
+    )
+    return HostedAuth0SecurityService(
+        boundary=security_boundary,
+        oidc=oidc,
+        accounts=accounts,
+        management=management,
+        intent_signer=signer,
+    )
+
+
+def build_development_account_security_service(
+    *,
+    boundary: Auth0BoundaryConfig,
+    accounts: AccountIdentityService,
+    secret_loader: Callable[[str], str],
+) -> HostedAuth0SecurityService:
+    if boundary.environment != 'development':
+        raise AccountSecurityError('SECURITY_LOCAL_SANDBOX_DEVELOPMENT_ONLY')
+    return build_account_security_service(boundary=boundary, accounts=accounts, secret_loader=secret_loader)
+
+
+def _clean_purpose(value: str) -> str:
+    purpose = str(value or '').strip()
+    if purpose not in _ALLOWED_PURPOSES:
+        raise AccountSecurityError('SECURITY_STEP_UP_PURPOSE_INVALID')
+    return purpose
+
+
+def _clean_target(value: str) -> str:
+    target = str(value or '').strip()
+    if len(target) > 1024 or any(ord(ch) < 0x20 or ord(ch) == 0x7f for ch in target):
+        raise AccountSecurityError('SECURITY_STEP_UP_TARGET_INVALID')
+    return target
+
+
+def _clean_subject(value: str, code: str) -> str:
+    subject = str(value or '').strip()
+    if not subject or len(subject) > 1024 or '|' not in subject or any(ord(ch) < 0x20 or ord(ch) == 0x7f for ch in subject):
+        raise AccountSecurityError(code)
+    return subject
+
+
+def _split_provider_subject(subject: str) -> tuple[str, str]:
+    provider, separator, user_id = str(subject).partition('|')
+    if separator != '|' or not provider or not user_id:
+        raise AccountSecurityError('SECURITY_SECONDARY_IDENTITY_INVALID')
+    return provider, user_id
+
+
+def _clean_method_id(value: str) -> str:
+    method = str(value or '').strip()
+    if not method or len(method) > 512 or any(ord(ch) < 0x20 or ord(ch) == 0x7f for ch in method):
+        raise AccountSecurityError('SECURITY_AUTH_METHOD_ID_INVALID')
+    return method

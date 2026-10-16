@@ -1,0 +1,22 @@
+from __future__ import annotations
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+
+def test_v10329_historical_preview_is_retired_before_predeployment_gate():
+    version=(ROOT/'VERSION').read_text(encoding='utf-8').strip()
+    assert tuple(map(int,version.split('.'))) >= (10,3,33)
+    assert 'APP_SCHEMA_VERSION = 42' in (ROOT/'src/workspace/constants.py').read_text(encoding='utf-8')
+    assert not (ROOT/'run-auth-ui-preview').exists()
+    assert not (ROOT/'static/dev/auth-ui-preview.html').exists()
+    assert not (ROOT/'static/dev/auth-ui-preview.js').exists()
+    routes=(ROOT/'src/backend/runtime_routes.py').read_text(encoding='utf-8')
+    assert '/__dev__/auth-ui-preview' not in routes
+    assert 'run-auth-ui-preview' not in (ROOT/'run-hosted-auth-dev').read_text(encoding='utf-8')
+
+def test_v10329_real_auth_launcher_remains_fail_closed():
+    launcher=(ROOT/'run-hosted-auth-dev').read_text(encoding='utf-8')
+    assert 'BREADMAKER_AUTH_MODE=auth0' in launcher
+    assert 'BREADMAKER_AUTH0_ISSUER' in launcher
+    assert 'BREADMAKER_AUTH0_CLIENT_ID' in launcher
+    assert 'BREADMAKER_AUTH0_CLIENT_SECRET' in launcher
+    assert 'exec ./run' in launcher

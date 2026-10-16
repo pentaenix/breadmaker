@@ -1,0 +1,739 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "project",
+      "label": "Project Structure",
+      "templates": [
+        {
+          "id": "chapters",
+          "label": "Chapters",
+          "description": "Add the manuscript chapters as linked canvas nodes.",
+          "source": "project.chapters",
+          "node": {
+            "shape": "rect",
+            "w": 230,
+            "h": 105
+          },
+          "layout": {
+            "type": "grid",
+            "columns": 4,
+            "direction": "snake",
+            "gap_x": 44,
+            "gap_y": 44
+          },
+          "connect": {
+            "mode": "sequence",
+            "route_style": "straight",
+            "end_style": "arrow"
+          },
+          "map_compatible": true
+        },
+        {
+          "id": "scenes",
+          "label": "Scenes",
+          "description": "Add the manuscript scenes as linked canvas nodes.",
+          "source": "project.scenes",
+          "node": {
+            "shape": "rect",
+            "w": 230,
+            "h": 105
+          },
+          "layout": {
+            "type": "grid",
+            "columns": 4,
+            "direction": "snake",
+            "gap_x": 44,
+            "gap_y": 44
+          },
+          "connect": {
+            "mode": "sequence",
+            "route_style": "straight",
+            "end_style": "arrow"
+          },
+          "map_compatible": true
+        }
+      ]
+    },
+    {
+      "id": "character",
+      "label": "Character",
+      "templates": [
+        {
+          "id": "character_basics",
+          "label": "Character Basics",
+          "description": "Core character questions for planning or revision.",
+          "node": {
+            "shape": "rect",
+            "w": 230,
+            "h": 120
+          },
+          "layout": {
+            "type": "grid",
+            "columns": 3,
+            "direction": "snake",
+            "gap_x": 44,
+            "gap_y": 44
+          },
+          "connect": {
+            "mode": "none"
+          },
+          "items": [
+            {
+              "title": "Want",
+              "body": "What does the character consciously want?"
+            },
+            {
+              "title": "Need",
+              "body": "What do they actually need to learn, accept, or become?"
+            },
+            {
+              "title": "Lie / Flaw",
+              "body": "What false belief or behavior keeps them from the need?"
+            },
+            {
+              "title": "Ghost / Wound",
+              "body": "What past experience helps explain the lie or flaw?"
+            },
+            {
+              "title": "Stakes",
+              "body": "What do they stand to lose if they do not change?"
+            },
+            {
+              "title": "Contradiction",
+              "body": "What makes them more complicated than their surface trait?"
+            }
+          ],
+          "map_compatible": false
+        },
+        {
+          "id": "character_arc",
+          "label": "Character Arc",
+          "description": "A flexible change arc from starting state to ending state.",
+          "node": {
+            "shape": "rect",
+            "w": 230,
+            "h": 120
+          },
+          "layout": {
+            "type": "grid",
+            "columns": 5,
+            "direction": "snake",
+            "gap_x": 44,
+            "gap_y": 44
+          },
+          "connect": {
+            "mode": "sequence",
+            "route_style": "straight",
+            "end_style": "arrow"
+          },
+          "items": [
+            {
+              "title": "Beginning State",
+              "body": "Who are they before the story forces change?",
+              "map_type": "stop",
+              "map_start": 0.03
+            },
+            {
+              "title": "Want",
+              "body": "What are they actively trying to get?",
+              "map_type": "stop",
+              "map_start": 0.1
+            },
+            {
+              "title": "Need",
+              "body": "What truth or change do they actually need?",
+              "map_type": "stop",
+              "map_start": 0.18
+            },
+            {
+              "title": "Lie / Flaw",
+              "body": "What belief or behavior blocks that need?",
+              "map_type": "stop",
+              "map_start": 0.26
+            },
+            {
+              "title": "Pressure",
+              "body": "How does the story repeatedly test the lie or flaw?",
+              "map_type": "stop",
+              "map_start": 0.4
+            },
+            {
+              "title": "Realization",
+              "body": "When do they begin to understand what must change?",
+              "map_type": "stop",
+              "map_start": 0.56
+            },
+            {
+              "title": "Crisis Choice",
+              "body": "What difficult choice proves whether they can change?",
+              "node": {
+                "shape": "rect"
+              },
+              "map_type": "stop",
+              "map_start": 0.7
+            },
+            {
+              "title": "Change",
+              "body": "What new action demonstrates the transformation?",
+              "map_type": "stop",
+              "map_start": 0.84
+            },
+            {
+              "title": "Ending State",
+              "body": "Who are they now, and what visibly contrasts the beginning?",
+              "map_type": "stop",
+              "map_start": 0.97
+            }
+          ],
+          "map_compatible": true
+        }
+      ]
+    },
+    {
+      "id": "frameworks",
+      "label": "Narrative Frameworks",
+      "templates": [
+        {
+          "id": "save_the_cat",
+          "label": "Save the Cat Beats",
+          "description": "The 15-beat Save the Cat story structure.",
+          "node": {
+            "shape": "rect",
+            "w": 230,
+            "h": 120
+          },
+          "layout": {
+            "type": "grid",
+            "columns": 5,
+            "direction": "snake",
+            "gap_x": 44,
+            "gap_y": 44
+          },
+          "connect": {
+            "mode": "sequence",
+            "route_style": "straight",
+            "end_style": "arrow"
+          },
+          "items": [
+            {
+              "title": "Opening Image",
+              "body": "A snapshot of the story world and protagonist before the transformation.",
+              "map_type": "stop",
+              "map_start": 0.01
+            },
+            {
+              "title": "Theme Stated",
+              "body": "A hint at the lesson or truth the story will explore.",
+              "map_type": "stop",
+              "map_start": 0.05
+            },
+            {
+              "title": "Setup",
+              "body": "Establish the protagonist, ordinary pressures, relationships, goals, and flaws.",
+              "map_type": "span",
+              "map_start": 0.01,
+              "map_end": 0.1
+            },
+            {
+              "title": "Catalyst",
+              "body": "The event that disrupts the existing life and makes the old normal unstable.",
+              "map_type": "stop",
+              "map_start": 0.1
+            },
+            {
+              "title": "Debate",
+              "body": "The protagonist hesitates, resists, or weighs what entering the story will cost.",
+              "map_type": "span",
+              "map_start": 0.1,
+              "map_end": 0.2
+            },
+            {
+              "title": "Break into Two",
+              "body": "A decisive move into the unfamiliar world or main story problem.",
+              "map_type": "stop",
+              "map_start": 0.2
+            },
+            {
+              "title": "B Story",
+              "body": "A secondary relationship or storyline that often carries the theme.",
+              "map_type": "stop",
+              "map_start": 0.22
+            },
+            {
+              "title": "Fun and Games",
+              "body": "The premise delivers on its central promise while complications grow.",
+              "map_type": "span",
+              "map_start": 0.2,
+              "map_end": 0.5
+            },
+            {
+              "title": "Midpoint",
+              "body": "A major reversal, false victory, or false defeat that raises the stakes.",
+              "map_type": "stop",
+              "map_start": 0.5
+            },
+            {
+              "title": "Bad Guys Close In",
+              "body": "External pressure and internal flaws tighten around the protagonist.",
+              "map_type": "span",
+              "map_start": 0.5,
+              "map_end": 0.75
+            },
+            {
+              "title": "All Is Lost",
+              "body": "The apparent lowest point, when the current approach seems to have failed.",
+              "map_type": "stop",
+              "map_start": 0.75
+            },
+            {
+              "title": "Dark Night of the Soul",
+              "body": "The protagonist processes the loss and confronts what must change.",
+              "map_type": "span",
+              "map_start": 0.75,
+              "map_end": 0.8
+            },
+            {
+              "title": "Break into Three",
+              "body": "A new understanding creates a new plan that combines what has been learned.",
+              "map_type": "stop",
+              "map_start": 0.8
+            },
+            {
+              "title": "Finale",
+              "body": "The protagonist acts on the new understanding and resolves the central conflict.",
+              "map_type": "span",
+              "map_start": 0.8,
+              "map_end": 0.99
+            },
+            {
+              "title": "Final Image",
+              "body": "A closing snapshot that shows how the world or protagonist has changed.",
+              "map_type": "stop",
+              "map_start": 0.99
+            }
+          ],
+          "map_compatible": true
+        },
+        {
+          "id": "hero_journey",
+          "label": "Hero's Journey",
+          "description": "A 12-stage Hero's Journey based on the commonly used modern story model.",
+          "node": {
+            "shape": "rect",
+            "w": 230,
+            "h": 120
+          },
+          "layout": {
+            "type": "grid",
+            "columns": 4,
+            "direction": "snake",
+            "gap_x": 44,
+            "gap_y": 44
+          },
+          "connect": {
+            "mode": "sequence",
+            "route_style": "straight",
+            "end_style": "arrow"
+          },
+          "items": [
+            {
+              "title": "Ordinary World",
+              "body": "Show the hero's life before the central adventure begins.",
+              "map_type": "stop",
+              "map_start": 0.04
+            },
+            {
+              "title": "Call to Adventure",
+              "body": "A challenge, opportunity, or threat invites the hero into change.",
+              "map_type": "stop",
+              "map_start": 0.12363636363636363
+            },
+            {
+              "title": "Refusal of the Call",
+              "body": "Fear, duty, doubt, or circumstance makes the hero resist.",
+              "map_type": "stop",
+              "map_start": 0.20727272727272728
+            },
+            {
+              "title": "Meeting the Mentor",
+              "body": "Guidance, training, tools, or confidence prepares the hero to proceed.",
+              "map_type": "stop",
+              "map_start": 0.2909090909090909
+            },
+            {
+              "title": "Crossing the Threshold",
+              "body": "The hero commits and enters the unfamiliar world of the adventure.",
+              "map_type": "stop",
+              "map_start": 0.3745454545454545
+            },
+            {
+              "title": "Tests, Allies, Enemies",
+              "body": "The new world reveals its rules through challenges, relationships, and opposition.",
+              "map_type": "span",
+              "map_start": 0.3,
+              "map_end": 0.5
+            },
+            {
+              "title": "Approach",
+              "body": "The hero prepares for a dangerous confrontation near the heart of the problem.",
+              "map_type": "span",
+              "map_start": 0.5,
+              "map_end": 0.58
+            },
+            {
+              "title": "Ordeal",
+              "body": "A central crisis forces the hero through a major fear, loss, or confrontation.",
+              "map_type": "stop",
+              "map_start": 0.6254545454545455
+            },
+            {
+              "title": "Reward",
+              "body": "Surviving the ordeal brings knowledge, reconciliation, an object, or another gain.",
+              "map_type": "stop",
+              "map_start": 0.7090909090909091
+            },
+            {
+              "title": "The Road Back",
+              "body": "Consequences pursue the hero as they turn toward resolution or home.",
+              "map_type": "span",
+              "map_start": 0.72,
+              "map_end": 0.84
+            },
+            {
+              "title": "Resurrection",
+              "body": "A final test requires the hero to demonstrate the transformation at the highest stakes.",
+              "map_type": "stop",
+              "map_start": 0.8763636363636365
+            },
+            {
+              "title": "Return with the Elixir",
+              "body": "The hero returns with something that changes or benefits the ordinary world.",
+              "map_type": "stop",
+              "map_start": 0.9600000000000001
+            }
+          ],
+          "map_compatible": true
+        },
+        {
+          "id": "story_circle",
+          "label": "Story Circle",
+          "description": "An eight-step circular change structure.",
+          "node": {
+            "shape": "rect",
+            "w": 230,
+            "h": 115
+          },
+          "layout": {
+            "type": "grid",
+            "columns": 4,
+            "direction": "snake",
+            "gap_x": 44,
+            "gap_y": 44
+          },
+          "connect": {
+            "mode": "sequence",
+            "route_style": "straight",
+            "end_style": "arrow"
+          },
+          "items": [
+            {
+              "title": "You",
+              "body": "A character exists in a zone of comfort.",
+              "map_type": "stop",
+              "map_start": 0.04
+            },
+            {
+              "title": "Need",
+              "body": "They want or need something that disturbs that comfort.",
+              "map_type": "stop",
+              "map_start": 0.17142857142857143
+            },
+            {
+              "title": "Go",
+              "body": "They enter an unfamiliar situation.",
+              "map_type": "stop",
+              "map_start": 0.3028571428571428
+            },
+            {
+              "title": "Search",
+              "body": "They adapt, struggle, and learn the rules of the new situation.",
+              "map_type": "stop",
+              "map_start": 0.4342857142857143
+            },
+            {
+              "title": "Find",
+              "body": "They get what they wanted, or reach the thing they were pursuing.",
+              "map_type": "stop",
+              "map_start": 0.5657142857142857
+            },
+            {
+              "title": "Take",
+              "body": "Getting it carries a cost or consequence.",
+              "map_type": "stop",
+              "map_start": 0.6971428571428573
+            },
+            {
+              "title": "Return",
+              "body": "They return toward a familiar situation.",
+              "map_type": "stop",
+              "map_start": 0.8285714285714286
+            },
+            {
+              "title": "Change",
+              "body": "They are now capable of acting differently because of the journey.",
+              "map_type": "stop",
+              "map_start": 0.9600000000000001
+            }
+          ],
+          "map_compatible": true
+        },
+        {
+          "id": "seven_point",
+          "label": "Seven Point Story Structure",
+          "description": "Seven major turning points from hook to resolution.",
+          "node": {
+            "shape": "rect",
+            "w": 230,
+            "h": 115
+          },
+          "layout": {
+            "type": "grid",
+            "columns": 4,
+            "direction": "snake",
+            "gap_x": 44,
+            "gap_y": 44
+          },
+          "connect": {
+            "mode": "sequence",
+            "route_style": "straight",
+            "end_style": "arrow"
+          },
+          "items": [
+            {
+              "title": "Hook",
+              "body": "Establish the protagonist and the starting condition that the ending will transform.",
+              "map_type": "stop",
+              "map_start": 0.04
+            },
+            {
+              "title": "Plot Turn 1",
+              "body": "Introduce the conflict strongly enough to pull the protagonist into the story.",
+              "map_type": "stop",
+              "map_start": 0.19333333333333336
+            },
+            {
+              "title": "Pinch Point 1",
+              "body": "Apply direct pressure from the antagonistic force or central problem.",
+              "map_type": "stop",
+              "map_start": 0.3466666666666667
+            },
+            {
+              "title": "Midpoint",
+              "body": "Shift the protagonist from reaction toward more deliberate action.",
+              "map_type": "stop",
+              "map_start": 0.5
+            },
+            {
+              "title": "Pinch Point 2",
+              "body": "Apply stronger pressure and make failure feel immediate or costly.",
+              "map_type": "stop",
+              "map_start": 0.6533333333333334
+            },
+            {
+              "title": "Plot Turn 2",
+              "body": "Provide the final information, realization, or resource needed for the climax.",
+              "map_type": "stop",
+              "map_start": 0.8066666666666668
+            },
+            {
+              "title": "Resolution",
+              "body": "Resolve the central conflict and demonstrate the resulting change.",
+              "map_type": "stop",
+              "map_start": 0.9600000000000001
+            }
+          ],
+          "map_compatible": true
+        },
+        {
+          "id": "three_act",
+          "label": "Three-Act Structure",
+          "description": "A practical beat map across setup, confrontation, and resolution.",
+          "node": {
+            "shape": "rect",
+            "w": 230,
+            "h": 115
+          },
+          "layout": {
+            "type": "grid",
+            "columns": 4,
+            "direction": "snake",
+            "gap_x": 44,
+            "gap_y": 44
+          },
+          "connect": {
+            "mode": "sequence",
+            "route_style": "straight",
+            "end_style": "arrow"
+          },
+          "items": [
+            {
+              "title": "Act I — Setup",
+              "body": "Establish the world, protagonist, central tensions, and the life that cannot remain unchanged.",
+              "map_type": "span",
+              "map_start": 0.0,
+              "map_end": 0.25
+            },
+            {
+              "title": "Inciting Incident",
+              "body": "Introduce the disruption that begins the central story problem.",
+              "map_type": "stop",
+              "map_start": 0.1
+            },
+            {
+              "title": "First Plot Point",
+              "body": "A commitment or consequence closes the setup and launches the main confrontation.",
+              "map_type": "stop",
+              "map_start": 0.25
+            },
+            {
+              "title": "Act II — Confrontation",
+              "body": "The protagonist pursues the goal, meets escalating obstacles, and learns through failure.",
+              "map_type": "span",
+              "map_start": 0.25,
+              "map_end": 0.75
+            },
+            {
+              "title": "Midpoint",
+              "body": "A central reversal changes the stakes, understanding, or direction of the conflict.",
+              "map_type": "stop",
+              "map_start": 0.5
+            },
+            {
+              "title": "Second Plot Point",
+              "body": "A final major turn prepares the protagonist for the decisive confrontation.",
+              "map_type": "stop",
+              "map_start": 0.75
+            },
+            {
+              "title": "Act III — Resolution",
+              "body": "The climax resolves the central conflict and the aftermath shows what changed.",
+              "map_type": "span",
+              "map_start": 0.75,
+              "map_end": 1.0
+            }
+          ],
+          "map_compatible": true
+        },
+        {
+          "id": "freytag",
+          "label": "Freytag's Pyramid",
+          "description": "A five-part dramatic arc centered on a climax.",
+          "node": {
+            "shape": "rect",
+            "w": 230,
+            "h": 115
+          },
+          "layout": {
+            "type": "grid",
+            "columns": 5,
+            "direction": "snake",
+            "gap_x": 44,
+            "gap_y": 44
+          },
+          "connect": {
+            "mode": "sequence",
+            "route_style": "straight",
+            "end_style": "arrow"
+          },
+          "items": [
+            {
+              "title": "Exposition",
+              "body": "Introduce the dramatic situation, characters, and necessary context.",
+              "map_type": "span",
+              "map_start": 0.0,
+              "map_end": 0.2
+            },
+            {
+              "title": "Rising Action",
+              "body": "Complications and conflicts build toward the central turning point.",
+              "map_type": "span",
+              "map_start": 0.2,
+              "map_end": 0.48
+            },
+            {
+              "title": "Climax",
+              "body": "The dramatic conflict reaches its decisive peak.",
+              "map_type": "stop",
+              "map_start": 0.5
+            },
+            {
+              "title": "Falling Action",
+              "body": "The consequences of the climax unfold and remaining conflicts narrow.",
+              "map_type": "span",
+              "map_start": 0.52,
+              "map_end": 0.82
+            },
+            {
+              "title": "Resolution",
+              "body": "The dramatic action settles into its final state.",
+              "map_type": "span",
+              "map_start": 0.82,
+              "map_end": 1.0
+            }
+          ],
+          "map_compatible": true
+        },
+        {
+          "id": "kishotenketsu",
+          "label": "Kishōtenketsu",
+          "description": "A four-part structure built around introduction, development, twist, and integration.",
+          "node": {
+            "shape": "rect",
+            "w": 230,
+            "h": 115
+          },
+          "layout": {
+            "type": "grid",
+            "columns": 4,
+            "direction": "snake",
+            "gap_x": 44,
+            "gap_y": 44
+          },
+          "connect": {
+            "mode": "sequence",
+            "route_style": "straight",
+            "end_style": "arrow"
+          },
+          "items": [
+            {
+              "title": "Ki — Introduction",
+              "body": "Introduce the subject, situation, or pattern.",
+              "map_type": "stop",
+              "map_start": 0.04
+            },
+            {
+              "title": "Shō — Development",
+              "body": "Develop what was introduced and deepen the audience's understanding of it.",
+              "map_type": "stop",
+              "map_start": 0.3466666666666667
+            },
+            {
+              "title": "Ten — Twist",
+              "body": "Introduce an unexpected element, contrast, or shift in perspective.",
+              "map_type": "stop",
+              "map_start": 0.6533333333333334
+            },
+            {
+              "title": "Ketsu — Conclusion",
+              "body": "Connect the earlier material and the twist into a satisfying whole.",
+              "map_type": "stop",
+              "map_start": 0.9600000000000001
+            }
+          ],
+          "map_compatible": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "format": "breadmaker-hosted-object-storage-adapter",
+  "format_version": 1,
+  "editor_release": "10.3.52",
+  "milestone": 4,
+  "live_resources": false,
+  "integration_milestone": 5,
+  "package": "src/hosted/storage",
+  "drivers": {
+    "deterministic": "MemoryObjectStore",
+    "google": "GoogleCloudObjectStore"
+  },
+  "dependency": {
+    "manifest": "requirements-hosted.txt",
+    "pin": "google-cloud-storage==3.16.0",
+    "local_manifest_must_not_contain": "google-cloud-storage"
+  },
+  "mutation_preconditions": {
+    "immutable_create": 0,
+    "replace": "exact previously observed generation",
+    "delete": "exact previously observed positive generation"
+  },
+  "publication_order": [
+    "server-generated object name",
+    "write immutable object with if_generation_match=0",
+    "read exact returned generation",
+    "verify byte size and sha256",
+    "publish authoritative Firestore metadata/pointer in transaction/CAS",
+    "only then report save success"
+  ],
+  "orphan_policy": {
+    "allowed": "verified object exists without authoritative Firestore reference after pointer/CAS failure",
+    "forbidden": "successful authoritative Firestore pointer references missing or unverified object",
+    "cleanup": "discover separately; delete only after reachability/retention proof using exact generation"
+  },
+  "security": {
+    "server_generated_names_only": true,
+    "user_path_segments_forbidden": true,
+    "bounded_streaming": true,
+    "hosted_image_decoder_enabled": false,
+    "asset_formats": [
+      "png",
+      "jpg",
+      "webp"
+    ],
+    "hybrid_entity_key_family_enforced": true,
+    "content_addressed_key_digest_must_match_bytes": true
+  },
+  "runtime": {
+    "hosted_asset_port_implemented": true,
+    "active_hosted_composition_changed": false,
+    "local_semantics_changed": false
+  }
+}

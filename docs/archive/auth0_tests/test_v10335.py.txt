@@ -1,0 +1,190 @@
+from __future__ import annotations
+
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_v10335_release_stays_on_schema_42_and_finishes_checkpoint11_round3():
+    assert (ROOT / 'VERSION').read_text(encoding='utf-8').strip() == '10.3.59'
+    assert 'APP_SCHEMA_VERSION = 42' in (ROOT / 'src/workspace/constants.py').read_text(encoding='utf-8')
+
+
+def test_v10335_bookmark_toolbar_waits_for_async_manuscript_refresh_before_reveal():
+    source = (ROOT / 'static/js/features/manuscript/bookmarks.js').read_text(encoding='utf-8')
+    start = source.index('async function refreshBookmarkPresentation')
+    end = source.index('async function setBookmarkTarget', start)
+    section = source[start:end]
+    assert section.index('await reloadManuscriptView()') < section.rindex('syncBookmarkToolbar()')
+
+
+def test_v10335_auth_language_restart_contexts_have_a_hard_capacity():
+    from auth.hosted_login import HostedAuth0LoginError, _LanguageContextStore
+
+    now = [1_700_000_000.0]
+    store = _LanguageContextStore(now=lambda: now[0], max_active=16)
+    for _ in range(16):
+        store.issue(return_path='/', locale='en', signup=False)
+    with pytest.raises(HostedAuth0LoginError, match='AUTH0_LANGUAGE_CONTEXT_CAPACITY_EXCEEDED'):
+        store.issue(return_path='/', locale='en', signup=False)
+
+
+def test_v10335_account_link_state_wrong_session_does_not_burn_legitimate_transaction():
+    from auth.accounts import ExternalIdentity
+    from auth.linking import AccountLinkTransactionStore, AccountLinkingError
+    from auth.oidc import OidcAuthorizationRequest
+
+    now = 1_700_000_000.0
+    store = AccountLinkTransactionStore(max_active=16, now=lambda: now)
+    primary = ExternalIdentity('https://tenant.example.test/', 'auth0|primary', 'usr_primary', 'email_password', '', True, now, now)
+    request = OidcAuthorizationRequest('https://tenant.example.test/authorize', 'link_state', 'nonce', 'challenge', '/', now + 300)
+    store.bind(request, primary_user_id='usr_primary', primary_session_id='ses_primary', primary=primary)
+    wrong = SimpleNamespace(user_id='usr_attacker', session_id='ses_attacker')
+    right = SimpleNamespace(user_id='usr_primary', session_id='ses_primary')
+    with pytest.raises(AccountLinkingError, match='ACCOUNT_LINK_PRIMARY_SESSION_CHANGED'):
+        store.consume_for_principal('link_state', principal=wrong)
+    assert store.consume_for_principal('link_state', principal=right).primary_user_id == 'usr_primary'
+
+
+def test_v10335_step_up_state_wrong_session_does_not_burn_legitimate_transaction():
+    from auth.oidc import OidcAuthorizationRequest
+    from auth.security import AccountSecurityError, StepUpTransactionStore
+
+    now = 1_700_000_000.0
+    store = StepUpTransactionStore(max_transactions=16, max_grants=16, now=lambda: now)
+    right = SimpleNamespace(user_id='usr_primary', session_id='ses_primary')
+    wrong = SimpleNamespace(user_id='usr_attacker', session_id='ses_attacker')
+    request = OidcAuthorizationRequest('https://tenant.example.test/authorize', 'step_state', 'nonce', 'challenge', '/', now + 300)
+    store.bind_authorization(request, principal=right, purpose='sign_out_all_sessions')
+    with pytest.raises(AccountSecurityError, match='SECURITY_STEP_UP_SESSION_MISMATCH'):
+        store.consume_transaction_for_principal('step_state', principal=wrong)
+    assert store.consume_transaction_for_principal('step_state', principal=right).user_id == 'usr_primary'
+
+
+def test_v10335_auth0_discovery_cannot_redirect_confidential_oidc_to_another_origin():
+    from auth.oidc import OidcClient, OidcError, OidcProviderConfig
+
+    config = OidcProviderConfig(
+        issuer='https://tenant.example.test/',
+        client_id='client',
+        client_secret='secret',
+        redirect_uri='https://app.example.test/auth/callback',
+        require_same_origin_endpoints=True,
+    )
+    client = OidcClient(config)
+    client._request_json = lambda *_args, **_kwargs: {
+        'issuer': 'https://tenant.example.test/',
+        'authorization_endpoint': 'https://tenant.example.test/authorize',
+        'token_endpoint': 'https://evil.example/token',
+        'jwks_uri': 'https://tenant.example.test/jwks',
+        'response_types_supported': ['code'],
+        'id_token_signing_alg_values_supported': ['RS256'],
+        'token_endpoint_auth_methods_supported': ['client_secret_basic'],
+        'code_challenge_methods_supported': ['S256'],
+    }
+    with pytest.raises(OidcError, match='OIDC_DISCOVERY_ENDPOINT_ORIGIN_MISMATCH'):
+        client._get_discovery()
+
+
+def test_v10335_real_auth_host_pin_rejects_missing_or_duplicate_host_fields():
+    source = (ROOT / 'src/server.py').read_text(encoding='utf-8')
+    start = source.index('def _scope_host')
+    end = source.index('def _runtime_payload', start)
+    section = source[start:end]
+    assert 'values.append(value)' in section
+    assert 'len(values)==1' in section
+
+
+def test_v10335_language_restart_is_rate_limited_and_retires_superseded_auth_state():
+    pipeline = (ROOT / 'src/backend/request_pipeline.py').read_text(encoding='utf-8')
+    assert "{'/auth/login','/auth/signup','/auth/language'}" in pipeline
+    hosted = (ROOT / 'src/auth/hosted_login.py').read_text(encoding='utf-8')
+    start = hosted.index('def _cancel_restart_source')
+    end = hosted.index('def _begin', start)
+    section = hosted[start:end]
+    assert 'self._browser_bindings.discard(state)' in section
+    assert 'self.oidc.transactions.discard(state)' in section
+
+
+def test_v10335_all_oidc_callbacks_keep_internal_failure_stage_private():
+    routes = (ROOT / 'src/backend/runtime_routes.py').read_text(encoding='utf-8')
+    assert routes.count("detail='AUTH0_CALLBACK_REJECTED'") >= 2
+    assert routes.count("detail='ACCOUNT_LINK_CALLBACK_REJECTED'") >= 2
+    assert routes.count("detail='SECURITY_STEP_UP_CALLBACK_REJECTED'") >= 2
+    link_start = routes.index("@router.get('/auth/link/callback')")
+    link_end = routes.index("if _AUTH0_SECURITY is not None:", link_start)
+    assert 'detail=str(exc)' not in routes[link_start:link_end]
+    step_start = routes.index("@router.get('/auth/step-up/callback')")
+    step_end = routes.index("@router.post('/api/auth/security/identity/unlink')", step_start)
+    assert '_security_failure(exc)' not in routes[step_start:step_end]
+
+
+def test_v10335_link_and_step_up_stores_have_per_user_availability_ceilings():
+    from auth.accounts import ExternalIdentity
+    from auth.linking import AccountLinkTransactionStore, AccountLinkingError
+    from auth.oidc import OidcAuthorizationRequest
+    from auth.security import AccountSecurityError, StepUpTransactionStore
+
+    now = 1_700_000_000.0
+    primary = ExternalIdentity('https://tenant.example.test/', 'auth0|primary', 'usr_primary', 'email_password', '', True, now, now)
+    links = AccountLinkTransactionStore(max_active=16, max_per_user=2, now=lambda: now)
+    for index in range(2):
+        req = OidcAuthorizationRequest('https://tenant.example/authorize', f'link_{index}', 'n', 'c', '/', now + 300)
+        links.bind(req, primary_user_id='usr_primary', primary_session_id='ses_primary', primary=primary)
+    with pytest.raises(AccountLinkingError, match='ACCOUNT_LINK_TRANSACTION_USER_CAPACITY_EXCEEDED'):
+        req = OidcAuthorizationRequest('https://tenant.example/authorize', 'link_2', 'n', 'c', '/', now + 300)
+        links.bind(req, primary_user_id='usr_primary', primary_session_id='ses_primary', primary=primary)
+
+    step_up = StepUpTransactionStore(max_transactions=16, max_transactions_per_user=2, max_grants=16, now=lambda: now)
+    principal = SimpleNamespace(user_id='usr_primary', session_id='ses_primary')
+    for index in range(2):
+        req = OidcAuthorizationRequest('https://tenant.example/authorize', f'step_{index}', 'n', 'c', '/', now + 300)
+        step_up.bind_authorization(req, principal=principal, purpose='sign_out_all_sessions')
+    with pytest.raises(AccountSecurityError, match='SECURITY_STEP_UP_TRANSACTION_USER_CAPACITY_EXCEEDED'):
+        req = OidcAuthorizationRequest('https://tenant.example/authorize', 'step_2', 'n', 'c', '/', now + 300)
+        step_up.bind_authorization(req, principal=principal, purpose='sign_out_all_sessions')
+
+    grants = StepUpTransactionStore(
+        max_transactions=16, max_transactions_per_user=16,
+        max_grants=16, max_grants_per_user=2, now=lambda: now,
+    )
+    for index in range(2):
+        tx = grants.bind_authorization(
+            OidcAuthorizationRequest('https://tenant.example/authorize', f'grant_{index}', 'n', 'c', '/', now + 300),
+            principal=principal, purpose='revoke_session', target=f'ses_target_{index}',
+        )
+        grants.issue_grant(tx, authenticated_at=now)
+    tx = grants.bind_authorization(
+        OidcAuthorizationRequest('https://tenant.example/authorize', 'grant_2', 'n', 'c', '/', now + 300),
+        principal=principal, purpose='revoke_session', target='ses_target_2',
+    )
+    with pytest.raises(AccountSecurityError, match='SECURITY_STEP_UP_GRANT_USER_CAPACITY_EXCEEDED'):
+        grants.issue_grant(tx, authenticated_at=now)
+
+
+def test_v10335_wrapper_capacity_failures_retire_underlying_oidc_state():
+    linking = (ROOT / 'src/auth/linking.py').read_text(encoding='utf-8')
+    link_begin = linking.index('def begin(self, *, principal')
+    link_end = linking.index('def complete(self, *, principal', link_begin)
+    assert 'self.oidc.transactions.discard(request.state)' in linking[link_begin:link_end]
+
+    security = (ROOT / 'src/auth/security.py').read_text(encoding='utf-8')
+    step_begin = security.index('def begin_step_up')
+    step_end = security.index('def complete_step_up', step_begin)
+    assert 'self.oidc.transactions.discard(request.state)' in security[step_begin:step_end]
+
+def test_v10335_hosted_rate_limiter_identity_store_is_hard_bounded():
+    from security.hosted_guardrails import HostedRateLimiter
+
+    now = [1_700_000_000.0]
+    limiter = HostedRateLimiter(max_buckets=16, now=lambda: now[0])
+    for index in range(16):
+        assert limiter.allow(f'198.51.100.{index}', 'auth-start', limit=10) == (True, 0)
+    allowed, retry = limiter.allow('203.0.113.1', 'auth-start', limit=10)
+    assert allowed is False and retry >= 1
+    now[0] += 61
+    assert limiter.allow('203.0.113.1', 'auth-start', limit=10) == (True, 0)
+

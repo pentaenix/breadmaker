@@ -1,0 +1,12 @@
+/* 6.0 public Project JSON import preview */
+.project-json-preview>p:first-child{margin-top:0}.project-json-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 14px;margin:14px 0}.project-json-summary span{padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface2)}.project-json-warnings{display:flex;flex-direction:column;gap:5px;margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:8px}.project-json-warnings span{font-size:12px;color:var(--muted)}
+
+/* 6.1 — Browse All Projects is a complete project grid, not a stale row list. */
+.project-explorer-grid{max-height:min(62vh,560px);overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:10px;padding:1px}
+.project-explorer-card{min-width:0;display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.project-explorer-card:hover{border-color:var(--line2);background:var(--surface2)}
+.project-explorer-card.active{border-color:var(--accent);background:var(--accent-soft)}
+.project-explorer-card-head{display:flex;align-items:center;gap:8px;min-width:0}.project-explorer-card-head b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.project-explorer-card>small,.project-explorer-card-path{font-size:10.5px;color:var(--muted);line-height:1.35}.project-explorer-card-path{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.project-explorer-card>button{margin-top:auto;width:100%}
+.fragment-targets{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}.fragment-target-row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px}.fragment-target-row span{color:var(--muted)}.fragment-target-row b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fragment-target-choice{margin:0}
+

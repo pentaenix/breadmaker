@@ -1,0 +1,37 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")"
+
+# Real Auth0/Universal Login sandbox. This is deliberately a hosted-development
+# composition and never changes the default ./run local/accountless composition.
+export BREADMAKER_RUNTIME=hosted_dev
+export BREADMAKER_AUTH_MODE=auth0
+export BREADMAKER_ENV=development
+export PORT="${PORT:-8766}"
+export BREADMAKER_HOME="${BREADMAKER_HOSTED_AUTH_HOME:-$PWD/.dev/hosted-auth-data-schema42}"
+export BREADMAKER_PUBLIC_ORIGIN="${BREADMAKER_PUBLIC_ORIGIN:-http://127.0.0.1:${PORT}}"
+export BREADMAKER_UVICORN_NO_ACCESS_LOG=1
+export BREADMAKER_ENFORCE_PUBLIC_HOST=1
+export BREADMAKER_AUTH0_CLIENT_SECRET_REF="${BREADMAKER_AUTH0_CLIENT_SECRET_REF:-env:BREADMAKER_AUTH0_CLIENT_SECRET}"
+
+if [[ -z "${BREADMAKER_AUTH0_ISSUER:-}" || -z "${BREADMAKER_AUTH0_CLIENT_ID:-}" || -z "${BREADMAKER_AUTH0_CLIENT_SECRET:-}" ]]; then
+  cat >&2 <<'EOF'
+Breadmaker's localhost auth sandbox is real Auth0 only.
+
+Set the development tenant values below, then run this command again:
+  BREADMAKER_AUTH0_ISSUER        https://YOUR-DEV-TENANT.auth0.com/
+  BREADMAKER_AUTH0_CLIENT_ID     your regular-web application client id
+  BREADMAKER_AUTH0_CLIENT_SECRET your regular-web application client secret
+
+The app callback must be exactly:
+  http://127.0.0.1:8766/auth/callback
+
+The branded Universal Login desired state must also be promoted to that development
+tenant before the Breadmaker design appears. See deploy/HOSTED_DEV.md.
+
+EOF
+  exit 64
+fi
+
+export BREADMAKER_OPEN_PATH="/auth/login?return_to=/"
+exec ./run

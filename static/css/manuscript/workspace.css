@@ -1,0 +1,980 @@
+/* 4.12.10 Manuscript View menu + persistent accessibility text size */
+.manuscript-view-control{position:relative;display:flex;align-items:center}
+.view-menu-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.view-menu-chevron{display:block;width:10px;height:6px;flex:none;color:var(--muted);overflow:visible;transition:transform .12s ease}
+.view-menu-chevron path{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.view-menu-button[aria-expanded="true"] .view-menu-chevron{transform:rotate(180deg)}
+.view-popover{position:fixed;z-index:135;width:254px;padding:6px;background:var(--surface);border:1px solid var(--line2);border-radius:8px;box-shadow:var(--shadow)}
+.view-popover-action{display:block;width:100%;border:0;background:transparent;color:var(--text);text-align:left;padding:8px 9px;border-radius:5px}
+.view-popover-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px}.view-popover-check{opacity:0;color:var(--accent);font-weight:800}.view-popover-toggle[aria-checked="true"] .view-popover-check{opacity:1}
+.view-popover-action:hover,.view-popover-action:focus-visible{background:var(--accent-soft);outline:0}
+.view-popover-divider{height:1px;background:var(--line);margin:5px 2px 7px}
+.view-text-size{padding:3px 8px 7px}
+.view-text-size-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;font-size:11px;color:var(--muted)}
+.view-text-size-head output{font-variant-numeric:tabular-nums;color:var(--text);font-weight:700}
+.view-text-size-row{display:grid;grid-template-columns:16px 1fr 22px;align-items:center;gap:8px}
+.view-size-a{font-weight:700;text-align:center;color:var(--muted)}.view-size-a.small{font-size:11px}.view-size-a.large{font-size:18px;color:var(--text)}
+#manuscriptTextSize{width:100%;height:22px;margin:0;accent-color:var(--accent);cursor:pointer}
+#manuscriptTextSize:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#manuscriptTextSize{-webkit-appearance:none;appearance:none;height:18px;background:transparent;outline:0}
+#manuscriptTextSize::-webkit-slider-runnable-track{height:4px;border-radius:999px;background:var(--line2)}
+#manuscriptTextSize::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:15px;height:15px;border-radius:50%;margin-top:-5.5px;border:2px solid var(--surface);background:var(--text);box-shadow:0 0 0 1px var(--line2)}
+#manuscriptTextSize::-moz-range-track{height:4px;border:0;border-radius:999px;background:var(--line2)}
+#manuscriptTextSize::-moz-range-thumb{width:13px;height:13px;border-radius:50%;border:2px solid var(--surface);background:var(--text);box-shadow:0 0 0 1px var(--line2)}
+#manuscriptTextSize:hover::-webkit-slider-thumb{background:var(--accent)}#manuscriptTextSize:hover::-moz-range-thumb{background:var(--accent)}
+
+/* =========================================================
+   v4.13 Manuscript clean UI
+   ========================================================= */
+.full-book-button{
+  border:1px solid var(--line);
+  background:var(--surface);
+  color:var(--text);
+  border-radius:5px;
+  padding:6px 9px;
+  font-weight:700;
+  letter-spacing:.035em;
+  line-height:1;
+  box-shadow:0 1px 0 color-mix(in srgb,var(--text) 5%,transparent);
+}
+.full-book-button:hover{background:var(--surface2);border-color:var(--line2)}
+.full-book-button.active{background:var(--accent-soft);border-color:var(--accent);color:var(--text)}
+.find-manuscript-button svg{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.markup-manuscript-button svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.markup-manuscript-button.active{background:var(--accent-soft);border-color:var(--accent)}
+.manuscript-tool-tooltip{width:min(320px,calc(100vw - 20px))}
+.selection-style-button{font-weight:750;letter-spacing:-.04em}
+.selection-toolbar{max-width:calc(100vw - 16px);overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.selection-toolbar::-webkit-scrollbar{display:none}
+@media(max-width:980px){.active-document-title{max-width:150px}}
+
+/* =========================================================
+   v4.14.3 Cuts workspace
+   ========================================================= */
+.cuts-manuscript-button svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.cuts-manuscript-button.active{background:var(--accent-soft);border-color:var(--accent)}
+.cuts-panel{width:320px;min-width:270px;display:flex;flex-direction:column;overflow:hidden}
+.cuts-panel-tools{padding:9px;border-bottom:1px solid var(--line);display:grid;gap:7px}
+.cuts-panel-tools input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:7px;outline:0}.cuts-panel-tools input:focus{border-color:var(--accent)}
+.cuts-panel-action-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}.cuts-panel-action-row button{min-width:0;border-radius:5px;padding:7px 8px;font-weight:650}
+.cuts-cut-button{border:1px solid var(--text);background:var(--text);color:var(--surface)}.cuts-cut-button:hover:not(:disabled){opacity:.9}.cuts-cut-button:disabled{border-color:var(--line);background:var(--surface2);color:var(--muted)}
+.cuts-insert-button{border:1px solid var(--line);background:var(--surface);color:var(--text)}.cuts-insert-button:hover:not(:disabled){background:var(--surface2);border-color:var(--line2)}.cuts-insert-button:disabled{background:var(--surface2);color:var(--muted)}
+.cuts-list{flex:1 1 auto;min-height:0;overflow:auto;padding:5px}
+.cuts-list-row{display:grid;grid-template-columns:minmax(0,1fr) 30px;align-items:start;border-radius:6px;color:inherit}.cuts-list-row:hover{background:var(--surface2)}.cuts-list-row.active{background:var(--accent-soft)}
+.cuts-list-main{min-width:0;width:100%;border:0;background:transparent;text-align:left;padding:8px 5px 8px 8px;color:inherit}
+.cuts-preview{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;text-overflow:ellipsis;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.45;color:var(--text)}.cuts-list-row.active .cuts-preview{-webkit-line-clamp:10}
+.cuts-more{width:26px;height:26px;padding:0!important;margin:5px 2px 0 0;display:grid;place-items:center;color:var(--muted)}.cuts-more:hover{color:var(--text)}.cuts-more-icon{width:14px;height:14px;display:block;fill:currentColor}
+.cuts-empty{text-align:center;color:var(--muted);padding:20px 12px;}.cuts-empty b{display:block;color:var(--text);font-size:14px;margin-bottom:5px}.cuts-empty p{margin:0}
+.modal-card:has(.cut-information-content){width:min(680px,calc(100% - 30px))}.cut-information-provenance{font-size:11px;line-height:1.45;color:var(--muted);padding:1px 0 10px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.cut-information-note{margin-top:12px}.cut-information-note textarea{resize:vertical;min-height:74px}.cut-information-label{font-size:10px;font-weight:700;letter-spacing:.055em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}.cut-information-content{min-height:210px;max-height:min(430px,46vh);overflow:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface2);padding:10px 12px;font-size:12.5px;line-height:1.55}.cut-information-content p{margin:.5em 0;white-space:pre-wrap}.cut-information-content img{display:block;max-width:100%;height:auto;margin:10px auto;border-radius:4px}
+@media(max-width:1050px){.cuts-panel{width:285px;min-width:250px}}
+@media(max-width:900px){.cuts-panel{position:absolute;right:0;top:0;bottom:0;z-index:35;box-shadow:var(--shadow)}}
+
+/* =========================================================
+   v4.15 Comments workspace
+   ========================================================= */
+.comments-manuscript-button svg{stroke-width:1.75;}.comments-manuscript-button.active{background:var(--accent-soft);border-color:var(--accent)}
+.comments-panel{width:330px;min-width:285px;display:flex;flex-direction:column;overflow:hidden}
+.comments-panel-tools{padding:9px;border-bottom:1px solid var(--line);display:grid;gap:7px}.comments-panel-tools input,.comments-panel-tools select{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:7px;outline:0}.comments-panel-tools input:focus,.comments-panel-tools select:focus{border-color:var(--accent)}
+.comments-primary{width:100%;border:1px solid var(--text);background:var(--text);color:var(--surface);border-radius:5px;padding:7px 9px;font-weight:650}.comments-primary:hover:not(:disabled){opacity:.9}.comments-primary:disabled{border-color:var(--line);background:var(--surface2);color:var(--muted)}
+.comments-nav-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center}.comments-nav-controls{display:flex;align-items:center;gap:2px;color:var(--muted);font-size:10.5px;font-variant-numeric:tabular-nums}.comments-nav-controls button{width:25px;height:25px;padding:0}.comments-nav-controls span{min-width:42px;text-align:center}
+.comments-list{overflow:auto;padding:5px;}.comments-row{border:0;background:transparent;padding:8px;}.comments-row-message{line-height:1.4;}.comments-row-excerpt{font-size:10.5px;line-height:1.35;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.comments-row-meta{display:flex;align-items:center;justify-content:space-between;gap:7px;margin-top:5px;font-size:9.5px;color:var(--muted)}
+.comments-detail{flex:1 1 auto;min-height:0;overflow:auto;padding:10px}.comments-empty{text-align:center;color:var(--muted);padding:18px 8px;}.comments-empty b{display:block;color:var(--text);font-size:14px;margin-bottom:5px}.comments-empty p{margin:0}.comment-detail-anchor{font-size:10.5px;color:var(--muted);line-height:1.4;padding:0 0 8px;border-bottom:1px solid var(--line);margin-bottom:8px}.comment-detail-anchor button{border:0;background:transparent;color:var(--muted);padding:0;text-align:left}.comment-detail-anchor button:hover{color:var(--text)}
+.comment-message{padding:7px 0;border-bottom:1px solid var(--line)}.comment-message textarea{width:100%;border:0;background:transparent;color:var(--text);padding:4px 0;line-height:1.45;font-size:12px;outline:0;}.comment-message textarea:focus{background:var(--surface2);padding:6px;border-radius:5px}.comment-message-meta{font-size:9px;color:var(--muted);text-align:right;min-height:12px}.comment-reply{margin-top:9px}.comment-reply textarea{width:100%;min-height:58px;resize:vertical;border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:7px;outline:0}.comment-reply textarea:focus{border-color:var(--accent)}.comment-detail-actions{display:flex;align-items:center;gap:6px;margin-top:7px}.comment-detail-actions button{border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:6px 8px}.comment-detail-actions .comment-reply-send{background:var(--text);border-color:var(--text);color:var(--surface);font-weight:650}
+.comment-create-box{padding:2px}.comment-create-excerpt{font-size:11px;color:var(--muted);line-height:1.4;margin-bottom:8px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden}.comment-create-box textarea{width:100%;min-height:86px;resize:vertical;border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:8px;outline:0}.comment-create-box textarea:focus{border-color:var(--accent)}.comment-create-actions{display:flex;justify-content:flex-end;margin-top:7px}.comment-create-actions button{border:1px solid var(--text);background:var(--text);color:var(--surface);border-radius:5px;padding:7px 10px;font-weight:650}
+.comment-gutter-marker,.comment-gutter-segment{position:absolute;contenteditable:false;user-select:none;-webkit-user-select:none;z-index:5}.comment-gutter-marker{left:-34px;top:2px;width:20px;height:20px;border:0;background:transparent;color:var(--muted);padding:2px;display:grid;place-items:center;cursor:pointer}.comment-gutter-marker:hover,.comment-gutter-marker.active{color:var(--text)}.comment-gutter-marker svg{width:15px;height:15px;fill:var(--surface);stroke:currentColor;stroke-width:1.7;stroke-linejoin:round}.comment-gutter-segment{left:-25px;width:1px;background:color-mix(in srgb,var(--muted) 55%,transparent);pointer-events:none}.comment-gutter-segment.first{top:18px;bottom:-.48em}.comment-gutter-segment.middle{top:-.48em;bottom:-.48em}.comment-gutter-segment.last{top:-.48em;height:18px}.comment-gutter-segment.single{display:none}.comment-gutter-marker[data-lane="1"]{left:-30px}.comment-gutter-marker[data-lane="2"]{left:-26px}.comment-gutter-segment[data-lane="1"]{left:-21px}.comment-gutter-segment[data-lane="2"]{left:-17px}
+.comment-hover-card{white-space:pre-wrap;position:fixed;z-index:150;max-width:300px;min-width:170px;padding:7px 9px;border:1px solid var(--line2);border-radius:6px;background:var(--surface);box-shadow:var(--shadow);font-size:11.5px;line-height:1.4;color:var(--text);pointer-events:none}.comment-hover-card small{display:block;color:var(--muted);font-size:9.5px;margin-top:4px}
+#breadmaker-comment-highlight-style{display:none}::highlight(breadmaker-comment-focus){background:color-mix(in srgb,var(--accent) 22%,transparent);color:inherit}
+.annotation-gutter{user-select:none;-webkit-user-select:none}
+@media(max-width:1050px){.comments-panel{width:290px;min-width:255px}}
+@media(max-width:900px){.comments-panel{position:absolute;right:0;top:0;bottom:0;z-index:35;box-shadow:var(--shadow)}}
+
+/* 4.15.2 Comments interaction refinement */
+.paper{position:relative}
+.comments-manuscript-button svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}
+.comments-nav-controls{gap:5px;font-size:11px}.comments-nav-controls span{min-width:46px}
+.comments-nav-controls .comments-chevron-button{width:32px;height:30px;display:grid;place-items:center;padding:0;border-radius:5px}
+.comments-chevron-button svg{width:13px;height:8px;overflow:visible;color:var(--muted)}
+.comments-chevron-button svg path{fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.comments-chevron-button.comments-chevron-up svg{transform:rotate(180deg)}
+.comments-chevron-button:hover:not(:disabled) svg{color:var(--text)}
+
+.comment-composer{position:fixed;z-index:145;width:min(340px,calc(100vw - 18px));padding:8px;border:1px solid var(--line2);border-radius:7px;background:var(--surface);box-shadow:var(--shadow)}
+.comment-composer textarea{display:block;width:100%;min-height:74px;max-height:180px;resize:vertical;border:0;background:transparent;color:var(--text);padding:4px 5px;outline:0;line-height:1.45}
+.comment-composer-actions{display:flex;align-items:center;justify-content:flex-end;gap:5px;margin-top:5px;padding-top:6px;border-top:1px solid var(--line)}
+.comment-composer-actions #commentCreateSubmit{border:1px solid var(--text);background:var(--text);color:var(--surface);border-radius:5px;padding:6px 10px;font-weight:650}
+#breadmaker-comment-compose-style{display:none}::highlight(breadmaker-comment-compose){background:color-mix(in srgb,var(--accent) 20%,transparent);color:inherit}
+
+.comment-rail-layer{position:absolute;inset:0;pointer-events:none;z-index:8;overflow:visible}
+.comment-rail-segment{position:absolute;width:30px;margin:0;padding:0;border:0;background:transparent;color:var(--muted);pointer-events:auto;user-select:none;-webkit-user-select:none;cursor:pointer;overflow:visible}
+.comment-rail-segment::before{content:'';position:absolute;left:18px;top:0;bottom:0;width:1px;background:color-mix(in srgb,var(--muted) 62%,transparent)}
+.comment-rail-segment.rail-start::after{content:'';position:absolute;left:18px;top:0;width:9px;height:1px;background:color-mix(in srgb,var(--muted) 62%,transparent)}
+.comment-rail-endcap{position:absolute;left:18px;bottom:0;width:9px;height:1px;background:color-mix(in srgb,var(--muted) 62%,transparent);pointer-events:none}
+.comment-rail-segment:hover::before,.comment-rail-segment:hover::after,.comment-rail-segment:hover .comment-rail-endcap{background:var(--text)}
+.comment-rail-count{position:absolute;left:4px;top:-8px;min-width:17px;height:17px;padding:0 4px;border:1px solid var(--line2);border-radius:8px;background:var(--surface);color:var(--muted);font-size:9.5px;font-weight:700;line-height:15px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.comment-rail-count.single{width:9px;min-width:9px;height:9px;padding:0;left:8px;top:-4px;border-radius:50%;font-size:0;background:var(--surface)}
+.comment-rail-segment:hover .comment-rail-count,.comment-rail-segment.active .comment-rail-count{color:var(--text);border-color:var(--text)}
+.comment-rail-transition{position:absolute;left:16px;top:-4px;width:5px;height:9px;background:var(--surface);pointer-events:none}
+
+.comment-hover-card{pointer-events:auto;max-width:330px;max-height:240px;overflow:auto;padding:6px;white-space:normal;}
+.comment-hover-heading{padding:2px 4px 6px;color:var(--muted);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.comment-hover-thread{width:100%;border:0;background:transparent;color:inherit;text-align:left;padding:7px 8px;border-radius:5px;line-height:1.4;font-size:11.5px;}
+.comment-hover-thread:hover,.comment-hover-thread:focus-visible{background:var(--surface2);outline:0}
+.comment-hover-thread+.comment-hover-thread{border-top:1px solid var(--line);border-radius:0}
+.comment-hover-thread small{display:block;margin-top:4px;color:var(--muted);font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Retire the per-block 4.15.0 gutter primitives; 4.15.2 draws a single reflow-aware rail. */
+.comment-gutter-marker,.comment-gutter-segment{display:none!important}
+
+
+/* =========================================================
+   v4.15.2 Comments presentation polish
+   ========================================================= */
+.comments-panel,.comments-panel *{min-width:0}
+.comments-list{flex:0 1 42%;min-height:90px;overflow-y:auto;overflow-x:hidden;padding:9px 8px;gap:7px;border-bottom:1px solid var(--line);scrollbar-gutter:stable;}
+.comments-row{position:relative;flex:none;width:100%;max-width:100%;overflow:hidden;border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:6px;padding:9px 28px 9px 9px;text-align:left;display:block;white-space:normal;overflow-wrap:anywhere}
+.comments-row:hover{background:var(--surface2);border-color:var(--line2)}
+.comments-row.active{background:var(--accent-soft);border-color:var(--accent)}
+.comments-row:focus-visible{outline:1px solid var(--accent);outline-offset:-1px}
+.comments-row-message{display:-webkit-box;max-width:100%;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;font-size:12px;line-height:1.42;font-weight:650;white-space:normal;overflow-wrap:anywhere}
+.comments-row-replies{position:absolute;right:9px;bottom:8px;min-width:15px;height:15px;display:grid;place-items:center;padding:0 3px;border-radius:8px;background:var(--surface2);color:var(--muted);font-size:9px;font-weight:700;line-height:1}
+.comments-row-excerpt,.comments-row-meta{display:none!important}
+.comments-detail{overflow-x:hidden}
+.comment-detail-anchor,.comment-detail-anchor div,.comment-message,.comment-reply{max-width:100%;overflow-wrap:anywhere}
+.comment-message textarea,.comment-reply textarea{max-width:100%;overflow-x:hidden}
+
+.comment-rail-pencil{position:absolute;left:1px;top:-10px;width:19px;height:19px;display:grid;place-items:center;border:0;background:transparent;color:var(--muted);font-family:Arial,sans-serif;font-size:15px;font-weight:400;line-height:1;transform:rotate(-4deg);pointer-events:none}
+.comment-rail-segment:hover .comment-rail-pencil,.comment-rail-segment.active .comment-rail-pencil{color:var(--text)}
+.comment-rail-count{left:2px;top:-9px;min-width:18px;height:18px;line-height:16px;border-radius:9px}
+.comment-rail-count.single{display:none!important}
+.comment-hover-card{max-width:min(320px,calc(100vw - 16px));min-width:210px;}
+.comment-hover-thread{max-width:100%;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;white-space:normal;overflow-wrap:anywhere}
+.comment-hover-thread span{display:block;max-width:100%;overflow-wrap:anywhere}
+.comment-hover-thread small{display:none!important}
+
+/* =========================================================
+   v4.15.3 Notes framing + quiet gutter markers
+   ========================================================= */
+/* The 4.15.1/4.15.2 occupancy rail is deliberately retired. Notes use one
+   block-relative marker, so manuscript reflow cannot leave stale geometry. */
+.comment-rail-layer,.comment-rail-segment,.comment-rail-transition,.comment-rail-endcap,.comment-rail-pencil,.comment-rail-count{display:none!important}
+.note-gutter-marker{position:absolute;left:-66px;top:-1px;width:28px;height:30px;margin:0;padding:0;border:0;background:transparent;color:var(--muted);display:block;cursor:pointer;z-index:9;user-select:none;-webkit-user-select:none;contenteditable:false}
+.note-gutter-marker:hover,.note-gutter-marker.active{color:var(--text)}
+.note-gutter-pencil{position:absolute;left:2px;top:3px;width:17px;height:21px;display:grid;place-items:center;font-family:Arial,sans-serif;font-size:16px;font-weight:400;line-height:1;transform:rotate(-4deg);pointer-events:none}
+.note-gutter-count{position:absolute;right:0;bottom:1px;min-width:12px;height:12px;padding:0 2px;display:grid;place-items:center;border:1px solid var(--line2);border-radius:7px;background:var(--surface);color:var(--muted);font-size:8px;font-weight:700;line-height:10px;box-shadow:0 1px 2px rgba(0,0,0,.04);pointer-events:none}
+.note-gutter-marker:hover .note-gutter-count,.note-gutter-marker.active .note-gutter-count{color:var(--text);border-color:currentColor}
+/* A narrower, taller preview is more likely to fit in the manuscript's left margin. */
+.comment-hover-card{min-width:160px;max-width:min(250px,calc(100vw - 16px));max-height:300px;}
+.comment-detail-actions .comment-resolve{margin-left:auto}
+.comment-detail-actions .comment-delete{background:var(--surface);border-color:color-mix(in srgb,var(--danger) 38%,var(--line));font-weight:650;}
+.comment-detail-actions .comment-delete:hover{background:color-mix(in srgb,var(--danger) 9%,var(--surface));border-color:color-mix(in srgb,var(--danger) 58%,var(--line))}
+
+/* =========================================================
+   v4.15.4 Notes reliability + cleanup
+   ========================================================= */
+.comment-detail-anchor{padding-bottom:6px;margin-bottom:6px}
+.comment-reply-send:disabled{background:var(--surface2)!important;border-color:var(--line)!important;color:var(--muted)!important;opacity:.65}
+.comment-hover-card{min-width:138px}
+
+.comment-hover-card.comment-hover-preview{pointer-events:none}
+.comment-hover-card.comment-hover-picker{pointer-events:auto}
+
+
+/* =========================================================
+   v4.15.5 Notes flyer placement + reading comfort
+   ========================================================= */
+/* Hover flyers are real scrollable margin notes. Ten lines are visible at
+   most; longer Notes remain readable with wheel/trackpad scrolling. */
+.comment-hover-card{
+  max-height:calc(10 * 1.4em + 18px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+.comment-hover-card.comment-hover-preview,.comment-hover-card.comment-hover-picker{pointer-events:auto}
+.comment-hover-thread{
+  display:block;
+  -webkit-line-clamp:unset;
+  overflow:visible;
+  white-space:pre-wrap;
+}
+/* Existing Note/response messages remain vertically resizeable, but begin at
+   a comfortable five-line editing height. */
+.comment-message textarea{
+  height:calc(5 * 1.45em + 12px);
+  min-height:48px;
+  resize:vertical;
+}
+
+
+/* =========================================================
+   v4.15.6 Notes response density + explorer balance
+   ========================================================= */
+/* Give the explorer about 10% more of the detail pane's previous share. */
+.comments-list{flex-basis:48%}
+/* The original Note keeps its comfortable five-line editor. Responses use
+   only the lines they need, grow automatically, and scroll after five. */
+.comment-response-textarea,#commentReplyText{
+  min-height:0!important;
+  max-height:calc(5 * 1.45em + 14px);
+  resize:none!important;
+  overflow-y:hidden;
+}
+.comment-reply textarea{min-height:0}
+.comment-reply textarea{line-height:1.45}
+
+/* 4.16.1 Markup — compact marker rack; only the rack scrolls. */
+.markup-panel{overflow:hidden;display:flex;flex-direction:column}
+.markup-panel.hidden{display:none!important}
+.markup-marker-section{border-bottom:0;min-height:0;flex:1;display:flex;flex-direction:column;overflow:hidden}
+.markup-marker-section>.panel-hint{flex:none}
+.marker-list{min-height:0;flex:1;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:7px;margin:0 -4px 10px 0;padding:0 4px 1px 0;scrollbar-gutter:stable}
+.marker-row{display:flex;align-items:stretch;gap:0;padding:0;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--surface);flex:none}
+.marker-row:hover{border-color:var(--line2);background:var(--surface2)}
+.marker-row.active{border-color:var(--accent);background:var(--accent-soft)}
+.marker-use,.marker-more{border:0!important;background:transparent!important;color:var(--text);margin:0;box-shadow:none!important}
+.marker-use{min-width:0;flex:1;display:flex;align-items:center;gap:9px;text-align:left;padding:8px 9px;cursor:pointer;border-radius:0}
+.marker-use .color-chip{width:18px;height:18px;border-radius:4px}
+.marker-use .marker-name{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.marker-more{width:32px;min-width:32px;padding:0;color:var(--muted);display:grid;place-items:center;font-size:17px;line-height:1;border-radius:0;letter-spacing:0}
+.marker-more:hover{background:color-mix(in srgb,var(--text) 5%,transparent)!important;color:var(--text)}
+.marker-row.active .marker-more,.marker-row.active .marker-name{color:var(--text)}
+#newLabelBtn{flex:none}
+
+/* =========================================================
+   v4.16.2 Markup — color swatches replace manuscript icons/modals
+   ========================================================= */
+.markup-gutter{
+  position:absolute;
+  left:-39px;
+  top:2px;
+  min-height:20px;
+  display:flex;
+  align-items:center;
+  gap:3px;
+  z-index:8;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.markup-gutter-swatch{
+  width:6px;
+  min-width:6px;
+  height:19px;
+  padding:0;
+  margin:0;
+  border:0;
+  border-radius:999px;
+  cursor:pointer;
+  box-shadow:0 0 0 1px rgba(0,0,0,.14),0 1px 1px rgba(0,0,0,.08);
+}
+.markup-gutter-swatch:hover,.markup-gutter-swatch:focus-visible{
+  transform:scaleX(1.35);
+  outline:none;
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--text) 34%,transparent),0 1px 2px rgba(0,0,0,.12);
+}
+.markup-hover-card{
+  position:fixed;
+  z-index:151;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+  max-width:min(240px,calc(100vw - 16px));
+  padding:6px 9px;
+  border:1px solid var(--line2);
+  border-radius:6px;
+  background:var(--surface);
+  box-shadow:var(--shadow);
+  color:var(--text);
+  font-size:11.5px;
+  line-height:1.25;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  pointer-events:none;
+}
+.markup-hover-card.hidden{display:none!important}
+.markup-hover-dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  flex:none;
+  box-shadow:0 0 0 1px rgba(0,0,0,.16);
+}
+
+/* =========================================================
+   v4.16.4 Markup — faster first marker + selection picker
+   ========================================================= */
+.markup-gutter{left:-27px}
+.marker-list.empty{display:grid;place-items:center;overflow:hidden;margin:0;padding:18px 8px;scrollbar-gutter:auto}
+.marker-empty-state{width:min(220px,100%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;color:var(--muted)}
+.marker-empty-state b{color:var(--text);font-size:13px}
+.marker-empty-state span{max-width:190px;font-size:11.5px;line-height:1.45}
+.marker-empty-state button{margin-top:4px;min-width:132px}
+.selection-highlight-picker{position:fixed;z-index:153;width:min(226px,calc(100vw - 16px));max-height:min(320px,calc(100vh - 16px));padding:6px;border:1px solid var(--line2);border-radius:7px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px;user-select:none;-webkit-user-select:none}
+.selection-highlight-picker.hidden{display:none!important}
+.selection-highlight-marker-list{min-height:0;max-height:238px;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:3px}
+.selection-highlight-marker{width:100%;min-width:0;display:flex;align-items:center;gap:9px;padding:7px 8px;border:0;border-radius:5px;background:transparent;color:var(--text);text-align:left;cursor:pointer}
+.selection-highlight-marker:hover,.selection-highlight-marker:focus-visible{background:var(--surface2);outline:none}
+.selection-highlight-marker .color-chip{width:17px;height:17px;border-radius:4px;flex:none}
+.selection-highlight-marker span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.selection-highlight-new{flex:none;width:100%;padding:7px 8px;background:var(--surface2);color:var(--text);border:1px solid var(--line);border-radius:5px}
+.selection-highlight-empty{padding:14px 8px;text-align:center;color:var(--muted);font-size:11.5px}
+
+/* =========================================================
+   v4.16.6 Markup — searchable private marker metadata
+   ========================================================= */
+.marker-search{
+  flex:none;
+  width:100%;
+  margin:0 0 9px;
+  border:1px solid var(--line);
+  background:var(--surface2);
+  color:var(--text);
+  border-radius:5px;
+  padding:7px 8px;
+  outline:0;
+}
+.marker-search:focus{border-color:var(--accent)}
+.marker-search:disabled{opacity:.55}
+.marker-search-empty{padding:18px 10px;text-align:center;color:var(--muted);font-size:12px}
+.marker-details-head{display:flex;align-items:center;gap:9px;margin:2px 0 14px}
+.marker-details-head .color-chip{width:19px;height:19px;border-radius:50%}
+.marker-details-description{white-space:normal;overflow-wrap:anywhere;line-height:1.5;color:var(--text)}
+
+
+/* =========================================================
+   v4.16.7 Markup — quiet side-panel description hover
+   ========================================================= */
+.marker-panel-hover-card{
+  position:fixed;
+  z-index:154;
+  width:min(270px,calc(100vw - 16px));
+  max-height:min(240px,calc(100vh - 16px));
+  overflow:auto;
+  padding:9px 10px;
+  border:1px solid var(--line2);
+  border-radius:7px;
+  background:var(--surface);
+  box-shadow:var(--shadow);
+  color:var(--text);
+  font-size:11.5px;
+  line-height:1.4;
+  pointer-events:none;
+}
+.marker-panel-hover-card.hidden{display:none!important}
+.marker-panel-hover-head{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.marker-panel-hover-description{white-space:normal;overflow-wrap:anywhere;color:var(--text)}
+
+/* =========================================================
+   v4.17 Manuscript tools + Checkpoint references + View fonts
+   ========================================================= */
+/* The four manuscript workspaces share one visual footprint. */
+.comments-panel,.markup-panel,.checkpoint-panel,.cuts-panel{
+  width:290px;
+  min-width:255px;
+  font-size:14px;
+}
+@media(max-width:1050px){
+  .comments-panel,.markup-panel,.checkpoint-panel,.cuts-panel{width:290px;min-width:255px}
+}
+@media(max-width:900px){
+  .markup-panel{position:absolute;right:0;top:0;bottom:0;z-index:35;box-shadow:var(--shadow)}
+}
+.checkpoint-list{
+  flex:0 1 48%;
+  
+  min-height:90px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:9px 8px;
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  scrollbar-gutter:stable;
+}
+.checkpoint-list-row{
+  flex:none;
+  border:1px solid var(--line);
+  background:var(--surface);
+  padding:9px;
+  border-radius:6px;
+}
+.checkpoint-list-row:hover{border-color:var(--line2)}
+.checkpoint-list-row.active{border-color:var(--accent)}
+.checkpoint-list-main b{font-size:12px;line-height:1.42}
+.checkpoint-list-main small{font-size:10.5px;line-height:1.35}
+.checkpoint-name-input{font-size:15px!important}
+.cuts-list{
+  padding:9px 8px;
+  
+  
+  gap:7px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  scrollbar-gutter:stable;
+}
+.cuts-list-row{flex:none;border:1px solid var(--line);background:var(--surface)}
+.cuts-list-row:hover{border-color:var(--line2)}
+.cuts-list-row.active{border-color:var(--accent)}
+.cuts-list-main{padding:9px 5px 9px 9px}
+
+/* Markup's private description hover contains only the description itself. */
+.marker-panel-hover-card{width:min(260px,calc(100vw - 16px));padding:8px 10px}
+.marker-panel-hover-description{margin:0}
+
+/* View is a presentation-only manuscript preference surface. */
+.view-font-field{padding:5px 8px 7px;border-top:1px solid var(--line)}
+.view-font-field label{display:block;margin:0 0 5px;font-size:11px;color:var(--muted)}
+.view-font-field select{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:6px 7px;outline:0}
+.view-font-field select:focus{border-color:var(--accent)}
+.view-tooltip span+span{margin-top:4px}
+.view-tooltip strong{color:var(--text);font-weight:700}
+.chapter-title,.editor,.split-paper,.checkpoint-split-paper{font-family:var(--manuscript-font-family,Arial,sans-serif)}
+
+/* 4.17.2 Find expander uses the same chevron language as View. */
+.find-expand-button{width:28px;height:28px;padding:0!important;display:grid;place-items:center;align-self:center}
+.find-menu-chevron{display:block;width:10px;height:6px;color:var(--muted);overflow:visible;transition:transform .12s ease}
+.find-menu-chevron path{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.find-expand-button[aria-expanded="true"] .find-menu-chevron{transform:rotate(180deg)}
+.find-expand-button:hover .find-menu-chevron{color:var(--text)}
+
+/* 4.17.3 selection-created Tasks use the normal Task editor with quiet manuscript context. */
+.task-linked-selection{margin:12px 0 14px;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface2)}
+.task-linked-selection .section-label{margin-bottom:5px}
+.task-linked-selection-text{font-size:12px;line-height:1.45;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+
+/* 4.17.4 optional metadata is deliberately quiet. */
+.optional-label{font-size:10px;font-style:italic;font-weight:400;color:var(--muted);opacity:.78;margin-left:2px}
+
+
+/* =========================================================
+   v4.17.6 Layout correction — side panels push, split reflows
+   ========================================================= */
+/* Manuscript tool panels remain part of the desktop flex layout instead of
+   covering toolbar controls. Only genuinely phone-sized layouts may overlay. */
+@media (min-width:641px){
+  .comments-panel,.markup-panel,.checkpoint-panel,.cuts-panel{
+    position:static!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:auto!important;
+    z-index:22;
+    box-shadow:none!important;
+    flex:0 0 290px;
+    width:290px;
+    min-width:255px;
+  }
+  .split-pane{
+    position:static!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:auto!important;
+    z-index:auto!important;
+  }
+}
+/* When a tool panel leaves less room for the toolbar, keep every control
+   reachable by horizontal scrolling rather than letting the panel cover it. */
+.document-toolbar{
+  min-width:0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:thin;
+}
+.document-toolbar>*{flex-shrink:0}
+.document-toolbar>.toolbar-spacer{flex:1 1 auto;min-width:8px}
+
+/* Split View shares the remaining width with the live manuscript. Neither
+   side is allowed to enforce a width that makes the other render underneath it. */
+#manuscriptPrimaryPane{flex:1 1 auto;}
+.split-pane{
+  
+  
+  flex:0 1 39%;
+  max-width:50%;
+  
+}
+.split-body{min-width:0}
+.checkpoint-split-paper,.split-paper{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+/* The 4.17.5 compact Checkpoint list no longer has a lower inspector, so let
+   the list use the panel's full remaining height and scroll there. */
+.checkpoint-list{flex:1 1 auto;max-height:none;min-height:0}
+
+@media(max-width:640px){
+  .comments-panel,.markup-panel,.checkpoint-panel,.cuts-panel{
+    position:absolute;
+    right:0;top:0;bottom:0;
+    z-index:35;
+    box-shadow:var(--shadow);
+  }
+  .split-pane{max-width:none;flex-basis:46%}
+}
+
+
+/* =========================================================
+   v4.17.7 Split View sizing + Checkpoint overflow polish
+   ========================================================= */
+/* Split View is measured against the usable manuscript workspace (the area
+   after the Chapters rail), then resized by JS so 50/50 really means 50/50. */
+#manuscriptPrimaryPane{min-width:0;flex:1 1 0}
+.split-pane{
+  width:auto;
+  min-width:0;
+  max-width:none;
+  flex:0 0 auto;
+  overflow:hidden;
+}
+.split-resizer{
+  position:relative;
+  flex:0 0 7px;
+  width:7px;
+  min-width:7px;
+  cursor:col-resize;
+  background:transparent;
+  z-index:24;
+  touch-action:none;
+  outline:none;
+}
+.split-resizer::before{
+  content:"";
+  position:absolute;
+  left:3px;
+  top:0;
+  bottom:0;
+  width:1px;
+  background:var(--line);
+  transition:width .12s ease,left .12s ease,background .12s ease;
+}
+.split-resizer:hover::before,.split-resizer:focus-visible::before,.split-resizer.dragging::before{
+  left:2px;
+  width:3px;
+  background:var(--accent);
+}
+body.split-resizing,body.split-resizing *{cursor:col-resize!important;user-select:none!important;-webkit-user-select:none!important}
+
+/* Comparison controls are allowed to stay full-size. When one pane becomes
+   narrow, the toolbar scrolls horizontally just like the manuscript toolbar. */
+.checkpoint-context-toolbar,.history-context-toolbar{
+  min-width:0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:thin;
+}
+.checkpoint-context-toolbar>*,.history-context-toolbar>*{flex-shrink:0}
+.checkpoint-context-toolbar>.toolbar-spacer,.history-context-toolbar>.toolbar-spacer{flex:1 1 auto;min-width:8px}
+
+/* Checkpoint cards are taller than Marker cards because they carry metadata.
+   Keep the ellipsis hover target Marker-sized instead of stretching it to the
+   full card height, which produced the large square hover block. */
+.checkpoint-more{
+  width:32px;
+  min-width:32px;
+  height:34px;
+  min-height:34px;
+  align-self:center;
+  border-radius:4px;
+}
+
+@media(max-width:640px){
+  .split-resizer{flex-basis:5px;width:5px;min-width:5px}
+  .split-resizer::before{left:2px}
+}
+
+/* =========================================================
+   v4.17.9 Markup — clear-marker eraser row
+   ========================================================= */
+.marker-clear-row{order:-1}
+.marker-clear-use{padding-right:9px}
+.marker-clear-chip{
+  position:relative;
+  width:18px;
+  height:18px;
+  flex:none;
+  border:1px solid var(--line2);
+  border-radius:4px;
+  background:var(--surface2);
+  overflow:hidden;
+}
+.marker-clear-chip::after{
+  content:"";
+  position:absolute;
+  left:2px;
+  right:2px;
+  top:50%;
+  height:1.5px;
+  border-radius:999px;
+  background:var(--muted);
+  transform:translateY(-50%) rotate(-38deg);
+  transform-origin:center;
+}
+.marker-clear-row.active .marker-clear-chip{border-color:var(--accent);background:var(--accent-soft)}
+
+/* =========================================================
+   v4.18.0 Markup — active panel state + optically centered eraser glyph
+   ========================================================= */
+
+/* 4.18 — Chapters and Scenes are parallel manuscript-development views. */
+.manuscript-nav-mode{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin:5px 9px 7px;padding:3px;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+.manuscript-nav-mode button{border:0;background:transparent;color:var(--muted);font-size:11px;padding:5px 6px;border-radius:4px}
+.manuscript-nav-mode button:hover{background:var(--surface2);color:var(--text)}
+.manuscript-nav-mode button.active{background:var(--accent-soft);color:var(--text);font-weight:600}
+.scene-outline-row{width:100%;border:0;border-left:2px solid transparent;background:transparent;text-align:left;display:block;min-height:42px;color:var(--text);}
+.scene-outline-row:hover{background:var(--accent-soft)}
+.scene-outline-row.active{background:var(--accent-soft);border-left-color:var(--accent)}
+.scene-outline-row .scene-outline-title{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+.scene-outline-row small{display:block;color:var(--muted);font-size:10px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.book-nav.collapsed .manuscript-nav-mode{display:none}
+
+
+.book-nav.collapsed .scene-grip,.book-nav.collapsed .scene-outline-copy{display:none}
+
+.ghost-scene-title{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--muted);margin:20px 0 8px;padding:0;border:0;user-select:none;letter-spacing:.015em}
+.ghost-scene-title::before,.ghost-scene-title::after{content:"";height:1px;background:var(--line);flex:1;min-width:12px}
+.ghost-scene-title span{background:transparent!important;padding:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:68%}
+.ghost-scene-title.continued{opacity:.7;margin-top:14px}
+.scene-details-grid{display:grid;grid-template-columns:auto 1fr;gap:7px 12px;align-items:start;margin:8px 0 14px}
+.scene-details-grid>span{color:var(--muted);font-size:11px}
+.scene-links{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+
+/* =========================================================
+   v4.18.1 Scenes — balanced empty state + explicit end boundary
+   ========================================================= */
+.scene-nav-empty{padding:14px 16px;text-align:center;line-height:1.45;margin:0 auto;max-width:100%;box-sizing:border-box}
+.ghost-scene-end{display:flex;align-items:center;gap:8px;font-size:9.5px;color:var(--muted);margin:7px 0 18px;padding:0;border:0;user-select:none;letter-spacing:.015em;opacity:.82}
+.ghost-scene-end::before,.ghost-scene-end::after{content:"";height:1px;background:var(--line);flex:1;min-width:12px}
+.ghost-scene-end span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:68%}
+.chapter-title{white-space:pre-wrap;overflow-wrap:anywhere;min-height:1.25em}
+
+/* =========================================================
+   v4.18.2 Scenes — focused Scene view, quiet gaps, drag reorder
+   ========================================================= */
+#manuscriptPaper:focus{outline:none}
+.scene-outline-row{display:flex;align-items:center;gap:7px;padding:7px 9px}
+.scene-short{display:none;width:32px;flex:none;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.scene-outline-copy{min-width:0;flex:1;display:block}
+.scene-grip{flex:none;width:16px;color:var(--muted);font-size:11px;letter-spacing:-2px;cursor:grab;opacity:.72;text-align:center}
+.scene-outline-row.dragging{opacity:.48}
+.scene-outline-row.drop-target{box-shadow:inset 0 2px 0 var(--accent);background:var(--accent-soft)}
+.scene-gap-row{width:calc(100% - 18px);height:13px;margin:1px 9px;border:0;padding:0;display:flex;align-items:center;cursor:pointer;border-radius:4px;transition:height .1s ease,background .1s ease;}
+.scene-gap-row>span{display:block;width:100%;border-top:1px dotted var(--line2)}
+.scene-gap-row:hover{background:var(--surface2)}
+
+.scene-gap-row.drop-target>span{border-top-color:var(--accent)}
+.scene-gap-row.drop-target::after{content:var(--i18n-d711dc6f90d4, "{{i18n:css.content.content.091535a0}}");position:absolute;left:0;right:0;text-align:center;font-size:10px;color:var(--muted);pointer-events:none}
+.scene-gap-hover{position:fixed;z-index:170;max-width:220px;padding:6px 8px;border:1px solid var(--line2);border-radius:6px;background:var(--surface);box-shadow:var(--shadow);font-size:11px;color:var(--text);pointer-events:none}
+.scene-view-empty{min-height:220px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:var(--muted);gap:5px;padding:24px;user-select:none}
+.scene-view-empty b{color:var(--text);font-size:13px}
+.scene-view-empty span{max-width:360px;font-size:11px;line-height:1.45}
+
+
+/* =========================================================
+   v4.18.4 Scenes — stronger unassigned-prose gap indicator
+   ========================================================= */
+.scene-gap-row{height:17px;margin:2px 9px;justify-content:center;background:transparent}
+.scene-gap-row>span{width:42%;height:3px;border:0;border-radius:999px;background:repeating-linear-gradient(90deg,var(--line2) 0 9px,transparent 9px 14px);opacity:.9;transition:width .12s ease,opacity .12s ease,background .12s ease}
+.scene-gap-row:hover{background:transparent}
+.scene-gap-row:hover>span{width:46%;opacity:1}
+.scene-gap-row.drop-target{height:34px;background:var(--accent-soft);outline:1px dashed var(--accent);outline-offset:-3px}
+.scene-gap-row.drop-target>span{width:calc(100% - 18px);height:2px;background:repeating-linear-gradient(90deg,var(--accent) 0 10px,transparent 10px 15px);opacity:1}
+
+/* =========================================================
+   v4.18.4 Scenes — collapsed numbering + focused boundaries
+   ========================================================= */
+.scene-view-boundary{pointer-events:auto}
+
+/* =========================================================
+   v4.18.7 Manuscript entity menus + details consistency
+   ========================================================= */
+.context-menu-hover-tip,
+.chapter-details-hover-card{
+  position:fixed;
+  z-index:172;
+  width:min(250px,calc(100vw - 16px));
+  max-height:min(220px,calc(100vh - 16px));
+  overflow:auto;
+  padding:7px 9px;
+  border:1px solid var(--line2);
+  border-radius:6px;
+  background:var(--surface);
+  box-shadow:var(--shadow);
+  color:var(--text);
+  font-size:11px;
+  line-height:1.4;
+  pointer-events:none;
+  overflow-wrap:anywhere;
+}
+.chapter-details-hover-card{width:min(265px,calc(100vw - 16px));}
+
+.comments-row{
+  display:flex;
+  align-items:stretch;
+  padding:0;
+}
+.comments-row-main,
+.comments-more{
+  border:0!important;
+  background:transparent!important;
+  color:var(--text);
+  margin:0;
+  box-shadow:none!important;
+}
+.comments-row-main{
+  position:relative;
+  flex:1;
+  min-width:0;
+  text-align:left;
+  padding:9px 28px 9px 9px;
+}
+.comments-more{
+  width:32px;
+  min-width:32px;
+  height:34px;
+  min-height:34px;
+  align-self:center;
+  padding:0;
+  display:grid;
+  place-items:center;
+  color:var(--muted);
+  font-size:17px;
+  line-height:1;
+}
+.comments-more:hover{background:color-mix(in srgb,var(--text) 5%,transparent)!important;color:var(--text)}
+.comments-row-replies{right:8px;bottom:7px;}
+
+/* =========================================================
+   v4.18.8 Manuscript action affordance standard
+   ========================================================= */
+/*
+  Manuscript-managed rows share one explicit overflow affordance. The visible
+  ellipsis and right-click open the same action list; entity-specific content
+  may differ, but the button geometry and hover language do not.
+*/
+.manuscript-item-more{
+  width:32px!important;
+  min-width:32px!important;
+  height:34px!important;
+  min-height:34px!important;
+  align-self:center;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:4px!important;
+  background:transparent!important;
+  color:var(--muted)!important;
+  box-shadow:none!important;
+  display:grid!important;
+  place-items:center;
+  font-size:17px!important;
+  line-height:1!important;
+  letter-spacing:0!important;
+  flex:none;
+}
+.manuscript-item-more:hover{background:color-mix(in srgb,var(--text) 5%,transparent)!important;color:var(--text)!important}
+
+/* Tabs use the same row + ellipsis grammar as the entity lists below them. */
+.document-row{display:flex;align-items:stretch;padding:0;overflow:visible}
+.document-row-main{flex:1;min-width:0;border:0;background:transparent;color:inherit;text-align:left;padding:8px 6px 8px 9px;font:inherit;overflow:hidden}
+.document-row-main .document-title{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.document-more{margin-right:3px!important}
+
+/* Chapters and Scenes reserve the right edge for the shared action button. */
+.chapter-full{flex:1}
+.chapter-more{margin-right:-3px!important}
+.scene-outline-main{flex:1;min-width:0;display:flex;align-items:center;gap:7px;border:0;background:transparent;color:inherit;text-align:left;padding:0;font:inherit}
+.scene-more{margin-right:-1px!important}
+.book-nav.collapsed .chapter-more,.book-nav.collapsed .scene-more{display:none!important}
+
+/* Cuts no longer carry a bespoke SVG/size for the same action affordance. */
+.cuts-list-row{grid-template-columns:minmax(0,1fr) 32px;align-items:stretch}
+.cuts-more{align-self:center}
+
+/* =========================================================
+   v4.18.9 Manuscript Tab rail + empty-state standard
+   ========================================================= */
+.book-nav{width:236px;min-width:196px}
+.tabs-head{padding:6px 8px 5px}
+.tabs-head-title{min-width:0;display:flex;align-items:center;gap:4px}
+.nav-section-label{font-weight:650;color:var(--muted)}
+.nav-collapse-button{width:30px;height:30px;padding:0;display:grid;place-items:center;color:var(--muted);font-size:15px;line-height:1}
+.nav-collapse-button:hover{color:var(--text)}
+.nav-collapse-button>span{display:block;line-height:1;transform:translateY(-1px)}
+.nav-section-more{flex:none;margin:0!important}
+.document-list{flex:0 1 auto;max-height:30%;padding:1px 0 7px}
+.document-navigation{border-top:1px solid var(--line);padding-top:8px}
+.selected-document-nav-title{padding:0 11px 6px;color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.065em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.full-document-row{display:block;width:calc(100% - 18px);margin:0 9px 7px;border:0;border-left:2px solid transparent;background:transparent;color:var(--text);border-radius:5px;padding:7px 9px;text-align:left;font-weight:650}
+
+.full-document-row.active{border-left-color:var(--accent);}
+.manuscript-nav-toolbar{display:flex;align-items:center;gap:5px;padding:0 9px 7px}
+.manuscript-nav-toolbar .manuscript-nav-mode{flex:1;min-width:0;margin:0}
+.manuscript-nav-toolbar>.nav-section-more{align-self:stretch;height:auto;min-height:30px}
+.manuscript-nav-mode.single{grid-template-columns:1fr}
+
+/* Whole Manuscript rail collapse remains a first-class writing control. The
+   hamburger lives before TABS; the collapsed rail keeps only that affordance
+   plus compact Chapter/Scene navigation. */
+.book-nav.collapsed{width:58px;min-width:58px}
+.book-nav.collapsed .tabs-head{display:flex;justify-content:center;padding:6px 5px}
+.book-nav.collapsed .tabs-head-title{display:block}
+.book-nav.collapsed .tabs-head-title .nav-section-label,.book-nav.collapsed .tabs-head>.nav-section-more{display:none!important}
+.book-nav.collapsed .nav-collapse-button{width:38px;height:31px;padding:0}
+.book-nav.collapsed .document-list,.book-nav.collapsed .document-navigation,.book-nav.collapsed .nav-bottom{display:none!important}
+.book-nav.collapsed .chapter-row{min-height:40px;padding:4px 5px;justify-content:center;border-left-width:0}
+.book-nav.collapsed .chapter-row.active{box-shadow:inset 3px 0 0 var(--accent)}
+.book-nav.collapsed .chapter-grip,.book-nav.collapsed .chapter-full,.book-nav.collapsed .scene-nav,.book-nav.collapsed .chapter-more,.book-nav.collapsed .scene-more{display:none!important}
+.book-nav.collapsed .chapter-short{display:block}
+.book-nav.collapsed .scene-outline-row{min-height:40px;padding:4px 5px;justify-content:center;border-left-width:0}
+.book-nav.collapsed .scene-outline-row.active{box-shadow:inset 3px 0 0 var(--accent)}
+.book-nav.collapsed .scene-grip,.book-nav.collapsed .scene-outline-copy{display:none!important}
+.book-nav.collapsed .scene-short{display:block}
+
+/* Manuscript side tools share one quiet, centered empty-state language. */
+.manuscript-panel-empty{width:min(220px,100%);margin:auto;padding:18px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:7px;color:var(--muted)}
+.manuscript-panel-empty b{color:var(--text);font-size:13px;font-weight:650}
+.manuscript-panel-empty span{max-width:195px;font-size:11.5px;line-height:1.45}
+.cuts-list{display:flex;flex-direction:column}
+.cuts-empty{padding:18px 10px;line-height:1.45}
+.cuts-empty b{font-size:13px;margin:0}.cuts-empty span{display:block}
+.comments-list{display:flex;flex-direction:column}
+.comments-empty{padding:18px 10px;line-height:1.45}
+.comments-empty b{font-size:13px;margin:0}.comments-empty span{display:block}
+.comments-panel.detail-hidden .comments-list{flex:1 1 auto;border-bottom:0}
+.comments-panel.detail-hidden .comments-detail{display:none!important}
+.comment-detail-actions .comment-delete{color:var(--danger)}
+
+
+/* =========================================================
+   v4.18.10 Tab controls + Full Text affordance
+   ========================================================= */
+.tabs-head-actions{display:flex;align-items:center;gap:2px;flex:none}
+.tabs-toggle-button{width:28px;height:32px;padding:0;display:grid;place-items:center;color:var(--muted);font-size:12px;line-height:1;border-radius:5px}
+.tabs-toggle-button:hover{background:var(--accent-soft);color:var(--text)}
+.full-document-row{width:calc(100% - 20px);margin:1px 10px 9px;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 10px;text-align:center;font-weight:700;box-shadow:0 1px 0 rgba(0,0,0,.025)}
+.full-document-row:hover{border-color:var(--line2);background:var(--accent-soft)}
+.full-document-row.active{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 28%,transparent)}
+.collapsed-full-text{display:none;width:38px;height:34px;margin:3px auto 4px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--muted);font-weight:750;font-size:12px;padding:0}
+.collapsed-full-text:hover{background:var(--accent-soft);color:var(--text)}
+.collapsed-full-text.active{border-color:var(--accent);background:var(--accent-soft);color:var(--text)}
+.book-nav.collapsed .tabs-head-actions{display:none!important}
+.book-nav.collapsed .collapsed-full-text{display:block}
+.book-nav.collapsed .scene-nav-empty{display:none!important}
+.book-nav.collapsed .tabs-head-actions .nav-section-more,.book-nav.collapsed .tabs-head-actions .tabs-toggle-button{display:none!important}
+
+
+/* =========================================================
+   v4.18.11 Full Text control + chapter display toggle
+   ========================================================= */
+.full-document-control{
+  position:relative;
+  width:calc(100% - 20px);
+  margin:1px 10px 9px;
+  border:1px solid var(--line);
+  background:var(--surface);
+  border-radius:6px;
+  box-shadow:0 1px 0 rgba(0,0,0,.025);
+}
+.full-document-control:hover{border-color:var(--line2);background:var(--accent-soft)}
+.full-document-control.active{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 28%,transparent)}
+.full-document-control .full-document-row{
+  width:100%;
+  margin:0;
+  border:0;
+  border-radius:5px;
+  background:transparent;
+  box-shadow:none;
+  padding:7px 42px;
+  text-align:center;
+}
+.full-document-control .full-document-row:hover,.full-document-control .full-document-row.active{background:transparent;border-color:transparent;box-shadow:none}
+.full-document-menu{
+  position:absolute;
+  right:3px;
+  top:50%;
+  transform:translateY(-50%);
+  width:30px!important;
+  min-width:30px!important;
+  height:28px!important;
+  min-height:28px!important;
+  border-radius:5px;
+}
+.manuscript-nav-toolbar{padding-top:0}
+.book-nav.collapsed .full-document-control{display:none}
+
+/* =========================================================
+   v4.18.12 Scenes — focused spans, compact numbering, chapterless prose
+   ========================================================= */
+.book-nav.collapsed .scene-outline-main{flex:0 0 32px;width:32px;}
+
+.scene-gap-hidden{display:none!important}
+.scene-gap-row.active>span{background:repeating-linear-gradient(90deg,var(--accent) 0 9px,transparent 9px 14px);opacity:1}
+.scene-focused-chapter-heading{margin-top:1.7em}
+.scene-gap-view-boundary{opacity:.78}
+
+/* v4.18.13 Scene detail hover reuses the standardized Manuscript side-card; focused insertion is behavioral. */
+
+
+/* =========================================================
+   v4.18.14 Scene selection + compact-rail parity
+   ========================================================= */
+.scene-outline-row{min-height:38px;padding:8px 11px;line-height:1.28;cursor:pointer}
+.book-nav.collapsed .scene-outline-main{flex:1 1 auto;width:auto;align-self:stretch;justify-content:center;gap:0}
+.book-nav.collapsed .scene-short{width:32px;text-align:center}
+
+/* =========================================================
+   v4.19 Bookmark + manuscript location
+   One quiet project bookmark; navigation location remains UI state.
+   ========================================================= */
+.bookmark-manuscript-button svg,.selection-bookmark-button svg,.inline-bookmark-button svg,.sidebar-bookmark-icon svg{
+  fill:none;stroke:currentColor;stroke-width:1.65;stroke-linejoin:round;stroke-linecap:round;
+}
+.bookmark-manuscript-button.has-bookmark svg{fill:color-mix(in srgb,currentColor 18%,transparent)}
+.selection-bookmark-button{display:grid!important;place-items:center;padding:4px!important}
+.selection-bookmark-button svg{width:15px;height:15px;display:block}
+.selection-bookmark-button.active{background:var(--accent-soft)!important;color:var(--text)}
+.sidebar-bookmark-icon{
+  width:25px;min-width:25px;height:30px;padding:0;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;border-radius:4px;cursor:pointer;
+}
+.sidebar-bookmark-icon svg{width:13px;height:13px;display:block}
+.sidebar-bookmark-icon:hover,.sidebar-bookmark-icon:focus-visible{background:color-mix(in srgb,var(--text) 5%,transparent);color:var(--text);outline:0}
+.book-nav.collapsed .sidebar-bookmark-icon{display:none!important}
+.inline-bookmark-button{
+  width:18px;min-width:18px;height:20px;padding:0;border:0;background:transparent;color:var(--muted);display:inline-grid;place-items:center;border-radius:3px;vertical-align:middle;cursor:pointer;user-select:none;-webkit-user-select:none;
+}
+.inline-bookmark-button svg{width:12px;height:12px;display:block}
+.text-bookmark-marker svg{width:15px;height:15px}
+.inline-bookmark-button:hover,.inline-bookmark-button:focus-visible{color:var(--text);background:color-mix(in srgb,var(--text) 5%,transparent);outline:0}
+.text-bookmark-marker{position:absolute;left:-20px;top:.86em;transform:translateY(-50%);width:20px;min-width:20px;height:22px;z-index:9}
+.heading-bookmark-marker{margin-right:4px;transform:translateY(-1px)}
+.ghost-scene-title .heading-bookmark-marker{margin-right:2px}
+.chapter-title-row{position:relative;display:flex;align-items:flex-start;gap:5px}
+.chapter-title-row .chapter-title{min-width:0;flex:1}
+.chapter-title-bookmark{margin-top:2px;flex:none}
+.bookmark-jump-pulse{animation:bookmark-jump-pulse 1.05s ease-out}
+@keyframes bookmark-jump-pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 42%,transparent)}45%{box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 18%,transparent)}100%{box-shadow:0 0 0 0 transparent}}
+
+/* v4.19.1 — native manuscript gestures remain browser-owned. */
+.manuscript-block{user-select:text;-webkit-user-select:text}
+
+/* v4.19.4 — unassigned Scene spans carry the single bookmark breadcrumb too. */
+.scene-gap-row:has(.scene-gap-bookmark-icon){gap:3px}
+.scene-gap-row:has(.scene-gap-bookmark-icon)>.scene-gap-dashes{width:42%}
+.scene-gap-row .scene-gap-bookmark-icon{width:20px;min-width:20px;height:17px;margin:0 -2px 0 0}
+.scene-gap-row .scene-gap-bookmark-icon svg{width:12px;height:12px}
+
+
+/* =========================================================
+   v4.19.5 — the unassigned Scene gap keeps its bookmark in compact mode.
+   Other compact Chapter/Scene breadcrumb icons remain intentionally hidden.
+   ========================================================= */
+.book-nav.collapsed .scene-gap-row .scene-gap-bookmark-icon{
+  display:grid!important;width:16px;min-width:16px;height:17px;margin:0;
+}
+.book-nav.collapsed .scene-gap-row .scene-gap-bookmark-icon svg{width:12px;height:12px}
+.book-nav.collapsed .scene-gap-row:has(.scene-gap-bookmark-icon){gap:2px}
+.book-nav.collapsed .scene-gap-row:has(.scene-gap-bookmark-icon)>.scene-gap-dashes{width:16px}
+.reference-manager-context{margin:0 0 10px}.reference-manager-row{cursor:pointer}.reference-manager-row:hover:not(.is-missing),.reference-manager-row:focus-visible:not(.is-missing){background:var(--accent-soft);outline:none}.reference-manager-row.is-missing{cursor:default}.reference-manager-row>span{min-width:0}.reference-manager-row b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.reference-manager-actions{display:flex;align-items:center;gap:5px}.reference-manager-missing{font-size:12px}.reference-manager-add{margin-top:9px}
+
+

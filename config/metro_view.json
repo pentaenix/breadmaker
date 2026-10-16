@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "routing": {
+    "candidate_count": 28,
+    "max_segments": 18,
+    "hard_rules": {
+      "allow_self_intersection": false,
+      "allow_immediate_retrace": false,
+      "allow_unrelated_same_component_crossing": false
+    },
+    "initial_heading_weights": {
+      "0": 1.0,
+      "45": 1.0,
+      "90": 1.0,
+      "135": 1.0,
+      "180": 1.0,
+      "225": 1.0,
+      "270": 1.0,
+      "315": 1.0
+    },
+    "weights": {
+      "continue_straight": 9.0,
+      "turn_45": 3.6,
+      "turn_90": 1.8,
+      "turn_135": 0.55,
+      "turn_180": 0.08,
+      "destination_progress": 0.7,
+      "unused_space": 1.8,
+      "edge_clearance": 1.7,
+      "length_target": 3.0
+    },
+    "segments": {
+      "min_mm": 11.0,
+      "preferred_mm": 31.0,
+      "max_mm": 58.0,
+      "turn_cooldown_mm": 16.0,
+      "turn_ramp_mm": 24.0,
+      "route_clearance_mm": 4.0,
+      "edge_clearance_mm": 5.0,
+      "line_separation_mm": 5.2
+    },
+    "turn_budget": [
+      {
+        "max_stations": 5,
+        "turns": 1
+      },
+      {
+        "max_stations": 12,
+        "turns": 3
+      },
+      {
+        "max_stations": 25,
+        "turns": 5
+      },
+      {
+        "max_stations": 99999,
+        "turns": 9
+      }
+    ],
+    "structural_turn_discount": 1,
+    "fallback": {
+      "lane_margin_mm": 7.0
+    },
+    "minimum_turns": [
+      {
+        "max_stations": 5,
+        "turns": 0
+      },
+      {
+        "max_stations": 12,
+        "turns": 1
+      },
+      {
+        "max_stations": 25,
+        "turns": 2
+      },
+      {
+        "max_stations": 99999,
+        "turns": 3
+      }
+    ],
+    "scale": {
+      "coverage_exponent": 0.82,
+      "min_route_mm": 28.0,
+      "territory_capacity_factor": 1.03
+    },
+    "strategy_weights": {
+      "balanced": 3.0,
+      "diagonal": 2.2,
+      "orthogonal": 1.4,
+      "broad": 2.4,
+      "compact": 0.8
+    },
+    "scoring": {
+      "shortfall": 900,
+      "self_intersection": 100000,
+      "crossing": 70000,
+      "separation": 50000,
+      "out_of_bounds": 150000,
+      "turn_over_budget": 900,
+      "turn_under_minimum": 500,
+      "snake": 1400,
+      "boundary": 450,
+      "utilization": 120,
+      "target_utilization": 0.38,
+      "excess_length": 3.0,
+      "sharp_turn": 850
+    },
+    "connections": {
+      "departure_mm": 4.0,
+      "clearance_mm": 2.2
+    }
+  },
+  "spacing": {
+    "min_solid_line_mm": 3.2,
+    "station_radius_mm": 1.45,
+    "terminus_radius_mm": 1.85,
+    "interchange_radius_mm": 2.15,
+    "min_span_dash_mm": 6.0,
+    "route_headroom_mm": 8.0
+  },
+  "terrain": {
+    "family_weights": {
+      "subtle": {
+        "river": 2.5,
+        "dual-river": 0.8,
+        "river-lake": 2.0,
+        "lake": 1.6,
+        "highlands": 1.5,
+        "mixed": 1.2,
+        "sparse": 1.4
+      },
+      "full": {
+        "river": 1.0,
+        "dual-river": 1.2,
+        "river-lake": 2.0,
+        "lake": 1.2,
+        "highlands": 2.0,
+        "mixed": 2.8,
+        "topographic-field": 3.2
+      }
+    },
+    "network_clearance_mm": 7.0,
+    "feature_clearance_mm": 5.0,
+    "river": {
+      "samples": 10,
+      "mountain_clearance_mm": 7.0,
+      "width_subtle_mm": 4.5,
+      "width_full_mm": 6.5
+    },
+    "lake": {
+      "min_radius_mm": 7.0,
+      "max_radius_mm": 14.0
+    },
+    "topography": {
+      "opacity_subtle": 0.11,
+      "opacity_full": 0.16,
+      "grid_columns": 44,
+      "grid_rows": 58,
+      "contour_levels": 9,
+      "peak_count_full": 5,
+      "peak_count_subtle": 2,
+      "valley_count_full": 2,
+      "valley_count_subtle": 1,
+      "high_elevation_threshold": 0.5,
+      "broad_feature_count_full": 2,
+      "min_contour_level_full": 0.045,
+      "min_contour_level_subtle": 0.11,
+      "max_contour_level": 1.02
+    }
+  },
+  "appearance": {
+    "line_width_mm": 2.2,
+    "core_line_width_mm": 2.8,
+    "structural_line_width_mm": 1.65,
+    "connection_width_factor": 0.82
+  },
+  "poster": {
+    "legend_bottom_margin_mm": 5.0
+  }
+}

@@ -1,0 +1,493 @@
+{
+  "additional_requirements": [
+    "ciphertext-only-gcs-object-names",
+    "no-unkeyed-plaintext-digest-in-metadata",
+    "encrypted-immutable-archives",
+    "kms-key-retained-for-restores",
+    "no-cross-tenant-key-use",
+    "no-plaintext-logs",
+    "fail-closed-no-plaintext-fallback"
+  ],
+  "auto_activate": false,
+  "collection_enabled": false,
+  "default_encryption": "REQUIRED_BEFORE_HOSTED_CUSTOMER_DATA",
+  "encrypted_firestore_pilot": {
+    "additional_m12g_models": [
+      "document_tab",
+      "scene",
+      "comment_thread",
+      "comment_message",
+      "questionnaire",
+      "questionnaire_question",
+      "cross_feature_reference",
+      "markup_label",
+      "icon_marker",
+      "review_marker_label",
+      "canvas_version",
+      "canvas_version_item"
+    ],
+    "encrypted_backup_restore": "M12N_OPT_IN_SEALED_ASSET_AND_REVISION_RESTORE; STILL_NOT_COMPREHENSIVE",
+    "encryption": "AES-256-GCM per-record payload, KMS-wrapped unique DEK",
+    "firestore_visible": [
+      "id",
+      "task_id or milestone_id",
+      "generation",
+      "created_at",
+      "updated_at",
+      "operation receipts",
+      "ciphertext envelope"
+    ],
+    "local_runtime": "UNCHANGED_ACCOUNTLESS_OFFLINE",
+    "logical_entities": [
+      "task",
+      "task_milestone"
+    ],
+    "module": "hosted.security.private_firestore.HostedPrivateFirestoreFields",
+    "normal_hosted_runtime": "DISABLED",
+    "other_private_firestore_models": "M12N_EXPLICIT_OPT_IN_PROJECT_TITLE_PARTICIPANTS_HYBRID_METADATA_ASSET_AND_REVISION_METADATA; MEMBER_STATE_SYSTEM_IDENTITY_NOT_COVERED",
+    "package_export_import": "BLOCKED_IN_OPT_IN_MODE",
+    "query": "authorized bounded scan (512 max) then decrypt/filter locally; indexes on protected fields unsupported",
+    "status": "EXPLICIT_OPT_IN_NOT_WIRED",
+    "transaction": "encryption before Firestore transaction, not inside retry callback",
+    "unknown_content_fields": "ENCRYPTED_BY_DEFAULT"
+  },
+  "encrypted_object_pilot": {
+    "authorization_limitation": "record-level checks must be enforced by the calling service",
+    "backup_integration": "M12I_OPT_IN_PRIVATE_SOURCE_TO_ENCRYPTED_RECOVERY_BUCKET; NORMAL_PATH_NOT_WIRED",
+    "chapter_bulk_replace": "EXPLICIT_OPT_IN_BODY_CIPHERTEXT",
+    "ciphertext_authenticated_to_full_path": true,
+    "domain_integration": "M12N_EXPLICIT_INJECTION_MANUSCRIPT_BLOCK_CUT_CHECKPOINT_REVIEW_SNAPSHOT_PROJECT_ASSET_REVISION_HISTORY; SPECIALIZED_RUNTIME_OFF",
+    "firestore_pointer_integration": "EXPLICIT_INJECTED_MANUSCRIPT_BLOCK_CUT_CHECKPOINT_REVIEW_SNAPSHOT_ASSET_REVISION; NORMAL_RUNTIME_NOT_INTEGRATED",
+    "live_cloud_configuration": "DISABLED",
+    "max_plaintext_bytes": 16777216,
+    "module": "hosted.storage.encrypted_objects.HostedEncryptedObjectStore",
+    "name_uses_plaintext_sha256": false,
+    "package_export_import": "REJECT_WHEN_EXPERIMENTAL_MODE_ENABLED",
+    "path_family": "projects/{project_id}/private/v1/{entity}/{record_id}/{operation_id}.bme",
+    "plaintext_storage": "never_by_this_pilot",
+    "requires_explicit_membership_authorizer": true,
+    "runtime_auto_enable": false,
+    "status": "OPT_IN_NOT_WIRED"
+  },
+  "encrypted_recovery_pilot": {
+    "authenticated_manifest": "encrypted_last_after_all_chunks_and_owner_generation_recheck",
+    "catalog_limit": "12000 project-scoped rows, 1800 collection paths; independent registered-vs-physical Firestore inventory and project GCS inventory; live orphan verification needs M13 provider evidence",
+    "chunk_plaintext_limit": 8388608,
+    "data_storage": "independent_recovery_bucket_only",
+    "format": "breadmaker-hosted-v3-encrypted-recovery-v1",
+    "full_private_model_coverage": "PARTIAL_ASSET_REVISION_AND_REVIEW_SUBSET; MEMBER_UI_SYSTEM_FOREIGN_REVIEWER_NOT_COVERED",
+    "google_gcs_create_only_iam": "M12M_GENERIC_GCS_ADAPTER_NO_LONGER_PATCHES; LIVE_PROVIDER_IAM_EVIDENCE_PENDING_M13",
+    "isolated_recovery": "Independent offline drill for ordinary source; M12N private archive operator live restore with staged verification and postcommit receipt recovery (NOT deployed)",
+    "kms_retained_key_versions_required": true,
+    "legacy_plaintext_recovery_scheduler_changed": false,
+    "live_deployment": "DISABLED",
+    "live_restore": "M12N_OPERATOR_ONLY_PRIVILEGED_REENCRYPTED_ASSETS_REVISIONS_PARTICIPANTS_CUTS_CHECKPOINTS_REVIEW_SNAPSHOTS; MEMBER_STATE_SYSTEM_FOREIGN_REVIEWER_UNSUPPORTED",
+    "max_chunk_count": 8,
+    "max_unencrypted_export_bytes": 67108864,
+    "module": "hosted.encrypted_recovery",
+    "object_names": "operation_derived_opaque_identifiers_not_plaintext_hashes",
+    "offline_restore": "decrypt_then_existing_hosted_v3_memory_only_import",
+    "physical_firestore_inventory": "M12L_PROJECT_SUBTREE_API; UNKNOWN/ORPHANED RECORDS BLOCKED; GCP MISSING_PARENT_SEMANTICS_UNVERIFIED",
+    "physical_gcs_inventory": "M12L_PROJECT_PREFIX_ONLY; UNKNOWN_OR_PLAINTEXT_OBJECTS_REJECTED; OLD_IMMUTABLE_CIPHERTEXT_ORPHANS_NONAUTHORITATIVE",
+    "private_source_requires_both_codecs": true,
+    "public_export_enabled": false,
+    "registered_model_catalog_gate": "M12L_REGISTERED_PHYSICAL_EXACT_PATHS_PLUS_REVISION_FENCE; EXPERIMENTAL_ONLY",
+    "scheduled_worker_integration": "NOT_INTEGRATED_LEGACY_WRITER_UNCHANGED",
+    "source_encrypted_fields": "EXPERIMENTAL_DUAL_CODEC_SOURCE_SUPPORTED_IN_MEMORY_ONLY; NOT_FULL_COVERAGE",
+    "source_export": "M12M_ENCRYPTED_ROOT_TITLE_AND_REGISTERED_PRIVATE_HYBRIDS; UNCONVERTED_ASSET_HISTORY_MEMBER_STATE_FAIL_CLOSED; EXPERIMENTAL_ONLY",
+    "status": "M12M_SOURCE_CONSOLIDATION_CANDIDATE; STILL_NOT_FULL_HOSTED_READY",
+    "unsupported_models": "M12L_NONEMPTY_UNSUPPORTED_MODELS_OR_GCS_OBJECTS_BLOCK_SNAPSHOT; PRIVATE_MODE_GENERIC_WRITES_BLOCK_UNSUPPORTED_MODELS"
+  },
+  "firestore_models": {
+    "annotation": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "M12K_EXPLICIT_CODEC_INJECTION_ONLY; FULL_DOCUMENT_PATH_AAD; NOT_PRODUCTION_ACTIVE",
+      "path_template": "projects/{project_id}/annotations/{annotation_id}"
+    },
+    "backup_destination_configuration": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "path_template": "projects/{project_id}/backup_destinations/{destination_id}"
+    },
+    "canvas": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/canvases/{canvas_id}"
+    },
+    "canvas_edge": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/canvases/{canvas_id}/edges/{edge_id}"
+    },
+    "canvas_node": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/canvases/{canvas_id}/nodes/{node_id}"
+    },
+    "canvas_version": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/canvases/{canvas_id}/versions/{version_id}"
+    },
+    "canvas_version_item": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/canvases/{canvas_id}/versions/{version_id}/items/{item_id}"
+    },
+    "chapter": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "M12K_EXPLICIT_CODEC_INJECTION_ONLY; CHAPTER_TITLE_CIPHERTEXT; SPECIAL_CAS_LIVE_ACTIVATION_BLOCKED",
+      "path_template": "projects/{project_id}/chapters/{chapter_id}"
+    },
+    "checkpoint": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "M12M_OPT_IN_SEALED_CONTENT_AND_RESTORE; NOT_DEPLOYED",
+      "path_template": "projects/{project_id}/checkpoints/{checkpoint_id}"
+    },
+    "checkpoint_asset_reference": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "path_template": "projects/{project_id}/checkpoints/{checkpoint_id}/asset_refs/{asset_ref_id}"
+    },
+    "comment_message": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/comment_threads/{thread_id}/messages/{message_id}"
+    },
+    "comment_thread": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/comment_threads/{thread_id}"
+    },
+    "cross_feature_reference": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/references/{reference_id}"
+    },
+    "cut": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "M12M_OPT_IN_SEALED_CONTENT_AND_RESTORE; NOT_DEPLOYED",
+      "path_template": "projects/{project_id}/cuts/{cut_id}"
+    },
+    "document_tab": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/tabs/{tab_id}"
+    },
+    "hosted_model_metadata": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "path_template": "projects/{project_id}/system/model"
+    },
+    "hosted_revision_history": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "path_template": "projects/{project_id}/revisions/{revision_id}"
+    },
+    "hosted_user_profile": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "path_template": "users/{user_id}"
+    },
+    "icon_marker": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/icon_markers/{icon_marker_id}"
+    },
+    "identity_binding": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "path_template": "identity_bindings/{uid_hash}"
+    },
+    "manuscript_block": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_body_integration": "AVAILABLE_BY_EXPLICIT_INJECTION_ONLY; FIRESTORE METADATA REMAINS PLAINTEXT",
+      "path_template": "projects/{project_id}/blocks/{block_id}"
+    },
+    "map_item": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/story_maps/{map_id}/lines/{line_id}/items/{item_id}"
+    },
+    "map_junction": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/story_maps/{map_id}/junctions/{junction_id}"
+    },
+    "map_line": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/story_maps/{map_id}/lines/{line_id}"
+    },
+    "markup_label": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/markup_labels/{label_id}"
+    },
+    "member_bookmark": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "path_template": "projects/{project_id}/members/{user_id}/state/bookmark"
+    },
+    "member_ui_state": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "path_template": "projects/{project_id}/members/{user_id}/ui_state/{key}"
+    },
+    "project": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "M12M_OPT_IN_ROOT_TITLE_ENVELOPE; OPERATIONAL_AUTHORITY_METADATA_REMAINS_VISIBLE; NOT_DEPLOYED",
+      "path_template": "projects/{project_id}"
+    },
+    "project_asset": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "path_template": "projects/{project_id}/assets/{asset_id}"
+    },
+    "project_membership": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "path_template": "projects/{project_id}/members/{user_id}"
+    },
+    "questionnaire": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/questionnaires/{questionnaire_id}"
+    },
+    "questionnaire_question": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/questionnaires/{questionnaire_id}/questions/{question_id}"
+    },
+    "recovery_state": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "path_template": "projects/{project_id}/system/recovery"
+    },
+    "review": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/reviews/{review_id}"
+    },
+    "review_anchor": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "M12K_EXPLICIT_CODEC_INJECTION_ONLY; FULL_DOCUMENT_PATH_AAD; NOT_PRODUCTION_ACTIVE",
+      "path_template": "projects/{project_id}/reviews/{review_id}/snapshots/{snapshot_id}/anchors/{anchor_id}"
+    },
+    "review_comment": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/reviews/{review_id}/comments/{comment_id}"
+    },
+    "review_comment_reply": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/reviews/{review_id}/comments/{comment_id}/replies/{reply_id}"
+    },
+    "review_event": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "M12K_EXPLICIT_CODEC_INJECTION_ONLY; FULL_DOCUMENT_PATH_AAD; NOT_PRODUCTION_ACTIVE",
+      "path_template": "projects/{project_id}/reviews/{review_id}/events/{event_id}"
+    },
+    "review_general_feedback": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/reviews/{review_id}/general_feedback/{feedback_id}"
+    },
+    "review_highlight": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/reviews/{review_id}/highlights/{highlight_id}"
+    },
+    "review_import_receipt": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "M12K_EXPLICIT_CODEC_INJECTION_ONLY; FULL_DOCUMENT_PATH_AAD; NOT_PRODUCTION_ACTIVE",
+      "path_template": "projects/{project_id}/reviews/{review_id}/imports/{import_id}"
+    },
+    "review_marker_assignment": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "M12K_EXPLICIT_CODEC_INJECTION_ONLY; FULL_DOCUMENT_PATH_AAD; NOT_PRODUCTION_ACTIVE",
+      "path_template": "projects/{project_id}/reviews/{review_id}/markers/{review_marker_id}"
+    },
+    "review_marker_label": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/review_marker_labels/{marker_label_id}"
+    },
+    "review_participant": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "M12M_OPT_IN_SEALED_CONTENT_AND_RESTORE; NOT_DEPLOYED",
+      "path_template": "projects/{project_id}/reviews/{review_id}/participants/{participant_id}"
+    },
+    "review_question_answer": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "M12K_EXPLICIT_CODEC_INJECTION_ONLY; FULL_DOCUMENT_PATH_AAD; NOT_PRODUCTION_ACTIVE",
+      "path_template": "projects/{project_id}/reviews/{review_id}/answers/{answer_id}"
+    },
+    "review_questionnaire_assignment": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "M12K_EXPLICIT_CODEC_INJECTION_ONLY; FULL_DOCUMENT_PATH_AAD; NOT_PRODUCTION_ACTIVE",
+      "path_template": "projects/{project_id}/reviews/{review_id}/questionnaires/{questionnaire_id}"
+    },
+    "review_scope_chapter": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "M12K_EXPLICIT_CODEC_INJECTION_ONLY; FULL_DOCUMENT_PATH_AAD; NOT_PRODUCTION_ACTIVE",
+      "path_template": "projects/{project_id}/reviews/{review_id}/scope_chapters/{chapter_id}"
+    },
+    "review_scope_scene": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "M12K_EXPLICIT_CODEC_INJECTION_ONLY; FULL_DOCUMENT_PATH_AAD; NOT_PRODUCTION_ACTIVE",
+      "path_template": "projects/{project_id}/reviews/{review_id}/scope_scenes/{scene_id}"
+    },
+    "review_snapshot": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "M12M_OPT_IN_SEALED_CONTENT_AND_RESTORE; NOT_DEPLOYED",
+      "path_template": "projects/{project_id}/reviews/{review_id}/snapshots/{snapshot_id}"
+    },
+    "review_suggestion": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/reviews/{review_id}/suggestions/{suggestion_id}"
+    },
+    "scene": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/scenes/{scene_id}"
+    },
+    "story_map": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; AUTHENTICATED_FULL_FIRESTORE_DOCUMENT_PATH; ALL_USER_FIELDS_CIPHERTEXT; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/story_maps/{map_id}"
+    },
+    "task": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; FULL_USER_FIELDS_ENCRYPTED; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/tasks/{task_id}"
+    },
+    "task_milestone": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED",
+      "experimental_private_field_integration": "EXPLICIT_CODEC_INJECTION_ONLY; FULL_USER_FIELDS_ENCRYPTED; NO_RUNTIME_ACTIVATION",
+      "path_template": "projects/{project_id}/tasks/{task_id}/milestones/{milestone_id}"
+    }
+  },
+  "gcs_families": {
+    "assets": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED"
+    },
+    "avatars": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED"
+    },
+    "block-payloads": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED"
+    },
+    "checkpoint-assets": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED"
+    },
+    "checkpoints": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED"
+    },
+    "cuts": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED"
+    },
+    "exports": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED"
+    },
+    "imports": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED"
+    },
+    "recovery-archives": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED"
+    },
+    "review-snapshots": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED"
+    },
+    "revisions": {
+      "classification": "private_or_sensitive",
+      "encryption_coverage": "NOT_INTEGRATED"
+    }
+  },
+  "m12_source_closure": {
+    "backup_credentials": "NONPORTABLE_NOT_PROVISIONED",
+    "deployment_and_live_kms_iam_restore": "M13_ONLY_NOT_VERIFIED",
+    "disabled_private_families": [
+      "backup_destination_configuration",
+      "checkpoint_asset_reference"
+    ],
+    "editor_candidate": "10.5.34",
+    "encrypted_manuscript_block_families": 1,
+    "normal_hosted_runtime": "PRIVATE_CODECS_NOT_ACTIVATED",
+    "policy": "hosted.private_source_contract.audit_private_model_coverage",
+    "private_field_families": 45,
+    "private_root_title_families": 1,
+    "recreated_authority_families": [
+      "hosted_model_metadata",
+      "project_membership",
+      "recovery_state"
+    ],
+    "registered_project_families": 52,
+    "retention_deletion": "READ_ONLY_STAGING_PLANNER;_PHYSICAL_ERASURE_DISABLED",
+    "source_status": "SOURCE_CANDIDATE_OWNER_VERIFICATION_PENDING",
+    "unknown_or_legacy_records": "FAIL_CLOSED_NO_PREALPHA_MIGRATION"
+  },
+  "metrics": {
+    "automatic_collection": false,
+    "classification": "account-linked_aggregate",
+    "content_fields_allowed": false,
+    "path_template": "users/{user_id}/usage_daily/{date_utc}",
+    "source": "daily_counts_only"
+  },
+  "schema": "bm-hosted-privacy-boundaries-v1"
+}

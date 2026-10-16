@@ -1,0 +1,701 @@
+/* 8.1.1 — Reviews use the same collection/workspace language as Canvas and Maps. */
+.reviews-layout{position:relative;min-width:0;background:var(--bg)}
+.review-sidebar{width:236px;min-width:236px;flex:0 0 236px;border-right:1px solid var(--line);background:var(--surface2);display:flex;flex-direction:column;overflow:hidden;transition:width .12s ease,min-width .12s ease,flex-basis .12s ease,border-color .12s ease}
+.review-sidebar.collapsed{width:58px;min-width:58px;flex-basis:58px}
+.review-sidebar.collapsed .review-rail-title,.review-sidebar.collapsed .review-collection-more,.review-sidebar.collapsed .review-item-copy,.review-sidebar.collapsed .review-item-state,.review-sidebar.collapsed .review-item-more,.review-sidebar.collapsed .review-item-grip,.review-sidebar.collapsed .review-outline-placeholder{display:none!important}
+
+.review-sidebar.collapsed #toggleReviewRail{padding:0;}
+.review-sidebar.collapsed .review-nav-list{padding-inline:0}
+.review-nav-list{overflow:auto;min-height:0;padding:2px 0 6px}
+/* Review rows deliberately reuse the Manuscript chapter-row component geometry. */
+.review-item{user-select:none}
+.review-item.dragging{opacity:.45}
+.review-item.drop-before{box-shadow:inset 0 2px 0 var(--accent)}
+.review-item.drop-after{box-shadow:inset 0 -2px 0 var(--accent)}
+.review-item:active .review-item-grip{cursor:grabbing}
+.review-item-copy{flex:1;cursor:pointer;}
+.review-item-state{width:18px;height:24px;flex:0 0 18px;display:grid;place-items:center;color:var(--muted);opacity:.82}
+.review-item-state svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.45;stroke-linecap:round;stroke-linejoin:round}
+.review-item-state.state-progress{color:var(--accent);opacity:.86}.review-item-state.state-feedback{color:var(--text);opacity:.7}
+.review-item-state.state-progress svg path:first-of-type{fill:currentColor;stroke:none}
+.review-sidebar.collapsed .review-item{min-height:40px;padding:4px 5px;justify-content:center;border-left-width:0}
+.review-sidebar.collapsed .review-item-short{display:block}
+.review-sidebar.collapsed .review-item.active{box-shadow:inset 3px 0 0 var(--accent)}
+.review-workspace-shell{min-width:0;flex:1;display:flex;flex-direction:column;background:var(--bg)}
+.review-toolbar{height:43px;min-height:43px;display:flex;align-items:center;gap:6px;padding:6px 10px;border-bottom:1px solid var(--line);background:var(--surface);overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.review-toolbar::-webkit-scrollbar{display:none}
+.review-toolbar>*{flex:none}
+.review-toolbar .toolbar-spacer{flex:1 1 20px}
+.review-title-group{min-width:0;max-width:335px}
+.review-current-name{font-weight:bold;max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.review-current-name.review-title-placeholder{color:var(--muted)!important;font-weight:700}
+.review-stage{position:relative;min-width:0;min-height:0;flex:1;overflow:auto;background:var(--bg)}
+.review-stage .workspace-empty{z-index:1}
+@media(max-width:900px){.review-toolbar{overflow-x:auto}}
+
+
+
+/* 8.3.0 — Review Scope uses the existing modal field language; logo is 32px for legibility. */
+.review-scope-picker{max-height:250px;overflow:auto;border:1px solid var(--line);border-radius:5px;background:var(--surface2);padding:4px;margin-top:-2px}
+.review-scope-option{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:4px;font-size:13px;cursor:pointer}
+.review-scope-option:hover{background:var(--accent-soft)}
+.review-scope-option input{width:auto!important;margin:0;flex:none}
+.review-scope-option span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.review-scope-empty{padding:8px}
+.brand-mark{
+  width:32px;height:32px;flex:none;border:0!important;border-radius:0!important;
+  background:var(--text)!important;color:var(--text)!important;
+  -webkit-mask:url('/static/breadmaker_logo.svg?v=10.5.38') center/contain no-repeat;
+  mask:url('/static/breadmaker_logo.svg?v=10.5.38') center/contain no-repeat;
+}
+:root[data-theme=dark] .brand-mark,:root[data-theme=dusk] .brand-mark{background:var(--text)!important;color:var(--text)!important}
+
+/* 8.4.0 — Review-level permissions. */
+.review-permission-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px;row-gap:6px;border:1px solid var(--line);border-radius:5px;background:var(--surface2);padding:7px}
+.field .review-permission-option{display:flex;align-items:center;gap:9px;margin:0;padding:6px 7px;border-radius:4px;color:var(--text);font-size:13px;line-height:17px;cursor:pointer}
+.review-permission-option:hover{background:var(--accent-soft)}
+.review-permission-option input{width:17px!important;height:17px;min-width:17px;margin:0;flex:0 0 17px}
+.review-permission-option span{display:block;min-width:0;line-height:17px}
+.review-permission-option:has(input:disabled){opacity:.8}
+@media(max-width:600px){.review-permission-grid{grid-template-columns:1fr}}
+
+
+.review-participant-list{display:grid;gap:4px;margin-top:4px}
+.review-participant-row{display:flex;align-items:center;gap:6px;min-height:34px;padding:4px 5px;border:1px solid var(--line);border-radius:5px;background:var(--surface)}
+.review-participant-row-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;}
+.review-participant-row .manuscript-item-more{width:26px;height:26px;padding:0;flex:none}
+/* Review actions may originate inside a modal; their context menu must remain interactive above the modal overlay. */
+.context-menu{z-index:110}
+
+/* 8.5.1 — Selected Review content lives in the workspace, not the navigation rail. */
+.review-overview{width:min(760px,calc(100% - 44px));border:1px solid var(--line);border-radius:7px;background:var(--surface);box-shadow:0 1px 4px rgba(0,0,0,.05);overflow:hidden;}
+.review-overview-status{display:flex;align-items:center;gap:8px;padding:12px 15px;border-bottom:1px solid var(--line);font-size:11px;color:var(--muted)}
+.review-overview-status-pill{border:1px solid var(--line);border-radius:999px;padding:2px 7px;color:var(--text);background:var(--surface2);font-weight:600}
+.review-overview-section{padding:14px 15px;border-bottom:1px solid var(--line)}
+.review-overview-section:last-child{border-bottom:0}
+.review-overview-section-head{display:flex;align-items:center;gap:8px;min-height:28px;margin-bottom:5px}
+.review-overview-section-head>b{font-size:12px}
+.review-overview-section-head .review-overview-action{margin-left:auto;width:28px;height:28px;padding:0;display:grid;place-items:center}
+.review-overview-value{font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.review-overview-muted{color:var(--muted)}
+.review-overview-permissions{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.review-overview-permission{font-size:11px;border:1px solid var(--line);border-radius:999px;background:var(--surface2);padding:3px 7px}
+.review-overview-participants{display:grid;gap:4px;margin-top:5px}
+.review-overview-participant{display:flex;align-items:center;gap:7px;min-height:34px;padding:3px 4px 3px 8px;border-radius:5px}
+.review-overview-participant:hover{background:var(--surface2)}
+.review-overview-participant-name{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px}
+.review-overview-participant .manuscript-item-more{width:27px;height:27px;padding:0;flex:none}
+@media(max-width:700px){.review-overview{width:calc(100% - 24px);margin-top:18px}}
+.review-overview-snapshot .review-overview-muted{margin-top:4px;font-size:11.5px}
+
+
+/* 8.7.0 — participant-scoped, read-only Reviewer Mode over a frozen Review Snapshot. */
+body.reviewer-mode-active{overflow:hidden}
+body.reviewer-mode-active #app{display:none!important}
+.reviewer-mode{height:100vh;min-height:0;display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
+.reviewer-mode-toolbar{height:43px;min-height:43px;display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);background:var(--surface)}
+.reviewer-mode-identity{display:flex;align-items:baseline;gap:9px;min-width:0}
+.reviewer-mode-identity>b{max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reviewer-mode-participant{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.reviewer-view-control{position:relative;flex:none}
+.reviewer-view-control .view-popover{right:0;left:auto}
+.reviewer-mode-scroller{min-height:0;flex:1;overflow:auto;padding:36px 28px 110px;scrollbar-gutter:stable}
+.reviewer-paper{min-height:calc(100vh - 150px);background:var(--surface);box-shadow:0 1px 5px rgba(0,0,0,.08);padding:76px 86px 120px;font-family:var(--reviewer-font-family,Arial,sans-serif);font-size:var(--reviewer-font-size,14px);line-height:1.72;}
+.reviewer-chapter{margin:0 0 46px}
+.reviewer-chapter:last-child{margin-bottom:0}
+.reviewer-chapter-title{font-size:22px;line-height:1.25;margin:0 0 34px}
+.reviewer-scene-title{font-size:12px;color:var(--muted);margin:24px 0 8px;padding-top:9px;border-top:1px solid var(--line);font-weight:normal}
+.reviewer-block{min-height:1.72em;white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 .48em}
+.reviewer-block[data-semantic-style^="heading"]{font-weight:bold;margin:1.5em 0 .7em}
+.reviewer-block[data-semantic-style="heading2"]{font-size:1.15em}
+.reviewer-image{display:block;max-width:100%;height:auto;margin:18px auto}
+.reviewer-empty{color:var(--muted);text-align:center;padding:80px 20px}
+.review-overview-participant-open{flex:none;padding:4px 8px;font-size:11px}
+@media(max-width:700px){.reviewer-mode-scroller{padding:18px 12px 80px}.reviewer-paper{padding:44px 28px 80px}.reviewer-mode-participant{display:none}}
+
+
+/* 8.9.0+ — frozen-snapshot review annotations. */
+.review-selection-toolbar{position:fixed;display:flex;align-items:center;gap:4px;padding:4px;border:1px solid var(--line);border-radius:7px;box-shadow:0 8px 24px rgba(0,0,0,.16);}
+.review-selection-toolbar.hidden{display:none}
+.review-selection-toolbar button{padding:5px 9px;font-size:11.5px}
+::highlight(review-highlights){background:rgba(250,205,74,.42)}
+::highlight(review-comments){background:rgba(111,165,255,.33);text-decoration:underline;text-decoration-color:rgba(76,125,210,.75);text-decoration-thickness:1px;text-underline-offset:2px}
+::highlight(review-suggestions){background:rgba(170,125,255,.22);text-decoration:underline;text-decoration-style:dashed;text-decoration-color:rgba(123,78,205,.82);text-underline-offset:3px}
+.review-feedback-list{display:flex;flex-direction:column;gap:8px}
+.review-feedback-item{padding:10px 11px;}
+.review-feedback-item-head{gap:8px;margin-bottom:6px;}
+.review-feedback-item-head>b{font-size:12px}
+.review-feedback-item-head>span{font-size:10.5px;color:var(--muted)}
+.review-feedback-quote{font-size:11.5px;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}
+.review-feedback-body{margin-top:7px;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+#reviewCommentBody{width:100%;resize:vertical}
+
+/* 8.10.0 — suggestions. */
+.review-suggestion-operation{font-size:10.5px;color:var(--muted);letter-spacing:.04em;}
+.review-suggestion-proposed{margin-top:7px;padding:7px 8px;border-left:2px solid var(--line);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.review-feedback-actions{gap:6px;margin-top:8px;}.review-feedback-actions button{padding:4px 8px;font-size:11px}
+#reviewSuggestionText{width:100%;resize:vertical}
+
+
+/* 8.11.0 — independent open-text Review Feedback forms. */
+.reviewer-feedback-form{margin:24px auto 0;background:var(--surface);box-shadow:0 1px 5px rgba(0,0,0,.08);padding:34px 42px 40px;}
+.reviewer-feedback-form.hidden{display:none}
+.reviewer-feedback-form h2{font-size:16px;margin:0 0 8px}
+.reviewer-feedback-form>p{color:var(--muted);font-size:12px;margin:0 0 24px}
+.reviewer-feedback-question{display:flex;flex-direction:column;gap:7px;margin:0 0 20px}
+.reviewer-feedback-question label{font-size:12px;font-weight:600}
+.reviewer-feedback-question textarea,.reviewer-general-feedback{width:100%;resize:vertical;min-height:88px}
+.reviewer-feedback-required{color:var(--muted);font-weight:normal;font-size:10.5px}
+.reviewer-feedback-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.review-question-list{display:flex;flex-direction:column;gap:7px}
+.review-question-row{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)}
+.review-question-row:last-child{border-bottom:0}
+.review-question-copy{min-width:0;flex:1;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.review-question-meta{font-size:10.5px;color:var(--muted);margin-top:2px}
+.review-feedback-form-card{display:flex;flex-direction:column;gap:8px}
+.review-feedback-answer{font-size:12px}
+.review-feedback-answer b{display:block;font-size:11px;margin-bottom:3px}
+.review-feedback-answer div{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:700px){.reviewer-feedback-form{padding:26px 22px 32px}}
+
+/* 8.12 — Review processing + lifecycle */
+.review-overview-participant-name{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
+.review-overview-participant-name small,.review-participant-row-name small{display:block;color:var(--muted);font-size:10px;font-weight:400;line-height:1.25}
+.review-participant-row-name{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.review-feedback-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:9px}
+.review-feedback-items{gap:8px;}
+.review-feedback-focus{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:700px){.review-feedback-filters{grid-template-columns:1fr}}
+
+/* 8.13.1 — whole-window BreadReview drop target. */
+.breadreview-drop-overlay{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:28px;background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:blur(2px);pointer-events:none}
+.breadreview-drop-card{min-width:min(420px,calc(100vw - 48px));padding:28px 34px;border:2px dashed color-mix(in srgb,var(--accent) 72%,var(--line));border-radius:14px;background:color-mix(in srgb,var(--surface) 96%,transparent);box-shadow:0 18px 50px rgba(0,0,0,.16);display:flex;flex-direction:column;align-items:center;gap:7px;color:var(--text)}
+.breadreview-drop-card b{font-size:16px}.breadreview-drop-card span{font-size:12px;color:var(--muted)}
+
+
+/* 8.15.0 — Reviews progressive-disclosure visual language. */
+
+.review-overview{width:min(780px,calc(100% - 44px));margin:30px auto 80px;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible}
+.review-overview-meta{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:10.5px;min-height:18px;margin:0 2px 7px}
+.review-feedback-workspace{padding-top:12px;border-top:1px solid var(--line)}
+.review-draft-space{min-height:210px;display:grid;place-items:center;color:var(--muted);font-size:12px;border-top:1px solid var(--line)}
+.review-snapshot-note{margin-top:14px;color:var(--muted);font-size:10.5px;line-height:1.4}
+@media(max-width:700px){.review-overview{width:calc(100% - 24px);margin-top:18px}.review-draft-space{min-height:150px}}
+
+/* Review feedback reads like content, not a dashboard of cards. */
+
+.review-feedback-items{gap:0}
+.review-feedback-item{padding:12px 2px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
+.review-feedback-item:last-child{border-bottom:0}
+.review-feedback-actions{gap:4px}
+.review-feedback-actions button,.review-selection-toolbar button,.reviewer-feedback-actions button{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:5px;padding:5px 8px}
+.review-feedback-actions button:hover,.review-selection-toolbar button:hover,.reviewer-feedback-actions button:hover{background:var(--surface2);border-color:var(--line2)}
+.review-feedback-actions [data-review-suggestion-accept]{border-color:var(--text);background:var(--text);color:var(--surface)}
+.review-feedback-actions [data-review-suggestion-reject]{background:transparent}
+.review-suggestion-proposed{background:var(--surface2);border-left-color:var(--accent);border-radius:0 4px 4px 0}
+
+/* 8.16.8 — Review feedback is visually grouped without becoming dashboard-heavy. */
+.review-feedback-list{gap:0}
+.review-feedback-items{display:flex;flex-direction:column;gap:9px}
+.review-feedback-item{
+  padding:11px 12px;border:1px solid var(--line);border-radius:7px;
+  background:var(--surface);box-shadow:0 1px 1px color-mix(in srgb,var(--text) 3%,transparent);
+}
+.review-feedback-item:last-child{border-bottom:1px solid var(--line)}
+.review-feedback-item:hover{border-color:var(--line2)}
+.review-feedback-item-head{margin-bottom:7px}
+.review-feedback-form-card{gap:0}
+.review-feedback-form-lines{display:flex;flex-direction:column;margin:1px -4px -3px}
+.review-feedback-answer{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start;padding:9px 4px;border-top:1px solid var(--line)}
+.review-feedback-answer:first-child{border-top:0}
+.review-feedback-answer-copy{min-width:0;font-size:12px}
+.review-feedback-answer-copy b{display:block;font-size:11px;margin-bottom:3px}
+.review-feedback-answer-copy div{white-space:pre-wrap;overflow-wrap:anywhere}
+.review-feedback-line-actions{display:flex;align-items:flex-start;justify-content:flex-end;min-width:0}
+.review-feedback-line-actions button{border:0;background:transparent;color:var(--muted);padding:3px 5px;border-radius:4px;font-size:10.5px;white-space:nowrap}
+.review-feedback-line-actions button:hover{background:var(--surface2);color:var(--text)}
+@media(max-width:620px){.review-feedback-answer{grid-template-columns:1fr}.review-feedback-line-actions{justify-content:flex-start}}
+
+
+/* Review configuration dialogs keep the same low-noise row language as Manuscript. */
+.review-permission-grid{border:0;border-radius:0;background:transparent;padding:0;gap:3px 8px}
+.field .review-permission-option{padding:6px 5px}
+.review-scope-picker{border:0;border-radius:0;background:transparent;padding:2px 0;margin-top:2px}
+.review-scope-option{padding:6px 5px}
+.review-participant-list,.review-manager-list{gap:0}
+.review-participant-row,.review-manager-row{min-height:36px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;padding:4px 2px}
+.review-participant-row:last-child,.review-manager-row:last-child{border-bottom:0}
+.review-participant-row:hover,.review-manager-row:hover{background:var(--surface2)}
+.review-manager-hint{margin:0 0 8px;color:var(--muted);font-size:11px;line-height:1.45}
+.review-manager-empty{padding:14px 4px;color:var(--muted);font-size:12px;text-align:center}
+.review-manager-add{margin-top:8px!important}
+.review-manager-main{min-width:0;flex:1;border:0;background:transparent;color:var(--text);text-align:left;padding:5px 6px;border-radius:4px}
+.review-manager-main:not(:disabled):hover{background:var(--accent-soft)}
+.review-manager-main:disabled{opacity:1;cursor:default}
+.review-manager-main span,.review-manager-main small{display:block;overflow:hidden;text-overflow:ellipsis}
+.review-manager-main span{white-space:normal;font-size:12px;line-height:1.35}
+.review-manager-main small{margin-top:2px;color:var(--muted);font-size:10px}
+
+/* Reviewer Mode should never fall back to OS-looking controls. */
+.review-selection-toolbar{background:var(--surface)}
+
+/* 8.15.1 — Reviews follow the Manuscript toolbar + right-panel grammar. */
+.review-toolbar-button{position:relative;color:var(--text)}
+.review-toolbar-button svg{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.review-toolbar-button.active{background:var(--accent-soft);border-color:var(--accent)}
+
+
+.review-panel-action-row{display:grid;grid-template-columns:minmax(0,1fr) 32px;gap:6px;align-items:center}
+.review-panel-action-row.review-split-button{gap:0}
+.review-split-button .review-split-main{border-radius:5px 0 0 5px!important;}
+.review-split-more{height:32px;min-width:32px;border:1px solid var(--line);border-left:0;border-radius:0 5px 5px 0;background:var(--surface2);color:var(--text);}
+.review-split-more:hover{background:var(--accent-soft);border-color:var(--line2)}
+.review-panel-action-row .full-soft{width:100%;min-width:0}
+
+
+
+/* 8.16.2 — Review tools use the Manuscript right-panel contract component-for-component. */
+.review-markers-panel,.review-participants-panel,.review-questions-panel,.review-state-panel{
+  min-width:290px;display:flex;flex-direction:column;overflow:hidden;
+}
+.review-markers-panel .panel-head,.review-participants-panel .panel-head,.review-questions-panel .panel-head,.review-state-panel .panel-head{
+  flex:none;background:var(--surface);position:relative;z-index:2;
+}
+.review-markers-panel .panel-head .ui-close-button,.review-participants-panel .panel-head .ui-close-button,.review-questions-panel .panel-head .ui-close-button,.review-state-panel .panel-head .ui-close-button{
+  flex:none!important;display:grid!important;
+}
+.review-tool-panel-body{overflow-y:auto;overflow-x:hidden;padding:9px;}
+.review-tool-panel-section{padding:0 0 11px;margin:0 0 10px;border-bottom:1px solid var(--line)}
+.review-tool-panel-section:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+.review-tool-panel-label{display:block;margin:0 0 5px;color:var(--muted);font-size:11px}
+.review-tool-panel-list{display:flex;flex-direction:column;gap:7px}
+.review-tool-panel-row{display:flex;align-items:stretch;min-height:36px;border:1px solid var(--line);border-radius:6px;background:var(--surface);overflow:hidden}
+.review-tool-panel-row:hover{border-color:var(--line2);background:var(--surface2)}
+.review-tool-panel-main{min-width:0;flex:1;border:0!important;background:transparent!important;color:var(--text);text-align:left;padding:7px 9px!important;border-radius:0!important;box-shadow:none!important}
+.review-tool-panel-main>span,.review-tool-panel-main>small{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.review-tool-panel-main>span{font-size:12px;white-space:nowrap}
+.review-tool-panel-main>small{margin-top:2px;color:var(--muted);font-size:10px;white-space:nowrap}
+.review-tool-panel-more{width:32px;min-width:32px;border:0!important;border-left:1px solid var(--line)!important;background:transparent!important;color:var(--muted);border-radius:0!important;padding:0!important;box-shadow:none!important;font-size:17px;line-height:1;display:grid;place-items:center}
+.review-tool-panel-more:hover{background:color-mix(in srgb,var(--text) 5%,transparent)!important;color:var(--text)}
+.review-tool-panel-footer{padding-top:9px}
+.review-tool-panel-footer .full-soft{width:100%}
+.review-panel-empty{margin:auto;padding:24px 12px;color:var(--muted);text-align:center;display:flex;flex-direction:column;gap:7px;align-items:center}
+.review-panel-empty b{color:var(--text);font-size:13px}.review-panel-empty span{font-size:11px;line-height:1.4}.review-panel-empty button{border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:7px 10px}
+.review-panel-empty button:hover{background:var(--surface2);border-color:var(--line2)}
+.review-state-current{padding:10px 11px;border:1px solid var(--line);border-radius:6px;background:var(--surface2);margin-bottom:9px}
+.review-state-current small{display:block;color:var(--muted);font-size:10px;margin-bottom:2px}.review-state-current b{font-size:13px}
+.review-state-actions{display:flex;flex-direction:column;gap:7px}.review-state-actions button{width:100%}
+.review-state-meta{margin-top:10px;color:var(--muted);font-size:10.5px;line-height:1.45}
+.review-item-hover-card{width:min(300px,calc(100vw - 16px))}
+.review-item-copy{min-width:0}
+
+
+/* 8.16.2 — Reviews reuse the established Canvas/Manuscript layout contract. */
+.review-rail-head{
+  height:43px;min-height:43px;padding:6px 8px 6px 7px;
+  border-bottom:1px solid var(--line);
+  text-transform:uppercase;letter-spacing:.04em;
+}
+.review-sidebar.collapsed .review-rail-head{justify-content:center;padding-inline:5px}
+.review-sidebar.collapsed .review-rail-head .nav-section-label,
+.review-sidebar.collapsed .review-rail-head .nav-head-actions{display:none}
+.review-sidebar.collapsed #toggleReviewRail{width:38px;height:31px}
+
+.review-markers-panel,.review-participants-panel,.review-questions-panel,.review-state-panel{
+  width:290px;min-width:255px;flex:0 0 290px;font-size:14px;
+}
+.review-tool-panel-body{
+  display:flex;flex-direction:column;flex:1 1 auto;min-height:0;
+  overflow:hidden;padding:0;
+}
+.review-panel-fixed{
+  flex:none;padding:9px;border-bottom:1px solid var(--line);background:var(--surface);
+}
+.review-panel-fixed>input[type="search"]{
+  width:100%;border:1px solid var(--line);background:var(--surface);color:var(--text);
+  border-radius:5px;padding:7px;outline:0;margin:0 0 7px;
+}
+.review-panel-fixed>input[type="search"]:focus{border-color:var(--accent)}
+.review-panel-scroll{
+  flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
+  padding:9px;scrollbar-gutter:auto;
+}
+.review-note-visibility{margin:0 0 9px!important;padding:2px 1px 8px!important;min-height:32px;display:flex!important;align-items:center!important;gap:8px!important;line-height:1.25}
+.review-note-visibility input{width:auto!important;height:auto!important;margin:0!important;flex:0 0 auto;align-self:center}
+.review-note-visibility span{min-width:0;flex:1;display:block}
+
+.review-tool-panel-list.review-panel-scroll{gap:5px}
+.review-questionnaire-attach{
+  flex:none;border:0!important;border-left:1px solid var(--line)!important;background:transparent!important;
+  color:var(--muted);border-radius:0!important;padding:0 8px!important;font-size:10.5px;box-shadow:none!important;
+}
+.review-questionnaire-attach:hover,.review-questionnaire-attach.active{background:var(--accent-soft)!important;color:var(--text)}
+
+/* Keep large scopes inside their own selector. The dialog remains stable. */
+.review-scope-picker{max-height:152px!important;overflow-y:auto!important;overflow-x:hidden;scrollbar-gutter:stable}
+.review-details-form{min-width:0}
+
+/* Reviewer Mode follows pageless Manuscript Focus rather than rendering a paper card. */
+.reviewer-mode-scroller{padding:30px 28px 110px;background:var(--bg)}
+.reviewer-paper{
+  width:min(840px,100%);min-height:0;margin:0 auto;background:transparent;box-shadow:none;
+  padding:30px 0 72px;
+}
+.reviewer-feedback-form{
+  width:min(840px,100%);margin:0 auto;padding:32px 0 48px;background:transparent;box-shadow:none;
+  border-top:1px solid var(--line);
+}
+.review-selection-toolbar{z-index:1400}
+.review-selection-toolbar button{
+  height:29px;min-width:29px;border:0!important;border-radius:4px!important;
+  background:transparent!important;padding:4px 7px!important;font-size:inherit;
+}
+.review-selection-toolbar button:hover,.review-selection-toolbar button:focus-visible{background:var(--accent-soft)!important;outline:0}
+
+/* Desktop/tablet behavior is intentionally identical to Manuscript: panels push.
+   Only genuinely narrow layouts overlay. */
+@media (min-width:641px){
+  .review-markers-panel,.review-participants-panel,.review-questions-panel,.review-state-panel{
+    position:static!important;right:auto!important;top:auto!important;bottom:auto!important;
+    z-index:22;box-shadow:none!important;flex:0 0 290px;width:290px;min-width:255px;
+  }
+  .review-workspace-shell{min-width:0;flex:1 1 auto}
+  .review-toolbar{min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+  .review-toolbar>*{flex-shrink:0}
+  .review-toolbar>.toolbar-spacer{flex:1 1 auto;min-width:8px}
+}
+@media(max-width:640px){
+  .review-markers-panel,.review-participants-panel,.review-questions-panel,.review-state-panel{
+    position:absolute!important;right:0!important;top:0!important;bottom:0!important;
+    z-index:35;box-shadow:var(--shadow);width:min(290px,100%);min-width:0;max-width:100%;flex:none;
+  }
+  .review-participants-panel .panel-head,
+  .review-questions-panel .panel-head,.review-state-panel .panel-head{
+    position:sticky;top:0;flex:none;z-index:4;
+  }
+  .reviewer-mode-scroller{padding:18px 16px 80px}
+  .reviewer-paper{padding:24px 0 56px}
+  .reviewer-feedback-form{padding:26px 0 36px}
+}
+
+/* Review round/history rows use the same quiet row language as other Breadmaker panels. */
+.review-round-list,.review-history-list{display:flex;flex-direction:column;gap:2px}
+.review-history-row{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;border:0;background:transparent;color:var(--text);text-align:left;padding:7px 6px;border-radius:4px}
+.review-history-row:hover{background:var(--surface2)}
+.review-history-row>span:first-child{min-width:0;display:flex;flex-direction:column;gap:2px}
+.review-history-row b{font-size:12px;font-weight:600}.review-history-row small{font-size:10px;color:var(--muted)}
+.review-history-row>span:last-child{color:var(--muted);font-size:16px}
+.review-history-label{margin-top:16px}
+.review-history-event{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:6px;color:var(--text);font-size:11.5px}
+.review-history-event small{color:var(--muted);font-size:9.5px;white-space:nowrap}
+
+
+/* 8.16.2 — Review UI corrections reuse established Breadmaker controls. */
+.modal-card:has(.questionnaire-editor){width:min(600px,calc(100% - 30px));max-height:min(680px,calc(100% - 30px));overflow:auto}
+.modal-card:has(.questionnaire-editor) #modalBody{padding:14px}
+.questionnaire-editor{display:block}
+.questionnaire-questions-field{margin-bottom:0!important}
+.questionnaire-question-area{margin:10px 0 0}
+.questionnaire-question-area>label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+.questionnaire-question-edit-list{max-height:190px;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;display:flex;flex-direction:column;gap:7px;padding:2px 2px 3px 0}
+.questionnaire-question-edit-row{display:grid;grid-template-columns:minmax(0,1fr) 28px;gap:6px;align-items:start}
+.questionnaire-question-edit-row textarea{min-width:0;width:100%;resize:vertical}
+.questionnaire-question-remove{width:28px;height:28px;min-width:28px;padding:0!important;display:grid!important;place-items:center;font-size:18px;line-height:1;margin-top:1px}
+.questionnaire-questions-field>#questionnaireAddQuestion{margin-top:8px}
+.review-filter-button{min-width:0;width:100%;height:31px;display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--line);border-radius:5px;background:var(--surface);color:var(--text);padding:0 8px;font-size:11px;text-align:left;cursor:pointer}
+.review-filter-button:hover{background:var(--surface2);border-color:var(--line2)}
+.review-filter-button:focus-visible{outline:1px solid var(--accent);outline-offset:1px}
+.review-filter-button>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.review-filter-chevron{flex:none;color:var(--muted);font-size:10px}
+
+/* 8.16.2 — Review annotation parity + repaired Review-cycle population. */
+.review-cycle-populate{display:flex;flex-direction:column;gap:10px;max-height:min(62vh,560px);overflow-y:auto;overflow-x:hidden;padding-right:4px;scrollbar-gutter:stable}
+.review-cycle-populate>.small-muted{margin:0;line-height:1.45}
+.review-populate-presets{display:flex;flex-direction:column;gap:7px}
+.review-populate-preset{display:flex;flex-direction:column;align-items:stretch;gap:7px;width:100%;padding:11px 12px;text-align:left;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--text);cursor:pointer}
+.review-populate-preset:hover{background:var(--surface2);border-color:var(--line2)}
+.review-populate-preset:focus-visible{outline:1px solid var(--accent);outline-offset:1px}
+.review-populate-preset:disabled{opacity:.55;cursor:default}
+.review-populate-preset-copy{display:flex;flex-direction:column;gap:2px}
+.review-populate-preset-copy b{font-size:12px;font-weight:700}
+.review-populate-preset-copy small{font-size:10.5px;line-height:1.42;color:var(--muted);font-weight:400}
+.review-populate-preset-contents{display:flex;align-items:center;flex-wrap:wrap;gap:4px 5px;color:var(--muted);font-size:9.5px;line-height:1.3}
+.review-populate-preset-contents span{padding:2px 5px;border:1px solid var(--line);border-radius:999px;background:var(--surface2);color:var(--text)}
+.review-populate-preset-contents i{font-style:normal;color:var(--muted)}
+
+
+
+
+
+
+
+
+
+.reviewer-block{position:relative}
+.reviewer-markup-gutter{left:-27px}
+.reviewer-comment-gutter-marker{display:grid!important}
+.reviewer-comment-preview{display:flex;flex-direction:column;align-items:flex-start;gap:3px;cursor:default}
+.reviewer-comment-preview small{display:block;color:var(--muted);font-size:9.5px;font-weight:600}
+.reviewer-comment-preview span{display:block;white-space:pre-wrap;overflow-wrap:anywhere}
+.reviewer-bookmark-marker{display:grid!important}
+#reviewerBookmarkBtn.hidden{display:none!important}
+#reviewerBookmarkBtn.has-bookmark svg{fill:color-mix(in srgb,currentColor 18%,transparent)}
+#reviewBookmarkSelection svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round}
+
+@media(max-width:700px){
+  .reviewer-markup-gutter{left:-22px}
+  .reviewer-comment-gutter-marker{left:-29px}
+  .reviewer-bookmark-marker{left:-18px}
+}
+
+
+/* 8.16.2 — top-bar history controls keep pointer/focus events so Breadmaker tooltips work even when unavailable. */
+.global-history-button.is-disabled{opacity:.45;cursor:default}
+.global-history-button.is-disabled:hover{background:transparent}
+
+/* 8.16.2 — Review cycle population is a contained Breadmaker choice modal, not a loose form. */
+.modal-card:has(.review-cycle-populate){width:min(540px,calc(100% - 30px));overflow:hidden}
+#modalBody:has(.review-cycle-populate){min-height:0;overflow:hidden}
+.review-cycle-populate{min-height:0}
+
+
+
+
+/* 8.16.9 — Reviews: integrated commands, questionnaire presets, writer feedback reader. */
+.review-panel-action-row.review-split-button{position:relative;display:block}
+.review-split-button .review-split-main{width:100%;height:32px;border-radius:5px!important;padding-right:34px!important}
+.review-split-more{position:absolute;right:3px;top:3px;width:26px;min-width:26px;height:26px;padding:0;border:0!important;border-radius:4px!important;background:transparent!important;color:var(--muted);display:grid;place-items:center;font-size:17px;line-height:1;box-shadow:none!important}
+.review-split-more:hover{background:var(--accent-soft)!important;color:var(--text)}
+.review-command-button{display:inline-flex;align-items:center;gap:5px;min-height:27px;border:1px solid var(--line)!important;background:var(--surface)!important;color:var(--text)!important;border-radius:5px!important;padding:5px 8px!important;font-size:10.5px;line-height:1.1;white-space:nowrap;box-shadow:none!important}
+.review-command-button:hover{background:var(--surface2)!important;border-color:var(--line2)!important}
+.review-command-button.primary{background:var(--text)!important;border-color:var(--text)!important;color:var(--surface)!important}
+.review-command-button.primary:hover{opacity:.9}
+.review-command-icon{width:13px;height:13px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.review-feedback-actions{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:9px}
+.review-feedback-actions button{padding:5px 8px}
+.review-feedback-line-actions{padding-top:1px}
+.review-feedback-line-actions .review-command-button{min-height:25px;padding:4px 7px!important}
+.review-overview-meta{justify-content:space-between;gap:12px}
+.review-overview-meta-copy{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap}
+.review-meta-separator{color:var(--line2)}
+.review-read-feedback{flex:none;background:var(--surface2)!important;border-color:var(--line)!important;font-weight:600}
+.review-read-feedback:hover{background:var(--accent-soft)!important;border-color:var(--line2)!important}
+.questionnaire-template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.questionnaire-template-card{border:1px solid var(--line);border-radius:7px;background:var(--surface);padding:11px 12px;min-width:0}
+.questionnaire-template-head{display:flex;align-items:flex-start;gap:10px;justify-content:space-between;margin-bottom:8px}
+.questionnaire-template-head>div{min-width:0}
+.questionnaire-template-head b,.questionnaire-template-head small{display:block}
+.questionnaire-template-head b{font-size:12.5px}
+.questionnaire-template-head small{margin-top:3px;color:var(--muted);font-size:10.5px;line-height:1.35}
+.questionnaire-template-use{flex:none;border:1px solid var(--line);background:var(--surface2);border-radius:5px;padding:5px 7px;font-size:10.5px}
+.questionnaire-template-use:hover{background:var(--accent-soft);border-color:var(--line2)}
+.questionnaire-template-questions{margin:0;padding:8px 0 0 20px;border-top:1px solid var(--line);color:var(--muted);font-size:10.5px;line-height:1.38}
+.questionnaire-template-questions li+li{margin-top:5px}
+.modal-card:has(.questionnaire-template-grid){width:min(900px,calc(100% - 30px));max-height:min(780px,calc(100% - 30px));overflow:auto}
+.writer-feedback-summary{width:min(840px,100%)}
+.writer-feedback-responses{display:flex;flex-direction:column;gap:10px}
+.writer-feedback-response{border:1px solid var(--line);border-radius:7px;background:var(--surface2);overflow:hidden}
+.writer-feedback-response-head{padding:9px 11px;border-bottom:1px solid var(--line);font-size:12px}
+.writer-feedback-response-line{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;padding:10px 11px;border-top:1px solid var(--line)}
+.writer-feedback-response-head+.writer-feedback-response-line{border-top:0}
+.writer-feedback-response-line>div{min-width:0}
+.writer-feedback-response-line small{display:block;color:var(--muted);font-size:9.5px;margin-bottom:2px}
+.writer-feedback-response-line b{display:block;font-size:11px;line-height:1.35}
+.writer-feedback-response-line p{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.45}
+@media(max-width:760px){.questionnaire-template-grid{grid-template-columns:1fr}.review-overview-meta{align-items:flex-start;flex-direction:column}.writer-feedback-response-line{grid-template-columns:1fr}}
+.reviewer-suggestion-gutter-marker{display:grid!important}
+.reviewer-suggestion-gutter-marker .note-gutter-pencil{font-size:13px}
+@media(max-width:700px){.reviewer-suggestion-gutter-marker,.reviewer-comment-gutter-marker{left:-29px}.reviewer-suggestion-gutter-marker.reviewer-gutter-collision{left:-58px}}
+
+
+/* 8.17.7 — Reviewer Mode marker vocabulary, live feedback fields, and aligned annotation gutters. */
+.reviewer-feedback-input{
+  width:100%;
+  min-height:34px;
+  max-height:78px;
+  resize:none;
+  overflow-y:hidden;
+  padding:7px 9px;
+  border:1px solid var(--line);
+  border-radius:5px;
+  background:var(--surface2);
+  color:var(--text);
+  font:inherit;
+  font-size:12px;
+  line-height:1.45;
+  outline:none;
+  box-shadow:none;
+  transition:border-color .12s ease,background .12s ease;
+}
+.reviewer-feedback-input:hover{border-color:var(--line2)}
+.reviewer-feedback-input:focus{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 16%,transparent)}
+.reviewer-feedback-input:disabled{opacity:.58;cursor:default}
+.reviewer-feedback-question textarea,.reviewer-general-feedback{min-height:34px}
+
+.review-marker-grid{display:flex;flex-direction:column;gap:3px;max-height:184px;overflow:auto;padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--surface2)}
+.review-marker-option{display:flex;align-items:center;gap:9px;min-height:31px;padding:5px 7px;border-radius:4px;cursor:pointer;color:var(--text);font-size:11px}
+.review-marker-option:hover{background:var(--surface)}
+.review-marker-option input{margin:0;flex:none}
+.review-marker-option .color-chip{width:12px;height:12px;border-radius:3px;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.13)}
+.review-marker-option span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.review-marker-empty{padding:7px 8px}
+
+.reviewer-comment-gutter-marker,.reviewer-suggestion-gutter-marker{left:-66px;display:grid!important}
+.reviewer-suggestion-gutter-marker.reviewer-gutter-collision{left:-96px}
+.reviewer-highlight-swatch{background:var(--surface)}
+.reviewer-highlight-hover-dot{background:var(--surface)}
+@media(max-width:700px){
+  .reviewer-comment-gutter-marker,.reviewer-suggestion-gutter-marker{left:-29px}
+  .reviewer-suggestion-gutter-marker.reviewer-gutter-collision{left:-58px}
+}
+.review-feedback-marker-chip{width:8px;height:18px;border-radius:999px;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.13)}
+
+/* 8.17.7 — Review Marker library + quiet feedback commands. */
+.review-markers-panel .marker-list{padding-top:10px}
+.review-markers-panel .marker-use{min-height:34px}
+.review-marker-populate-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.review-marker-preset-card{display:flex;flex-direction:column;align-items:stretch;text-align:left;gap:7px;border:1px solid var(--line);border-radius:7px;background:var(--surface);padding:10px 11px}
+.review-marker-preset-card:hover{background:var(--surface2);border-color:var(--line2)}
+.review-marker-preset-card b{font-size:12px}.review-marker-preset-card small{font-size:10.5px;color:var(--muted);line-height:1.35}
+.review-marker-preset-list{display:flex;flex-wrap:wrap;gap:4px}.review-marker-preset-list span{font-size:10px;padding:2px 5px;border-radius:999px;background:var(--surface2);border:1px solid var(--line)}
+.review-marker-import-section{margin-top:12px;padding-top:11px;border-top:1px solid var(--line)}
+.review-marker-import-list{display:flex;flex-direction:column;gap:3px;max-height:200px;overflow:auto;margin-top:7px}
+.review-marker-import-row{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:5px;font-size:11px}.review-marker-import-row:hover{background:var(--surface2)}
+.review-marker-import-row input{margin:0}.review-marker-import-row .color-chip{width:12px;height:12px;border-radius:3px;flex:none}
+.review-feedback-item-head{display:flex;align-items:center;gap:6px}.review-feedback-item-head .review-feedback-head-spacer{flex:1}
+.review-feedback-person-link{border:0;background:transparent;padding:0;color:var(--text);font:inherit;font-weight:600;text-align:left;border-radius:3px}.review-feedback-person-link:hover{text-decoration:underline}
+.review-feedback-more,.review-feedback-line-more{width:26px;height:26px;min-width:26px;padding:0!important;display:grid!important;place-items:center;border:0!important;background:transparent!important;color:var(--muted);border-radius:4px!important;font-size:17px;line-height:1}
+.review-feedback-more:hover,.review-feedback-line-more:hover{background:var(--surface2)!important;color:var(--text)}
+.review-feedback-actions{display:none!important}
+.review-question-nav{display:flex;align-items:center;gap:4px;margin-left:auto}.review-question-nav button{width:26px;height:26px;padding:0;border:0;background:transparent;border-radius:4px;color:var(--muted)}.review-question-nav button:hover{background:var(--surface2);color:var(--text)}.review-question-nav span{min-width:42px;text-align:center;font-size:10.5px;color:var(--muted)}
+.review-feedback-anchor-focus{outline:2px solid var(--accent);outline-offset:5px;border-radius:2px}
+.writer-feedback-response-head{display:flex;align-items:center;gap:8px}.writer-feedback-response-head .review-question-nav{margin-left:auto}
+.writer-feedback-response-line{position:relative}.writer-feedback-response-line .review-feedback-line-more{align-self:start}
+.reviewer-suggestion-inline-actions{display:flex;gap:5px;margin-top:7px}.reviewer-suggestion-inline-actions button{font-size:10px;padding:4px 7px;border:1px solid var(--line);background:var(--surface);border-radius:4px}.reviewer-suggestion-inline-actions button:first-child{background:var(--text);color:var(--surface);border-color:var(--text)}
+@media(max-width:720px){.review-marker-populate-grid{grid-template-columns:1fr}}
+
+/* 8.17.7 — Review Marker empty-state parity and compact feedback text previews. */
+.review-markers-panel .marker-list.empty{display:flex;align-items:center;justify-content:center;min-height:0;flex:1}
+.review-marker-empty-actions{margin-top:4px;display:flex;align-items:center;justify-content:center;gap:5px}
+.review-marker-empty-actions>button:first-child{border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:7px 10px}
+.review-marker-empty-actions>button:first-child:hover{background:var(--surface2);border-color:var(--line2)}
+.review-marker-empty-more{width:28px;height:28px;min-width:28px;padding:0!important;display:grid!important;place-items:center}
+.review-marker-attached-indicator{width:16px;flex:none;text-align:center;color:var(--muted);font-size:11px;opacity:0}
+.review-marker-attached-indicator.visible{opacity:.72}
+.review-feedback-preview{position:relative;margin-top:2px;padding:8px 9px;border:1px solid var(--line);border-radius:6px;background:var(--surface2);overflow:hidden}
+.review-feedback-preview-copy{font-size:11.5px;line-height:1.45;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere;max-height:calc(1.45em * 4);overflow:hidden}
+.review-feedback-preview-copy.overflowing{-webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 68%,transparent 100%);mask-image:linear-gradient(to bottom,#000 0%,#000 68%,transparent 100%)}
+.review-feedback-preview + .review-feedback-body,.review-feedback-preview + .review-suggestion-proposed{margin-top:9px}
+
+/* 8.17.9 — Feedback-card command placement and clearer suggestion semantics. */
+.review-feedback-item{position:relative}
+.review-feedback-item>.review-feedback-more{
+  position:absolute;
+  top:7px;
+  right:7px;
+  z-index:2;
+}
+.review-feedback-item-head{
+  padding-right:31px;
+  min-height:26px;
+  flex-wrap:wrap;
+  row-gap:4px;
+}
+.review-suggestion-operation{
+  display:inline-flex;
+  align-items:center;
+  min-height:19px;
+  padding:2px 6px;
+  margin-left:2px;
+  border:1px solid var(--line2);
+  border-radius:999px;
+  background:var(--surface2);
+  color:var(--text);
+  font-size:9px;
+  font-weight:750;
+  line-height:1;
+  letter-spacing:.065em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.review-feedback-suggestion.operation-delete .review-suggestion-operation{
+  border-color:color-mix(in srgb,var(--danger) 28%,var(--line));
+  background:color-mix(in srgb,var(--danger) 6%,var(--surface2));
+  color:color-mix(in srgb,var(--danger) 72%,var(--text));
+}
+.review-suggestion-delete-copy{
+  color:color-mix(in srgb,var(--danger) 68%,var(--muted));
+  text-decoration-line:line-through;
+  text-decoration-thickness:1.25px;
+  text-decoration-color:color-mix(in srgb,var(--danger) 58%,transparent);
+}
+.review-suggestion-proposed-replace{
+  position:relative;
+  padding-left:25px;
+  border:1px solid color-mix(in srgb,var(--accent) 24%,var(--line));
+  border-left:2px solid var(--accent);
+  background:color-mix(in srgb,var(--accent) 5%,var(--surface2));
+  border-radius:5px;
+}
+.review-suggestion-proposed-replace::before{
+  content:'→';
+  position:absolute;
+  left:9px;
+  top:7px;
+  color:var(--accent);
+  font-weight:750;
+}
+/* Gutter controls are UI, not prose: isolate their paint and text from Review
+   CSS Highlight ranges even while they sit inside the positioned reviewer block. */
+.reviewer-markup-gutter,.reviewer-comment-gutter-marker,.reviewer-suggestion-gutter-marker,.reviewer-bookmark-marker{
+  isolation:isolate;
+}
+
+/* 8.17.9 — Review status tags, form spacing, and Bread Review export polish. */
+.review-resolved-tag{
+  display:inline-flex;
+  align-items:center;
+  min-height:19px;
+  padding:2px 6px;
+  border:1px solid color-mix(in srgb,#2f8f57 32%,var(--line));
+  border-radius:999px;
+  background:color-mix(in srgb,#2f8f57 9%,var(--surface2));
+  color:color-mix(in srgb,#2f8f57 76%,var(--text));
+  font-size:9px;
+  font-weight:750;
+  line-height:1;
+  letter-spacing:.035em;
+  white-space:nowrap;
+}
+.review-details-form .field label,
+.questionnaire-editor .field label,
+.review-inline-dialog .field label,
+.review-marker-form .field label,
+.bread-review-export-form .field label{margin-bottom:7px}
+.review-inline-dialog .field{margin:0 0 13px}
+.review-inline-dialog .field:last-child{margin-bottom:0}
+.review-inline-dialog select,.review-inline-dialog textarea{display:block;width:100%}
+.bread-review-export-form .field{margin:0 0 13px}
+.bread-review-export-form .field:last-child{margin-bottom:0}
+.review-round-entry{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px}
+.review-round-entry .review-history-row{min-width:0}
+.review-round-reopen{border:0;background:transparent;color:var(--muted);font:inherit;font-size:10px;padding:5px 6px;border-radius:4px;white-space:nowrap}
+.review-round-reopen:hover{background:var(--surface2);color:var(--text)}
+
+/* 8.18.3 — quiet end-of-list creation affordance shared by Canvas, Maps, and Reviews. */
+.collection-quick-add-row{display:flex;align-items:center;justify-content:center;padding:11px 0 10px;min-height:43px}
+.collection-quick-add{width:25px;height:25px;display:grid;place-items:center;padding:0;border:1px solid var(--line);border-radius:50%;background:transparent;color:var(--muted);font-size:17px;font-weight:400;line-height:1;opacity:.82;cursor:pointer}
+.collection-quick-add:hover{background:var(--accent-soft);border-color:var(--line2);color:var(--text);opacity:1}
+.collection-quick-add:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.canvas-rail.collapsed .collection-quick-add-row,.maps-sidebar.collapsed .collection-quick-add-row,.review-sidebar.collapsed .collection-quick-add-row{padding-inline:0}
+
+
+/* 8.18.3 — compact Review scope and pre-start feedback empty state. */
+.review-scope-summary{max-width:min(440px,52vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.review-draft-empty{display:flex;min-height:210px;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--muted);padding:24px}
+.review-draft-empty b{font-size:13px;font-weight:650;color:var(--text)}
+.review-draft-empty p{max-width:330px;margin:6px 0 11px;font-size:11.5px;line-height:1.45;color:var(--muted)}
+.review-draft-empty button{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:5px;padding:7px 11px}
+.review-draft-empty button:hover{background:var(--surface2);border-color:var(--line2)}
+@media(max-width:700px){.review-scope-summary{max-width:72vw}.review-draft-empty{min-height:150px}}
+

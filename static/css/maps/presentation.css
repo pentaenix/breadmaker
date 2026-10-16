@@ -1,0 +1,61 @@
+/* 6.2 Maps now reuse the Manuscript/Canvas rail and toolbar interaction language. */
+.map-tree-grip,.map-tree-line-grip{flex:none;color:var(--muted);font-size:11px;line-height:1;letter-spacing:-2px;cursor:grab;padding:5px 2px 5px 0}.map-tree-grip:active,.map-tree-line-grip:active{cursor:grabbing}.map-tree-more,.map-tree-line-more{flex:none;width:25px;height:25px;padding:0}.map-tree-map-row.drag-over,.map-tree-line-row.drag-over{background:var(--accent-soft);outline:1px solid color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:-1px}.map-tree-map-name,.map-tree-line-name{cursor:pointer}.project-settings-switch-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}.project-settings-switch-copy{min-width:0;display:flex;flex-direction:column;gap:3px}.project-settings-switch-copy b{font-size:13px}.project-settings-switch-copy small{font-size:11px;color:var(--muted);line-height:1.35}.map-view-popover .view-font-field label{font-size:11px;color:var(--muted)}
+.maps-sidebar .map-tree-map-row.active{background:var(--accent-soft);border-left-color:var(--accent);font-weight:700}
+.metro-view-button.hidden{display:none!important}
+.map-title-group .map-current-name{min-width:0;flex:0 1 auto}
+
+/* =========================================================
+   6.3.0 — Maps readability, direct span connections, inspector parity
+   ========================================================= */
+/* Map labels are never allowed to visually merge into neighboring text. The
+   renderer also reserves ruler clearance and larger lane bands in JS. */
+.map-item-label{paint-order:stroke;stroke-width:5px}
+.map-ruler-label{paint-order:stroke;stroke:var(--map-background,#f3f3f1);stroke-width:4px;stroke-linejoin:round}
+
+/* A selected Span exposes three connection outputs without stealing the
+   endpoint resize handles. Targets continue to live on the Span itself. */
+.map-span-connect-stem{vector-effect:non-scaling-stroke;pointer-events:none;opacity:.68}
+.map-span-connect-output{vector-effect:non-scaling-stroke;cursor:crosshair;filter:drop-shadow(0 0 2px rgba(0,0,0,.18))}
+.map-span-connect-output:hover{stroke-width:3}
+
+/* Maps inspectors follow the same compact push-panel rhythm used by Canvas and
+   Manuscript rather than stacking explanatory prose and checkbox rows. */
+#mapInspectorBody{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden}
+.map-inspector .panel-section{padding:13px;border-bottom:1px solid var(--line)}
+.map-inspector .panel-section:last-child{border-bottom:0}
+.map-inspector .field:last-child{margin-bottom:0}
+.map-inspector-identity{background:color-mix(in srgb,var(--surface2) 42%,var(--surface))}
+.map-inspector-line{margin-bottom:10px}
+.map-inspector-line>b{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.map-inspector-line>small{font-size:10px;color:var(--muted);font-weight:500}
+.map-inspector-switch-row{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:34px;border-top:1px solid var(--line);font-size:12px}
+.map-inspector-switch-row:first-of-type{margin-top:7px}
+.map-inspector-switch-row>span:first-child{min-width:0;line-height:1.25}
+.map-inspector-actions{display:grid;gap:7px}
+.map-connect-choice-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:9px}
+.map-connect-choice{min-width:0;height:31px;padding:5px 4px;border:1px solid var(--line);border-radius:5px;background:var(--surface);color:var(--text);font-size:11px;font-weight:650}
+.map-connect-choice:hover,.map-connect-choice:focus-visible{background:var(--accent-soft);border-color:var(--line2);outline:0}
+.map-connection-summary .map-anchor-note{color:var(--text);background:var(--surface2)}
+/* Span input anchors exist in the SVG at all times so direct Station/Span drags
+   can reveal exact Start/Middle/End targets without rebuilding the map mid-drag. */
+.map-span-connect-anchor{opacity:0;pointer-events:none;transition:opacity .08s ease}
+.map-stage.connecting .map-span-connect-anchor,.map-stage.connecting-direct .map-span-connect-anchor{opacity:1;pointer-events:auto}
+.map-stage.connecting-direct{cursor:crosshair}
+/* Map inspector uses the same fixed push-panel footprint as Canvas. */
+#mapInspector.map-inspector{width:290px;min-width:255px;flex:0 0 290px;display:flex;flex-direction:column;overflow:hidden}
+#mapInspector.map-inspector.hidden{display:none!important}
+#mapInspector .panel-head{flex:none}
+@media(max-width:640px){#mapInspector.map-inspector{position:absolute;right:0;top:0;bottom:0;z-index:35;box-shadow:var(--shadow)}}
+
+
+/* 6.3.17 — Manuscript-style collapsed workspace selectors */
+.canvas-item-initial{width:32px;flex:none;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.canvas-rail.collapsed .canvas-item{height:auto;min-height:40px;padding:4px 5px;padding-left:5px!important;justify-content:center;border-radius:0}
+.canvas-rail.collapsed .canvas-item.active{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.maps-sidebar.collapsed .map-tree-map-row,.maps-sidebar.collapsed .map-tree-line-row{min-height:40px;padding:4px 5px;justify-content:center;border-left-width:0;gap:0}
+.maps-sidebar.collapsed .map-tree-map-row.active,.maps-sidebar.collapsed .map-tree-line-row.active{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.map-details-background-note{margin:2px 0 0}
+
+/* 6.4.1 Map ruler render-length control */
+.map-ruler-scale-icon{width:18px;flex:none;text-align:center;color:var(--muted);font-size:12px;line-height:1}.map-ruler-scale-icon.compact{transform:scaleX(.7)}.map-ruler-scale-icon.wide{transform:scaleX(1.15)}#mapRulerScale{width:100%;height:18px;margin:0;-webkit-appearance:none;appearance:none;background:transparent;outline:0;accent-color:var(--accent);cursor:pointer}#mapRulerScale::-webkit-slider-runnable-track{height:4px;border-radius:999px;background:var(--line2)}#mapRulerScale::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:15px;height:15px;border-radius:50%;margin-top:-5.5px;border:2px solid var(--surface);background:var(--text);box-shadow:0 0 0 1px var(--line2)}#mapRulerScale::-moz-range-track{height:4px;border:0;border-radius:999px;background:var(--line2)}#mapRulerScale::-moz-range-thumb{width:13px;height:13px;border-radius:50%;border:2px solid var(--surface);background:var(--text);box-shadow:0 0 0 1px var(--line2)}#mapRulerScale:hover::-webkit-slider-thumb{background:var(--accent)}#mapRulerScale:hover::-moz-range-thumb{background:var(--accent)}
+

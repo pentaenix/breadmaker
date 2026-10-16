@@ -1,0 +1,157 @@
+from __future__ import annotations
+
+from pathlib import Path
+import pytest
+
+ROOT=Path(__file__).resolve().parents[1]
+
+
+def test_v10334_release_and_checkpoint11_gate_advance_without_schema_change():
+    version=(ROOT/'VERSION').read_text(encoding='utf-8').strip()
+    assert version=='10.3.59'
+    assert 'APP_SCHEMA_VERSION = 42' in (ROOT/'src/workspace/constants.py').read_text(encoding='utf-8')
+    assert f'Implemented through **{version}**' in (ROOT/'docs/BREADMAKER_REVIEW_IMPLEMENTATION_PLAN.md').read_text(encoding='utf-8')
+
+
+def test_v10334_initial_login_state_is_bound_to_the_browser_and_mismatch_does_not_burn_it():
+    from auth.hosted_login import HostedAuth0LoginError, _LoginBrowserBindingStore
+    now=[1_700_000_000.0]
+    store=_LoginBrowserBindingStore(now=lambda:now[0],max_states=16)
+    store.bind(state='state_abc',browser_binding='browser_A_abcdefghijklmnopqrstuvwxyz',expires_at=now[0]+300)
+    with pytest.raises(HostedAuth0LoginError,match='AUTH0_LOGIN_BROWSER_BINDING_MISMATCH'):
+        store.consume(state='state_abc',browser_binding='browser_B_abcdefghijklmnopqrstuvwxyz')
+    store.consume(state='state_abc',browser_binding='browser_A_abcdefghijklmnopqrstuvwxyz')
+    with pytest.raises(HostedAuth0LoginError,match='AUTH0_LOGIN_BROWSER_BINDING_INVALID'):
+        store.consume(state='state_abc',browser_binding='browser_A_abcdefghijklmnopqrstuvwxyz')
+
+
+def test_v10334_login_binding_cookie_is_http_only_lax_and_removed_after_success():
+    routes=(ROOT/'src/backend/runtime_routes.py').read_text(encoding='utf-8')
+    assert "_LOGIN_BINDING_COOKIE='__Host-breadmaker_login' if runtime.sessions.cookie_secure else 'breadmaker_login'" in routes
+    assert 'browser_binding=request.cookies.get(_LOGIN_BINDING_COOKIE)' in routes
+    assert "httponly=True,samesite='lax'" in routes
+    assert 'response.delete_cookie(_LOGIN_BINDING_COOKIE' in routes
+    assert '_AUTH0_LOGIN.complete(code=code,state=state,browser_binding=browser_binding)' in routes
+
+
+def test_v10334_oidc_transaction_state_is_bounded_against_public_login_memory_abuse():
+    from auth.oidc import OidcError, OidcTransactionStore
+    store=OidcTransactionStore(ttl_seconds=60,max_active=16,now=lambda:1_700_000_000.0)
+    for _ in range(16): store.begin(return_path='/')
+    with pytest.raises(OidcError,match='OIDC_TRANSACTION_CAPACITY_EXCEEDED'):
+        store.begin(return_path='/')
+    with pytest.raises(OidcError,match='OIDC_STATE_INVALID_OR_REPLAYED'):
+        store.consume('x'*257)
+
+
+def test_v10334_totp_enrollment_intent_is_bound_to_auth0_user_without_exposing_subject():
+    from auth.security import SecurityIntentSigner
+    signer=SecurityIntentSigner(client_id='client',secret_ref='env:S',secret_loader=lambda _:'s'*64,now=lambda:1_700_000_000.0)
+    params=signer.parameters('totp-enroll',subject='google-oauth2|abc')
+    assert len(params['ext-breadmaker-security-user'])==64
+    assert 'google-oauth2|abc' not in ''.join(params.values())
+    assert signer.metadata()['version']==2 and signer.metadata()['subject_bound'] is True
+    action=(ROOT.parent/'breadmaker-cloud/auth0/actions/breadmaker-totp-policy.js').read_text(encoding='utf-8')
+    assert "event.user?.user_id" in action
+    assert "createHash('sha256')" in action
+    assert '`v2\\n${intent}\\n${timestamp}\\n${nonce}\\n${clientId}\\n${userHash}`' in action
+
+
+def test_v10334_real_auth_mutations_require_origin_and_login_starts_are_rate_limited():
+    pipeline=(ROOT/'src/backend/request_pipeline.py').read_text(encoding='utf-8')
+    assert "real_auth = runtime.sessions.requires_authentication and runtime.sessions.metadata().get('auth_mode')=='auth0'" in pipeline
+    assert 'if real_auth and not origin:' in pipeline
+    assert "path in {'/auth/login','/auth/signup','/auth/language'}" in pipeline
+    assert "'auth-start'" in pipeline and '_AUTH_STARTS_PER_MINUTE=60' in pipeline
+
+
+def test_v10334_real_auth_server_access_log_does_not_record_oauth_code_or_state_query_strings():
+    launcher=(ROOT/'run-hosted-auth-dev').read_text(encoding='utf-8')
+    run=(ROOT/'run').read_text(encoding='utf-8')
+    image=(ROOT/'deploy/Dockerfile.hosted-dev').read_text(encoding='utf-8')
+    assert 'BREADMAKER_UVICORN_NO_ACCESS_LOG=1' in launcher
+    assert '--no-access-log' in run
+    assert '--no-access-log' in image
+    headers=(ROOT/'src/backend/http_boundary.py').read_text(encoding='utf-8')
+    assert "'Referrer-Policy':'no-referrer'" in headers
+
+
+@pytest.mark.parametrize('bad',[ 
+    '//evil.example/path',
+    '/%2F%2Fevil.example/path',
+    '/%252F%252Fevil.example/path',
+    '/%5Cevil.example/path',
+    '/%255Cevil.example/path',
+])
+def test_v10334_return_paths_reject_raw_single_and_double_encoded_redirect_confusion(bad):
+    from auth.oidc import OidcError, _safe_return_path
+    with pytest.raises(OidcError,match='OIDC_RETURN_PATH_INVALID'):
+        _safe_return_path(bad)
+
+
+def test_v10334_link_and_step_up_state_stores_have_hard_capacities():
+    from types import SimpleNamespace
+    from auth.accounts import ExternalIdentity
+    from auth.linking import AccountLinkTransactionStore, AccountLinkingError
+    from auth.oidc import OidcAuthorizationRequest
+    from auth.security import AccountSecurityError, StepUpTransactionStore
+
+    now=1_700_000_000.0
+    primary=ExternalIdentity('https://issuer/','auth0|primary','usr_primary','email_password','p@example.test',True,now,now)
+    link=AccountLinkTransactionStore(max_active=16,max_per_user=16,now=lambda:now)
+    for index in range(16):
+        state=f'link_state_{index}'
+        req=OidcAuthorizationRequest('https://issuer/authorize',state,'nonce','challenge','/',now+300)
+        link.bind(req,primary_user_id='usr_primary',primary_session_id='ses_primary',primary=primary)
+    with pytest.raises(AccountLinkingError,match='ACCOUNT_LINK_TRANSACTION_CAPACITY_EXCEEDED'):
+        req=OidcAuthorizationRequest('https://issuer/authorize','link_state_overflow','nonce','challenge','/',now+300)
+        link.bind(req,primary_user_id='usr_primary',primary_session_id='ses_primary',primary=primary)
+
+    principal=SimpleNamespace(user_id='usr_primary',session_id='ses_primary')
+    step=StepUpTransactionStore(max_transactions=16,max_transactions_per_user=16,max_grants=16,now=lambda:now)
+    transactions=[]
+    for index in range(16):
+        req=OidcAuthorizationRequest('https://issuer/authorize',f'step_state_{index}','nonce','challenge','/',now+300)
+        transactions.append(step.bind_authorization(req,principal=principal,purpose='unlink_identity',target=f'auth0|secondary_{index}'))
+    with pytest.raises(AccountSecurityError,match='SECURITY_STEP_UP_TRANSACTION_CAPACITY_EXCEEDED'):
+        req=OidcAuthorizationRequest('https://issuer/authorize','step_state_overflow','nonce','challenge','/',now+300)
+        step.bind_authorization(req,principal=principal,purpose='unlink_identity',target='auth0|overflow')
+    for tx in transactions:
+        step.issue_grant(tx,authenticated_at=now)
+    with pytest.raises(AccountSecurityError,match='SECURITY_STEP_UP_GRANT_CAPACITY_EXCEEDED'):
+        overflow=transactions[0].__class__('step_state_extra','usr_primary','ses_primary','unlink_identity','auth0|extra','/',now,now+300)
+        step.issue_grant(overflow,authenticated_at=now)
+
+
+def test_v10334_real_auth_pins_host_and_callback_errors_are_generic():
+    launcher=(ROOT/'run-hosted-auth-dev').read_text(encoding='utf-8')
+    server=(ROOT/'src/server.py').read_text(encoding='utf-8')
+    routes=(ROOT/'src/backend/runtime_routes.py').read_text(encoding='utf-8')
+    assert 'BREADMAKER_ENFORCE_PUBLIC_HOST=1' in launcher
+    assert "detail':'HOST_NOT_ALLOWED'" in server
+    assert "_scope_host(scope)!=expected_host" in server
+    assert "detail='AUTH0_CALLBACK_REJECTED',headers=_auth_redirect_headers()" in routes
+    assert "detail=str(exc)" not in routes[routes.index("@router.get('/auth/callback')"):routes.index("if _AUTH0_LINKING is not None:")]
+
+
+def test_v10334_hosted_runtime_is_explicitly_not_multi_worker_security_ready():
+    hosted=(ROOT/'src/runtime/hosted.py').read_text(encoding='utf-8')
+    assert "'production_ready':False" in hosted
+    assert "'single_worker_required':True" in hosted
+
+
+
+def test_v10334_opaque_session_registry_is_bounded_without_evicting_other_users():
+    from auth.sessions import AuthenticationError, OpaqueSessionService
+    sessions=OpaqueSessionService(auth_mode='auth0',environment='development',max_sessions_per_user=8,max_sessions_total=256)
+    first=[]
+    for index in range(9):
+        token,_=sessions.issue('usr_a',auth_method=f'm{index}')
+        first.append(token)
+    # Per-user overflow retires only that user's oldest session.
+    with sessions.bind(first[0]) as principal: assert principal is None
+    with sessions.bind(first[-1]) as principal: assert principal and principal.user_id=='usr_a'
+    other,_=sessions.issue('usr_b',auth_method='google')
+    for index in range(16): sessions.issue('usr_a',auth_method=f'x{index}')
+    with sessions.bind(other) as principal: assert principal and principal.user_id=='usr_b'
+    assert sessions.metadata()['bounded_session_registry'] is True

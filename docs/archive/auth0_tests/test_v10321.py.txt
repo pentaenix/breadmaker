@@ -1,0 +1,133 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def _identity(
+    subject: str,
+    *,
+    issuer: str = 'https://tenant.example.test/',
+    email: str = 'writer@privaterelay.appleid.com',
+    name: str = 'Apple Writer',
+    verified: bool = True,
+):
+    from auth.oidc import VerifiedOidcIdentity
+
+    return VerifiedOidcIdentity(
+        issuer=issuer,
+        subject=subject,
+        email=email,
+        email_verified=verified,
+        display_name=name,
+        authenticated_at=1_700_000_000.0,
+    )
+
+
+def _mapper():
+    from auth.apple import AppleAuth0IdentityMapper
+    from auth.auth0 import Auth0BoundaryConfig
+
+    boundary = Auth0BoundaryConfig(
+        environment='production',
+        issuer='https://tenant.example.test',
+        client_id='client-id',
+        application_origin='https://app.example.test',
+        client_secret_ref='prod/auth0-client-secret',
+    )
+    return AppleAuth0IdentityMapper(boundary)
+
+
+def test_v10321_checkpoint_six_apple_mapping_is_documented_but_login_stays_disabled():
+    version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+    architecture = (ROOT / 'ARCHITECTURE.md').read_text(encoding='utf-8')
+    auth_readme = (ROOT / 'src/auth/README.md').read_text(encoding='utf-8')
+    routes = (ROOT / 'src/backend/runtime_routes.py').read_text(encoding='utf-8')
+    assert tuple(map(int, version.split('.'))) >= (10, 3, 21)
+    assert 'Checkpoint 6' in architecture and 'hosted login remains disabled' in architecture
+    assert 'apple.py' in auth_readme and 'apple|' in auth_readme
+    # These checkpoints were dormant when released. Later checkpoints may add
+    # development-only hosted-auth routes without changing the historical mapper contract.
+    if tuple(map(int, version.split('.'))) <= (10, 3, 21):
+        assert "@router.get('/auth/login')" not in routes
+        assert "@router.get('/auth/callback')" not in routes
+
+
+def test_v10321_apple_mapper_accepts_only_verified_auth0_apple_subjects_and_allows_dots():
+    from auth.apple import AppleAuth0IdentityError
+
+    mapper = _mapper()
+    profile = mapper.map_verified_identity(_identity('apple|abc123.def456.ghi789'))
+    assert profile.issuer == 'https://tenant.example.test/'
+    assert profile.subject == 'apple|abc123.def456.ghi789'
+    assert profile.provider_subject == 'abc123.def456.ghi789'
+    assert mapper.metadata()['identity_key'] == ['issuer', 'subject']
+    assert mapper.metadata()['email_authoritative'] is False
+    assert mapper.metadata()['automatic_link_by_email'] is False
+
+    with pytest.raises(AppleAuth0IdentityError, match='APPLE_AUTH0_SUBJECT_PROVIDER_MISMATCH'):
+        mapper.map_verified_identity(_identity('google-oauth2|123'))
+    with pytest.raises(AppleAuth0IdentityError, match='APPLE_AUTH0_SUBJECT_INVALID'):
+        mapper.map_verified_identity(_identity('apple|'))
+    with pytest.raises(AppleAuth0IdentityError, match='APPLE_AUTH0_SUBJECT_INVALID'):
+        mapper.map_verified_identity(_identity('apple|contains space'))
+    with pytest.raises(AppleAuth0IdentityError, match='APPLE_AUTH0_ISSUER_MISMATCH'):
+        mapper.map_verified_identity(_identity('apple|abc', issuer='https://other.example.test/'))
+
+
+def test_v10321_apple_private_relay_domains_preserve_user_privacy_choice():
+    mapper = _mapper()
+    legacy = mapper.map_verified_identity(_identity('apple|legacy', email='relay@privaterelay.appleid.com'))
+    current = mapper.map_verified_identity(_identity('apple|current', email='relay@private.icloud.com'))
+    personal = mapper.map_verified_identity(_identity('apple|personal', email='writer@example.test'))
+    assert legacy.private_relay_email is True
+    assert current.private_relay_email is True
+    assert personal.private_relay_email is False
+    metadata = mapper.metadata()
+    assert set(metadata['private_relay_domains']) == {'privaterelay.appleid.com', 'private.icloud.com'}
+    assert metadata['real_email_required'] is False
+
+
+def test_v10321_apple_account_mapping_never_links_by_email_and_preserves_first_login_metadata(tmp_path):
+    from auth.accounts import HostedAccountIdentityStore
+    from workspace import Workspace
+
+    ws = Workspace(tmp_path / 'hosted-home')
+    ws.init()
+    store = HostedAccountIdentityStore(ws)
+    mapper = _mapper()
+
+    first = mapper.resolve_or_create_account(_identity('apple|apple-a'), store)
+    second = mapper.resolve_or_create_account(_identity('apple|apple-b'), store)
+    later = mapper.resolve_or_create_account(_identity('apple|apple-a', email='', name='', verified=False), store)
+
+    assert first.user_id != second.user_id
+    assert later.user_id == first.user_id
+    assert first.email == second.email == later.email == 'writer@privaterelay.appleid.com'
+    assert later.email_verified is True
+    assert first.provider == second.provider == later.provider == 'apple'
+    assert ws.local_profile(first.user_id)['display_name'] == 'Apple Writer'
+
+
+def test_v10321_apple_mapper_owns_no_provider_credentials_or_tokens():
+    metadata = _mapper().metadata()
+    assert metadata['identity_scopes'] == ['openid', 'profile', 'email']
+    assert metadata['provider_tokens_retained'] is False
+    assert metadata['initial_profile_metadata_may_be_omitted_later'] is True
+    assert metadata['missing_profile_metadata_preserved'] is True
+    source = (ROOT / 'src/auth/apple.py').read_text(encoding='utf-8').lower()
+    assert 'client_secret_signing_key' not in source
+    assert 'refresh_token' not in source
+    assert 'private_key' not in source
+
+
+def test_v10321_markup_margin_hover_waits_for_observable_visibility():
+    e2e = (ROOT / 'tests/test_e2e.py').read_text(encoding='utf-8')
+    start = e2e.index('def test_browser_v4162_markup_margin_swatches_hover_and_navigation')
+    end = e2e.find('\ndef ', start + 4)
+    body = e2e[start:end if end != -1 else None]
+    assert "flyer.wait_for(state='visible',timeout=1500)" in body
+    assert 'first.hover();page.wait_for_timeout(340)' not in body

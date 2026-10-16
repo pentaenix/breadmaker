@@ -1,0 +1,146 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "members",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {"fieldPath": "user_id", "order": "ASCENDING"},
+        {"fieldPath": "last_opened_at", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "chapters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "tab_id", "order": "ASCENDING"},
+        {"fieldPath": "position", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "blocks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "chapter_id", "order": "ASCENDING"},
+        {"fieldPath": "position", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "blocks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "scene_id", "order": "ASCENDING"},
+        {"fieldPath": "position", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "canvases",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "parent_id", "order": "ASCENDING"},
+        {"fieldPath": "position", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "reviews",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "position", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "tasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "updated_at", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "references",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "source_type", "order": "ASCENDING"},
+        {"fieldPath": "source_id", "order": "ASCENDING"},
+        {"fieldPath": "created_at", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "references",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "target_type", "order": "ASCENDING"},
+        {"fieldPath": "target_id", "order": "ASCENDING"},
+        {"fieldPath": "created_at", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "participants",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "created_at", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "participant_id", "order": "ASCENDING"},
+        {"fieldPath": "created_at", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "suggestions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "updated_at", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "comments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "updated_at", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "revisions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "project_generation", "order": "DESCENDING"},
+        {"fieldPath": "published_at", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "backup_destinations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "enabled", "order": "ASCENDING"},
+        {"fieldPath": "updated_at", "order": "DESCENDING"}
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {"collectionGroup": "blocks", "fieldPath": "content_html", "indexes": []},
+    {"collectionGroup": "blocks", "fieldPath": "text_content", "indexes": []},
+    {"collectionGroup": "annotations", "fieldPath": "body", "indexes": []},
+    {"collectionGroup": "annotations", "fieldPath": "selected_text", "indexes": []},
+    {"collectionGroup": "annotations", "fieldPath": "prefix_context", "indexes": []},
+    {"collectionGroup": "annotations", "fieldPath": "suffix_context", "indexes": []},
+    {"collectionGroup": "nodes", "fieldPath": "body", "indexes": []},
+    {"collectionGroup": "versions", "fieldPath": "workspace_json", "indexes": []},
+    {"collectionGroup": "messages", "fieldPath": "body", "indexes": []},
+    {"collectionGroup": "questions", "fieldPath": "prompt", "indexes": []},
+    {"collectionGroup": "comments", "fieldPath": "body", "indexes": []},
+    {"collectionGroup": "replies", "fieldPath": "body", "indexes": []},
+    {"collectionGroup": "suggestions", "fieldPath": "original_text", "indexes": []},
+    {"collectionGroup": "suggestions", "fieldPath": "proposed_text", "indexes": []},
+    {"collectionGroup": "answers", "fieldPath": "answer_text", "indexes": []},
+    {"collectionGroup": "general_feedback", "fieldPath": "body", "indexes": []},
+    {"collectionGroup": "events", "fieldPath": "payload", "indexes": []},
+    {"collectionGroup": "ui_state", "fieldPath": "value", "indexes": []}
+  ]
+}

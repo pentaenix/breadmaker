@@ -1,0 +1,147 @@
+/* 7.0.1 — searchable application language picker. */
+.modal-card:has(.language-picker){width:min(540px,calc(100% - 30px))}
+.language-picker-search{margin-bottom:10px}.language-picker-search input{width:100%}
+.language-picker-list{max-height:min(430px,55vh);overflow:auto;border:1px solid var(--line);border-radius:7px;background:var(--surface)}
+.language-picker-row{width:100%;min-height:50px;border:0;border-bottom:1px solid var(--line);background:transparent;display:flex;align-items:center;gap:12px;padding:8px 11px;text-align:left}
+.language-picker-row:last-child{border-bottom:0}.language-picker-row:hover{background:var(--surface2)}.language-picker-row.active{background:var(--accent-soft)}
+.language-picker-copy{min-width:0;flex:1}.language-picker-copy b,.language-picker-copy small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.language-picker-copy b{font-size:13px}.language-picker-copy small{margin-top:2px;color:var(--muted);font-size:10.5px}
+.language-picker-check{flex:none;color:var(--accent);font-size:15px;font-weight:700}.language-picker-empty{padding:18px 12px;color:var(--muted);text-align:center;font-size:12px}
+
+/* =========================================================
+   7.2.0 — Canvas figure/card polish and Task search
+   ========================================================= */
+.task-search{margin:0 0 12px}
+.task-search input{width:100%;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:6px;padding:8px 10px;outline:0}
+.task-search input:focus{border-color:var(--accent);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 22%,transparent)}
+
+/* A slightly stronger single-device-pixel divider avoids disappearing on some scale factors. */
+.node-title-line{border-bottom-color:var(--line2)}
+
+.card-text-align-field .section-label{margin-bottom:7px}
+.card-text-align-options svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
+.canvas-node.text-align-left .node-title,.canvas-node.text-align-left .node-body{text-align:left}
+.canvas-node.text-align-center .node-title,.canvas-node.text-align-center .node-body{text-align:center}
+.canvas-node.text-align-right .node-title,.canvas-node.text-align-right .node-body{text-align:right}
+
+.canvas-figure{
+  min-width:30px!important;
+  min-height:30px!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  cursor:grab;
+  overflow:visible;
+}
+.canvas-figure.figure-front{z-index:20}
+.canvas-figure-art{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.canvas-figure-art .figure-shape{fill:var(--figure-fill,transparent);stroke:var(--figure-stroke,var(--text));stroke-width:var(--figure-stroke-width,1px);stroke-linejoin:round;stroke-linecap:round}
+.canvas-figure.line .figure-shape{fill:none}
+.figure-line-handle{position:absolute;width:12px;height:12px;border:2px solid var(--text);border-radius:50%;background:var(--surface);transform:translate(-50%,-50%);z-index:3;opacity:0;pointer-events:none;cursor:crosshair}
+.canvas-figure.line:hover .figure-line-handle,.canvas-figure.line.selected .figure-line-handle{opacity:1;}
+.canvas-figure .node-resize-handle{z-index:2;background:var(--surface)}
+.canvas-figure-draw-preview{border-color:var(--text)}
+
+.canvas-figure-draw-preview.oval{border-radius:50%}
+.canvas-figure-draw-preview.line{height:0!important;min-height:0;border-width:1px 0 0;border-style:dashed;transform-origin:0 0}
+.canvas-figure-draw-preview.triangle{clip-path:polygon(50% 0,100% 100%,0 100%);background:color-mix(in srgb,var(--text) 3%,transparent)}
+.figure-border-row{display:grid;grid-template-columns:minmax(0,1fr) 54px;align-items:center;gap:8px}
+.figure-border-row input[type=range]{width:100%}
+.figure-border-row output{text-align:right;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* Nested menus keep a short crossing grace, but sibling choices close immediately. */
+.context-menu-row.submenu-open>.context-submenu{display:block}
+
+/* 7.2.3 polish */
+#quickOpenResults{max-height:min(62vh,560px);}
+.quick-open{max-height:calc(100vh - 96px);display:flex;flex-direction:column}
+.quick-open input{flex:none}.quick-open-empty{padding:12px}.quick-result{grid-template-columns:82px minmax(0,1fr)!important;}
+.quick-result span{overflow:hidden;text-overflow:ellipsis;}.quick-result em{margin-top:2px;}
+.toast{display:flex;align-items:center;gap:12px}.toast-action{border:0;border-left:1px solid color-mix(in srgb,var(--surface) 35%,transparent);background:transparent;color:inherit;font-weight:700;padding:1px 0 1px 12px;cursor:pointer}
+.task-search-match{color:var(--accent);font-size:11px;margin-top:2px}
+.canvas-figure-palette{grid-template-columns:repeat(4,33px)}
+.canvas-figure.line{pointer-events:none}.canvas-figure.line .figure-line-handle{pointer-events:none}.canvas-figure.line:hover .figure-line-handle,.canvas-figure.line.selected .figure-line-handle{pointer-events:auto}
+.canvas-figure-art .figure-hit-line{fill:none;stroke:transparent;stroke-width:14px;pointer-events:stroke;cursor:grab}
+
+/* 7.2.4 polish */
+#quickOpenBtn{width:31px;height:31px;padding:0;display:grid;place-items:center;font-size:21px;line-height:1}
+
+
+/* =========================================================
+   7.2.5 — shared UI polish and cross-device consistency
+   ========================================================= */
+/* Primary workspace titles deliberately share one typographic rhythm. */
+.toolbar-title-text{
+  font-family:inherit!important;
+  font-size:14px!important;
+  font-weight:700!important;
+  line-height:20px!important;
+  color:var(--text)!important;
+}
+.canvas-toolbar .canvas-name.toolbar-title-text{border:0;background:transparent;outline:0;padding:0}
+.map-title-group .map-current-name{font-size:14px}
+
+/* Use the same locally-rendered line-icon vocabulary in the global bar. */
+.top-actions .icon-button svg{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.global-history-button svg{width:17px!important;height:17px!important}
+#quickOpenBtn svg{width:19px;height:19px}
+#themeBtn .theme-fill{fill:currentColor;stroke:none;opacity:.3}
+
+/* Native checkboxes vary dramatically between browsers/OSes. Breadmaker owns them. */
+input[type=checkbox]{
+  appearance:none;-webkit-appearance:none;position:relative;width:17px;height:17px;min-width:17px;min-height:17px;margin:0;
+  border:1px solid var(--line2);border-radius:4px;background:var(--surface);cursor:pointer;
+  transition:border-color .12s ease,background .12s ease,transform .08s ease,opacity .12s ease;
+}
+input[type=checkbox]:hover:not(:disabled){border-color:var(--text)}
+input[type=checkbox]:active:not(:disabled){transform:scale(.94)}
+input[type=checkbox]:checked{background:var(--text);border-color:var(--text)}
+input[type=checkbox]:checked::after{content:'';position:absolute;left:50%;top:43%;width:4px;height:8px;border:solid var(--bg);border-width:0 2px 2px 0;transform:translate(-50%,-50%) rotate(45deg);transform-origin:center}
+input[type=checkbox]:indeterminate{background:var(--text);border-color:var(--text)}
+input[type=checkbox]:indeterminate::after{content:'';position:absolute;left:3px;right:3px;top:7px;height:2px;border-radius:1px;background:var(--bg)}
+input[type=checkbox]:disabled{opacity:.42;cursor:default}
+.pdf-checkbox{width:17px;height:17px}
+
+/* Search is one control family everywhere it appears. */
+#checkpointSearch,#cutsSearch,#commentsSearch,#markerSearch,#taskSearch,#historyModalSearch,#languageSearch,#projectExplorerSearch{
+  height:34px;border:1px solid var(--line)!important;border-radius:5px!important;background:var(--surface)!important;color:var(--text)!important;
+  padding:7px 9px!important;outline:0!important;box-shadow:none!important;
+}
+#checkpointSearch:focus,#cutsSearch:focus,#commentsSearch:focus,#markerSearch:focus,#taskSearch:focus,#historyModalSearch:focus,#languageSearch:focus,#projectExplorerSearch:focus{
+  border-color:var(--accent)!important;box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 22%,transparent)!important;
+}
+input[type=search]::-webkit-search-cancel-button{opacity:.6;cursor:pointer}
+
+/* Keyboard focus should look like Breadmaker, not the host browser. */
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,[role=button]:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--accent)!important;outline-offset:2px!important;
+}
+.canvas-name[readonly]:focus-visible{outline:2px solid var(--accent)!important;outline-offset:2px!important}
+
+/* One close affordance geometry across panels, find, split view and modals. */
+.ui-close-button{width:28px!important;min-width:28px!important;height:28px!important;min-height:28px!important;padding:0!important;display:grid!important;place-items:center!important;border-radius:5px!important;font-size:18px!important;line-height:1!important;color:var(--muted)!important}
+.ui-close-button:hover{background:var(--surface2)!important;color:var(--text)!important}
+
+/* Inspector sections use the same vertical rhythm. */
+.canvas-panel-field,.panel-section{padding:12px 13px}
+.canvas-panel-field>.section-label,.panel-section>.section-label{margin-bottom:8px}
+
+/* Empty states share title/copy sizing even when their containers differ. */
+.workspace-empty b,.manuscript-panel-empty b,.cuts-empty b,.comments-empty b{font-size:13px;font-weight:650;color:var(--text)}
+.workspace-empty p,.manuscript-panel-empty span,.cuts-empty span,.comments-empty span{font-size:11.5px;line-height:1.45;color:var(--muted)}
+
+/* The richer Quick Open index can grow; keep it constrained and navigable. */
+#quickOpenResults{max-height:min(58vh,520px);overflow:auto;overscroll-behavior:contain}
+.quick-result{grid-template-columns:74px minmax(0,1fr)!important;align-items:start}
+.quick-result span{min-width:0;display:block}
+.quick-result em{display:block;margin:2px 0 0;font-style:normal;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Visible More affordances share the established row button language. */
+.task-more-button,.history-more-button{letter-spacing:0!important;font-weight:600!important}
+
+/* Theme-owned search/reference colors replace hard-coded browser-yellow/orange. */
+::highlight(breadmaker-linked-range){background:var(--reference-hit);color:inherit;outline:1px solid var(--reference-hit-line)}
+/* Empty Maps mirrors Canvas: neutral workspace label, no inactive Details affordance. */
+.canvas-name::placeholder,.map-current-name.map-title-placeholder{color:var(--muted)!important;opacity:1}
+.map-current-name:empty + .toolbar-title-pencil{visibility:hidden}
+

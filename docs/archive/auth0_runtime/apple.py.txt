@@ -1,0 +1,159 @@
+from __future__ import annotations
+
+"""Apple identity mapping behind the Auth0 broker.
+
+Checkpoint 6 remains deliberately dormant at the HTTP layer: no login/callback route
+is introduced here. The generic OIDC engine verifies the Auth0 ID token first; this
+module then constrains that already-verified identity to Auth0's Apple social
+connection and maps it into Breadmaker's issuer+subject account registry.
+
+Apple-specific privacy/reliability rules:
+- Auth0 remains the OIDC issuer seen by Breadmaker;
+- only verified subjects beginning with ``apple|`` are accepted as Apple;
+- the complete verified Auth0 ``sub`` remains the external identity subject;
+- Apple/relay email is profile metadata and never account merge authority;
+- both legacy ``@privaterelay.appleid.com`` and 2026 ``@private.icloud.com`` Sign in
+  with Apple relay addresses are valid profile values;
+- profile values that may be absent after first Apple authorization are preserved
+  rather than replaced with empty values;
+- Apple credentials/provider tokens remain outside Breadmaker runtime;
+- local Breadmaker never instantiates this owner.
+"""
+
+from dataclasses import dataclass
+from typing import Any
+
+from auth.accounts import AccountIdentityService, ExternalIdentity
+from auth.auth0 import Auth0BoundaryConfig
+from auth.oidc import VerifiedOidcIdentity
+
+
+class AppleAuth0IdentityError(RuntimeError):
+    """Stable non-secret Apple/Auth0 mapping failure."""
+
+
+_APPLE_CONNECTION = 'apple'
+_APPLE_SUBJECT_PREFIX = 'apple|'
+_IDENTITY_SCOPES = ('openid', 'profile', 'email')
+_PRIVATE_RELAY_DOMAINS = frozenset({'privaterelay.appleid.com', 'private.icloud.com'})
+
+
+def _email_domain(value: str) -> str:
+    email = str(value or '').strip().lower()
+    if '@' not in email:
+        return ''
+    local, domain = email.rsplit('@', 1)
+    return domain if local and domain else ''
+
+
+def _is_private_relay(value: str) -> bool:
+    return _email_domain(value) in _PRIVATE_RELAY_DOMAINS
+
+
+@dataclass(frozen=True)
+class AppleAuth0Profile:
+    """Provider-constrained projection of a verified Auth0 OIDC identity."""
+
+    issuer: str
+    subject: str
+    provider_subject: str
+    email: str
+    email_verified: bool
+    display_name: str
+    authenticated_at: float | None
+    private_relay_email: bool
+
+    def public(self) -> dict[str, Any]:
+        return {
+            'issuer': self.issuer,
+            'subject': self.subject,
+            'provider': 'apple',
+            'connection': _APPLE_CONNECTION,
+            'email': self.email,
+            'email_verified': self.email_verified,
+            'display_name': self.display_name,
+            'authenticated_at': self.authenticated_at,
+            'private_relay_email': self.private_relay_email,
+        }
+
+
+class AppleAuth0IdentityMapper:
+    """Constrain verified Auth0 identities to Breadmaker's Apple login method."""
+
+    connection_name = _APPLE_CONNECTION
+
+    def __init__(self, boundary: Auth0BoundaryConfig):
+        self.boundary = boundary
+
+    def metadata(self) -> dict[str, Any]:
+        return {
+            'broker': 'auth0',
+            'provider': 'apple',
+            'connection': self.connection_name,
+            'identity_scopes': list(_IDENTITY_SCOPES),
+            'identity_key': ['issuer', 'subject'],
+            'subject_prefix': _APPLE_SUBJECT_PREFIX,
+            'email_authoritative': False,
+            'automatic_link_by_email': False,
+            'private_relay_supported': True,
+            'private_relay_domains': sorted(_PRIVATE_RELAY_DOMAINS),
+            'real_email_required': False,
+            'initial_profile_metadata_may_be_omitted_later': True,
+            'missing_profile_metadata_preserved': True,
+            'provider_tokens_retained': False,
+        }
+
+    def map_verified_identity(self, identity: VerifiedOidcIdentity) -> AppleAuth0Profile:
+        if not isinstance(identity, VerifiedOidcIdentity):
+            raise AppleAuth0IdentityError('APPLE_IDENTITY_NOT_VERIFIED_OIDC')
+        if identity.issuer != self.boundary.issuer:
+            raise AppleAuth0IdentityError('APPLE_AUTH0_ISSUER_MISMATCH')
+        subject = str(identity.subject or '')
+        if not subject.startswith(_APPLE_SUBJECT_PREFIX):
+            raise AppleAuth0IdentityError('APPLE_AUTH0_SUBJECT_PROVIDER_MISMATCH')
+        provider_subject = subject[len(_APPLE_SUBJECT_PREFIX):]
+        if (
+            not provider_subject
+            or provider_subject.isspace()
+            or any(ch.isspace() or ord(ch) < 0x20 or ord(ch) == 0x7f for ch in provider_subject)
+        ):
+            raise AppleAuth0IdentityError('APPLE_AUTH0_SUBJECT_INVALID')
+        email = str(identity.email or '').strip()[:320]
+        return AppleAuth0Profile(
+            issuer=identity.issuer,
+            subject=subject,
+            provider_subject=provider_subject,
+            email=email,
+            email_verified=bool(identity.email_verified),
+            display_name=str(identity.display_name or '').strip()[:160],
+            authenticated_at=identity.authenticated_at,
+            private_relay_email=_is_private_relay(email),
+        )
+
+    def resolve_or_create_account(
+        self,
+        identity: VerifiedOidcIdentity,
+        accounts: AccountIdentityService,
+    ) -> ExternalIdentity:
+        profile = self.map_verified_identity(identity)
+        existing = accounts.resolve_external_identity(profile.issuer, profile.subject)
+
+        # Apple may omit first-authorization profile attributes on later logins.
+        # Never convert omission into destructive metadata clearing. The local profile
+        # display name is creation-owned by AccountIdentityService, so passing an empty
+        # later display_name cannot erase the first value; email needs explicit
+        # preservation because it is stored on the external-identity row itself.
+        email = profile.email
+        email_verified = profile.email_verified
+        if existing is not None and not email:
+            email = existing.email
+            email_verified = existing.email_verified
+
+        return accounts.resolve_or_create_external_identity(
+            profile.issuer,
+            profile.subject,
+            provider='apple',
+            display_name=profile.display_name,
+            email=email,
+            email_verified=email_verified,
+        )

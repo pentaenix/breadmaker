@@ -1,0 +1,105 @@
+from __future__ import annotations
+
+"""Auth0 database-connection identity mapping.
+
+Checkpoint 7 keeps passwords, password hashes, TOTP secrets, recovery codes, and MFA
+challenge state entirely inside Auth0. Breadmaker receives only a verified Auth0 OIDC
+identity after Universal Login has completed the database-password + TOTP policy.
+"""
+
+from dataclasses import dataclass
+from typing import Any
+
+from auth.accounts import AccountIdentityService, ExternalIdentity
+from auth.auth0 import Auth0BoundaryConfig
+from auth.oidc import VerifiedOidcIdentity
+
+
+class DatabaseAuth0IdentityError(RuntimeError):
+    """Stable non-secret Auth0 database identity mapping failure."""
+
+
+_DATABASE_CONNECTION = 'auth0'
+_DATABASE_SUBJECT_PREFIX = 'auth0|'
+
+
+@dataclass(frozen=True)
+class DatabaseAuth0Profile:
+    issuer: str
+    subject: str
+    provider_subject: str
+    email: str
+    display_name: str
+    authenticated_at: float | None
+
+    def public(self) -> dict[str, Any]:
+        return {
+            'issuer': self.issuer,
+            'subject': self.subject,
+            'provider': 'email_password',
+            'connection': _DATABASE_CONNECTION,
+            'email': self.email,
+            'email_verified': True,
+            'display_name': self.display_name,
+            'authenticated_at': self.authenticated_at,
+        }
+
+
+class DatabaseAuth0IdentityMapper:
+    """Accept only verified Auth0 database identities after broker policy completion."""
+
+    connection_name = _DATABASE_CONNECTION
+
+    def __init__(self, boundary: Auth0BoundaryConfig):
+        self.boundary = boundary
+
+    def metadata(self) -> dict[str, Any]:
+        return {
+            'broker': 'auth0',
+            'provider': 'email_password',
+            'connection_strategy': self.connection_name,
+            'identity_key': ['issuer', 'subject'],
+            'subject_prefix': _DATABASE_SUBJECT_PREFIX,
+            'email_authoritative': False,
+            'automatic_link_by_email': False,
+            'password_owner': 'auth0',
+            'totp_owner': 'auth0',
+            'recovery_code_owner': 'auth0',
+            'email_verification_required': True,
+            'totp_required': True,
+            'credentials_retained_by_breadmaker': False,
+        }
+
+    def map_verified_identity(self, identity: VerifiedOidcIdentity) -> DatabaseAuth0Profile:
+        if not isinstance(identity, VerifiedOidcIdentity):
+            raise DatabaseAuth0IdentityError('DATABASE_IDENTITY_NOT_VERIFIED_OIDC')
+        if identity.issuer != self.boundary.issuer:
+            raise DatabaseAuth0IdentityError('DATABASE_AUTH0_ISSUER_MISMATCH')
+        subject = str(identity.subject or '')
+        if not subject.startswith(_DATABASE_SUBJECT_PREFIX):
+            raise DatabaseAuth0IdentityError('DATABASE_AUTH0_SUBJECT_PROVIDER_MISMATCH')
+        provider_subject = subject[len(_DATABASE_SUBJECT_PREFIX):]
+        if not provider_subject or provider_subject.isspace() or any(ch.isspace() or ord(ch) < 0x20 or ord(ch) == 0x7f for ch in provider_subject):
+            raise DatabaseAuth0IdentityError('DATABASE_AUTH0_SUBJECT_INVALID')
+        email = str(identity.email or '').strip()[:320]
+        if not email or not bool(identity.email_verified):
+            raise DatabaseAuth0IdentityError('DATABASE_EMAIL_VERIFICATION_REQUIRED')
+        return DatabaseAuth0Profile(
+            issuer=identity.issuer,
+            subject=subject,
+            provider_subject=provider_subject,
+            email=email,
+            display_name=str(identity.display_name or '').strip()[:160],
+            authenticated_at=identity.authenticated_at,
+        )
+
+    def resolve_or_create_account(self, identity: VerifiedOidcIdentity, accounts: AccountIdentityService) -> ExternalIdentity:
+        profile = self.map_verified_identity(identity)
+        return accounts.resolve_or_create_external_identity(
+            profile.issuer,
+            profile.subject,
+            provider='email_password',
+            display_name=profile.display_name,
+            email=profile.email,
+            email_verified=True,
+        )

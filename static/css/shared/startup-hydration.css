@@ -1,0 +1,14 @@
+/* 9.6.5 — keep the chrome stable while restored project state hydrates. The routed
+   workspace is already selected synchronously in <head>; hiding only workspace bodies
+   prevents default rail/manuscript state from flashing before the saved state arrives. */
+html:not([data-breadmaker-boot-ready]) .view{visibility:hidden}
+.topbar .brand-button,.topbar .top-actions{flex:none}
+.topbar .main-tabs{min-width:0;flex:1 1 auto;overflow:hidden}
+.user-profile-control,.user-avatar-button{visibility:visible}
+
+/* 10.3.26 — hosted accounts with zero persisted projects open directly into writing. */
+body.hosted-zero-project .main-tab:not([data-view="manuscript"]){opacity:.38;pointer-events:none}
+body.hosted-zero-project #manuscriptRail,body.hosted-zero-project #manuscriptToolbar .toolbar-button,body.hosted-zero-project #saveState{visibility:hidden}
+body.hosted-zero-project #manuscriptPaper{visibility:visible}
+body.hosted-zero-project #chapterTitle{outline:none}
+body.hosted-zero-project #editor:empty:before{content:''}

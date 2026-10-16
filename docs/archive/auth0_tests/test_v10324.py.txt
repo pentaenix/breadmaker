@@ -1,0 +1,188 @@
+from __future__ import annotations
+
+from pathlib import Path
+from types import SimpleNamespace
+from urllib.parse import parse_qs, urlsplit
+
+import pytest
+
+ROOT=Path(__file__).resolve().parents[1]
+
+
+def _external(subject='google-oauth2|primary', user_id='usr_primary', provider='google', created=1.0):
+    from auth.accounts import ExternalIdentity
+    return ExternalIdentity('https://tenant.example.test/',subject,user_id,provider,'writer@example.test',True,created,created)
+
+
+def _principal(session_id='ses_primary'):
+    return SimpleNamespace(user_id='usr_primary',session_id=session_id,authenticated_at=1_700_000_100.0)
+
+
+def _boundary(callback='/auth/step-up/callback'):
+    from auth.auth0 import Auth0BoundaryConfig
+    return Auth0BoundaryConfig(
+        environment='development',issuer='https://tenant.example.test/',client_id='client',
+        application_origin='http://127.0.0.1:8766',client_secret_ref='env:SECRET',callback_path=callback,
+    )
+
+
+def test_v10324_release_review_plan_and_checkpoint_ten_docs_are_in_sync():
+    version=(ROOT/'VERSION').read_text().strip()
+    assert tuple(map(int,version.split('.'))) >= (10,3,24)
+    plan=(ROOT/'docs/BREADMAKER_REVIEW_IMPLEMENTATION_PLAN.md').read_text()
+    assert f'Implemented through **{version}**' in plan
+    assert 'Identity Checkpoint 10' in (ROOT/'README.md').read_text()
+    assert 'Checkpoint 10.5' in (ROOT/'SECURITY.md').read_text()
+
+
+def test_v10324_oidc_extra_authorization_parameters_cannot_override_security_fields():
+    from auth.oidc import OidcClient, OidcError, OidcProviderConfig
+    client=OidcClient(OidcProviderConfig(
+        issuer='https://tenant.example.test/',client_id='client',client_secret='secret',
+        redirect_uri='http://127.0.0.1:8766/auth/step-up/callback',allow_insecure_loopback=True,
+    ))
+    client._get_discovery=lambda **_kw:{'authorization_endpoint':'https://tenant.example.test/authorize'}
+    request=client.begin_authorization(extra_authorization_params={'ext-breadmaker-security':'totp-enroll'})
+    query=parse_qs(urlsplit(request.authorization_url).query)
+    assert query['ext-breadmaker-security']==['totp-enroll']
+    with pytest.raises(OidcError,match='OIDC_AUTHORIZATION_PARAMETER_RESERVED'):
+        client.begin_authorization(extra_authorization_params={'redirect_uri':'https://evil.example/callback'})
+    with pytest.raises(OidcError,match='OIDC_AUTHORIZATION_PARAMETER_RESERVED'):
+        client.begin_authorization(extra_authorization_params={'max_age':'999999'})
+
+
+def test_v10324_step_up_grants_are_user_session_operation_target_bound_and_single_use():
+    from auth.oidc import OidcAuthorizationRequest
+    from auth.security import AccountSecurityError, StepUpTransactionStore
+    now=1_700_000_100.0
+    store=StepUpTransactionStore(now=lambda:now)
+    request=OidcAuthorizationRequest('https://auth.example/','state','nonce','challenge','/settings',now+300)
+    principal=_principal()
+    tx=store.bind_authorization(request,principal=principal,purpose='unlink_identity',target='apple|secondary')
+    store.issue_grant(tx,authenticated_at=now)
+    assert store.has_grant(principal=principal,purpose='unlink_identity',target='apple|secondary') is True
+    with pytest.raises(AccountSecurityError,match='SECURITY_STEP_UP_REQUIRED'):
+        store.consume_grant(principal=principal,purpose='unlink_identity',target='google-oauth2|other')
+    grant=store.consume_grant(principal=principal,purpose='unlink_identity',target='apple|secondary')
+    assert grant.user_id=='usr_primary' and grant.session_id=='ses_primary'
+    with pytest.raises(AccountSecurityError,match='SECURITY_STEP_UP_REQUIRED'):
+        store.consume_grant(principal=principal,purpose='unlink_identity',target='apple|secondary')
+
+
+def test_v10324_security_intent_is_hmac_signed_without_exposing_secret_value():
+    from auth.security import SecurityIntentSigner
+    signer=SecurityIntentSigner(client_id='client',secret_ref='env:INTENT',secret_loader=lambda _:'x'*48,now=lambda:1_700_000_100.0)
+    params=signer.parameters('totp-enroll',subject='google-oauth2|subject')
+    assert params['ext-breadmaker-security']=='totp-enroll'
+    assert params['ext-breadmaker-security-ts']=='1700000100'
+    assert len(params['ext-breadmaker-security-sig'])==64
+    assert signer.metadata()['secret_value_exposed'] is False
+    assert 'x'*48 not in repr(params)
+
+
+def test_v10324_revoke_session_step_up_can_only_target_session_owned_by_current_user():
+    from auth.security import AccountSecurityError, HostedAuth0SecurityService
+    primary=_external()
+    class Accounts:
+        def identities_for_user(self,user_id): return [primary]
+        def primary_identity_for_user(self,user_id): return primary
+    class Sessions:
+        def sessions_for_user(self,user_id): return [{'session_id':'ses_primary'},{'session_id':'ses_other_owned'}]
+    service=HostedAuth0SecurityService(
+        boundary=_boundary(),oidc=SimpleNamespace(),accounts=Accounts(),management=SimpleNamespace(metadata=lambda:{}),
+        intent_signer=SimpleNamespace(metadata=lambda:{}),
+    )
+    # Validation stops before OIDC for a guessed session that isn't owned by this user.
+    with pytest.raises(AccountSecurityError,match='SECURITY_SESSION_TARGET_NOT_OWNED'):
+        service.begin_step_up(principal=_principal(),purpose='revoke_session',target='ses_foreign',sessions=Sessions())
+
+
+def test_v10324_unlink_removes_local_authorization_first_and_rolls_it_back_if_auth0_fails():
+    from auth.security import AccountSecurityError, HostedAuth0SecurityService, StepUpTransaction, StepUpTransactionStore
+    now=1_700_000_100.0
+    primary=_external()
+    secondary=_external('apple|secondary',provider='apple',created=2.0)
+    calls=[]
+    class Accounts:
+        rows=[primary,secondary]
+        def identities_for_user(self,user_id): return list(self.rows)
+        def primary_identity_for_user(self,user_id): return primary
+        def unlink_external_identity_from_user(self,user_id,issuer,subject):
+            calls.append(('local_remove',subject)); self.rows=[row for row in self.rows if row.subject!=subject]; return secondary
+        def link_external_identity_to_user(self,user_id,issuer,subject,**kwargs):
+            calls.append(('local_restore',subject)); self.rows.append(secondary); return secondary
+    class Mgmt:
+        def metadata(self): return {}
+        def unlink_identity(self,**kwargs): calls.append(('provider_unlink',kwargs['secondary_subject'])); raise AccountSecurityError('SECURITY_MANAGEMENT_UNAVAILABLE')
+    store=StepUpTransactionStore(now=lambda:now)
+    tx=StepUpTransaction('s','usr_primary','ses_primary','unlink_identity','apple|secondary','/',now,now+300)
+    store.issue_grant(tx,authenticated_at=now)
+    accounts=Accounts()
+    service=HostedAuth0SecurityService(boundary=_boundary(),oidc=SimpleNamespace(),accounts=accounts,management=Mgmt(),intent_signer=SimpleNamespace(metadata=lambda:{}),step_up=store,now=lambda:now)
+    with pytest.raises(AccountSecurityError,match='SECURITY_MANAGEMENT_UNAVAILABLE'):
+        service.unlink_identity(principal=_principal(),subject='apple|secondary')
+    assert calls==[('local_remove','apple|secondary'),('provider_unlink','apple|secondary'),('local_restore','apple|secondary')]
+    assert any(row.subject=='apple|secondary' for row in accounts.rows)
+
+
+def test_v10324_database_identity_makes_totp_removal_forbidden():
+    from auth.security import AccountSecurityError, HostedAuth0SecurityService
+    primary=_external('auth0|database',provider='email_password')
+    class Accounts:
+        def identities_for_user(self,user_id): return [primary]
+        def primary_identity_for_user(self,user_id): return primary
+    service=HostedAuth0SecurityService(boundary=_boundary(),oidc=SimpleNamespace(),accounts=Accounts(),management=SimpleNamespace(metadata=lambda:{}),intent_signer=SimpleNamespace(metadata=lambda:{}))
+    with pytest.raises(AccountSecurityError,match='SECURITY_MANDATORY_TOTP_CANNOT_DISABLE'):
+        service.validate_step_up_target(principal=_principal(),purpose='disable_optional_totp',target='totp-method')
+
+
+def test_v10324_sign_out_everywhere_requires_auth0_success_before_local_revocation():
+    from auth.security import AccountSecurityError, HostedAuth0SecurityService, StepUpTransaction, StepUpTransactionStore
+    now=1_700_000_100.0
+    primary=_external()
+    calls=[]
+    class Accounts:
+        def identities_for_user(self,user_id): return [primary]
+        def primary_identity_for_user(self,user_id): return primary
+    class Mgmt:
+        def metadata(self): return {}
+        def delete_user_sessions(self,subject): calls.append('auth0'); raise AccountSecurityError('SECURITY_MANAGEMENT_UNAVAILABLE')
+    class Sessions:
+        def revoke_user(self,user_id): calls.append('local'); return 2
+    store=StepUpTransactionStore(now=lambda:now)
+    tx=StepUpTransaction('s','usr_primary','ses_primary','sign_out_all_sessions','','/',now,now+300)
+    store.issue_grant(tx,authenticated_at=now)
+    service=HostedAuth0SecurityService(boundary=_boundary(),oidc=SimpleNamespace(),accounts=Accounts(),management=Mgmt(),intent_signer=SimpleNamespace(metadata=lambda:{}),step_up=store,now=lambda:now)
+    with pytest.raises(AccountSecurityError,match='SECURITY_MANAGEMENT_UNAVAILABLE'):
+        service.sign_out_everywhere(principal=_principal(),sessions=Sessions())
+    assert calls==['auth0']
+
+
+def test_v10324_security_routes_are_hosted_auth0_only_and_product_ui_is_still_absent():
+    routes=(ROOT/'src/backend/runtime_routes.py').read_text()
+    assert "runtime.mode in {'hosted_dev','hosted'}" in routes
+    assert "auth_mode')=='auth0'" in routes
+    for route in (
+        '/api/auth/security','/api/auth/security/step-up/start','/auth/step-up/callback',
+        '/api/auth/security/identity/unlink','/api/auth/security/password/change',
+        '/api/auth/security/totp/disable','/api/auth/security/totp/replace',
+        '/api/auth/security/session/revoke','/api/auth/security/sign-out-everywhere',
+    ):
+        assert route in routes
+    index=(ROOT/'static/index.html').read_text().lower()
+    if tuple(map(int,(ROOT/'VERSION').read_text().strip().split('.'))) == (10,3,24):
+        assert 'security center' not in index
+        assert 'sign out everywhere' not in index
+    local=(ROOT/'src/runtime/local.py').read_text().lower()
+    assert 'auth0' not in local and 'security' not in local
+
+
+def test_v10324_replacement_enrollment_second_stage_cannot_be_started_by_browser_facing_step_up():
+    from auth.security import AccountSecurityError, HostedAuth0SecurityService
+    primary=_external()
+    class Accounts:
+        def identities_for_user(self,user_id): return [primary]
+        def primary_identity_for_user(self,user_id): return primary
+    service=HostedAuth0SecurityService(boundary=_boundary(),oidc=SimpleNamespace(),accounts=Accounts(),management=SimpleNamespace(metadata=lambda:{}),intent_signer=SimpleNamespace(metadata=lambda:{}))
+    with pytest.raises(AccountSecurityError,match='SECURITY_STEP_UP_PURPOSE_INTERNAL'):
+        service.begin_step_up(principal=_principal(),purpose='replace_totp_enroll',return_path='/settings')

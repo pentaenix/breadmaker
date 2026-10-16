@@ -1,0 +1,13 @@
+# Isolated staging recovery: only an immutable archive reader, no HTTP listener.
+FROM python:3.14.7-slim-trixie
+WORKDIR /app
+COPY requirements.txt requirements-hosted.txt ./
+RUN python -m pip install --no-cache-dir -r requirements-hosted.txt
+COPY src ./src
+RUN groupadd --system --gid 10001 breadmaker \
+    && useradd --system --uid 10001 --gid 10001 --home-dir /nonexistent --shell /usr/sbin/nologin breadmaker
+ENV PYTHONPATH=/app/src \
+    PYTHONDONTWRITEBYTECODE=1 \
+    BREADMAKER_OPERATOR_MODE=isolated_recovery_drill
+USER 10001:10001
+CMD ["python", "-m", "hosted.recovery_drill_cli", "drill"]

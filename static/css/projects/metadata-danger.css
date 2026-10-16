@@ -1,0 +1,17 @@
+/* =========================================================
+   4.12.6 Project metadata + Danger Zone
+   ========================================================= */
+.danger-zone{margin-top:14px;padding-top:12px;border-top:1px solid color-mix(in srgb,var(--danger) 34%,var(--line))}.danger-zone-title{color:var(--danger)!important}.danger-zone-copy{margin:4px 0 9px!important;color:var(--muted)!important;font-size:10.5px;line-height:1.4}.danger-zone-action{color:var(--danger)!important;border-color:color-mix(in srgb,var(--danger) 55%,var(--line2))!important}.danger-zone-action:hover{background:color-mix(in srgb,var(--danger) 8%,var(--surface2))!important;border-color:var(--danger)!important}
+.modal-card:has(.metadata-sections){width:min(650px,calc(100% - 30px))}.metadata-sections{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metadata-section{border:1px solid var(--line);border-radius:7px;padding:10px 12px;background:var(--surface)}.metadata-title{font-size:9.5px;font-weight:700;letter-spacing:.055em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}.metadata-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:4px 0;font-size:11.5px}.metadata-row span{color:var(--muted)}.metadata-row b{text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.metadata-project-info{grid-column:1/-1}.danger-confirm-copy{margin:0 0 10px;color:var(--muted);line-height:1.45}.danger-confirm-code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:22px;font-weight:700;letter-spacing:.16em;text-align:center;padding:13px;margin:0 0 13px;border:1px solid color-mix(in srgb,var(--danger) 45%,var(--line));border-radius:7px;background:color-mix(in srgb,var(--danger) 5%,var(--surface2));user-select:none;-webkit-user-select:none;cursor:default}.modal-actions button.danger:disabled{opacity:.38;cursor:not-allowed}
+@media(max-width:650px){.metadata-sections{grid-template-columns:1fr}.metadata-project-info{grid-column:auto}}
+
+
+/* =========================================================
+   4.12.7 Danger Zone placement + manual confirmation
+   ========================================================= */
+#projectModalBody>.danger-zone{margin-top:18px;padding-top:14px}
+.danger-confirm-code::selection{background:transparent;color:inherit}
+
+.modal-actions .danger-download-data{width:auto;display:inline-flex;align-items:center;text-decoration:none;color:var(--text)}
+
+

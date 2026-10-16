@@ -1,0 +1,119 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")"
+export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"
+PORTABLE_REVIEW="${1:-}"
+if [ -n "$PORTABLE_REVIEW" ]; then
+  case "$PORTABLE_REVIEW" in
+    *.breadreview) ;;
+    *) echo "BreadReview files must use the .breadreview extension." >&2; exit 1;;
+  esac
+  [ -f "$PORTABLE_REVIEW" ] || { echo "BreadReview file not found: $PORTABLE_REVIEW" >&2; exit 1; }
+  PORTABLE_REVIEW=$(cd "$(dirname "$PORTABLE_REVIEW")" && pwd)/$(basename "$PORTABLE_REVIEW")
+fi
+SYSTEM_PYTHON="${PYTHON:-python3}"
+VENV_PYTHON=".venv/bin/python"
+
+# Prefer an already-compatible Python when available. Otherwise create
+# Breadmaker's pinned app-local environment. Project data is never stored here.
+system_matches_requirements(){
+  "$SYSTEM_PYTHON" - <<'PYCHECK' >/dev/null 2>&1
+import importlib.metadata as m, pathlib, re
+for raw in pathlib.Path('requirements.txt').read_text().splitlines():
+    raw=raw.strip()
+    if not raw or raw.startswith('#'): continue
+    match=re.fullmatch(r'([A-Za-z0-9_.-]+)==([^ ]+)',raw)
+    if not match: raise SystemExit(1)
+    if m.version(match.group(1)) != match.group(2): raise SystemExit(1)
+PYCHECK
+}
+
+if system_matches_requirements; then
+  PYTHON_RUNTIME="$SYSTEM_PYTHON"
+else
+  if [ ! -x "$VENV_PYTHON" ]; then
+    echo "Preparing Breadmaker Editor…"
+    "$SYSTEM_PYTHON" -m venv .venv
+  fi
+  REQ_HASH=$($SYSTEM_PYTHON - <<'PYHASH'
+import hashlib, pathlib
+print(hashlib.sha256(pathlib.Path('requirements.txt').read_bytes()).hexdigest())
+PYHASH
+)
+  STAMP=".venv/.breadmaker_requirements"
+  if [ ! -f "$STAMP" ] || [ "$(cat "$STAMP" 2>/dev/null || true)" != "$REQ_HASH" ]; then
+    "$VENV_PYTHON" -m pip install -r requirements.txt >/dev/null
+    printf '%s' "$REQ_HASH" > "$STAMP"
+  fi
+  PYTHON_RUNTIME="$VENV_PYTHON"
+fi
+
+INSTANCE=$($SYSTEM_PYTHON - "$PORTABLE_REVIEW" <<'PYINSTANCE'
+import hashlib, os, pathlib, sys
+root=str(pathlib.Path('.').resolve())
+portable=sys.argv[1] if len(sys.argv)>1 else ''
+runtime=str(os.environ.get('BREADMAKER_RUNTIME') or 'local')
+auth_mode='local' if runtime=='local' else str(os.environ.get('BREADMAKER_AUTH_MODE') or 'developer')
+data_home=str(pathlib.Path(os.environ.get('BREADMAKER_HOME') or (pathlib.Path.home()/'.breadmaker-editor')).expanduser().resolve())
+print(hashlib.sha256((root+'|'+portable+'|'+runtime+'|'+auth_mode+'|'+data_home).encode()).hexdigest()[:16])
+PYINSTANCE
+)
+
+open_url(){
+  local url="$1"
+  if command -v open >/dev/null 2>&1; then open "$url" >/dev/null 2>&1 || true
+  elif command -v xdg-open >/dev/null 2>&1; then xdg-open "$url" >/dev/null 2>&1 || true
+  fi
+}
+
+probe_port(){
+  "$PYTHON_RUNTIME" - "$1" "$INSTANCE" <<'PYPROBE'
+import json, socket, sys, urllib.request
+p=int(sys.argv[1]); expected=sys.argv[2]
+try:
+    with urllib.request.urlopen(f'http://127.0.0.1:{p}/api/health',timeout=.25) as r: d=json.load(r)
+    if d.get('app')=='Breadmaker Editor' and d.get('ok') is True and d.get('instance')==expected:
+        print('existing'); raise SystemExit
+except SystemExit: raise
+except Exception: pass
+s=socket.socket(); s.settimeout(.2)
+try: used=s.connect_ex(('127.0.0.1',p))==0
+finally: s.close()
+print('occupied' if used else 'free')
+PYPROBE
+}
+
+if [ -n "${PORT:-}" ]; then
+  MODE=$(probe_port "$PORT")
+  [ "$MODE" != "existing" ] || { URL="http://127.0.0.1:${PORT}"; echo "Breadmaker Editor is already running: $URL"; open_url "$URL"; exit 0; }
+  [ "$MODE" != "occupied" ] || { echo "Port $PORT is already in use." >&2; exit 1; }
+else
+  PORT=""
+  for candidate in $(seq 8765 8785); do
+    MODE=$(probe_port "$candidate")
+    if [ "$MODE" = "existing" ]; then URL="http://127.0.0.1:${candidate}"; echo "Breadmaker Editor is already running: $URL"; open_url "$URL"; exit 0; fi
+    if [ "$MODE" = "free" ]; then PORT="$candidate"; break; fi
+  done
+  [ -n "$PORT" ] || { echo "Could not find a free local port." >&2; exit 1; }
+fi
+
+URL="http://127.0.0.1:${PORT}"
+OPEN_URL="${URL}${BREADMAKER_OPEN_PATH:-}"
+DATA_HOME="${BREADMAKER_HOME:-$HOME/.breadmaker-editor}"
+( sleep 1; open_url "$OPEN_URL" ) &
+echo "Breadmaker Editor: $URL"
+echo "Projects: $DATA_HOME/projects"
+echo "Press Ctrl+C in this window to stop Breadmaker Editor."
+# Build the Uvicorn argument vector with positional parameters instead of a
+# possibly-empty Bash array. macOS still ships Bash 3.2, where expanding an
+# empty array under `set -u` can raise "unbound variable".
+set -- -m uvicorn src.server:app --host 127.0.0.1 --port "$PORT"
+if [ "${BREADMAKER_UVICORN_NO_ACCESS_LOG:-0}" = "1" ]; then
+  set -- "$@" --no-access-log
+fi
+if [ -n "$PORTABLE_REVIEW" ]; then
+  echo "BreadReview: $PORTABLE_REVIEW"
+  exec env BREADMAKER_PORTABLE_REVIEW="$PORTABLE_REVIEW" BREADMAKER_INSTANCE_ID="$INSTANCE" "$PYTHON_RUNTIME" "$@"
+else
+  exec env BREADMAKER_INSTANCE_ID="$INSTANCE" "$PYTHON_RUNTIME" "$@"
+fi

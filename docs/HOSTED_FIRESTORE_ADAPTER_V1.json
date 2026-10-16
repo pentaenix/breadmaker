@@ -1,0 +1,43 @@
+{
+  "format": "breadmaker-hosted-firestore-adapter-contract",
+  "format_version": 1,
+  "editor_release": "10.3.47",
+  "milestone": 3,
+  "status": "candidate",
+  "model_source": "docs/HOSTED_DATA_MODEL_V1.json",
+  "registry_source": "src/hosted/firestore/model_registry.py",
+  "runtime_integration": "deferred_to_milestone_5",
+  "drivers": {
+    "release_tests": "MemoryDocumentStore",
+    "hosted_runtime": "GoogleFirestoreDocumentStore",
+    "live_credentials_required_by_release_verifier": false
+  },
+  "invariants": {
+    "local_runtime_imports_google_sdk": false,
+    "local_requirements_include_firestore": false,
+    "hosted_requirements_include_firestore": true,
+    "browser_direct_firestore_access": false,
+    "project_lookup_missing_and_forbidden_share_public_failure": true,
+    "project_ids_are_authorization_neutral": true,
+    "writes_use_transactions": true,
+    "mutable_documents_use_generation_cas": true,
+    "create_retries_are_idempotent": true,
+    "provider_retry_callbacks_have_no_external_side_effects": true,
+    "identity_bindings_are_immutable": true,
+    "email_is_identity_key": false,
+    "review_participant_record_is_user_authority": false,
+    "external_reviewer_requires_server_issued_session": true,
+    "caller_cannot_set_managed_generation_timestamps": true
+  },
+  "roles": [
+    "owner",
+    "editor"
+  ],
+  "repositories": [
+    "HostedUserRepository",
+    "HostedIdentityBindingRepository",
+    "HostedProjectRepository",
+    "HostedProjectEntityRepository",
+    "HostedStructuredRepository"
+  ]
+}

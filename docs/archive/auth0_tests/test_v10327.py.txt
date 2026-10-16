@@ -1,0 +1,37 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+from source_contracts import frontend_source_from_app_path, frontend_styles_source
+
+ROOT=Path(__file__).resolve().parents[1]
+
+
+def test_v10327_corrective_release_keeps_schema_42_and_release_identity_synchronized():
+    version=(ROOT/'VERSION').read_text(encoding='utf-8').strip()
+    assert tuple(map(int,version.split('.'))) >= (10,3,27)
+    assert 'SCHEMA_VERSION = 42' in (ROOT/'src/storage/schema.py').read_text(encoding='utf-8')
+    assert 'APP_SCHEMA_VERSION = 42' in (ROOT/'src/workspace/constants.py').read_text(encoding='utf-8')
+    assert f'Implemented through **{version}**' in (ROOT/'docs/BREADMAKER_REVIEW_IMPLEMENTATION_PLAN.md').read_text(encoding='utf-8')
+    assert f'breadmaker_logo.svg?v={version}' in frontend_styles_source(ROOT)
+
+
+def test_v10327_real_auth_stays_fail_closed_independent_of_any_local_ui_review_surface():
+    real=(ROOT/'run-hosted-auth-dev').read_text(encoding='utf-8')
+    assert 'real Auth0 only' in real
+    assert 'BREADMAKER_AUTH_MODE=auth0' in real
+    assert 'BREADMAKER_AUTH0_ISSUER' in real
+    assert 'BREADMAKER_AUTH0_CLIENT_ID' in real
+    assert 'BREADMAKER_AUTH0_CLIENT_SECRET' in real
+
+
+def test_v10327_account_security_time_uses_breadmaker_i18n_helper():
+    app=frontend_source_from_app_path(ROOT/'static/app.js')
+    assert APP_TO_LOCALE_COUNT(app)==2
+    security=(ROOT/'static/js/features/account/security.js').read_text(encoding='utf-8')
+    assert 'return i18nDateTime(seconds*1000)' in security
+    assert '.toLocaleString(' not in security
+
+
+def APP_TO_LOCALE_COUNT(app:str)->int:
+    return app.count('.toLocaleString(')

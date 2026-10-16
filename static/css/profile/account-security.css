@@ -1,0 +1,17 @@
+/* Checkpoint 10.5 — hosted account/security UI. Local Breadmaker never renders this surface. */
+.account-security-shell{display:flex;flex-direction:column;gap:18px;min-width:min(720px,78vw);max-width:820px}
+.account-security-intro{margin:-2px 0 0;color:var(--muted);font-size:12px;line-height:1.5}
+.account-security-section{border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}
+.account-security-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:14px 15px 11px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface) 93%,var(--surface2))}
+.account-security-section-head h3{font-size:13px;margin:0 0 3px}.account-security-section-head p{margin:0;color:var(--muted);font-size:11px;line-height:1.45}
+.account-security-list{display:flex;flex-direction:column}.account-security-row{display:flex;align-items:center;gap:13px;min-height:58px;padding:11px 14px;border-top:1px solid var(--line)}.account-security-row:first-child{border-top:0}
+.account-security-copy{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}.account-security-copy strong{font-size:12px}.account-security-copy small{font-size:10.5px;color:var(--muted);white-space:normal;overflow-wrap:anywhere}
+.account-security-actions{display:flex;gap:6px;align-items:center;flex:none}.account-security-actions button{border:1px solid var(--line2);background:var(--surface);border-radius:5px;padding:6px 9px;font-size:11px}.account-security-actions button:hover{background:var(--surface2)}
+.account-security-actions button.danger,.account-security-danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 35%,var(--line))!important}.account-security-actions button.danger:hover,.account-security-danger:hover{background:color-mix(in srgb,var(--danger) 8%,var(--surface))!important}
+.account-security-provider{width:30px;height:30px;border:1px solid var(--line);border-radius:7px;display:grid;place-items:center;font-weight:700;font-size:12px;background:var(--surface2);flex:none}
+.account-security-badge{font-size:9.5px;padding:2px 5px;border:1px solid var(--line);border-radius:4px;color:var(--muted);font-weight:500;margin-left:5px;vertical-align:1px}.account-security-badge.primary{color:var(--text)}
+.account-security-status{font-size:10px;color:var(--muted)}.account-security-empty{padding:15px;color:var(--muted);font-size:11px}
+.account-security-warning{padding:10px 12px;border:1px solid color-mix(in srgb,var(--warning,#a56c00) 35%,var(--line));background:color-mix(in srgb,var(--warning,#a56c00) 8%,var(--surface));border-radius:6px;font-size:11px;line-height:1.45}
+.account-security-modal-actions{display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px}.account-security-modal-actions .right{display:flex;gap:7px}
+.account-security-loading{padding:28px;text-align:center;color:var(--muted);font-size:12px}
+@media(max-width:760px){.account-security-shell{min-width:0;max-width:none}.account-security-row{align-items:flex-start;flex-wrap:wrap}.account-security-actions{width:100%;justify-content:flex-end;padding-left:43px}}

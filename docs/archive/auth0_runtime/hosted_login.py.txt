@@ -1,0 +1,343 @@
+from __future__ import annotations
+
+"""Real Auth0 login composition for explicitly enabled hosted runtimes.
+
+This module is intentionally *not* used by ``BREADMAKER_RUNTIME=local``. Development
+keeps the localhost Auth0 sandbox; Checkpoint 12 enables the same reviewed OIDC path for
+single-instance staging. Production remains disabled.
+"""
+
+import os
+import secrets
+import threading
+import time
+from dataclasses import dataclass
+from typing import Any
+
+from auth.apple import AppleAuth0IdentityMapper
+from auth.auth0 import Auth0BoundaryConfig, Auth0BoundaryError
+from auth.database import DatabaseAuth0IdentityMapper
+from auth.google import GoogleAuth0IdentityMapper
+from auth.oidc import OidcError
+
+
+class HostedAuth0LoginError(RuntimeError):
+    """Stable non-secret login adapter failure."""
+
+
+
+
+_ALLOWED_UI_LOCALES = frozenset({'en', 'es', 'fr', 'it', 'ja', 'pt-BR', 'zh-CN'})
+_LANGUAGE_CONTEXT_TTL_SECONDS = 600
+_LANGUAGE_CONTEXT_MAX_ACTIVE = 4096
+
+_LOGIN_BROWSER_BINDING_TTL_SECONDS = 900
+_LOGIN_BROWSER_BINDING_MAX_STATES = 4096
+
+@dataclass(frozen=True)
+class _LoginBrowserBinding:
+    digest: str
+    expires_at: float
+
+
+class _LoginBrowserBindingStore:
+    """Bind an initial OIDC state to the browser that started login.
+
+    OIDC state prevents protocol replay, but unauthenticated login also needs a
+    browser binding to prevent login-CSRF/session-swapping. Only a SHA-256 digest
+    of the short-lived HttpOnly browser nonce is retained server-side.
+    """
+
+    def __init__(self, *, now=time.time, max_states: int = _LOGIN_BROWSER_BINDING_MAX_STATES):
+        self._now = now
+        self._max_states = int(max_states)
+        if self._max_states < 16 or self._max_states > 65536:
+            raise HostedAuth0LoginError('AUTH0_LOGIN_BROWSER_BINDING_CAPACITY_INVALID')
+        self._items: dict[str, _LoginBrowserBinding] = {}
+        self._lock = threading.RLock()
+
+    @staticmethod
+    def _clean_binding(value: str) -> str:
+        token = str(value or '').strip()
+        if not token or len(token) > 256 or any(ch not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_' for ch in token):
+            raise HostedAuth0LoginError('AUTH0_LOGIN_BROWSER_BINDING_INVALID')
+        return token
+
+    @staticmethod
+    def _digest(value: str) -> str:
+        import hashlib
+        return hashlib.sha256(value.encode('ascii')).hexdigest()
+
+    def bind(self, *, state: str, browser_binding: str, expires_at: float) -> None:
+        state_value = str(state or '').strip()
+        if not state_value or len(state_value) > 256:
+            raise HostedAuth0LoginError('AUTH0_LOGIN_BROWSER_BINDING_INVALID')
+        token = self._clean_binding(browser_binding)
+        now = float(self._now())
+        expiry = min(float(expires_at), now + _LOGIN_BROWSER_BINDING_TTL_SECONDS)
+        with self._lock:
+            self._prune_locked(now)
+            if state_value not in self._items and len(self._items) >= self._max_states:
+                raise HostedAuth0LoginError('AUTH0_LOGIN_BROWSER_BINDING_CAPACITY_EXCEEDED')
+            self._items[state_value] = _LoginBrowserBinding(self._digest(token), expiry)
+
+    def consume(self, *, state: str, browser_binding: str) -> None:
+        state_value = str(state or '').strip()
+        token = self._clean_binding(browser_binding)
+        now = float(self._now())
+        digest = self._digest(token)
+        with self._lock:
+            self._prune_locked(now)
+            item = self._items.get(state_value)
+            if item is None or now >= item.expires_at:
+                self._items.pop(state_value, None)
+                raise HostedAuth0LoginError('AUTH0_LOGIN_BROWSER_BINDING_INVALID')
+            if not secrets.compare_digest(item.digest, digest):
+                raise HostedAuth0LoginError('AUTH0_LOGIN_BROWSER_BINDING_MISMATCH')
+            self._items.pop(state_value, None)
+
+    def discard(self, state: str) -> None:
+        with self._lock:
+            self._items.pop(str(state or '').strip(), None)
+
+    def _prune_locked(self, now: float) -> None:
+        for key, item in list(self._items.items()):
+            if now >= item.expires_at:
+                self._items.pop(key, None)
+
+
+def new_login_browser_binding() -> str:
+    return secrets.token_urlsafe(32)
+
+
+@dataclass(frozen=True)
+class _LanguageContext:
+    return_path: str
+    locale: str
+    signup: bool
+    expires_at: float
+    oidc_state: str = ''
+
+
+class _LanguageContextStore:
+    """Single-use bridge for safe locale/signup restarts from Universal Login.
+
+    Auth0 page templates receive only an opaque random handle. Return paths never enter
+    page-template hrefs, and every restart returns through Breadmaker where the normal
+    OIDC transaction store validates the path again.
+    """
+
+    def __init__(self, *, now=time.time, max_active: int = _LANGUAGE_CONTEXT_MAX_ACTIVE):
+        self._now = now
+        self._max_active = int(max_active)
+        if self._max_active < 16 or self._max_active > 65536:
+            raise HostedAuth0LoginError('AUTH0_LANGUAGE_CONTEXT_CAPACITY_INVALID')
+        self._items: dict[str, _LanguageContext] = {}
+        self._lock = threading.RLock()
+
+    def issue(self, *, return_path: str, locale: str, signup: bool) -> str:
+        token = secrets.token_urlsafe(24)
+        now = float(self._now())
+        item = _LanguageContext(str(return_path or '/'), locale, bool(signup), now + _LANGUAGE_CONTEXT_TTL_SECONDS)
+        with self._lock:
+            self._prune_locked(now)
+            if token not in self._items and len(self._items) >= self._max_active:
+                raise HostedAuth0LoginError('AUTH0_LANGUAGE_CONTEXT_CAPACITY_EXCEEDED')
+            self._items[token] = item
+        return token
+
+    def bind_transaction(self, token: str, *, return_path: str, oidc_state: str) -> None:
+        with self._lock:
+            item = self._items.get(token)
+            if item is not None:
+                self._items[token] = _LanguageContext(
+                    str(return_path), item.locale, item.signup, item.expires_at, str(oidc_state or ''),
+                )
+
+    def discard(self, token: str) -> None:
+        with self._lock:
+            self._items.pop(str(token or ''), None)
+
+    def consume(self, token: str) -> _LanguageContext:
+        value = str(token or '').strip()
+        if not value or len(value) > 128 or any(ch not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_' for ch in value):
+            raise HostedAuth0LoginError('AUTH0_LANGUAGE_CONTEXT_INVALID')
+        now = float(self._now())
+        with self._lock:
+            item = self._items.pop(value, None)
+            self._prune_locked(now)
+        if item is None or now >= item.expires_at:
+            raise HostedAuth0LoginError('AUTH0_LANGUAGE_CONTEXT_INVALID')
+        return item
+
+    def _prune_locked(self, now: float) -> None:
+        for key in [key for key, item in self._items.items() if now >= item.expires_at]:
+            self._items.pop(key, None)
+
+
+def _normalize_ui_locale(value: str) -> str:
+    locale = str(value or '').strip()
+    if not locale:
+        return ''
+    if locale not in _ALLOWED_UI_LOCALES:
+        raise HostedAuth0LoginError('AUTH0_UI_LOCALE_INVALID')
+    return locale
+
+@dataclass(frozen=True)
+class HostedAuthResult:
+    user_id: str
+    auth_method: str
+    authenticated_at: float | None
+    return_path: str
+
+
+class HostedAuth0LoginService:
+    def __init__(self, *, boundary: Auth0BoundaryConfig, oidc, accounts):
+        self.boundary = boundary
+        self.oidc = oidc
+        self.accounts = accounts
+        self.google = GoogleAuth0IdentityMapper(boundary)
+        self.apple = AppleAuth0IdentityMapper(boundary)
+        self.database = DatabaseAuth0IdentityMapper(boundary)
+        self._language_contexts = _LanguageContextStore()
+        self._browser_bindings = _LoginBrowserBindingStore()
+
+    def metadata(self) -> dict[str, Any]:
+        return {
+            'enabled': True,
+            'mode': 'auth0',
+            'environment': self.boundary.environment,
+            'broker': 'auth0',
+            'universal_login': True,
+            'callback_uri': self.boundary.callback_uri,
+            'local_editor_uses_this_service': False,
+            'providers': ['google', 'apple', 'email_password'],
+            'totp_owner': 'auth0',
+        }
+
+    def begin(self, *, return_path: str = '/', locale: str = '', browser_binding: str):
+        return self._begin(return_path=return_path, locale=locale, signup=False, browser_binding=browser_binding)
+
+    def begin_signup(self, *, return_path: str = '/', locale: str = '', browser_binding: str):
+        """Start the same OIDC flow on Auth0's signup prompt.
+
+        Breadmaker still never hosts or reads signup credentials. ``screen_hint`` only
+        selects Auth0 New Universal Login's provider-owned signup screen.
+        """
+        return self._begin(return_path=return_path, locale=locale, signup=True, browser_binding=browser_binding)
+
+    def restart_for_locale(self, *, locale: str, context: str, browser_binding: str):
+        """Restart the current Universal Login transaction in a reviewed locale.
+
+        The browser returns only an opaque single-use context handle. It never echoes a
+        redirect target into an href, so the language selector cannot become an open
+        redirect or a return-path injection point.
+        """
+        item = self._language_contexts.consume(context)
+        self._cancel_restart_source(item)
+        return self._begin(return_path=item.return_path, locale=locale, signup=item.signup, browser_binding=browser_binding)
+
+    def restart_as_signup(self, *, context: str, browser_binding: str):
+        item = self._language_contexts.consume(context)
+        self._cancel_restart_source(item)
+        return self._begin(return_path=item.return_path, locale=item.locale, signup=True, browser_binding=browser_binding)
+
+    def _cancel_restart_source(self, item: _LanguageContext) -> None:
+        state = str(item.oidc_state or '').strip()
+        if not state:
+            return
+        self._browser_bindings.discard(state)
+        self.oidc.transactions.discard(state)
+
+    def _begin(self, *, return_path: str, locale: str, signup: bool, browser_binding: str):
+        normalized_locale = _normalize_ui_locale(locale)
+        language_context = self._language_contexts.issue(
+            return_path=return_path, locale=normalized_locale, signup=signup,
+        )
+        extra = {'ext-bm-lang-state': language_context}
+        if normalized_locale:
+            extra['ui_locales'] = normalized_locale
+        if signup:
+            extra['screen_hint'] = 'signup'
+        try:
+            tx = self.oidc.begin_authorization(
+                return_path=return_path,
+                extra_authorization_params=extra,
+            )
+        except (OidcError, Auth0BoundaryError) as exc:
+            self._language_contexts.discard(language_context)
+            raise HostedAuth0LoginError(str(exc)) from exc
+        try:
+            self._browser_bindings.bind(state=tx.state, browser_binding=browser_binding, expires_at=tx.expires_at)
+        except HostedAuth0LoginError:
+            self._language_contexts.discard(language_context)
+            self.oidc.transactions.discard(tx.state)
+            raise
+        self._language_contexts.bind_transaction(
+            language_context, return_path=tx.return_path, oidc_state=tx.state,
+        )
+        return tx
+
+    def complete(self, *, code: str, state: str, browser_binding: str) -> HostedAuthResult:
+        self._browser_bindings.consume(state=state, browser_binding=browser_binding)
+        try:
+            identity, return_path = self.oidc.complete_authorization(code=code, state=state)
+            subject = str(identity.subject or '')
+            if subject.startswith('google-oauth2|'):
+                account = self.google.resolve_or_create_account(identity, self.accounts)
+                method = 'google'
+            elif subject.startswith('apple|'):
+                account = self.apple.resolve_or_create_account(identity, self.accounts)
+                method = 'apple'
+            elif subject.startswith('auth0|'):
+                account = self.database.resolve_or_create_account(identity, self.accounts)
+                method = 'email_password_totp'
+            else:
+                raise HostedAuth0LoginError('AUTH0_CONNECTION_NOT_ALLOWED')
+            return HostedAuthResult(
+                user_id=str(account.user_id),
+                auth_method=method,
+                authenticated_at=identity.authenticated_at,
+                return_path=return_path,
+            )
+        except HostedAuth0LoginError:
+            raise
+        except Exception as exc:
+            # Never surface provider/token details from remote exceptions.
+            raise HostedAuth0LoginError('AUTH0_CALLBACK_REJECTED') from exc
+
+
+from auth.secrets import development_environment_secret_loader
+
+
+def _default_web_secret_reference(environment: str) -> str:
+    if environment == 'development':
+        return 'env:BREADMAKER_AUTH0_CLIENT_SECRET'
+    project = str(os.environ.get('BREADMAKER_GCP_PROJECT_ID') or '').strip()
+    if environment == 'staging' and project:
+        return f'secretmanager:projects/{project}/secrets/breadmaker-auth0-web-client-secret/versions/latest'
+    return ''
+
+
+def build_auth0_login_service(accounts, *, environment: str, secret_loader) -> HostedAuth0LoginService:
+    env = str(environment or '').strip().lower()
+    if env not in {'development', 'staging'}:
+        raise HostedAuth0LoginError('AUTH0_HOSTED_ENVIRONMENT_NOT_ENABLED')
+    boundary = Auth0BoundaryConfig(
+        environment=env,
+        issuer=str(os.environ.get('BREADMAKER_AUTH0_ISSUER') or ''),
+        client_id=str(os.environ.get('BREADMAKER_AUTH0_CLIENT_ID') or ''),
+        application_origin=str(os.environ.get('BREADMAKER_PUBLIC_ORIGIN') or ''),
+        client_secret_ref=str(os.environ.get('BREADMAKER_AUTH0_CLIENT_SECRET_REF') or _default_web_secret_reference(env)),
+    )
+    oidc = boundary.build_oidc_client(secret_loader=secret_loader)
+    return HostedAuth0LoginService(boundary=boundary, oidc=oidc, accounts=accounts)
+
+
+def build_development_auth0_login_service(accounts) -> HostedAuth0LoginService:
+    environment = str(os.environ.get('BREADMAKER_ENV') or 'development').strip().lower()
+    if environment != 'development':
+        raise HostedAuth0LoginError('AUTH0_LOCAL_SANDBOX_DEVELOPMENT_ONLY')
+    return build_auth0_login_service(
+        accounts, environment='development', secret_loader=development_environment_secret_loader,
+    )

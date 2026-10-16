@@ -1,0 +1,26 @@
+from __future__ import annotations
+import json
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+
+def test_v10331_real_auth_desired_state_keeps_editor_native_light_tokens_and_no_shadow():
+    cloud=ROOT.parent/'breadmaker-cloud'
+    theme=json.loads((cloud/'auth0/branding/theme.json').read_text(encoding='utf-8'))
+    assert theme['page_background']['background_color']=='#F3F3F1'
+    assert theme['colors']['widget_background']=='#FFFFFF'
+    assert theme['colors']['input_border']=='#DEDEDB'
+    assert theme['borders']['show_widget_shadow'] is False
+    assert theme['borders']['widget_border_weight']==1
+
+def test_v10331_real_auth_template_keeps_recovery_and_language_shell_without_preview_code():
+    cloud=ROOT.parent/'breadmaker-cloud'
+    template=(cloud/'auth0/branding/universal_login.html').read_text(encoding='utf-8')
+    assert 'Privacy Policy' in template
+    assert 'bm-language' in template and 'bmThemeBtn' in template
+    assert 'auth-ui-preview' not in template
+
+def test_v10331_release_plan_and_schema_remain_synchronized():
+    version=(ROOT/'VERSION').read_text(encoding='utf-8').strip()
+    assert tuple(map(int,version.split('.'))) >= (10,3,31)
+    assert 'APP_SCHEMA_VERSION = 42' in (ROOT/'src/workspace/constants.py').read_text(encoding='utf-8')
+    assert f'Implemented through **{version}**' in (ROOT/'docs/BREADMAKER_REVIEW_IMPLEMENTATION_PLAN.md').read_text(encoding='utf-8')
