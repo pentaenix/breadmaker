@@ -6,5 +6,5 @@ google-cloud-storage==3.16.0
 firebase-admin==7.7.0
 
 # M12B cloud-only key wrapper; imported lazily (never needed for local editing).
-google-cloud-kms==3.17.0
+google-cloud-kms==3.18.0
 google-crc32c==1.9.0
