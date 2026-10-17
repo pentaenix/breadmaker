@@ -13,6 +13,7 @@ from pathlib import Path
 
 import app as app_module
 from backend import recovery_runtime
+from removable_volume_simulation import simulate_removable_volume
 def _first_chapter(client):
     return client.get('/api/bootstrap').json()['chapters'][0]
 
@@ -44,8 +45,9 @@ def test_v740_multi_destination_fanout_and_independent_status(client,fresh_proje
     assert len(list(two.glob('*.breadmaker')))>=2
 
 
-def test_v740_absent_drive_is_normal_and_catches_up_when_it_returns(client,fresh_project,tmp_path):
+def test_v740_absent_drive_is_normal_and_catches_up_when_it_returns(client,fresh_project,tmp_path,monkeypatch):
     connected=tmp_path/'connected';removable=tmp_path/'removable';connected.mkdir();removable.mkdir()
+    simulate_removable_volume(monkeypatch,removable)
     client.post('/api/backup-destinations',json={'path':str(connected)})
     removable_added=client.post('/api/backup-destinations',json={'path':str(removable)}).json()['destination']
     parked=tmp_path/'parked-removable';shutil.move(str(removable),str(parked))

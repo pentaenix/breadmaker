@@ -14,6 +14,7 @@ from pathlib import Path
 import app as app_module
 from backend import recovery_runtime
 from backups.scheduler import RecoveryBackupScheduler
+from removable_volume_simulation import simulate_removable_volume
 
 
 def _edit_first_block_direct(text: str) -> int:
@@ -79,9 +80,10 @@ def test_v788_not_connected_destination_remains_retryable():
     assert recovery_runtime._destination_retry_required(result) is False
 
 
-def test_v788_removable_drive_reinsert_catches_up_without_manual_action(client,fresh_project,tmp_path):
+def test_v788_removable_drive_reinsert_catches_up_without_manual_action(client,fresh_project,tmp_path,monkeypatch):
     pid=str(fresh_project['project']['id'])
     usb=tmp_path/'writing-usb';usb.mkdir()
+    simulate_removable_volume(monkeypatch,usb)
     added=client.post('/api/backup-destinations',json={'path':str(usb),'destination_kind':'local'})
     assert added.status_code==200,added.text
     destination=added.json()['destination'];did=str(destination['id'])
