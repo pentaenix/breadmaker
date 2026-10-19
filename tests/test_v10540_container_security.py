@@ -20,3 +20,15 @@ def test_production_runtime_excludes_build_os_tools_and_retains_package_evidence
 def test_hosted_container_pins_patched_transitive_dependencies():
     text=(ROOT/'deploy/constraints-hosted.txt').read_text()
     assert 'msgpack==1.2.3' in text and 'urllib3==2.8.0' in text and 'setuptools==84.2.0' in text
+
+
+def test_identity_browser_key_receives_origin_without_leaking_paths(monkeypatch):
+    from types import SimpleNamespace
+    from starlette.requests import Request
+    from backend import http_boundary
+    request=Request({'type':'http','scheme':'https','path':'/auth/login','headers':[(b'host',b'app.example')]})
+    sessions=SimpleNamespace(metadata=lambda:{'auth_mode':'identity_platform'})
+    monkeypatch.setattr(http_boundary,'runtime',SimpleNamespace(mode='hosted',sessions=sessions))
+    assert http_boundary._security_headers(request)['Referrer-Policy']=='strict-origin'
+    monkeypatch.setattr(http_boundary,'runtime',SimpleNamespace(mode='local',sessions=sessions))
+    assert http_boundary._security_headers(request)['Referrer-Policy']=='no-referrer'

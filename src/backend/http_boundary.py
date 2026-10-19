@@ -42,7 +42,9 @@ def _security_headers(request:Request) -> dict[str,str]:
         'Content-Security-Policy':f"default-src 'self'; script-src {script_policy}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src {connect_policy}; frame-src {frame_policy}; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
         'X-Frame-Options':'DENY',
         'X-Content-Type-Options':'nosniff',
-        'Referrer-Policy':'no-referrer',
+        # Firebase's browser-restricted API key needs the HTTPS origin. Never
+        # disclose manuscript paths, return_to queries or invitation fragments.
+        'Referrer-Policy':'strict-origin' if identity_web else 'no-referrer',
         'Permissions-Policy':'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=()',
     }
     proto=str(request.headers.get('x-forwarded-proto') or request.url.scheme or '').split(',')[0].strip().lower()
