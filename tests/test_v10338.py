@@ -1,6 +1,7 @@
 from __future__ import annotations
 import sys
 from pathlib import Path
+import pytest
 ROOT=Path(__file__).resolve().parents[1];SRC=ROOT/'src'
 if str(SRC) not in sys.path:sys.path.insert(0,str(SRC))
 def read(path):return (ROOT/path).read_text(encoding='utf-8')
@@ -14,12 +15,26 @@ def test_v10338_local_runtime_remains_zero_cloud_identity(monkeypatch):
     import runtime as runtime_module
     marker=object();monkeypatch.delenv('BREADMAKER_RUNTIME',raising=False);monkeypatch.setattr(runtime_module,'build_local_runtime',lambda workspace:marker);assert runtime_module.build_runtime(object()) is marker
 
-def test_v10338_hosted_runtime_is_staging_identity_platform_https_with_external_authority():
+def test_v10338_hosted_runtime_is_deployed_identity_platform_https_with_external_authority():
     hosted=read('src/runtime/hosted.py')
-    for marker in ['HOSTED_PRODUCTION_NOT_ENABLED','HOSTED_RUNTIME_STAGING_ONLY','HOSTED_RUNTIME_IDENTITY_PLATFORM_REQUIRED','HOSTED_RUNTIME_HTTPS_ORIGIN_REQUIRED','HOSTED_RUNTIME_DEV_BYPASS_FORBIDDEN','HOSTED_RUNTIME_PUBLIC_HOST_PIN_REQUIRED','HOSTED_RUNTIME_SECURE_COOKIE_REQUIRED']:
+    for marker in ['HOSTED_RUNTIME_ENVIRONMENT_REQUIRED','HOSTED_RUNTIME_IDENTITY_PLATFORM_REQUIRED','HOSTED_RUNTIME_HTTPS_ORIGIN_REQUIRED','HOSTED_RUNTIME_DEV_BYPASS_FORBIDDEN','HOSTED_RUNTIME_PUBLIC_HOST_PIN_REQUIRED','HOSTED_RUNTIME_SECURE_COOKIE_REQUIRED']:
         assert marker in hosted
+    assert "environment not in {'staging','production'}" in hosted
+    assert "'production_ready':environment=='production'" in hosted
     assert 'HOSTED_SINGLE_WORKER_REQUIRED' not in hosted and "'single_worker_required':False" in hosted
     assert "else 'identity_platform'" in hosted and "auth_mode!='identity_platform'" in hosted and 'auth0' not in hosted.lower()
+
+
+def test_v10338_hosted_runtime_accepts_only_staging_or_production(monkeypatch):
+    from runtime.hosted import _validate_mode
+
+    monkeypatch.setenv('BREADMAKER_PUBLIC_ORIGIN', 'https://app.breadmaker.studio')
+    monkeypatch.setenv('BREADMAKER_ENFORCE_PUBLIC_HOST', '1')
+    monkeypatch.delenv('BREADMAKER_HOSTED_DEV_ALLOW_UNAUTHENTICATED', raising=False)
+    _validate_mode('hosted', 'identity_platform', 'staging')
+    _validate_mode('hosted', 'identity_platform', 'production')
+    with pytest.raises(RuntimeError, match='HOSTED_RUNTIME_ENVIRONMENT_REQUIRED'):
+        _validate_mode('hosted', 'identity_platform', 'development')
 
 def test_v10338_current_hosted_auth_surface_is_identity_platform_only():
     auth=read('src/hosted/http_auth.py').lower();routes=read('src/backend/runtime_routes.py').lower()

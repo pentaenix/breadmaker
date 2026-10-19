@@ -77,8 +77,7 @@ _HOSTED_CAPABILITIES={
 
 def _validate_mode(runtime_mode: str, auth_mode: str, environment: str) -> None:
     if runtime_mode == 'hosted':
-        if environment == 'production':raise RuntimeError('HOSTED_PRODUCTION_NOT_ENABLED')
-        if environment != 'staging':raise RuntimeError('HOSTED_RUNTIME_STAGING_ONLY')
+        if environment not in {'staging','production'}:raise RuntimeError('HOSTED_RUNTIME_ENVIRONMENT_REQUIRED')
         if auth_mode!='identity_platform':raise RuntimeError('HOSTED_RUNTIME_IDENTITY_PLATFORM_REQUIRED')
         origin=str(os.environ.get('BREADMAKER_PUBLIC_ORIGIN') or '').strip()
         if not origin.startswith('https://'):raise RuntimeError('HOSTED_RUNTIME_HTTPS_ORIGIN_REQUIRED')
@@ -170,7 +169,7 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
             'auth_mode':auth_mode,
             'runtime_mode':runtime_mode,
             'environment':environment,
-            'production_ready':False,
+            'production_ready':environment=='production',
             'single_worker_required':False,
             'cross_instance_authority':'firestore_gcs_identity_platform',
             'persistent_server_filesystem':False,
