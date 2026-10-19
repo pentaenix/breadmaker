@@ -13,6 +13,8 @@ def test_production_runtime_excludes_build_os_tools_and_retains_package_evidence
     assert 'USER 10001:10001' in runtime
     assert 'import ssl,sqlite3,bz2,lzma,ctypes,uuid' in runtime
     assert 'scripts/assert_hosted_image_stack.py' in runtime
+    assert "find_spec('pip') is None" in runtime
+    assert "find_spec('ensurepip') is None" in runtime
 
 
 def test_hosted_container_pins_patched_transitive_dependencies():

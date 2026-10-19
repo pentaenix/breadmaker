@@ -31,6 +31,11 @@ RUN mkdir -p /runtime-libs /runtime-status && \
       else rm "/runtime-status/$package"; fi; \
     done
 
+# pip vendors its own old dependencies; none are needed after installation.
+# Remove the actual package-manager code and bootstrap wheels, not just SBOMs.
+RUN python -m pip uninstall --yes pip \
+    && rm -r /usr/local/lib/python3.14/ensurepip
+
 # The runtime has no shell, package manager, mount/login tools, systemd or Perl.
 # Its maintained OpenSSL library is patched independently of the build image.
 FROM gcr.io/distroless/cc-debian13:nonroot@sha256:e792ab3d241a468a4fd7519ddbbebe66b49b5f365771716ea688ad40b6c6f1c2
@@ -56,6 +61,7 @@ ENV PYTHONPATH=/app/src \
 EXPOSE 8080
 USER 10001:10001
 RUN ["python", "-c", "import ssl,sqlite3,bz2,lzma,ctypes,uuid; import firebase_admin,google.cloud.firestore,google.cloud.storage,docx,reportlab,PIL,uvicorn; assert __import__('sys').version_info[:3] == (3,14,8)"]
+RUN ["python", "-c", "import importlib.util; assert importlib.util.find_spec('pip') is None; assert importlib.util.find_spec('ensurepip') is None"]
 RUN ["python", "scripts/assert_hosted_image_stack.py"]
 
 # One worker is a cost/memory default, not a security or project-write lock.
