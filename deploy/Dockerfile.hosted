@@ -1,11 +1,13 @@
 # The build must supply the reviewed multi-platform index digest through the
 # production pipeline. Never substitute a mutable tag or an invented hash.
 ARG PYTHON_BASE_DIGEST
-FROM python:3.14.7-slim-trixie@sha256:${PYTHON_BASE_DIGEST}
+FROM python:3.14.8-slim-trixie@sha256:${PYTHON_BASE_DIGEST} AS build
 
 WORKDIR /app
 COPY requirements.txt requirements-hosted.txt ./
-RUN python -m pip install --no-cache-dir -r requirements-hosted.txt
+COPY deploy/constraints-hosted.txt ./deploy/constraints-hosted.txt
+RUN python -m pip install --no-cache-dir -r requirements-hosted.txt \
+    -c deploy/constraints-hosted.txt setuptools==84.2.0
 
 # Hosted images are assembled from an allowlist. Never COPY the working tree: an
 # operator may legitimately have local .env files, OAuth backup credentials, project
@@ -18,9 +20,28 @@ COPY VERSION ./VERSION
 COPY scripts/assert_hosted_image_stack.py ./scripts/assert_hosted_image_stack.py
 RUN python scripts/assert_hosted_image_stack.py
 
-RUN groupadd --system --gid 10001 breadmaker \
-    && useradd --system --uid 10001 --gid 10001 --home-dir /nonexistent --shell /usr/sbin/nologin breadmaker \
-    && mkdir -p /tmp/breadmaker && chmod 1777 /tmp/breadmaker
+# Copy only required shared libraries and their real Debian package records.
+# Retaining metadata keeps OS scanning accurate; no scanner exclusions are used.
+RUN mkdir -p /runtime-libs /runtime-status && \
+    for package in libbz2-1.0 libexpat1 libffi8 liblzma5 libsqlite3-0; do \
+      if dpkg-query -s "$package" > "/runtime-status/$package"; then \
+        dpkg-query -L "$package" | while IFS= read -r file; do \
+          case "$file" in /usr/lib/*/*.so.*) cp -L "$file" /runtime-libs/ ;; esac; \
+        done; \
+      else rm "/runtime-status/$package"; fi; \
+    done
+
+# The runtime has no shell, package manager, mount/login tools, systemd or Perl.
+# Its maintained OpenSSL library is patched independently of the build image.
+FROM gcr.io/distroless/cc-debian13:nonroot@sha256:e792ab3d241a468a4fd7519ddbbebe66b49b5f365771716ea688ad40b6c6f1c2
+COPY --from=build /usr/local /usr/local
+COPY --from=build /runtime-libs /opt/python-libs
+COPY --from=build /runtime-status /var/lib/dpkg/status.d
+COPY --from=build /app /app
+WORKDIR /app
+ENV PATH=/usr/local/bin:$PATH \
+    LD_LIBRARY_PATH=/usr/local/lib:/opt/python-libs \
+    HOME=/nonexistent
 
 ENV PYTHONPATH=/app/src \
     BREADMAKER_RUNTIME=hosted \
@@ -29,11 +50,13 @@ ENV PYTHONPATH=/app/src \
     BREADMAKER_UVICORN_NO_ACCESS_LOG=1 \
     BREADMAKER_ENFORCE_PUBLIC_HOST=1 \
     BREADMAKER_WORKERS=1 \
-    TMPDIR=/tmp/breadmaker \
+    TMPDIR=/tmp \
     PYTHONDONTWRITEBYTECODE=1
 
 EXPOSE 8080
 USER 10001:10001
+RUN ["python", "-c", "import ssl,sqlite3,bz2,lzma,ctypes,uuid; import firebase_admin,google.cloud.firestore,google.cloud.storage,docx,reportlab,PIL,uvicorn; assert __import__('sys').version_info[:3] == (3,14,8)"]
+RUN ["python", "scripts/assert_hosted_image_stack.py"]
 
 # One worker is a cost/memory default, not a security or project-write lock.
 # A Cloud Run replica can disappear at any point; Uvicorn handles SIGTERM and the

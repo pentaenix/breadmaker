@@ -1,0 +1,4 @@
+# Hosted-container transitive security fixes, verified against upstream releases.
+msgpack==1.2.3
+urllib3==2.8.0
+setuptools==84.2.0
