@@ -1,4 +1,4 @@
-"""Operator grants admit verified identities once; UIDs remain account authority."""
+"""Fast unit contracts: operator grants admit verified identities, never merge UIDs."""
 import ast
 from pathlib import Path
 
@@ -103,7 +103,7 @@ def test_greenlist_does_not_bypass_password_totp_requirement():
 
 
 def test_login_shell_removes_requested_copy_and_preserves_auth_controls():
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     source = (root / 'src/hosted/http_auth.py').read_text()
     node = next(n for n in ast.walk(ast.parse(source))
                 if isinstance(n, ast.FunctionDef) and n.name == 'identity_platform_login_shell')
