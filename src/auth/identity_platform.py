@@ -85,7 +85,7 @@ def _display_name(claims: Mapping[str, Any]) -> str:
 
 
 class IdentityPlatformAdmissionStore:
-    """Firestore-backed private-alpha admission with one-time invitation tokens.
+    """Firestore-backed admission with operator grants or one-time invitations.
 
     Operators create ``identity_platform_invites/<sha256(token)>`` documents out of
     band. Only the SHA-256 digest is persisted. The first successful exchange consumes
@@ -111,12 +111,46 @@ class IdentityPlatformAdmissionStore:
         uid = _required(external_uid, "IDENTITY_UID_REQUIRED", maximum=256)
         return ("identity_platform_admissions", cls._digest(uid))
 
+    @staticmethod
+    def normalize_greenlist_email(email: str) -> str:
+        value = str(email or "").strip().lower()
+        if len(value) > 320 or value.count('@') != 1 or any(c.isspace() or ord(c) < 32 for c in value):
+            return ""
+        local, domain = value.split('@')
+        return value if local and domain else ""
+
+    @classmethod
+    def greenlist_path(cls, email: str) -> tuple[str, str]:
+        value = cls.normalize_greenlist_email(email)
+        if not value:
+            raise IdentityPlatformError("PRIVATE_ALPHA_ADMISSION_REQUIRED")
+        return ("identity_platform_greenlist", cls._digest(value))
+
+    def _active_greenlist(self, store, digest: str, uid: str) -> bool:
+        if not isinstance(digest, str) or len(digest) != 64 or any(c not in '0123456789abcdef' for c in digest):
+            return False
+        grant = store.get(("identity_platform_greenlist", digest))
+        if grant is None:
+            return False
+        data = grant.data
+        email = self.normalize_greenlist_email(data.get("email"))
+        try:
+            expires = float(data.get("expires_at_epoch") or 0.0)
+        except (TypeError, ValueError):
+            return False
+        return bool(email and self._digest(email) == digest and data.get("status") == "active"
+                    and data.get("bound_uid") == uid and (expires == 0 or self.now() < expires))
+
     def is_admitted(self, external_uid: str) -> bool:
         uid = _required(external_uid, "IDENTITY_UID_REQUIRED", maximum=256)
         row = self.documents.get(self.admission_path(uid))
-        return bool(row is not None and str(row.data.get("external_uid") or "") == uid and str(row.data.get("status") or "") == "active")
+        if row is None or row.data.get("external_uid") != uid or row.data.get("status") != "active":
+            return False
+        digest = row.data.get("greenlist_digest")
+        return self._active_greenlist(self.documents, digest, uid) if digest else True
 
-    def require_or_consume(self, external_uid: str, invitation_token: str | None) -> None:
+    def require_or_consume(self, external_uid: str, invitation_token: str | None, *,
+                           email: str = "", email_verified: bool = False, provider: str = "") -> None:
         uid = _required(external_uid, "IDENTITY_UID_REQUIRED", maximum=256)
         admission_path = self.admission_path(uid)
         token = str(invitation_token or "").strip()
@@ -131,9 +165,35 @@ class IdentityPlatformAdmissionStore:
                     raise IdentityPlatformError("PRIVATE_ALPHA_ADMISSION_HASH_COLLISION")
                 if str(data.get("status") or "") != "active":
                     raise IdentityPlatformError("PRIVATE_ALPHA_ADMISSION_DISABLED")
+                if data.get("greenlist_digest") and not self._active_greenlist(tx, data["greenlist_digest"], uid):
+                    raise IdentityPlatformError("PRIVATE_ALPHA_ADMISSION_DISABLED")
                 return None
             if invite_path is None:
-                raise IdentityPlatformError("PRIVATE_ALPHA_ADMISSION_REQUIRED")
+                # Only verified server-token claims reach this path. The email is
+                # a one-time operator grant, NEVER an account lookup/merge key.
+                normalized = self.normalize_greenlist_email(email)
+                if email_verified is not True or not normalized or provider not in {"google", "email_password"}:
+                    raise IdentityPlatformError("PRIVATE_ALPHA_ADMISSION_REQUIRED")
+                path = self.greenlist_path(normalized)
+                grant = tx.get(path)
+                entry = dict(grant.data) if grant is not None else {}
+                try:
+                    expires = float(entry.get("expires_at_epoch") or 0.0)
+                except (TypeError, ValueError):
+                    raise IdentityPlatformError("PRIVATE_ALPHA_ADMISSION_REQUIRED") from None
+                allowed = entry.get("allowed_providers")
+                if (entry.get("status") != "active" or entry.get("email") != normalized
+                        or not isinstance(allowed, list) or provider not in allowed
+                        or entry.get("bound_uid") not in (None, "", uid)
+                        or not (expires == 0 or now < expires)):
+                    raise IdentityPlatformError("PRIVATE_ALPHA_ADMISSION_REQUIRED")
+                entry.update({"bound_uid": uid, "admitted_at_epoch": now})
+                tx.set(path, entry)
+                tx.create(admission_path, {
+                    "external_uid": uid, "status": "active", "admitted_at_epoch": now,
+                    "greenlist_digest": path[-1],
+                })
+                return None
             invitation = tx.get(invite_path)
             if invitation is None:
                 raise IdentityPlatformError("PRIVATE_ALPHA_INVITATION_INVALID")
@@ -321,7 +381,10 @@ class IdentityPlatformSessionService:
         if provider == "email_password" and not verified:
             raise IdentityPlatformError("VERIFIED_EMAIL_REQUIRED")
         self._enforce_provider_policy(claims, provider=provider)
-        self.admission.require_or_consume(external_uid, invitation_token)
+        self.admission.require_or_consume(
+            external_uid, invitation_token, email=claims.get("email"),
+            email_verified=verified, provider=provider,
+        )
         try:
             identity = self.accounts.resolve_or_create_external_identity(
                 self.issuer,

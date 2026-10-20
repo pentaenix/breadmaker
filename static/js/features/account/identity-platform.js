@@ -1,7 +1,7 @@
 import {
   identityClient,signInProvider,signInEmail,createEmailAccount,sendVerification,reloadUser,
   sendPasswordReset,enrolledTotp,beginTotpEnrollment,exchangeServerSession,signOutClient
-} from './identity-platform-client.js?v=10.5.40';
+} from './identity-platform-client.js?v=10.5.41';
 
 const $=selector=>document.querySelector(selector);
 const message=$('#identityMessage'),totp=$('#identityTotp'),social=$('#identitySocial');
@@ -18,11 +18,7 @@ function safeReturn(){
     return target.pathname+target.search+target.hash;
   }catch{return '/'}
 }
-function inviteValue(){
-  const hash=new URLSearchParams(location.hash.replace(/^#/,''));
-  return String($('#identityInvite')?.value||hash.get('invite')||'').trim();
-}
-function busy(on){document.querySelectorAll('button,input').forEach(el=>{if(el.id!=='identityInvite')el.disabled=!!on})}
+function busy(on){document.querySelectorAll('button,input').forEach(el=>{el.disabled=!!on})}
 async function askTotp({displayName}){
   return new Promise(resolve=>{
     totp.hidden=false;totp.innerHTML='<h2>Two-step verification</h2><p>Enter the current code from <span id="identityTotpDisplayName"></span>.</p><div class="identity-code-row"><input id="identityTotpCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8" autofocus><button id="identityTotpContinue" type="button">Continue</button></div>';
@@ -52,15 +48,14 @@ async function requirePasswordTotp(user){
 }
 async function finish(user,{passwordAccount=false}={}){
   if(passwordAccount){await requireVerifiedEmail(user);await requirePasswordTotp(user)}
-  await exchangeServerSession(user,{invitationToken:inviteValue()});
+  await exchangeServerSession(user);
   await signOutClient();location.assign(safeReturn());
 }
-async function withBusy(fn){hideMessage();busy(true);try{await fn()}catch(error){try{await signOutClient()}catch{};showMessage(error?.message||'Sign-in failed.','error')}finally{busy(false)}}
+async function withBusy(fn){hideMessage();busy(true);try{await fn()}catch(error){try{await signOutClient()}catch{};const text=error?.message||'Sign-in failed.';showMessage(text.includes('PRIVATE_ALPHA_')?'This account is not approved for Breadmaker access.':text,'error')}finally{busy(false)}}
 async function renderSocial(){
   const {config}=await identityClient();const buttons=[];
   if(config.providers.google)buttons.push('<button type="button" data-provider="google" class="provider"><span>G</span>Continue with Google</button>');
   if(config.providers.apple)buttons.push('<button type="button" data-provider="apple" class="provider"><span></span>Continue with Apple</button>');
-  if(!buttons.length)buttons.push('<p class="identity-help">Social sign-in is not enabled in this environment yet.</p>');
   social.innerHTML=buttons.join('');
   social.querySelectorAll('[data-provider]').forEach(button=>button.onclick=()=>withBusy(async()=>{const result=await signInProvider(button.dataset.provider,askTotp);await finish(result.user)}));
 }
