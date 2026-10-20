@@ -71,7 +71,10 @@ def test_v10359_password_exchange_requires_verified_email_and_enrolled_totp(monk
 
 
 def test_python_admin_record_totp_metadata_is_authoritative(monkeypatch):
-    from firebase_admin.auth import UserRecord
+    # Mirror the pinned SDK UserRecord's observed raw metadata without making
+    # the offline/local test environment depend on the hosted Google SDK.
+    def UserRecord(data):
+        return SimpleNamespace(_data=data,disabled=False)
     monkeypatch.setenv('BREADMAKER_SESSION_COOKIE_SECURE','0')
     record={'localId':'external-m7b','emailVerified':True,'providerUserInfo':[{'providerId':'password'}]}
     _docs,accounts,admin,sessions=_service(provider='password',user=UserRecord(record))
