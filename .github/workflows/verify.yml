@@ -23,7 +23,18 @@ jobs:
       - name: Audit the full hosted dependency graph (including Google SDKs)
         run: python -m pip_audit --strict --progress-spinner=off --desc=off -r requirements-hosted.txt
       - name: Complete local Editor release gate
+        env:
+          # Dump stalled Python stacks before the unchanged 15s browser watchdog.
+          PYTEST_ADDOPTS: '-o faulthandler_timeout=12'
         run: ./verify-release
+      - name: Preserve verification failure evidence
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: editor-verification-failure
+          path: verification-report.txt
+          if-no-files-found: ignore
+          retention-days: 7
   notify-cloud-main:
     name: notify-cloud-main
     needs: editor-full-suite

@@ -317,19 +317,24 @@ def test_browser_writing_undo_find_and_whole_book(live_server,browser_runtime):
         page.keyboard.type('Alpha')
         page.keyboard.press('Enter')
         page.keyboard.type('Beta')
-        page.wait_for_timeout(900)
+        # Autosave is asynchronous; 900ms is not proof it has completed on CI.
+        # Keep the real 850ms undo-group boundary before the next typing burst.
+        page.wait_for_function("!state.dirty && !state.saveInFlight && state.dirtyChapters.size===0 && Date.now()-state.undoGroup.at>=850",timeout=5000)
+        print('Writing E2E: first autosave and undo-group boundary complete',flush=True)
         assert page.locator('.manuscript-block').count()>=2
         assert 'Beta' in page.locator('.manuscript-block').nth(1).inner_text()
 
         # Real working-session text Undo/Redo, including keyboard shortcuts.
         page.keyboard.type(' XYZ')
-        page.wait_for_timeout(50)
+        page.wait_for_function("state.undoStack.length>0 && state.editBaselineReady && !state.historyBusy",timeout=5000)
         page.keyboard.press('Control+z')
         page.wait_for_function("!document.querySelectorAll('.manuscript-block')[1].innerText.includes('XYZ')", timeout=5000)
         assert 'XYZ' not in page.locator('.manuscript-block').nth(1).inner_text()
         page.keyboard.press('Control+y')
         page.wait_for_function("document.querySelectorAll('.manuscript-block')[1].innerText.includes('XYZ')", timeout=5000)
         assert 'XYZ' in page.locator('.manuscript-block').nth(1).inner_text()
+        page.wait_for_function("!state.historyBusy",timeout=5000)
+        print('Writing E2E: keyboard undo/redo complete',flush=True)
 
         # Native browser selection spans distinct stable paragraph blocks.
         selected=page.evaluate("""
@@ -339,9 +344,14 @@ def test_browser_writing_undo_find_and_whole_book(live_server,browser_runtime):
 
         # Add a second chapter through the actual UI, then confirm Book can
         # hold one selection across chapter boundaries.
-        _navigator_action(page,'Add Chapter'); page.wait_for_timeout(250)
-        page.locator('.manuscript-block').first.click(); page.keyboard.type('Second chapter prose'); page.wait_for_timeout(850)
-        page.locator('#bookViewBtn').click(); page.wait_for_timeout(400)
+        previous_chapter=page.locator('.manuscript-block-wrap').first.get_attribute('data-chapter-id')
+        _navigator_action(page,'Add Chapter')
+        page.wait_for_function("id=>state.chapter && String(state.chapter.id)!==id && document.querySelector('.manuscript-block-wrap')?.dataset.chapterId===String(state.chapter.id)",arg=previous_chapter,timeout=5000)
+        page.locator('.manuscript-block').first.click(); page.keyboard.type('Second chapter prose')
+        page.wait_for_function("!state.dirty && !state.saveInFlight && state.dirtyChapters.size===0",timeout=5000)
+        page.locator('#bookViewBtn').click()
+        page.wait_for_function("state.viewMode==='book' && new Set([...document.querySelectorAll('.manuscript-block-wrap')].map(e=>e.dataset.chapterId)).size>=2",timeout=5000)
+        print('Writing E2E: whole-book load complete',flush=True)
         chapter_ids=page.locator('.manuscript-block-wrap').evaluate_all("els=>[...new Set(els.map(e=>e.dataset.chapterId))]")
         assert len(chapter_ids)>=2
         cross=page.evaluate("""
@@ -350,9 +360,10 @@ def test_browser_writing_undo_find_and_whole_book(live_server,browser_runtime):
         assert cross["items"]>=2 and cross["chapters"]>=2
 
         # Google-Docs-style Find stays on top of the manuscript and navigates hits.
-        page.locator('#viewBtn').click(); page.locator('#viewFindReplaceBtn').click(); page.locator('#findInput').fill('chapter'); page.wait_for_timeout(250)
+        page.locator('#viewBtn').click(); page.locator('#viewFindReplaceBtn').click(); page.locator('#findInput').fill('chapter')
+        page.wait_for_function("document.querySelector('#findCounter').innerText.includes('/') && !document.querySelector('#findCounter').innerText.startsWith('0 / 0')",timeout=5000)
         counter=page.locator('#findCounter').inner_text(); assert '/' in counter and not counter.startswith('0 / 0')
-        page.locator('#findNext').click(); page.wait_for_timeout(100)
+        page.locator('#findNext').click()
         assert not page.locator('#findPopover').get_attribute('class').endswith('hidden')
         # 4.17.6: Find uses the same centered SVG chevron state language as View.
         expand=page.locator('#findExpand'); chevron=expand.locator('svg.find-menu-chevron')
