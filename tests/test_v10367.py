@@ -84,6 +84,20 @@ def test_v10367_authority_fence_refuses_concurrent_hosted_edit(monkeypatch):
         service.export_local_bytes(pid, _DEV_USER_ID)
 
 
+def test_hosted_local_package_restores_as_fresh_hosted_project(monkeypatch):
+    runtime,pid,_chapter,_block=_source(monkeypatch)
+    service=HostedProjectPackageService(runtime.projects)
+    package=service.export_local_bytes(pid,_DEV_USER_ID)
+    restored=service.import_bytes(package,_DEV_USER_ID,name_override='Isolated restored project')
+    assert restored['id']!=pid
+    rows=runtime.projects.domain.list('manuscript_block',{'project_id':restored['id']},user_id=_DEV_USER_ID)
+    assert any(row['text_content']=='A complete writer-owned manuscript' for row in rows)
+    assert runtime.projects.authority.get_for_user(restored['id'],_DEV_USER_ID)['generation']>=1
+    # A restore must remain portable; chapter -> document-tab references may
+    # point to an entity translated later in the legacy table ordering.
+    assert service.export_local_bytes(restored['id'],_DEV_USER_ID)
+
+
 def test_v10367_untranslatable_hosted_field_fails_closed(monkeypatch):
     runtime, pid, _, _ = _source(monkeypatch)
     service = HostedProjectPackageService(runtime.projects)

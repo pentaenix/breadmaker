@@ -22,6 +22,14 @@ def test_hosted_container_pins_patched_transitive_dependencies():
     assert 'msgpack==1.2.3' in text and 'urllib3==2.8.0' in text and 'setuptools==84.2.0' in text
 
 
+def test_hosted_container_contains_runtime_portability_contract():
+    docker=(ROOT/'deploy/Dockerfile.hosted').read_text()
+    assert 'COPY docs/HOSTED_DATA_MODEL_V1.json ./docs/HOSTED_DATA_MODEL_V1.json' in docker
+    assert 'from hosted.local_portability import _mapping; assert _mapping()' in docker
+    from hosted.local_portability import _mapping
+    assert _mapping()
+
+
 def test_identity_browser_key_receives_origin_without_leaking_paths(monkeypatch):
     from types import SimpleNamespace
     from starlette.requests import Request

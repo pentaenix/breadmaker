@@ -535,16 +535,23 @@ class HostedProjectPackageService:
             'task_id':'task','review_id':'review','participant_id':'review_participant','questionnaire_id':'questionnaire',
         }
         tables={str(row[0]) for row in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        rows_by_entity={}
+        # Allocate every translated ID before resolving any cross-table link.
+        # For example, chapters are visited before their document tabs.
         for mapping in mappings:
             table=mapping['source_table'];logical=mapping['logical_entity']
             if table not in tables:continue
-            model=MODELS[logical];fields=_fields(model.path_template);final=fields[-1]
             rows=[dict(row) for row in con.execute(f'SELECT * FROM "{table}"')]
+            rows_by_entity[logical]=rows
             for row in rows:
                 old=str(row.get('id') or '')
                 if not old:continue
                 new_id=f"{_ID_FIELDS[logical][1]}legacy_{old}"
                 id_maps[(logical,old)]=new_id
+        for mapping in mappings:
+            logical=mapping['logical_entity']
+            model=MODELS[logical];fields=_fields(model.path_template);final=fields[-1]
+            rows=rows_by_entity.get(logical,[])
             for row in rows:
                 old=str(row.get('id') or '')
                 if not old:continue
@@ -557,7 +564,10 @@ class HostedProjectPackageService:
                     ids[parent]=id_maps.get((target,str(raw)),str(raw)) if target else str(raw)
                 payload={}
                 for key,value in row.items():
-                    if key in {'id','project_id'}:continue
+                    # Legacy timestamps/generation are not hosted authority.
+                    # _stage_entity assigns fresh server-owned values; keep its
+                    # managed-field rejection intact for all other callers.
+                    if key in {'id','project_id','created_at','updated_at','generation'}:continue
                     target=field_targets.get(key)
                     if target and value is not None:value=id_maps.get((target,str(value)),str(value))
                     payload[key]=_json_safe(value)

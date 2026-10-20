@@ -16,6 +16,7 @@ COPY src ./src
 COPY static ./static
 COPY locales ./locales
 COPY config ./config
+COPY docs/HOSTED_DATA_MODEL_V1.json ./docs/HOSTED_DATA_MODEL_V1.json
 COPY VERSION ./VERSION
 COPY scripts/assert_hosted_image_stack.py ./scripts/assert_hosted_image_stack.py
 RUN python scripts/assert_hosted_image_stack.py
@@ -63,6 +64,7 @@ USER 10001:10001
 RUN ["python", "-c", "import ssl,sqlite3,bz2,lzma,ctypes,uuid; import firebase_admin,google.cloud.firestore,google.cloud.storage,docx,reportlab,PIL,uvicorn; assert __import__('sys').version_info[:3] == (3,14,8)"]
 RUN ["python", "-c", "import importlib.util; assert importlib.util.find_spec('pip') is None; assert importlib.util.find_spec('ensurepip') is None"]
 RUN ["python", "scripts/assert_hosted_image_stack.py"]
+RUN ["python", "-c", "from hosted.local_portability import _mapping; assert _mapping()"]
 
 # One worker is a cost/memory default, not a security or project-write lock.
 # A Cloud Run replica can disappear at any point; Uvicorn handles SIGTERM and the
