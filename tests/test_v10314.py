@@ -15,7 +15,7 @@ EXPECTED_SECURITY_PINS={
     'anyio':'4.15.1',
     'python-multipart':'0.0.32',
     'reportlab':'5.0.1',
-    'Pillow':'12.3.0',
+    'Pillow':'13.0.0',
     'cryptography':'50.0.1',
     'Authlib':'1.8.0',
     'joserfc':'1.7.5',

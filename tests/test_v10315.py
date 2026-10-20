@@ -91,11 +91,37 @@ def test_v10315_container_excludes_broad_heif_imagemagick_stack_and_pins_pillow(
     requirements=(ROOT/'requirements.txt').read_text(encoding='utf-8')
     docker=(ROOT/'deploy/Dockerfile.hosted-dev').read_text(encoding='utf-8')
     guard=(ROOT/'scripts/assert_hosted_image_stack.py').read_text(encoding='utf-8')
-    assert 'Pillow==12.3.0' in requirements
+    assert 'Pillow==13.0.0' in requirements
     assert 'FROM python:3.14.7-slim-trixie' in docker
     assert 'RUN python scripts/assert_hosted_image_stack.py' in docker
     for token in ("('magick','convert')","find_library('heif')","find_spec('pillow_heif')"):
         assert token in guard
+
+
+def test_patched_pillow_keeps_pdf_and_docx_image_export_compatible():
+    from io import BytesIO
+    from PIL import Image
+    from docx import Document
+    from reportlab.lib.utils import ImageReader
+    from reportlab.pdfgen.canvas import Canvas
+
+    for kind in ('PNG', 'JPEG', 'WEBP'):
+        payload = BytesIO()
+        Image.new('RGB', (8, 6), '#226644').save(payload, format=kind)
+        raw = payload.getvalue()
+        reader = ImageReader(BytesIO(raw))
+        assert reader.getSize() == (8, 6)
+        pdf = BytesIO()
+        canvas = Canvas(pdf)
+        canvas.drawImage(reader, 0, 0, width=8, height=6)
+        canvas.save()
+        assert pdf.getvalue().startswith(b'%PDF-')
+        if kind in ('PNG', 'JPEG'):
+            document = Document()
+            document.add_picture(BytesIO(raw))
+            package = BytesIO()
+            document.save(package)
+            assert package.getvalue().startswith(b'PK')
 
 
 def test_v10315_frontend_narrows_hosted_images_without_regressing_local_picker():

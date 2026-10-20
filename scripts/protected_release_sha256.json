@@ -6,6 +6,6 @@
     "src/runtime/local.py": "a82b8848e927ee1268e70f51cd6fae386b0eecf32e2ffe8e29f909be233c8170",
     "src/hosted/firestore/repositories.py": "802df8259502dedfbf2408cb7a7609ff2daf5894d63cc0f197fc078ef437cc39",
     "src/hosted/storage/publication.py": "db3038e0746e543a4a2ef4af31306ed5e84d888914c8d76c3b02476581553051",
-    "requirements.txt": "45cf6310ded081e5c0fce76144473d17e67f7c5d8e0b883e1ed84bb05e48d681"
+    "requirements.txt": "90df4fc9cafa185b160daab780104943fd35ffc8091a8bf52f327e48d273bd03"
   }
 }
