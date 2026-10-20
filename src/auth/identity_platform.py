@@ -16,6 +16,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import timedelta
+from types import SimpleNamespace
 from typing import Any, Callable, Mapping
 
 from auth.accounts import AccountIdentityError, AccountIdentityService
@@ -24,6 +25,26 @@ from auth.sessions import AuthenticationError, SessionPrincipal
 
 class IdentityPlatformError(AuthenticationError):
     """Stable non-secret Identity Platform/session failure."""
+
+
+def _enrolled_factors(user: Any) -> list[Any]:
+    multi = getattr(user, "multi_factor", None)
+    factors = getattr(multi, "enrolled_factors", None) if multi is not None else None
+    if factors is not None:
+        return list(factors)
+    # The pinned Python Admin SDK retains server-returned MFA metadata in
+    # UserRecord._data but does not expose the multi_factor property. Read only
+    # this trusted Admin lookup, never client claims or factor secrets.
+    raw = getattr(user, "_data", None)
+    entries = raw.get("mfaInfo") if isinstance(raw, Mapping) else None
+    if not isinstance(entries, list):
+        return []
+    return [SimpleNamespace(
+        factor_id="totp", uid=item["mfaEnrollmentId"],
+        display_name=item.get("displayName", ""), enrollment_time=item.get("enrolledAt"),
+    ) for item in entries if isinstance(item, Mapping)
+        and isinstance(item.get("totpInfo"), Mapping)
+        and isinstance(item.get("mfaEnrollmentId"), str) and item["mfaEnrollmentId"].strip()]
 
 
 @dataclass(frozen=True)
@@ -258,8 +279,7 @@ class IdentityPlatformSessionService:
             raise IdentityPlatformError("IDENTITY_PLATFORM_USER_LOOKUP_FAILED") from exc
         if bool(getattr(user, "disabled", False)):
             raise IdentityPlatformError("IDENTITY_PLATFORM_USER_DISABLED")
-        multi = getattr(user, "multi_factor", None)
-        factors = getattr(multi, "enrolled_factors", None) if multi is not None else None
+        factors = _enrolled_factors(user)
         has_totp = any(str(getattr(item, "factor_id", "") or "").strip().lower() == "totp" for item in (factors or []))
         if not has_totp:
             raise IdentityPlatformError("TOTP_ENROLLMENT_REQUIRED")

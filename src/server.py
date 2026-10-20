@@ -147,7 +147,7 @@ def _runtime_payload() -> dict:
 
 
 async def app(scope, receive, send):
-    if scope.get('type')=='http' and scope.get('path')=='/healthz' and str(scope.get('method') or '').upper() in {'GET','HEAD'}:
+    if scope.get('type')=='http' and scope.get('path') in {'/health','/healthz'} and str(scope.get('method') or '').upper() in {'GET','HEAD'}:
         await _send_load_balancer_health(send,head=str(scope.get('method') or '').upper()=='HEAD')
         return
     if scope.get('type')=='http':

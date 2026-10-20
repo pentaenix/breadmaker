@@ -70,6 +70,24 @@ def test_v10359_password_exchange_requires_verified_email_and_enrolled_totp(monk
     assert admin.claims['email_verified'] is True
 
 
+def test_python_admin_record_totp_metadata_is_authoritative(monkeypatch):
+    from firebase_admin.auth import UserRecord
+    monkeypatch.setenv('BREADMAKER_SESSION_COOKIE_SECURE','0')
+    record={'localId':'external-m7b','emailVerified':True,'providerUserInfo':[{'providerId':'password'}]}
+    _docs,accounts,admin,sessions=_service(provider='password',user=UserRecord(record))
+    security=IdentityPlatformSecurityService(sessions,accounts,now=lambda:1000.0)
+    for factors in [[],[{'mfaEnrollmentId':'phone','phoneInfo':'+15555550100'}],
+                    [{'mfaEnrollmentId':'bad','totpInfo':None}],[{'totpInfo':{}}]]:
+        admin.user=UserRecord({**record,'mfaInfo':factors})
+        with pytest.raises(IdentityPlatformError,match='TOTP_ENROLLMENT_REQUIRED'):
+            sessions.exchange_id_token('fresh-password-token',invitation_token='m7b-invite')
+        assert security._factors(admin.user)==[]
+    admin.user=UserRecord({**record,'mfaInfo':[{'mfaEnrollmentId':'totp-live','totpInfo':{},'displayName':'Authenticator'}]})
+    exchange=sessions.exchange_id_token('fresh-password-token',invitation_token='m7b-invite')
+    assert exchange.provider=='email_password'
+    assert security._factors(admin.user)==[{'id':'totp-live','type':'totp','display_name':'Authenticator','enrollment_time':''}]
+
+
 def test_v10359_fresh_security_proof_is_bound_to_same_external_uid(monkeypatch):
     monkeypatch.setenv('BREADMAKER_SESSION_COOKIE_SECURE','0')
     _docs,accounts,admin,sessions=_service(user=_user(providers=('google.com','password'),totp=True))

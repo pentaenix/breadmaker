@@ -51,3 +51,17 @@ def test_v10338_load_balancer_health_and_hsts_boundaries_remain():
     assert '_send_load_balancer_health' in server and 'strict-transport-security' in server and "!= 'identity_platform'" in server
     assert "configured_hosted_https=runtime.mode=='hosted'" in boundary and 'Strict-Transport-Security' in boundary
     assert "=='identity_platform'" in pipeline and '_rate_limit_client_identity(request)' in pipeline
+
+
+@pytest.mark.parametrize('method',['GET','HEAD'])
+@pytest.mark.parametrize('path',['/health','/healthz'])
+def test_cloud_run_compatible_health_reaches_data_free_handler(method,path):
+    import ast,asyncio
+    tree=ast.parse(read('src/server.py'))
+    node=next(n for n in tree.body if isinstance(n,ast.AsyncFunctionDef) and n.name=='app')
+    calls=[]
+    async def health(send,*,head):calls.append(head)
+    namespace={'_send_load_balancer_health':health}
+    exec(compile(ast.Module(body=[node],type_ignores=[]),'<health-boundary>','exec'),namespace)
+    asyncio.run(namespace['app']({'type':'http','path':path,'method':method},None,None))
+    assert calls==[method=='HEAD']

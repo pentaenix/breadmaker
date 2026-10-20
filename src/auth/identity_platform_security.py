@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from auth.accounts import AccountIdentityError, AccountIdentityService
-from auth.identity_platform import IdentityPlatformError, IdentityPlatformSessionService
+from auth.identity_platform import IdentityPlatformError, IdentityPlatformSessionService, _enrolled_factors
 from auth.sessions import SessionPrincipal
 
 
@@ -45,8 +45,7 @@ def _factor_dict(factor: Any) -> dict[str, Any]:
     uid = str(getattr(factor, "uid", "") or "").strip()
     display = str(getattr(factor, "display_name", "") or "").strip()[:160]
     enrolled_at = getattr(factor, "enrollment_time", None)
-    # Firebase Admin Python exposes TOTP factor_id as ``totp``. Never surface any
-    # provider-internal secret material; the Admin record contains metadata only.
+    # Only whitelisted Admin enrollment metadata reaches this representation.
     return {
         "id": uid,
         "type": "totp" if factor_id == "totp" else factor_id,
@@ -119,8 +118,7 @@ class IdentityPlatformSecurityService:
 
     @staticmethod
     def _factors(user: Any) -> list[dict[str, Any]]:
-        multi = getattr(user, "multi_factor", None)
-        factors = getattr(multi, "enrolled_factors", None) if multi is not None else None
+        factors = _enrolled_factors(user)
         return [_factor_dict(item) for item in (factors or [])]
 
     @classmethod
