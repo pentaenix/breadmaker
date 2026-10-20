@@ -35,7 +35,9 @@ _INDEX_INLINE_SCRIPT_CSP_HASH=_index_inline_script_csp_hash()
 
 def _security_headers(request:Request) -> dict[str,str]:
     identity_web=runtime.mode in {'hosted','hosted_dev'} and runtime.sessions.metadata().get('auth_mode')=='identity_platform'
-    script_policy="'self'"+(f" '{_INDEX_INLINE_SCRIPT_CSP_HASH}'" if _INDEX_INLINE_SCRIPT_CSP_HASH else '')+(" https://www.gstatic.com" if identity_web else '')
+    # Firebase popup auth loads gapi.iframes through Google's loader. Allow only
+    # its SDK paths, not arbitrary Google hosts or unsafe-inline/unsafe-eval.
+    script_policy="'self'"+(f" '{_INDEX_INLINE_SCRIPT_CSP_HASH}'" if _INDEX_INLINE_SCRIPT_CSP_HASH else '')+(" https://www.gstatic.com https://apis.google.com/js/ https://apis.google.com/_/scs/" if identity_web else '')
     connect_policy="'self'"+(" https://identitytoolkit.googleapis.com https://securetoken.googleapis.com" if identity_web else '')
     frame_policy="'self'"+(" https://accounts.google.com https://appleid.apple.com https://*.firebaseapp.com" if identity_web else '')
     headers={

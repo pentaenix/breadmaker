@@ -79,7 +79,7 @@ if _IDENTITY_PLATFORM:
             '<!doctype html><html><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             '<title>Sign in · Breadmaker</title>'
-            '<link rel="stylesheet" href="/static/css/account/identity-platform.css?v=10.5.41">'
+            '<link rel="stylesheet" href="/static/css/account/identity-platform.css?v=10.5.42">'
             '</head><body><main id="identityLogin" class="identity-login" aria-live="polite">'
             '<div class="identity-card"><div class="identity-brand"><strong>Breadmaker</strong></div>'
             '<h1>Sign in</h1>'
@@ -94,7 +94,7 @@ if _IDENTITY_PLATFORM:
             '</form>'
             '<div id="identityTotp" class="identity-totp" hidden></div>'
             '</div></main>'
-            '<script type="module" src="/static/js/features/account/identity-platform.js?v=10.5.41"></script>'
+            '<script type="module" src="/static/js/features/account/identity-platform.js?v=10.5.42"></script>'
             '</body></html>',
             headers=_ip_no_store_headers(),
         )

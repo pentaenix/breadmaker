@@ -40,3 +40,27 @@ def test_identity_browser_key_receives_origin_without_leaking_paths(monkeypatch)
     assert http_boundary._security_headers(request)['Referrer-Policy']=='strict-origin'
     monkeypatch.setattr(http_boundary,'runtime',SimpleNamespace(mode='local',sessions=sessions))
     assert http_boundary._security_headers(request)['Referrer-Policy']=='no-referrer'
+
+
+def test_google_popup_loader_csp_is_path_limited_and_hosted_only(monkeypatch):
+    from types import SimpleNamespace
+    from starlette.requests import Request
+    from backend import http_boundary
+    request=Request({'type':'http','scheme':'https','path':'/auth/login','headers':[(b'host',b'app.example')]})
+    for mode, auth_mode, allowed in (('hosted','identity_platform',True),
+                                     ('hosted_dev','identity_platform',True),
+                                     ('local','identity_platform',False),
+                                     ('hosted','disabled',False)):
+        sessions=SimpleNamespace(metadata=lambda:{'auth_mode':auth_mode})
+        monkeypatch.setattr(http_boundary,'runtime',SimpleNamespace(mode=mode,sessions=sessions))
+        csp=http_boundary._security_headers(request)['Content-Security-Policy']
+        directives={part.strip().split()[0]:part.strip().split()[1:] for part in csp.split(';') if part.strip()}
+        scripts=directives['script-src']
+        assert ('https://apis.google.com/js/' in scripts) is allowed
+        assert ('https://apis.google.com/_/scs/' in scripts) is allowed
+        assert 'https://apis.google.com' not in scripts
+        assert "'unsafe-inline'" not in scripts and "'unsafe-eval'" not in scripts
+        assert '*' not in scripts
+        assert directives['object-src']==["'none'"]
+        assert directives['frame-ancestors']==["'none'"]
+        assert directives['form-action']==["'self'"]
