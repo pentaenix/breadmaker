@@ -40,7 +40,7 @@ class _GoogleTransaction(Transaction):
                 query = query.where(filter=FieldFilter(str(field), "==", value))
             except ImportError as exc:  # pragma: no cover
                 raise RuntimeError("HOSTED_FIRESTORE_SDK_REQUIRED") from exc
-        snapshots = self._transaction.get(query)
+        snapshots = query.stream(transaction=self._transaction)
         return [StoredDocument(tuple(doc.reference.path.split("/")), doc.to_dict() or {}, _snapshot_revision(doc)) for doc in snapshots]
 
     def create(self, path: tuple[str, ...], data: Mapping[str, Any]) -> None:
