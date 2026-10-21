@@ -526,36 +526,31 @@ def _assert_release_identity() -> None:
 
 
 def _browser_runtime_check() -> None:
-    # Verification without a real browser is not verification of the UI. Prefer
-    # Playwright's managed Chromium, then the same PATH fallbacks used by tests.
-    executable: str | None = None
+    # Run a real launch/page/close in an isolated process. A wedged driver or its
+    # cleanup must fail before test discovery/core work, not hang the verifier.
+    proc = subprocess.Popen(
+        [sys.executable, str(ROOT / "scripts/browser_runtime.py")], cwd=ROOT,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        start_new_session=(os.name == "posix"),
+    )
     try:
-        from playwright.sync_api import sync_playwright
-
-        pw = sync_playwright().start()
         try:
-            candidate = Path(pw.chromium.executable_path)
-            if candidate.is_file():
-                executable = str(candidate)
-        finally:
-            pw.stop()
-    except Exception:
-        executable = None
-    if not executable:
-        executable = next(
-            (
-                shutil.which(name)
-                for name in ("chromium", "chromium-browser", "google-chrome", "google-chrome-stable", "chrome")
-                if shutil.which(name)
-            ),
-            None,
-        )
-    if not executable:
-        raise AssertionError(
-            "No Chromium runtime found. UI verification may not silently skip. "
-            "Install one with: python -m playwright install chromium"
-        )
-    print(f"  ✓ Browser runtime ({Path(executable).name})", flush=True)
+            output, _ = proc.communicate(timeout=45)
+        except subprocess.TimeoutExpired as exc:
+            _kill_process_tree(proc)
+            raise AssertionError("BROWSER_PREFLIGHT_TIMEOUT: launch/page/cleanup exceeded 45 seconds") from exc
+    finally:
+        _cleanup_abandoned_process_group(proc)
+    print(output.rstrip(), flush=True)
+    if proc.returncode != 0:
+        raise AssertionError(f"BROWSER_PREFLIGHT_FAILED: child exit {proc.returncode}; see browser phase above")
+    prefix = "BREADMAKER_BROWSER_EXECUTABLE::"
+    executable = next((line[len(prefix):] for line in output.splitlines() if line.startswith(prefix)), "")
+    if not executable or not Path(executable).is_file():
+        raise AssertionError("BROWSER_PREFLIGHT_FAILED: no verified Chromium executable")
+    # Every subsequent browser job must use the exact binary that passed probe.
+    os.environ["BREADMAKER_TEST_BROWSER"] = executable
+    print(f"  ✓ Browser launch, page and cleanup ({Path(executable).name})", flush=True)
 
 
 def _assert_protected_integrity() -> None:
@@ -573,6 +568,7 @@ def run_preflight() -> None:
     _assert_manifest_complete()
     _assert_release_identity()
     _assert_protected_integrity()
+    _browser_runtime_check()
     print("  ✓ Verification manifest covers all configured current tests", flush=True)
     _python_syntax_check()
     node = shutil.which("node")
@@ -585,7 +581,6 @@ def run_preflight() -> None:
     for name in ("run", "reset", "test", "verify-release", "Breadmaker Editor.command"):
         _command_check(f"Shell syntax: {name}", [bash, "-n", name])
     _locale_check()
-    _browser_runtime_check()
 
 
 def _pytest_env() -> dict[str, str]:
@@ -825,6 +820,18 @@ def _cleanup_abandoned_process_group(proc: subprocess.Popen[str]) -> None:
         pass
 
 
+def _await_durable_startup(proc, ready_path: Path, timeout: float) -> bool:
+    """Independent parent deadline, even if the child's Python/GIL is wedged."""
+    deadline = time.monotonic() + timeout
+    while not ready_path.is_file():
+        if proc.poll() is not None:
+            return True  # communicate() will preserve the actual failure output.
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(.05)
+    return True
+
+
 def _run_durable_job(job: Job, started: float, junit_path: Path, result_path: Path) -> Result:
     """Run durable E2E and resume only unrecorded items after a poisoned hard exit.
 
@@ -873,6 +880,8 @@ def _run_durable_job(job: Job, started: float, junit_path: Path, result_path: Pa
             env["BREADMAKER_VERIFY_RESULT_JSONL"] = str(result_path)
             env["BREADMAKER_DURABLE_E2E_HOME"] = str(shared_home)
             env["BREADMAKER_DURABLE_VERIFY"] = "1"
+            ready_path = shared_home / f"browser-ready-{attempt}"
+            env["BREADMAKER_DURABLE_BROWSER_READY_FILE"] = str(ready_path)
             proc = subprocess.Popen(
                 command,
                 cwd=ROOT,
@@ -884,6 +893,9 @@ def _run_durable_job(job: Job, started: float, junit_path: Path, result_path: Pa
             )
             remaining_outer = max(1.0, outer_deadline - time.monotonic())
             try:
+                if not _await_durable_startup(proc, ready_path, min(45.0, remaining_outer)):
+                    raise subprocess.TimeoutExpired("durable browser startup", 45)
+                remaining_outer = max(1.0, outer_deadline - time.monotonic())
                 output, _ = proc.communicate(timeout=remaining_outer)
                 output = output or ""
                 code = int(proc.returncode or 0)
@@ -895,6 +907,8 @@ def _run_durable_job(job: Job, started: float, junit_path: Path, result_path: Pa
                 except Exception:
                     output = ""
                 code = 124
+                if not ready_path.is_file():
+                    output = "BREADMAKER_BROWSER_HARD_TIMEOUT: startup-parent-watchdog\n" + (output or "")
             finally:
                 _cleanup_abandoned_process_group(proc)
                 try:
@@ -918,6 +932,14 @@ def _run_durable_job(job: Job, started: float, junit_path: Path, result_path: Pa
 
         output = "".join(aggregate_output)
         executed, passed, failed, skipped, child_failures = _parse_result_jsonl(result_path)
+        startup_timed_out = False
+        if executed == 0 and attempt and code != 0:
+            phases = [line for line in output.splitlines() if line.startswith('BREADMAKER_BROWSER_')]
+            startup_timed_out = code == 124
+            child_failures.append((job.name,
+                f"Browser/session startup failed before any durable test (exit {code}); "
+                + ('; '.join(phases[-3:]) if phases else 'see subprocess traceback in report'),
+                'startup'))
         missing_names = [name for name in names if name not in _durable_recorded_names(result_path)]
         if missing_names:
             output += (
@@ -931,7 +953,7 @@ def _run_durable_job(job: Job, started: float, junit_path: Path, result_path: Pa
                 + (" …" if len(missing_names) > 8 else ""),
                 "accounting",
             ))
-        code = 0 if not outer_timed_out and not missing_names and failed == 0 else (124 if outer_timed_out else 1)
+        code = 0 if not outer_timed_out and not missing_names and failed == 0 else (124 if outer_timed_out or startup_timed_out else 1)
         if executed and passed == 0 and failed == 0 and skipped == executed:
             code = 5
             output += "\nBREADMAKER_BROWSER_NOT_VERIFIED: durable browser tests were skipped.\n"
@@ -940,7 +962,7 @@ def _run_durable_job(job: Job, started: float, junit_path: Path, result_path: Pa
             code,
             output,
             time.monotonic() - started,
-            timed_out=outer_timed_out,
+            timed_out=outer_timed_out or startup_timed_out,
             executed_items=executed,
             passed_items=passed,
             failed_items=failed,
@@ -1562,8 +1584,23 @@ def main() -> int:
 
     all_results: list[Result] = []
     # Unit tests are the first executable release gate: pure/deterministic contracts
-    # fail quickly before we pay for FastAPI, SQLite integration, or Chromium.
+    # fail quickly before we pay for FastAPI or SQLite integration suites.
     all_results.extend(run_stage("Unit", [unit_job], 1))
+
+    # Pay for the real shared-browser lifecycle before the long core/API stages.
+    # This runs every durable test exactly once, not a second smoke subset.
+    durable_browser_jobs=[job for job in browser_jobs if job.category=='durable E2E']
+    current_browser_jobs=[job for job in browser_jobs if job.category=='current browser']
+    if not any(not result.ok for result in all_results):
+        all_results.extend(run_stage("Durable E2E", durable_browser_jobs, 1))
+    if any(not result.ok for result in all_results):
+        _print_stage_accounting(all_results)
+        _print_failure_digest(all_results)
+        _write_report(version, 'QUICK' if args.quick else 'FULL', all_results, True)
+        print("Verification stopped early: remaining stages NOT verified.", flush=True)
+        print(f"Full report: {REPORT.name}", flush=True)
+        print(f"Verification target: Breadmaker Editor v{version}", flush=True)
+        return 1
 
     try:
         print("\nCollecting exact core pytest items (including parametrized cases)...", flush=True)
@@ -1593,15 +1630,8 @@ def main() -> int:
     all_results.extend(run_stage("Core / API serial", serial_core_jobs, 1))
     all_results.extend(run_stage("Core / API", ordinary_core_jobs, max(1, args.core_workers)))
 
-    # Browser / E2E is deliberately split into two resource lanes. The durable module
-    # owns one long-lived uvicorn+Chromium lifecycle and its startup must not compete
-    # with dozens of isolated current-browser processes. A startup miss there turns
-    # one resource-contention event into every durable item failing setup, so give it
-    # the same no-contention treatment as the scale contract. Current browser jobs
-    # retain their normal parallelism and fresh-process retry policy afterwards.
-    durable_browser_jobs=[job for job in browser_jobs if job.category=='durable E2E']
-    current_browser_jobs=[job for job in browser_jobs if job.category=='current browser']
-    all_results.extend(run_stage("Durable E2E", durable_browser_jobs, 1))
+    # Durable E2E already ran in its own no-contention lane before Core/API.
+    # Current browser jobs retain their normal isolation and bounded retries.
     all_results.extend(run_stage("Current browser", current_browser_jobs, max(1, args.browser_workers)))
     retry_failed_current_browser(all_results, max(1, args.browser_workers))
     _print_retry_accounting(all_results)

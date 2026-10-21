@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = "scripts/protected_release_sha256.json"
 PROTECTED_PATHS = frozenset({
     "scripts/verify_release.py",
+    "scripts/browser_runtime.py",
     "tests/conftest.py",
     "src/runtime/local.py",
     "src/hosted/firestore/repositories.py",

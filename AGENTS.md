@@ -23,7 +23,7 @@ Use `python scripts/generate_api_map.py` and `python scripts/generate_code_index
 
 ## Releasing
 
-Use `python scripts/sync_editor_release_metadata.py --set-version X.Y.Z` to update the Editor version and browser cache tags together. Review the six protected-file hashes explicitly if those files change: updating a version is **not** approval to change the verifier or security-sensitive source. The release preflight checks both release identity and protected-file integrity.
+Use `python scripts/sync_editor_release_metadata.py --set-version X.Y.Z` to update the Editor version and browser cache tags together. Review the protected-file hashes explicitly if those files change: updating a version is **not** approval to change the verifier or security-sensitive source. The release preflight checks both release identity and protected-file integrity.
 
 Do not commit credentials, local manuscripts, generated backups, or private Cloud infrastructure. Pre-alpha storage formats can intentionally reject older data; don't add migration paths unless the product explicitly requires one.
 

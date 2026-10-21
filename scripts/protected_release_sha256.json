@@ -1,8 +1,9 @@
 {
   "schema": 1,
   "protected_files": {
-    "scripts/verify_release.py": "cd6f89467f12bfad07275598331ae709df0561406eb3fff954e20fa9d0ee3286",
-    "tests/conftest.py": "2053b93d68c21030cd954fb4e2c0a667ac4cb66a0f030dc3f1bed61ddaec7712",
+    "scripts/verify_release.py": "d00898285e5fdf151c8a118377eebf9ca77994cc99ee6c8b07f1c84f2fe9f94d",
+    "scripts/browser_runtime.py": "35c492980cf1b00d21d3ddaa3f838be12da43c2dc1203d47ffbc009ba0f23b95",
+    "tests/conftest.py": "5b44f7b09b10bcfedae32de470a2d94cabfff56d6f0d320ff13a4a73d409510a",
     "src/runtime/local.py": "a82b8848e927ee1268e70f51cd6fae386b0eecf32e2ffe8e29f909be233c8170",
     "src/hosted/firestore/repositories.py": "802df8259502dedfbf2408cb7a7609ff2daf5894d63cc0f197fc078ef437cc39",
     "src/hosted/storage/publication.py": "db3038e0746e543a4a2ef4af31306ed5e84d888914c8d76c3b02476581553051",

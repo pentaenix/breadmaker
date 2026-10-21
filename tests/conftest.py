@@ -57,67 +57,23 @@ def _close_durable_browser(config):
     config._breadmaker_durable_browser = None
     if prepared is None:
         return
-    playwright, browser = prepared
-    try:
-        browser.close()
-    finally:
-        playwright.stop()
+    from scripts.browser_runtime import close_browser
+    close_browser(*prepared)
 
 
 def _prepare_durable_browser(config):
-    from playwright.sync_api import sync_playwright
+    from scripts.browser_runtime import start_browser
 
     started = time.monotonic()
-    done = threading.Event()
-    can_signal = hasattr(signal, "setitimer") and threading.current_thread() is threading.main_thread()
-    previous_handler = signal.getsignal(signal.SIGALRM) if can_signal else None
-    previous_timer = signal.getitimer(signal.ITIMER_REAL) if can_signal else None
-
-    def _hard_stop():
-        if done.wait(_DURABLE_BROWSER_HARD_STOP_SECONDS):
-            return
-        try:
-            os.write(2, b"\nBREADMAKER_DURABLE_BROWSER_PRESTART_HARD_TIMEOUT: Chromium setup did not unwind\n")
-            faulthandler.dump_traceback(file=sys.stderr, all_threads=True)
-        except Exception:
-            pass
-        os._exit(124)
-
-    def _startup_alarm(_signum, _frame):
-        raise TimeoutError("BREADMAKER_DURABLE_BROWSER_PRESTART_TIMEOUT: Chromium startup exceeded 30 seconds")
-
-    threading.Thread(target=_hard_stop, name="breadmaker-durable-browser-startup-guard", daemon=True).start()
-    playwright = None
-    try:
-        if can_signal:
-            signal.signal(signal.SIGALRM, _startup_alarm)
-            signal.setitimer(signal.ITIMER_REAL, _DURABLE_BROWSER_STARTUP_SECONDS)
-        playwright = sync_playwright().start()
-        configured = os.environ.get("BREADMAKER_TEST_BROWSER")
-        executable = configured or next(
-            (shutil.which(name) for name in ("chromium", "chromium-browser", "google-chrome", "google-chrome-stable", "chrome") if shutil.which(name)),
-            None,
-        )
-        launch_args = {"headless": True, "args": ["--no-sandbox"]}
-        if executable:
-            launch_args["executable_path"] = executable
-        browser = playwright.chromium.launch(**launch_args)
-        config._breadmaker_durable_browser = (playwright, browser)
-        print(f"BREADMAKER_DURABLE_BROWSER_PRESTART_OK: {time.monotonic() - started:.2f}s", flush=True)
-    except BaseException:
-        if playwright is not None:
-            try:
-                playwright.stop()
-            except Exception:
-                pass
-        raise
-    finally:
-        if can_signal:
-            signal.setitimer(signal.ITIMER_REAL, 0)
-            signal.signal(signal.SIGALRM, previous_handler)
-            if previous_timer is not None and previous_timer[0] > 0:
-                signal.setitimer(signal.ITIMER_REAL, *previous_timer)
-        done.set()
+    playwright, browser, _executable = start_browser(
+        startup_seconds=_DURABLE_BROWSER_STARTUP_SECONDS,
+        hard_seconds=_DURABLE_BROWSER_HARD_STOP_SECONDS,
+    )
+    config._breadmaker_durable_browser = (playwright, browser)
+    ready_file = os.environ.get("BREADMAKER_DURABLE_BROWSER_READY_FILE")
+    if ready_file:
+        Path(ready_file).write_text("ready\n", encoding="utf-8")
+    print(f"BREADMAKER_DURABLE_BROWSER_PRESTART_OK: {time.monotonic() - started:.2f}s", flush=True)
 
 
 def pytest_sessionfinish(session, exitstatus):

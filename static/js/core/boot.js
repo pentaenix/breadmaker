@@ -90,7 +90,7 @@ async function loadRuntimeBootstrap(){
     const health=await api('/api/health');
     if(health?.app!=='Breadmaker Editor'||health?.runtime!=='local')throw error;
     const backendVersion=String(health?.version||'');
-    console.warn('Breadmaker runtime bootstrap endpoint was unavailable; continuing with attested local capabilities.',{frontend:'10.5.45',backend:backendVersion||'unknown'});
+    console.warn('Breadmaker runtime bootstrap endpoint was unavailable; continuing with attested local capabilities.',{frontend:'10.5.46',backend:backendVersion||'unknown'});
     return {...LOCAL_RUNTIME_FALLBACK,fallback:true,backend_version:backendVersion};
   }
 }
