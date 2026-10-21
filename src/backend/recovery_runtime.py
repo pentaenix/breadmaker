@@ -12,6 +12,7 @@ from backend.dependencies import feature_call
 from backend.environment import runtime
 from runtime.native import require_native_projects
 from storage import context as storage_context
+from storage import coordination as storage_coordination
 from storage import mutations as storage_mutations
 from storage import recovery as storage_recovery
 from workspace.models import WorkspaceError
@@ -161,79 +162,86 @@ def _backup_destination_worker_loop():
         if _BACKUP_DESTINATION_STOP.is_set():break
         for project_id in _tracked_recovery_project_ids():
             if _BACKUP_DESTINATION_STOP.is_set():break
-            try:rec=runtime.projects.get(project_id)
-            except WorkspaceError:
-                _forget_recovery_project(project_id)
-                continue
-            if not rec:
-                _forget_recovery_project(project_id)
-                continue
-            project_root=Path(str(rec['path'])).resolve()
-            try:
-                with storage_context.project_context(project_root,project_id):
-                    generation=storage_mutations.current_project_generation()
-                    now_mono=time.monotonic()
-                    active_record=None if runtime.sessions.requires_authentication else runtime.projects.active()
-                    active_project_id=str((active_record or {}).get('id') or '') if isinstance(active_record,dict) else ''
-                    scheduler=_ensure_recovery_scheduler(project_id,project_root,generation,now_mono,make_current=(active_project_id==str(project_id)))
-                    scheduler.observe(project_id,generation,now_mono)
+            _coordinate_recovery_project(project_id)
 
-                    with _BACKUP_DESTINATION_RECONCILE_LOCK:
-                        reconcile_requested=project_id in _BACKUP_DESTINATION_RECONCILE_PROJECTS
-                        if reconcile_requested:_BACKUP_DESTINATION_RECONCILE_PROJECTS.discard(project_id)
-                        if not _BACKUP_DESTINATION_RECONCILE_PROJECTS:_BACKUP_DESTINATION_RECONCILE.clear()
-                    if reconcile_requested:
-                        try:
-                            reconcile=runtime.backups.catch_up(project_id,reason='destination_reconcile',force=False,quiet_seconds=0)
-                            if _destination_retry_required(reconcile):scheduler.mark_destination_failure(time.monotonic(),project_id=project_id)
-                            else:scheduler.mark_destination_success(project_id=project_id)
-                        except Exception as exc:
-                            scheduler.mark_destination_failure(time.monotonic(),project_id=project_id)
-                            diagnostics.log_event('BACKUP_DESTINATION_WORKER_004','Destination reconcile failed without changing local Recovery or Current.',level='WARNING',error=exc,data_safe=True)
 
-                    maintenance_due=_BACKUP_DESTINATION_MAINTENANCE_DUE.get(project_id,0.0)
-                    if now_mono>=maintenance_due and not reconcile_requested:
-                        _BACKUP_DESTINATION_MAINTENANCE_DUE[project_id]=now_mono+_BACKUP_DESTINATION_MAINTENANCE_SECONDS
-                        try:
-                            maintenance=runtime.backups.catch_up(project_id,reason='destination_maintenance',force=False,quiet_seconds=0)
-                            if _destination_retry_required(maintenance):scheduler.mark_destination_failure(time.monotonic(),project_id=project_id)
-                            else:scheduler.mark_destination_success(project_id=project_id)
-                        except Exception as exc:
-                            scheduler.mark_destination_failure(time.monotonic(),project_id=project_id)
-                            diagnostics.log_event('BACKUP_DESTINATION_MAINTENANCE_001','Destination maintenance probe failed without changing Current or local Recovery.',level='WARNING',error=exc,data_safe=True)
+def _coordinate_recovery_project(project_id):
+    # Match Delete All's lock order. Even generation reads open SQLite and can
+    # recreate directories; exclude the entire pass, not just backup publication.
+    with runtime.backups.privacy_barrier(), storage_coordination.recovery_privacy_barrier():
+        try:rec=runtime.projects.get(project_id)
+        except WorkspaceError:
+            _forget_recovery_project(project_id)
+            return
+        if not rec:
+            _forget_recovery_project(project_id)
+            return
+        project_root=Path(str(rec['path'])).resolve()
+        try:
+            with storage_context.project_context(project_root,project_id):
+                generation=storage_mutations.current_project_generation()
+                now_mono=time.monotonic()
+                active_record=None if runtime.sessions.requires_authentication else runtime.projects.active()
+                active_project_id=str((active_record or {}).get('id') or '') if isinstance(active_record,dict) else ''
+                scheduler=_ensure_recovery_scheduler(project_id,project_root,generation,now_mono,make_current=(active_project_id==str(project_id)))
+                scheduler.observe(project_id,generation,now_mono)
 
-                    decision=scheduler.due(time.monotonic())
-                    if decision is None or decision.project_id!=project_id:continue
-                    if decision.retry_only:
-                        try:result=runtime.backups.catch_up(project_id,reason=decision.trigger,force=False,quiet_seconds=0)
-                        except Exception as exc:
-                            scheduler.mark_destination_failure(time.monotonic(),project_id=project_id)
-                            diagnostics.log_event('BACKUP_DESTINATION_WORKER_002','A backup destination retry failed without affecting local Recovery or Current.',level='WARNING',error=exc,data_safe=True)
-                            continue
-                        if _destination_retry_required(result):scheduler.mark_destination_failure(time.monotonic(),project_id=project_id)
-                        else:scheduler.mark_destination_success(project_id=project_id)
-                        continue
-
+                with _BACKUP_DESTINATION_RECONCILE_LOCK:
+                    reconcile_requested=project_id in _BACKUP_DESTINATION_RECONCILE_PROJECTS
+                    if reconcile_requested:_BACKUP_DESTINATION_RECONCILE_PROJECTS.discard(project_id)
+                    if not _BACKUP_DESTINATION_RECONCILE_PROJECTS:_BACKUP_DESTINATION_RECONCILE.clear()
+                if reconcile_requested:
                     try:
-                        local_package=verified_full_backup(decision.trigger,project_root=project_root)
-                        local_info=require_native_projects(runtime).inspect_package_metadata(local_package)
-                        local_generation=int(local_info.get('project_generation') or 0)
-                        if local_generation<=0:raise RuntimeError('RECOVERY_BACKUP_GENERATION_MISSING')
-                        scheduler.mark_local_success(local_generation,time.monotonic(),project_id=project_id)
-                    except Exception as exc:
-                        scheduler.mark_local_failure(time.monotonic(),project_id=project_id)
-                        diagnostics.log_event('BACKUP_DESTINATION_WORKER_001','Local Recovery backup scheduling failed without changing the project.',level='WARNING',error=exc,data_safe=True)
-                        continue
-
-                    try:result=runtime.backups.catch_up(project_id,reason=decision.trigger,force=True,quiet_seconds=0)
+                        reconcile=runtime.backups.catch_up(project_id,reason='destination_reconcile',force=False,quiet_seconds=0)
+                        if _destination_retry_required(reconcile):scheduler.mark_destination_failure(time.monotonic(),project_id=project_id)
+                        else:scheduler.mark_destination_success(project_id=project_id)
                     except Exception as exc:
                         scheduler.mark_destination_failure(time.monotonic(),project_id=project_id)
-                        diagnostics.log_event('BACKUP_DESTINATION_WORKER_002','A backup destination update failed after local Recovery succeeded.',level='WARNING',error=exc,data_safe=True)
-                        continue
+                        diagnostics.log_event('BACKUP_DESTINATION_WORKER_004','Destination reconcile failed without changing local Recovery or Current.',level='WARNING',error=exc,data_safe=True)
+
+                maintenance_due=_BACKUP_DESTINATION_MAINTENANCE_DUE.get(project_id,0.0)
+                if now_mono>=maintenance_due and not reconcile_requested:
+                    _BACKUP_DESTINATION_MAINTENANCE_DUE[project_id]=now_mono+_BACKUP_DESTINATION_MAINTENANCE_SECONDS
+                    try:
+                        maintenance=runtime.backups.catch_up(project_id,reason='destination_maintenance',force=False,quiet_seconds=0)
+                        if _destination_retry_required(maintenance):scheduler.mark_destination_failure(time.monotonic(),project_id=project_id)
+                        else:scheduler.mark_destination_success(project_id=project_id)
+                    except Exception as exc:
+                        scheduler.mark_destination_failure(time.monotonic(),project_id=project_id)
+                        diagnostics.log_event('BACKUP_DESTINATION_MAINTENANCE_001','Destination maintenance probe failed without changing Current or local Recovery.',level='WARNING',error=exc,data_safe=True)
+
+                decision=scheduler.due(time.monotonic())
+                if decision is None or decision.project_id!=project_id:return
+                if decision.retry_only:
+                    try:result=runtime.backups.catch_up(project_id,reason=decision.trigger,force=False,quiet_seconds=0)
+                    except Exception as exc:
+                        scheduler.mark_destination_failure(time.monotonic(),project_id=project_id)
+                        diagnostics.log_event('BACKUP_DESTINATION_WORKER_002','A backup destination retry failed without affecting local Recovery or Current.',level='WARNING',error=exc,data_safe=True)
+                        return
                     if _destination_retry_required(result):scheduler.mark_destination_failure(time.monotonic(),project_id=project_id)
                     else:scheduler.mark_destination_success(project_id=project_id)
-            except Exception as exc:
-                diagnostics.log_event('BACKUP_DESTINATION_WORKER_003','Recovery coordinator encountered an unexpected failure without changing Current.',level='WARNING',error=exc,context={'project_id':project_id},data_safe=True)
+                    return
+
+                try:
+                    local_package=verified_full_backup(decision.trigger,project_root=project_root)
+                    local_info=require_native_projects(runtime).inspect_package_metadata(local_package)
+                    local_generation=int(local_info.get('project_generation') or 0)
+                    if local_generation<=0:raise RuntimeError('RECOVERY_BACKUP_GENERATION_MISSING')
+                    scheduler.mark_local_success(local_generation,time.monotonic(),project_id=project_id)
+                except Exception as exc:
+                    scheduler.mark_local_failure(time.monotonic(),project_id=project_id)
+                    diagnostics.log_event('BACKUP_DESTINATION_WORKER_001','Local Recovery backup scheduling failed without changing the project.',level='WARNING',error=exc,data_safe=True)
+                    return
+
+                try:result=runtime.backups.catch_up(project_id,reason=decision.trigger,force=True,quiet_seconds=0)
+                except Exception as exc:
+                    scheduler.mark_destination_failure(time.monotonic(),project_id=project_id)
+                    diagnostics.log_event('BACKUP_DESTINATION_WORKER_002','A backup destination update failed after local Recovery succeeded.',level='WARNING',error=exc,data_safe=True)
+                    return
+                if _destination_retry_required(result):scheduler.mark_destination_failure(time.monotonic(),project_id=project_id)
+                else:scheduler.mark_destination_success(project_id=project_id)
+        except Exception as exc:
+            diagnostics.log_event('BACKUP_DESTINATION_WORKER_003','Recovery coordinator encountered an unexpected failure without changing Current.',level='WARNING',error=exc,context={'project_id':project_id},data_safe=True)
 
 
 def _best_effort_shutdown_recovery() -> None:

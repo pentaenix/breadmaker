@@ -10,7 +10,7 @@
 **Remote hosting:** Deferred until the local + portable model is proven  
 **Removed concept:** Review Rooms
 
-Implemented through **10.5.44**: the local Review domain now includes Scope, Permissions, Participants, reusable Questionnaires, immutable Review Snapshots, Reviewer Mode, Highlights/Comments, Suggestions, Feedback forms, Review processing/Tasks, lifecycle and visibility controls, portable `.breadreview` round trips, temporary drag-and-drop Reviewer Mode, optional authenticated passphrase encryption with hostile-package validation, Review-template Populate, and the Manuscript Review working layer. Categories were intentionally retired in 8.16.3; Populate creates editable Reviews directly. Remote transport remains future work.
+Implemented through **10.5.45**: the local Review domain now includes Scope, Permissions, Participants, reusable Questionnaires, immutable Review Snapshots, Reviewer Mode, Highlights/Comments, Suggestions, Feedback forms, Review processing/Tasks, lifecycle and visibility controls, portable `.breadreview` round trips, temporary drag-and-drop Reviewer Mode, optional authenticated passphrase encryption with hostile-package validation, Review-template Populate, and the Manuscript Review working layer. Categories were intentionally retired in 8.16.3; Populate creates editable Reviews directly. Remote transport remains future work.
 
 ---
 

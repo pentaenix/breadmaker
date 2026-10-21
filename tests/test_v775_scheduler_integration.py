@@ -15,6 +15,80 @@ from pathlib import Path
 
 import pytest
 
+
+def test_recovery_publication_can_reenter_its_coordinator_privacy_barrier():
+    import threading
+    from storage import coordination
+
+    completed = threading.Event()
+
+    def publish():
+        with coordination.recovery_privacy_barrier():
+            # backup_project takes this same gate inside a coordinator pass.
+            with coordination.recovery_privacy_barrier():
+                completed.set()
+
+    worker = threading.Thread(target=publish, daemon=True)
+    worker.start()
+    assert completed.wait(2), 'nested Recovery publication deadlocked'
+    worker.join(2)
+    assert not worker.is_alive()
+
+
+@pytest.mark.parametrize('blocked_gate', ['backup', 'recovery'])
+def test_recovery_lookup_waits_for_privacy_erase_without_recreating_project(monkeypatch, tmp_path, blocked_gate):
+    """Force the interleaving with events, not scheduling luck or sleeps."""
+    import threading
+    from contextlib import contextmanager
+    from types import SimpleNamespace
+    from storage import coordination
+    from workspace.models import WorkspaceError
+
+    attempted = threading.Event()
+    stopped = threading.Event()
+    wake = threading.Event(); wake.set()
+    locks = {name: threading.RLock() for name in ('backup', 'recovery')}
+    observed = []
+    root = tmp_path / 'erased-project'; root.mkdir()
+
+    @contextmanager
+    def gate(name):
+        if name == blocked_gate:
+            attempted.set()
+        with locks[name]:
+            observed.append(name)
+            yield
+
+    def lookup(_pid):
+        observed.append('lookup')
+        stopped.set()
+        assert not root.exists(), 'lookup entered while privacy erasure still held its barrier'
+        raise WorkspaceError('PROJECT_NOT_FOUND')
+
+    monkeypatch.setattr(recovery_runtime, 'runtime', SimpleNamespace(
+        projects=SimpleNamespace(get=lookup),
+        backups=SimpleNamespace(privacy_barrier=lambda: gate('backup')),
+    ))
+    monkeypatch.setattr(coordination, 'recovery_privacy_barrier', lambda: gate('recovery'))
+    monkeypatch.setattr(recovery_runtime, '_BACKUP_DESTINATION_STOP', stopped)
+    monkeypatch.setattr(recovery_runtime, '_BACKUP_DESTINATION_WAKE', wake)
+    monkeypatch.setattr(recovery_runtime, '_tracked_recovery_project_ids', lambda: ['gone'])
+    monkeypatch.setattr(recovery_runtime, '_forget_recovery_project', lambda _pid: None)
+    worker = threading.Thread(target=recovery_runtime._backup_destination_worker_loop, daemon=True)
+    try:
+        with locks[blocked_gate]:
+            worker.start()
+            assert attempted.wait(2), 'worker did not reach the privacy gate'
+            assert 'lookup' not in observed
+            root.rmdir()  # Only this disposable, empty test directory.
+        worker.join(2)
+        assert not worker.is_alive()
+        assert observed == ['backup', 'recovery', 'lookup']
+        assert not root.exists()
+    finally:
+        stopped.set(); wake.set()
+        worker.join(2)
+
 from backend import diagnostics, lifecycle, recovery_runtime, request_pipeline
 from api.durability import backups as backup_api
 from api.durability import backup_destinations as backup_destinations_api

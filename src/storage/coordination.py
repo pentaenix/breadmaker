@@ -8,7 +8,7 @@ from contextlib import contextmanager
 _LOCK = threading.RLock()
 
 
-_RECOVERY_BACKUP_LOCK = threading.Lock()
+_RECOVERY_BACKUP_LOCK = threading.RLock()
 
 
 @contextmanager
