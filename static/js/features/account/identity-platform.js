@@ -1,7 +1,7 @@
 import {
   identityClient,signInProvider,signInEmail,createEmailAccount,sendVerification,reloadUser,
   sendPasswordReset,enrolledTotp,beginTotpEnrollment,exchangeServerSession,signOutClient
-} from './identity-platform-client.js?v=10.5.46';
+} from './identity-platform-client.js?v=10.5.47';
 
 const $=selector=>document.querySelector(selector);
 const message=$('#identityMessage'),totp=$('#identityTotp'),social=$('#identitySocial');
@@ -48,6 +48,12 @@ async function requirePasswordTotp(user){
 }
 async function finish(user,{passwordAccount=false}={}){
   if(passwordAccount){await requireVerifiedEmail(user);await requirePasswordTotp(user)}
+  else if(!user.emailVerified){
+    await sendVerification(user);
+    // Applying the email action can invalidate the original Firebase session.
+    // Start a fresh Google sign-in rather than retaining/retrying that proof.
+    throw new Error('Check your inbox and verify your email, then sign in with Google again.');
+  }
   await exchangeServerSession(user);
   await signOutClient();location.assign(safeReturn());
 }

@@ -15,4 +15,10 @@ existing Breadmaker account. Disabling/deleting a bound grant denies both new
 sessions and existing cookies. Existing UID admissions and operator invitations
 remain supported; no public endpoint can create or edit greenlist grants.
 
+Automatic email linking remains disabled. If Google supplies only a provider
+email, first sign-in sends Firebase's verify-before-update email action. The
+tester verifies it and signs in again; only Firebase's fresh signed, verified
+primary-email claim can consume a grant. Browser profile data never authorizes
+admission, and no existing account is looked up or merged by email.
+
 The retired Auth0 runtime implementation is preserved only as historical text under `docs/archive/auth0_runtime/`; no active source imports or selects it. Provider credentials, TOTP secrets, recovery material and Firebase tokens are never Breadmaker persistence.

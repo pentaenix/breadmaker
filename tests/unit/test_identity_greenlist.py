@@ -1,6 +1,8 @@
 """Fast unit contracts: operator grants admit verified identities, never merge UIDs."""
 import ast
+import json
 from pathlib import Path
+import subprocess
 
 import pytest
 from fastapi.responses import HTMLResponse
@@ -110,6 +112,74 @@ def test_google_provider_requests_email_for_verified_greenlist_admission():
     assert google.index("provider.addScope('email');") < google.index('return provider;')
     assert "prompt:'select_account'" in google
     assert google.count('addScope(') == 1  # No access to Gmail, Drive, or other user data.
+
+
+def run_client_function(relative, name, next_name, setup, invocation):
+    """Execute the real JS function with a fake SDK; no network/browser needed."""
+    source = (Path(__file__).resolve().parents[2] / relative).read_text()
+    body = source.split(f'async function {name}(', 1)[1].split(f'async function {next_name}(', 1)[0]
+    body = body.removesuffix('export ')
+    code = setup + f'\nasync function {name}(' + body + '\n' + invocation
+    result = subprocess.run(['node', '--input-type=module', '-e', code],
+                            capture_output=True, text=True, timeout=2, check=True)
+    return json.loads(result.stdout)
+
+
+@pytest.mark.parametrize('user,expected', [
+    ({'email': 'writer@example.invalid'}, ['verify', 'writer@example.invalid']),
+    ({'email': None, 'providerData': [{'providerId': 'google.com', 'email': 'writer@example.invalid'}]},
+     ['verifyBeforeUpdate', 'writer@example.invalid']),
+    ({'providerData': [{'providerId': 'apple.com', 'email': 'writer@example.invalid'}]}, ['error']),
+    ({'providerData': [{'providerId': 'google.com', 'email': ''}]}, ['error']),
+    ({}, ['error']),
+])
+def test_client_verification_uses_firebase_email_action_not_profile_authority(user, expected):
+    actual = run_client_function(
+        'static/js/features/account/identity-platform-client.js', 'sendVerification', 'reloadUser',
+        'const calls=[]; async function identityClient(){return {authMod:{'
+        'async sendEmailVerification(user){calls.push("verify",user.email)},'
+        'async verifyBeforeUpdateEmail(user,email){calls.push("verifyBeforeUpdate",email)}'
+        '}}}',
+        f'try{{await sendVerification({json.dumps(user)})}}catch{{calls.push("error")}};'
+        'console.log(JSON.stringify(calls));',
+    )
+    assert actual == expected
+
+
+@pytest.mark.parametrize('verified,password', [(False, False), (True, False), (False, True)])
+def test_login_waits_for_verified_social_email_before_exchange_without_weakening_password_totp(verified, password):
+    actual = run_client_function(
+        'static/js/features/account/identity-platform.js', 'finish', 'withBusy',
+        'const calls=[]; const sendVerification=async()=>calls.push("email-action");'
+        'const requireVerifiedEmail=async()=>calls.push("password-email");'
+        'const requirePasswordTotp=async()=>calls.push("totp");'
+        'const exchangeServerSession=async()=>calls.push("exchange");'
+        'const signOutClient=async()=>calls.push("signout");'
+        'const safeReturn=()=>"/"; const location={assign:()=>calls.push("navigate")};',
+        f'try{{await finish({{emailVerified:{json.dumps(verified)}}},'
+        f'{{passwordAccount:{json.dumps(password)}}})}}catch{{calls.push("retry-signin")}};'
+        'console.log(JSON.stringify(calls));',
+    )
+    if password:
+        assert actual == ['password-email', 'totp', 'exchange', 'signout', 'navigate']
+    elif verified:
+        assert actual == ['exchange', 'signout', 'navigate']
+    else:
+        assert actual == ['email-action', 'retry-signin']
+
+
+def test_missing_primary_email_cannot_consume_grant_until_fresh_provider_verified_claim():
+    docs, accounts, admin, service = _service()
+    path = grant(docs)
+    admin.claims.pop('email')
+    admin.claims.pop('email_verified')
+    with pytest.raises(IdentityPlatformError, match='PRIVATE_ALPHA_ADMISSION_REQUIRED'):
+        service.exchange_id_token('before-email-action')
+    assert not docs.get(path).data.get('bound_uid')
+    assert accounts.resolve_external_identity(service.issuer, 'external-uid-1') is None
+    admin.claims.update(email='writer@example.invalid', email_verified=True)
+    service.exchange_id_token('fresh-token-after-firebase-verification')
+    assert docs.get(path).data['bound_uid'] == 'external-uid-1'
 
 
 def test_login_shell_removes_requested_copy_and_preserves_auth_controls():
