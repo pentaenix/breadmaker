@@ -27,6 +27,8 @@ export async function identityClient(){
 export function providerFor(authMod,name){
   if(name==='google'){
     const provider=new authMod.GoogleAuthProvider();
+    // Firebase defaults to profile only; admission requires a verified email.
+    provider.addScope('email');
     provider.setCustomParameters({prompt:'select_account'});
     return provider;
   }

@@ -102,6 +102,16 @@ def test_greenlist_does_not_bypass_password_totp_requirement():
     assert not docs.get(path).data.get('bound_uid')
 
 
+def test_google_provider_requests_email_for_verified_greenlist_admission():
+    root = Path(__file__).resolve().parents[2]
+    source = (root / 'static/js/features/account/identity-platform-client.js').read_text()
+    google = source.split("if(name==='google'){", 1)[1].split("if(name==='apple'){", 1)[0]
+    assert "provider.addScope('email');" in google
+    assert google.index("provider.addScope('email');") < google.index('return provider;')
+    assert "prompt:'select_account'" in google
+    assert google.count('addScope(') == 1  # No access to Gmail, Drive, or other user data.
+
+
 def test_login_shell_removes_requested_copy_and_preserves_auth_controls():
     root = Path(__file__).resolve().parents[2]
     source = (root / 'src/hosted/http_auth.py').read_text()
