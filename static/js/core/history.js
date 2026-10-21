@@ -66,7 +66,7 @@ async function reopenAfterStructuralRestore(target){
   setView('manuscript');
   if(target.documentId&&state.documents.some(d=>d.id===target.documentId))state.activeDocumentId=target.documentId;
   if(target.manuscriptViewMode==='book'){await openWholeBook(false);return}
-  if(target.manuscriptViewMode==='scene'&&target.sceneId&&state.scenes.some(scene=>+scene.id===+target.sceneId)){await selectScene(+target.sceneId,false);return}
+  if(target.manuscriptViewMode==='scene'&&target.sceneId&&state.scenes.some(scene=>entityId(scene.id)===entityId(target.sceneId))){await selectScene(entityId(target.sceneId),false);return}
   const chapterId=target.chapterId&&!!visibleChapterById(target.chapterId)?target.chapterId:visibleChapters(state.activeDocumentId)[0]?.id;if(chapterId)await selectChapter(chapterId,false);
 }
 async function beginStructuralUndo(label,scope='full',scopeId=null){await flushPendingCanvasNodeSaves();await flushSave();const suffix=scopeId!==null&&scopeId!==undefined?`&scope_id=${encodeURIComponent(scopeId)}`:'';const started=await api(`/api/undo/begin?label=${encodeURIComponent(label)}&scope=${encodeURIComponent(scope||'full')}${suffix}`,{method:'POST'});return started.token}

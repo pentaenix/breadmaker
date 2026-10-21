@@ -61,7 +61,7 @@ const state = {
   activeMarkupMarkerId: null,
   activeMarkupClear: false,
   activeMarkupSelectionKey: null,
-  lastUsedMarkupMarkerId: (()=>{try{return +(localStorage.getItem('breadmaker-last-markup-marker')||0)||null}catch{return null}})(),
+  lastUsedMarkupMarkerId: (()=>{try{return entityId(localStorage.getItem('breadmaker-last-markup-marker')||0)||null}catch{return null}})(),
   selectionToolbarInteracting: false,
   selectionToolbarRange: null,
   selectionToolbarItems: [],

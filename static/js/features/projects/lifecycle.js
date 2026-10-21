@@ -64,7 +64,7 @@ async function importJson(event) {
     $('#cancelJsonImport').onclick=()=>{closeModal();input.value=''};
     $('#confirmJsonImport').onclick=async()=>{
       const button=$('#confirmJsonImport');button.disabled=true;button.textContent=i18nSource(preview.kind==='project'?'Creating…':'Importing…');
-      const choices={};$$('[data-fragment-target]').forEach(select=>{if(select.value)choices[select.dataset.fragmentTarget]=+select.value});
+      const choices={};$$('[data-fragment-target]').forEach(select=>{if(select.value)choices[select.dataset.fragmentTarget]=entityId(select.value)});
       if(preview.kind==='fragment'&&$$('[data-fragment-target]').some(select=>!select.value)){button.disabled=false;button.textContent=i18nSource('Import');toast('Choose a destination for every fragment item.');return}
       const fd=new FormData();fd.append('file',file);fd.append('context',JSON.stringify(context));fd.append('target_choices',JSON.stringify(choices));
       try{

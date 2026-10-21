@@ -449,6 +449,9 @@ def _project_snapshot(pid:str) -> dict[str,Any]:
     final_project=runtime.projects.get(pid)
     if int(final_project.get('generation') or 0)!=begin_generation:
         raise DocumentConflict('HOSTED_SNAPSHOT_GENERATION_CHANGED')
+    # The browser must carry the same project revision used by atomic chapter
+    # replacement. Missing revisions previously became an invalid empty string.
+    chapters=[{**chapter,'revision':str(begin_generation)} for chapter in chapters]
     return {
         'project':final_project,'tabs':tabs,'documents':tabs,'chapters':chapters,'chapter_outlines':chapter_outlines,
         'canvases':canvases,'scenes':scenes,'scene_gaps':[],'bookmark':bookmark,'labels':labels,'icon_markers':icon_markers,
@@ -480,10 +483,26 @@ def hosted_document_delete(did:str,request:Request):return _delete('document_tab
 async def hosted_chapter_create(request:Request):return _create('chapter',{'project_id':_pid(request)},await _body(request))
 @product_router.get('/api/chapters/{cid}')
 def hosted_chapter_get(cid:str,request:Request):
-    pid=_pid(request);chapter=_get('chapter',{'project_id':pid,'chapter_id':cid});blocks=_list('manuscript_block',{'project_id':pid},field='chapter_id',value=cid);return {'chapter':chapter,'blocks':blocks}
+    pid=_pid(request)
+    generation=_domain().project_generation(pid,_uid())
+    chapter=_get('chapter',{'project_id':pid,'chapter_id':cid})
+    blocks=_list('manuscript_block',{'project_id':pid},field='chapter_id',value=cid)
+    if _domain().project_generation(pid,_uid())!=generation:
+        raise HTTPException(409,detail='HOSTED_SNAPSHOT_GENERATION_CHANGED')
+    revision=str(generation)
+    return {'chapter':{**chapter,'revision':revision},'blocks':blocks,'revision':revision}
 @product_router.patch('/api/chapters/{cid}')
 @product_router.patch('/api/chapters/{cid}/title')
-async def hosted_chapter_update(cid:str,request:Request):return _update('chapter',{'project_id':_pid(request),'chapter_id':cid},await _body(request))
+async def hosted_chapter_update(cid:str,request:Request):
+    pid=_pid(request);patch=dict(await _body(request))
+    raw=patch.pop('expected_revision',None)
+    try:
+        revision=_domain().project_generation(pid,_uid()) if raw is None else int(raw)
+        if revision<1:raise ValueError('invalid revision')
+        return _json_public(_domain().update('chapter',{'project_id':pid,'chapter_id':cid},patch,
+            user_id=_uid(),expected_generation=patch.get('generation'),
+            operation=operation_for('chapter_update'),expected_project_revision=revision))
+    except Exception as exc:raise _error(exc)
 @product_router.delete('/api/chapters/{cid}')
 def hosted_chapter_delete(cid:str,request:Request):return _delete('chapter',{'project_id':_pid(request),'chapter_id':cid})
 @product_router.put('/api/chapters/{cid}/blocks')

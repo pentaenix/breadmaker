@@ -36,13 +36,13 @@ def test_v9610_crash_drafts_lazy_load_missing_chapter_revision_only_when_needed(
     check=js[js.index('async function checkCrashJournal'):js.index('// -------------------- lease / boot')]
     assert 'map(ensureChapterRevision)' in check
     recover=js[js.index('async function recoverCrashDraft'):js.index('async function checkCrashJournal')]
-    assert 'await ensureChapterRevision(+draft.chapter_id)' in recover
+    assert 'await ensureChapterRevision(entityId(draft.chapter_id))' in recover
 
 
 def test_v9610_structural_manuscript_reload_invalidates_only_active_book_cache():
     js=frontend_source_from_app_path(ROOT/'static/app.js')
     reload_fn=js[js.index('async function reloadManuscriptView'):js.index('function scheduleCommentsWorkspaceSync')]
-    assert 'if(fresh&&state.activeDocumentId)state.bookCache.delete(+state.activeDocumentId)' in reload_fn
+    assert 'if(fresh&&state.activeDocumentId)state.bookCache.delete(entityId(state.activeDocumentId))' in reload_fn
     assert "if(state.viewMode==='book')await openWholeBook(false,false)" in reload_fn
     # Ordinary Full Text navigation still uses the cache; structural reload is the invalidation boundary.
     assert 'async function loadBookData' in js and 'state.bookCache.get' in js

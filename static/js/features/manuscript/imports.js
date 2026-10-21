@@ -4,7 +4,7 @@ function beginDocumentImport(doc){
 }
 $('#documentImportInput').oncancel=()=>{delete $('#documentImportInput').dataset.afterDocumentId;delete $('#documentImportInput').dataset.afterDocumentTitle};
 $('#documentImportInput').onchange=async event=>{
-  const input=event.target,file=input.files[0],afterDocumentId=+input.dataset.afterDocumentId,afterDocumentTitle=input.dataset.afterDocumentTitle||'this tab';
+  const input=event.target,file=input.files[0],afterDocumentId=entityId(input.dataset.afterDocumentId),afterDocumentTitle=input.dataset.afterDocumentTitle||'this tab';
   delete input.dataset.afterDocumentId;delete input.dataset.afterDocumentTitle;
   if(!file||!afterDocumentId){input.value='';return}
   const isWord=/\.docx?$/i.test(file.name);let preferredHeading='heading1';
@@ -18,8 +18,8 @@ async function performDocumentTabImport(file,chapterHeading,afterDocumentId){
   try{
     const result=await withStructuralUndo(`Import tabs: ${file.name}`,()=>api(`/api/documents/import?after_document_id=${encodeURIComponent(afterDocumentId)}&chapter_heading=${encodeURIComponent(chapterHeading)}`,{method:'POST',body:fd}),{view:'manuscript'});
     await refresh(false);
-    if(result.first_document_id&&state.documents.some(doc=>+doc.id===+result.first_document_id)){
-      state.activeDocumentId=+result.first_document_id;renderDocuments();renderChapterTree();const first=visibleChapters(state.activeDocumentId)[0];
+    if(result.first_document_id&&state.documents.some(doc=>entityId(doc.id)===entityId(result.first_document_id))){
+      state.activeDocumentId=entityId(result.first_document_id);renderDocuments();renderChapterTree();const first=visibleChapters(state.activeDocumentId)[0];
       if(state.viewMode==='book')await openWholeBook(false);else if(first)await selectChapter(first.id,false);
     }
     toast(i18nText('import.summary',{tabs:i18nCount(result.tabs,'import.tabs.one','import.tabs.many'),chapters:result.chapters?` · ${i18nCount(result.chapters,'import.chapters.one','import.chapters.many')}`:'',images:result.images?` · ${i18nCount(result.images,'import.images.one','import.images.many')}`:''}));
@@ -112,7 +112,7 @@ $('#importInput').onchange=async event=>{
     const outcome=await runManuscriptImportWithProgress(file,'Preparing replacement…',()=>performManuscriptImport(file,chapterHeading));if(outcome.ok)finish();
   };
   $('#importDestinationNew').onclick=async()=>{const chapterHeading=heading();await rememberImportHeading(file,chapterHeading);const outcome=await runManuscriptImportWithProgress(file,'Preparing new project…',()=>performManuscriptImportAsNewProject(file,chapterHeading),{reload:true});if(outcome.ok)input.value=''};
-  $('#importDestinationTabs').onclick=async()=>{const chapterHeading=heading();await rememberImportHeading(file,chapterHeading);const docs=[...(state.documents||[])].sort((a,b)=>(+a.position||0)-(+b.position||0)||(+a.id)-(+b.id)),last=docs.at(-1);if(!last)return toast('No Tab is available to append after.');const outcome=await runManuscriptImportWithProgress(file,'Preparing Tabs…',()=>performDocumentTabImport(file,chapterHeading,last.id));if(outcome.ok)finish()};
+  $('#importDestinationTabs').onclick=async()=>{const chapterHeading=heading();await rememberImportHeading(file,chapterHeading);const docs=[...(state.documents||[])].sort((a,b)=>(+a.position||0)-(+b.position||0)||compareEntityIds(a.id,b.id)),last=docs.at(-1);if(!last)return toast('No Tab is available to append after.');const outcome=await runManuscriptImportWithProgress(file,'Preparing Tabs…',()=>performDocumentTabImport(file,chapterHeading,last.id));if(outcome.ok)finish()};
 };
 async function performManuscriptImport(file,chapterHeading){
   await flushSave();const fd=new FormData();fd.append('file',file);setSaveState('Importing…');

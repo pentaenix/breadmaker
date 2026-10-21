@@ -17,12 +17,12 @@ function paintManuscriptReferenceHighlight(ref){
   if(!ranges.length)return;CSS.highlights.set('breadmaker-linked-range',new Highlight(...ranges));const style=document.createElement('style');style.id='breadmaker-linked-range-style';style.textContent='::highlight(breadmaker-linked-range){background:var(--reference-hit);color:inherit;outline:1px solid var(--reference-hit-line)}';document.head.appendChild(style);manuscriptReferenceHighlightTimer=setTimeout(clearManuscriptReferenceHighlight,2600);
 }
 async function openManuscriptRangeReference(ref){
-  const startChapter=+ref.target_start_chapter_id||0,endChapter=+ref.target_end_chapter_id||startChapter;if(ref.target_missing||!startChapter)return toast('Linked manuscript passage no longer exists.');setView('manuscript');
-  if(endChapter&&endChapter!==startChapter){const ch=visibleChapterById(startChapter);if(ch?.tab_id)state.activeDocumentId=+ch.tab_id;await openWholeBook(false,false)}else await selectChapter(startChapter,false,false);
+  const startChapter=entityId(ref.target_start_chapter_id)||0,endChapter=entityId(ref.target_end_chapter_id)||startChapter;if(ref.target_missing||!startChapter)return toast('Linked manuscript passage no longer exists.');setView('manuscript');
+  if(endChapter&&endChapter!==startChapter){const ch=visibleChapterById(startChapter);if(ch?.tab_id)state.activeDocumentId=entityId(ch.tab_id);await openWholeBook(false,false)}else await selectChapter(startChapter,false,false);
   const wrap=$(`.manuscript-block-wrap[data-block-id="${CSS.escape(String(ref.start_block_id))}"]`);if(!wrap)return toast('Linked manuscript passage no longer exists.');revealOutlineTarget(wrap);wrap.scrollIntoView({behavior:'auto',block:'center'});paintManuscriptReferenceHighlight(ref);
 }
 async function openReferenceTarget(ref){
-  if(!ref||ref.target_type==='url')return;const id=+ref.target_id;dismissModalTree();
+  if(!ref||ref.target_type==='url')return;const id=entityId(ref.target_id);dismissModalTree();
   if(ref.target_type==='task'){setView('tasks');await loadTasks();return openTaskDetails(id)}
   if(['review_highlight','review_comment','review_suggestion','review_answer','review_general_feedback'].includes(ref.target_type)){const kind=ref.target_type==='review_general_feedback'?'general':ref.target_type.replace('review_',''),ctx=await api(`/api/review-items/${encodeURIComponent(kind)}/${encodeURIComponent(ref.target_id)}`);setView('reviews');await refresh(false);selectReview(ctx.review_id);setTimeout(()=>{const item=$(`[data-review-feedback-id="${CSS.escape(String(ref.target_id))}"]`);item?.scrollIntoView({block:'center',behavior:'auto'});item?.classList.add('review-feedback-focus');setTimeout(()=>item?.classList.remove('review-feedback-focus'),1800)},100);return}
   if(ref.target_type==='manuscript_range')return openManuscriptRangeReference(ref)

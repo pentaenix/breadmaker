@@ -38,9 +38,9 @@ function queueReviewItemHover(review,row){hideReviewItemHover();const descriptio
 function reviewScopeDetails(review){
   const type=review?.scope_type||'manuscript';
   if(type==='manuscript')return {summary:i18nText('reviews.scope_manuscript'),full:i18nText('reviews.scope_manuscript')};
-  const ids=new Set((review?.scope_ids||[]).map(Number));
+  const ids=new Set((review?.scope_ids||[]).map(entityId));
   if(type==='chapters'){
-    const chapters=visibleChapters(),selected=chapters.map((item,index)=>({item,position:index+1})).filter(entry=>ids.has(+entry.item.id));
+    const chapters=visibleChapters(),selected=chapters.map((item,index)=>({item,position:index+1})).filter(entry=>ids.has(entityId(entry.item.id)));
     const full=selected.map(({item,position})=>`${i18nText('reviews.scope_chapter_number',{number:i18nNumber(position)})}: ${item.title||i18nText('reviews.untitled_chapter')}`).join(' · ');
     if(!selected.length)return {summary:i18nText('reviews.scope_chapters'),full:i18nText('reviews.scope_chapters')};
     if(selected.length===1)return {summary:i18nText('reviews.scope_chapter_number',{number:i18nNumber(selected[0].position)}),full};
@@ -50,7 +50,7 @@ function reviewScopeDetails(review){
     }
     return {summary:i18nText('reviews.scope_chapter_count',{count:i18nNumber(selected.length)}),full};
   }
-  const source=state.scenes||[],selected=source.filter(item=>ids.has(+item.id)),full=selected.map(item=>item.title||i18nText('reviews.untitled_scene')).join(' · ');
+  const source=state.scenes||[],selected=source.filter(item=>ids.has(entityId(item.id))),full=selected.map(item=>item.title||i18nText('reviews.untitled_scene')).join(' · ');
   if(!selected.length)return {summary:i18nText('reviews.scope_scenes'),full:i18nText('reviews.scope_scenes')};
   return {summary:i18nText(selected.length===1?'reviews.scope_scene_count_one':'reviews.scope_scene_count',{count:i18nNumber(selected.length)}),full};
 }
@@ -178,13 +178,13 @@ function renderReviews(){
 }
 
 function reviewScopeItems(scopeType){
-  if(scopeType==='chapters')return visibleChapters().map(item=>({id:+item.id,label:item.title||i18nText('reviews.untitled_chapter')}));
-  if(scopeType==='scenes')return (state.scenes||[]).filter(item=>+item.block_count>0).map(item=>({id:+item.id,label:item.title||i18nText('reviews.untitled_scene')}));
+  if(scopeType==='chapters')return visibleChapters().map(item=>({id:entityId(item.id),label:item.title||i18nText('reviews.untitled_chapter')}));
+  if(scopeType==='scenes')return (state.scenes||[]).filter(item=>+item.block_count>0).map(item=>({id:entityId(item.id),label:item.title||i18nText('reviews.untitled_scene')}));
   return [];
 }
 function renderReviewScopePicker(selectedIds=[]){
   const type=$('#reviewScopeType')?.value||'manuscript',wrap=$('#reviewScopePicker');if(!wrap)return;
   if(type==='manuscript'){wrap.classList.add('hidden');wrap.innerHTML='';return}
-  const selected=new Set((selectedIds||[]).map(Number)),items=reviewScopeItems(type),emptyKey=type==='chapters'?'reviews.scope_no_chapters':'reviews.scope_no_scenes';
+  const selected=new Set((selectedIds||[]).map(entityId)),items=reviewScopeItems(type),emptyKey=type==='chapters'?'reviews.scope_no_chapters':'reviews.scope_no_scenes';
   wrap.classList.remove('hidden');wrap.innerHTML=items.length?items.map(item=>`<label class="review-scope-option"><input type="checkbox" value="${item.id}" ${selected.has(item.id)?'checked':''}><span>${escapeHtml(item.label)}</span></label>`).join(''):`<div class="small-muted review-scope-empty">${escapeHtml(i18nText(emptyKey))}</div>`;
 }

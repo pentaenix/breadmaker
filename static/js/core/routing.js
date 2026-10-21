@@ -16,6 +16,15 @@ function hostedProjectRoute(projectId,view='manuscript'){
   const pid=String(projectId||'').toLowerCase();if(!/^[0-9a-f]{32}$/.test(pid))return '/';
   return `/p/${pid}${VIEW_ROUTES[view]||''}`;
 }
+function openWorkspaceProject(projectId,{replace=false}={}){
+  let path='/';
+  if(runtimeSupports('hosted_projects')){
+    const pid=String(projectId||'').toLowerCase();
+    if(!/^[0-9a-f]{32}$/.test(pid))throw new Error('PROJECT_ROUTE_ID_INVALID');
+    path=hostedProjectRoute(pid,'manuscript');
+  }
+  location[replace?'replace':'assign'](path);
+}
 function syncViewRoute(view,{replace=false}={}){
   if(!['http:','https:'].includes(location.protocol))return;
   const projectId=currentProjectIdentity();
@@ -38,6 +47,11 @@ function setView(view,{historyMode='push'}={}) {
   document.documentElement.removeAttribute('data-initial-view');
 }
 async function hydratePrimaryWorkspace(view){
+  if(view==='manuscript'&&state.manuscriptWorkspaceHydrated&&runtimeSupports('hosted_projects')&&currentView()!=='manuscript'){
+    // Other workspaces advance the hosted project revision. Re-enter only from
+    // a fresh server snapshot; never attach a newer token to stale editor text.
+    await flushSave();await reloadManuscriptView();return;
+  }
   if(view==='manuscript'&&!state.manuscriptWorkspaceHydrated){
     let restored=await restoreLastManuscriptLocation(state.bootUIState);
     if(!restored&&state.bookmark)restored=await goToBookmark({activateView:false,silent:true});
@@ -45,7 +59,7 @@ async function hydratePrimaryWorkspace(view){
     state.manuscriptWorkspaceHydrated=true;syncBookmarkToolbar();return;
   }
   if(view==='canvas'&&!state.currentCanvas&&state.canvases.length){
-    const remembered=state.lastCanvasId&&state.canvases.some(canvas=>+canvas.id===+state.lastCanvasId)?+state.lastCanvasId:+state.canvases[0].id;
+    const remembered=state.lastCanvasId&&state.canvases.some(canvas=>entityId(canvas.id)===entityId(state.lastCanvasId))?entityId(state.lastCanvasId):entityId(state.canvases[0].id);
     if(remembered)await selectCanvas(remembered,{persist:false});
   }
 }

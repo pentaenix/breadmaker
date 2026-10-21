@@ -22,23 +22,23 @@ async function buildQuickOpenDetailIndex(){
   state.quickOpenDetailIndexPromise=(async()=>{
     const tasks=await getTasks();index.milestones=tasks.flatMap(task=>milestoneQuickEntries(task).map(milestone=>({task,milestone})));scheduleQuickOpenRefresh();
     await Promise.all([
-      quickOpenConcurrent(state.canvases,async canvas=>{try{const detail=state.currentCanvas?.id===canvas.id&&state.canvasNodes?.length?{nodes:state.canvasNodes}:await api(`/api/canvases/${canvas.id}`);for(const node of detail.nodes||[]){if(['routing','label','figure'].includes(node.node_type))continue;index.cards.push({canvas,node});index.canvasOwners.set(+node.id,+canvas.id)}scheduleQuickOpenRefresh()}catch(error){console.warn('Quick Open Canvas index skipped',canvas.id,error)}}),
-      quickOpenConcurrent(state.maps,async map=>{try{const detail=state.currentMap?.id===map.id&&state.mapData?.map?.id===map.id?state.mapData:await api(`/api/maps/${map.id}`);for(const line of detail.lines||[])for(const item of line.items||[]){index.mapItems.push({map,line,item});index.mapItemOwners.set(+item.id,+map.id)}scheduleQuickOpenRefresh()}catch(error){console.warn('Quick Open Map index skipped',map.id,error)}}),
+      quickOpenConcurrent(state.canvases,async canvas=>{try{const detail=state.currentCanvas?.id===canvas.id&&state.canvasNodes?.length?{nodes:state.canvasNodes}:await api(`/api/canvases/${canvas.id}`);for(const node of detail.nodes||[]){if(['routing','label','figure'].includes(node.node_type))continue;index.cards.push({canvas,node});index.canvasOwners.set(entityId(node.id),entityId(canvas.id))}scheduleQuickOpenRefresh()}catch(error){console.warn('Quick Open Canvas index skipped',canvas.id,error)}}),
+      quickOpenConcurrent(state.maps,async map=>{try{const detail=state.currentMap?.id===map.id&&state.mapData?.map?.id===map.id?state.mapData:await api(`/api/maps/${map.id}`);for(const line of detail.lines||[])for(const item of line.items||[]){index.mapItems.push({map,line,item});index.mapItemOwners.set(entityId(item.id),entityId(map.id))}scheduleQuickOpenRefresh()}catch(error){console.warn('Quick Open Map index skipped',map.id,error)}}),
     ]);
     index.complete=true;return index;
   })().finally(()=>{state.quickOpenDetailIndexPromise=null;scheduleQuickOpenRefresh()});
   return state.quickOpenDetailIndexPromise;
 }
 function scheduleQuickOpenDetailIndex(){if(state.quickOpenDetailIndex?.complete||state.quickOpenDetailIndexPromise)return;const run=()=>buildQuickOpenDetailIndex().catch(error=>console.warn('Quick Open detail index could not be fully prepared',error));if('requestIdleCallback'in window)requestIdleCallback(run,{timeout:350});else setTimeout(run,0)}
-async function quickOpenCanvasOwner(nodeId){const cached=state.quickOpenDetailIndex?.canvasOwners?.get(+nodeId);if(cached)return cached;const detail=await buildQuickOpenDetailIndex();return detail.canvasOwners.get(+nodeId)||null}
-async function quickOpenMapItemOwner(itemId){const cached=state.quickOpenDetailIndex?.mapItemOwners?.get(+itemId);if(cached)return cached;const detail=await buildQuickOpenDetailIndex();return detail.mapItemOwners.get(+itemId)||null}
+async function quickOpenCanvasOwner(nodeId){const cached=state.quickOpenDetailIndex?.canvasOwners?.get(entityId(nodeId));if(cached)return cached;const detail=await buildQuickOpenDetailIndex();return detail.canvasOwners.get(entityId(nodeId))||null}
+async function quickOpenMapItemOwner(itemId){const cached=state.quickOpenDetailIndex?.mapItemOwners?.get(entityId(itemId));if(cached)return cached;const detail=await buildQuickOpenDetailIndex();return detail.mapItemOwners.get(entityId(itemId))||null}
 async function openQuickOpen(){
   $('#quickOpen').classList.remove('hidden');$('#quickOpenInput').value='';quickOpenActiveIndex=0;$('#quickOpenInput').focus();await renderQuickOpenResults();scheduleQuickOpenDetailIndex();
 }
 async function renderQuickOpenResults(){
   const q=$('#quickOpenInput').value.trim().toLocaleLowerCase(i18nLocale()),tasks=await getTasks(),detail=state.quickOpenDetailIndex||{cards:[],mapItems:[],milestones:[]};
-  const documentName=id=>state.documents.find(d=>+d.id===+id)?.title||'';
-  const chapterName=id=>visibleChapterById(+id)?.title||'';
+  const documentName=id=>state.documents.find(d=>entityId(d.id)===entityId(id))?.title||'';
+  const chapterName=id=>visibleChapterById(entityId(id))?.title||'';
   const items=[
     ...visibleChapters().map(x=>({kind:'Chapter',label:x.title,context:documentName(x.tab_id),searchText:`${x.title} ${x.description||''} ${documentName(x.tab_id)}`,action:()=>{setView('manuscript');selectChapter(x.id)}})),
     ...state.scenes.map(x=>({kind:'Scene',label:x.title||i18nSource('Scene'),context:chapterName(x.chapter_id),searchText:`${x.title||''} ${x.description||''} ${chapterName(x.chapter_id)}`,action:()=>{setView('manuscript');jumpToScene(x.id)}})),

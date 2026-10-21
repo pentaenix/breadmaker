@@ -1,7 +1,7 @@
 import {
   identityClient,signInProvider,signInEmail,createEmailAccount,sendVerification,reloadUser,
   sendPasswordReset,enrolledTotp,beginTotpEnrollment,exchangeServerSession,signOutClient
-} from './identity-platform-client.js?v=10.5.47';
+} from './identity-platform-client.js?v=10.5.48';
 
 const $=selector=>document.querySelector(selector);
 const message=$('#identityMessage'),totp=$('#identityTotp'),social=$('#identitySocial');

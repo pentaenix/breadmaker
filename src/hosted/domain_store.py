@@ -746,6 +746,7 @@ class HostedDomainStore:
         user_id: str,
         expected_generation: int | None = None,
         operation: str | None = None,
+        expected_project_revision: int | None = None,
     ) -> dict[str, Any]:
         uid = require_user_id(user_id)
         ids = {str(k): str(v) for k, v in dict(ids).items()}
@@ -759,7 +760,8 @@ class HostedDomainStore:
         entity_generation = int(current.get("generation") or 0)
         if expected_generation is not None and entity_generation != int(expected_generation):
             raise DocumentConflict("HOSTED_GENERATION_CONFLICT")
-        expected_project_generation = self.project_generation(str(ids["project_id"]), uid)
+        expected_project_generation = (self.project_generation(str(ids["project_id"]), uid)
+                                       if expected_project_revision is None else int(expected_project_revision))
         op = _operation_id(operation or operation_id(f"update_{logical_entity}"))
         if self.encrypted_fields is not None and self.encrypted_fields.protects(logical_entity):
             # Replay was already committed: return only when the authorized
@@ -767,6 +769,10 @@ class HostedDomainStore:
             if current.get("_bm_last_operation") == op:
                 old_public = self._hydrate(logical_entity, current, ids=ids, user_id=uid)
                 if all(old_public.get(k) == v for k, v in patch.items()):
+                    if expected_project_revision is not None:
+                        if self.project_generation(str(ids['project_id']),uid)!=expected_project_generation+1:
+                            raise DocumentConflict('HOSTED_REPLAY_SUPERSEDED')
+                        return {**old_public,'revision':str(expected_project_generation+1)}
                     return old_public
                 raise DocumentConflict("HOSTED_PRIVATE_FIRESTORE_OPERATION_CONFLICT")
 
@@ -818,6 +824,8 @@ class HostedDomainStore:
                 raise DocumentNotFound("HOSTED_DOCUMENT_NOT_FOUND")
             data = dict(row.data)
             if data.get("_bm_last_operation") == op and data.get("_bm_last_fingerprint") == fingerprint:
+                if expected_project_revision is not None and int(project.get('generation') or 0)!=expected_project_generation+1:
+                    raise DocumentConflict('HOSTED_REPLAY_SUPERSEDED')
                 return data
             current_generation = int(data.get("generation") or 0)
             if current_generation != entity_generation:
@@ -838,7 +846,12 @@ class HostedDomainStore:
             return data
 
         row = self.documents.run_transaction(mutate)
-        return self._hydrate(logical_entity, row, ids=ids, user_id=uid)
+        hydrated = self._hydrate(logical_entity, row, ids=ids, user_id=uid)
+        if expected_project_revision is not None:
+            # The token is derived from this exact atomic commit, not a later
+            # project read that could accidentally authorize a stale writer.
+            hydrated = {**hydrated, 'revision': str(expected_project_generation+1)}
+        return hydrated
 
     def delete(
         self,

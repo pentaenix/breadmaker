@@ -95,6 +95,9 @@ The script order declared by `static/index.html` is part of the runtime contract
 - Do not create compatibility copies of moved functions in `app.js`.
 - Do not add new feature behavior to `app.js` when an owning module exists.
 - Shared browser infrastructure belongs in `core/`; product behavior belongs in `features/`.
+- `core/runtime.js` owns `entityId`/`isEntityId`: preserve hosted opaque IDs;
+  normalize only canonical safe numeric local IDs. Never use numeric coercion
+  for entity identity. Counts, geometry and offsets remain numbers.
 - Keep the single shared `state` model in `core/state.js` until there is a concrete reason to introduce a stronger state abstraction.
 - Cross-feature calls may continue to resolve through global function names during this build-step-free decomposition; ownership is determined by the file where the implementation lives, not by re-export wrappers.
 - When source-contract tests need frontend implementation text, use `frontend_source()` / `frontend_source_from_app_path()`.

@@ -2,6 +2,18 @@ const $ = (selector, root=document) => root.querySelector(selector);
 const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
 const escapeHtml = (value='') => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid = () => globalThis.crypto?.randomUUID?.() || `id_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
+// Local SQLite IDs are numbers; hosted Firestore IDs are opaque strings.
+// Normalize DOM/UI-state round trips without coercing hosted identities to NaN.
+// This is representation only: server membership checks remain authoritative.
+function entityId(value){
+  if(typeof value==='number')return value;
+  if(value===null||value==='')return 0;
+  if(value===undefined)return NaN;
+  const text=String(value);
+  return /^\d+$/.test(text)&&String(Number(text))===text&&Number.isSafeInteger(Number(text))?Number(text):text;
+}
+function isEntityId(value){return typeof value==='number'?Number.isSafeInteger(value)&&value>0:typeof value==='string'&&/^[A-Za-z0-9_-]+$/.test(value)&&!['NaN','undefined','null'].includes(value)}
+function compareEntityIds(a,b){const left=entityId(a),right=entityId(b);return typeof left==='number'&&typeof right==='number'?left-right:String(left).localeCompare(String(right))}
 const CLIENT_ID = (() => {
   try {
     let id = sessionStorage.getItem('breadmaker-client-id');
@@ -64,5 +76,10 @@ async function api(url, options={}) {
   }
   const type = response.headers.get('content-type') || '';
   return type.includes('application/json') ? response.json() : response;
+}
+async function apiList(url,key,options={}){
+  const result=await api(url,options),rows=Array.isArray(result)?result:result?.[key];
+  if(!Array.isArray(rows))throw new BreadmakerError(`Invalid ${key} response`,0,'COLLECTION_RESPONSE_INVALID');
+  return rows;
 }
 

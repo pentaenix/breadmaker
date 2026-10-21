@@ -5,11 +5,11 @@
 const BOOKMARK_ICON_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10v17l-5-3.4-5 3.4z"/></svg>';
 let bookmarkRemoveArm={button:null,until:0,toastTimer:null,expiryTimer:null};
 function clearBookmarkRemoveArm(){clearTimeout(bookmarkRemoveArm.toastTimer);clearTimeout(bookmarkRemoveArm.expiryTimer);bookmarkRemoveArm={button:null,until:0,toastTimer:null,expiryTimer:null}}
-function bookmarkExactChapter(id){return state.bookmark?.target_type==='chapter'&&+state.bookmark.chapter_id===+id}
-function bookmarkExactScene(id){return state.bookmark?.target_type==='scene'&&+state.bookmark.scene_id===+id}
-function bookmarkShowsOnChapter(id){const b=state.bookmark;return !!b&&(bookmarkExactChapter(id)||(b.owner_chapter_id!=null&&+b.owner_chapter_id===+id))}
-function bookmarkShowsOnScene(id){const b=state.bookmark;return !!b&&(bookmarkExactScene(id)||(b.owner_scene_id!=null&&+b.owner_scene_id===+id))}
-function bookmarkShowsOnSceneGap(gap){const b=state.bookmark;if(!b||!gap||+b.tab_id!==+gap.tab_id||!b.location_block_id)return false;return (gap.block_ids||[]).some(id=>String(id)===String(b.location_block_id))}
+function bookmarkExactChapter(id){return state.bookmark?.target_type==='chapter'&&entityId(state.bookmark.chapter_id)===entityId(id)}
+function bookmarkExactScene(id){return state.bookmark?.target_type==='scene'&&entityId(state.bookmark.scene_id)===entityId(id)}
+function bookmarkShowsOnChapter(id){const b=state.bookmark;return !!b&&(bookmarkExactChapter(id)||(b.owner_chapter_id!=null&&entityId(b.owner_chapter_id)===entityId(id)))}
+function bookmarkShowsOnScene(id){const b=state.bookmark;return !!b&&(bookmarkExactScene(id)||(b.owner_scene_id!=null&&entityId(b.owner_scene_id)===entityId(id)))}
+function bookmarkShowsOnSceneGap(gap){const b=state.bookmark;if(!b||!gap||entityId(b.tab_id)!==entityId(gap.tab_id)||!b.location_block_id)return false;return (gap.block_ids||[]).some(id=>String(id)===String(b.location_block_id))}
 function bookmarkRangeMatches(items){
   const b=state.bookmark;if(!b||b.target_type!=='range'||!items?.length)return false;const first=items[0],last=items.at(-1);
   return String(b.start_block_id)===String(first.block_id)&&String(b.end_block_id)===String(last.block_id)&&+b.start_offset===+first.start_offset&&+b.end_offset===+last.end_offset;
@@ -17,9 +17,9 @@ function bookmarkRangeMatches(items){
 function bookmarkContext(){return {view:'manuscript',chapterId:state.chapter?.id||null,sceneId:state.scene?.id||null,documentId:state.activeDocumentId||null,manuscriptViewMode:state.viewMode}}
 function bookmarkDestinationTooltip(bookmark=state.bookmark){
   const b=bookmark;if(!b)return i18nText('manuscript.bookmark_go_tooltip');
-  if(b.target_type==='chapter'){const title=b.target_title||storageChapterById(+b.chapter_id)?.title;if(title)return i18nText('manuscript.bookmark_go_chapter',{title});}
-  if(b.target_type==='scene'){const title=b.target_title||sceneById(+b.scene_id)?.title;if(title)return i18nText('manuscript.bookmark_go_scene',{title});}
-  if(b.target_type==='range'){const scene=b.owner_scene_id?sceneById(+b.owner_scene_id):null;if(scene?.title)return i18nText('manuscript.bookmark_go_passage_scene',{title:scene.title});const chapter=b.owner_chapter_id?storageChapterById(+b.owner_chapter_id):null;if(chapter?.title)return i18nText('manuscript.bookmark_go_passage_chapter',{title:chapter.title});return i18nText('manuscript.bookmark_go_passage');}
+  if(b.target_type==='chapter'){const title=b.target_title||storageChapterById(entityId(b.chapter_id))?.title;if(title)return i18nText('manuscript.bookmark_go_chapter',{title});}
+  if(b.target_type==='scene'){const title=b.target_title||sceneById(entityId(b.scene_id))?.title;if(title)return i18nText('manuscript.bookmark_go_scene',{title});}
+  if(b.target_type==='range'){const scene=b.owner_scene_id?sceneById(entityId(b.owner_scene_id)):null;if(scene?.title)return i18nText('manuscript.bookmark_go_passage_scene',{title:scene.title});const chapter=b.owner_chapter_id?storageChapterById(entityId(b.owner_chapter_id)):null;if(chapter?.title)return i18nText('manuscript.bookmark_go_passage_chapter',{title:chapter.title});return i18nText('manuscript.bookmark_go_passage');}
   return i18nText('manuscript.bookmark_go_tooltip');
 }
 function syncBookmarkToolbar(){
@@ -69,4 +69,4 @@ function renderBookmarkMarker(wrap,blockId){
 function addChapterBookmarkToHeading(heading,chapterId){if(!bookmarkShowsOnChapter(chapterId))return;const exact=bookmarkExactChapter(chapterId),button=makeInlineBookmarkButton(exact?'Bookmarked Chapter':'Bookmark inside this Chapter');button.classList.add('heading-bookmark-marker');heading.prepend(button)}
 function addSceneBookmarkToHeading(heading,sceneId){if(!bookmarkShowsOnScene(sceneId))return;const exact=bookmarkExactScene(sceneId),button=makeInlineBookmarkButton(exact?'Bookmarked Scene':'Bookmark inside this Scene');button.classList.add('heading-bookmark-marker');heading.prepend(button)}
 function syncFocusedChapterBookmark(){const button=$('#chapterTitleBookmark');if(!button)return;const show=state.viewMode==='chapter'&&state.chapter&&bookmarkShowsOnChapter(state.chapter.id);button.classList.toggle('hidden',!show);if(show)wireBookmarkRemovalButton(button,bookmarkExactChapter(state.chapter.id)?'Bookmarked Chapter':'Bookmark inside this Chapter')}
-function syncSelectionBookmarkAction(items,headerChapterId=null){const button=$('#selectionToolbar [data-selection-action="bookmark"]'),title=$('#selectionBookmarkTooltipTitle'),text=$('#selectionBookmarkTooltipText');if(!button)return;const header=+headerChapterId||0,active=header?bookmarkExactChapter(header):bookmarkRangeMatches(items),label=i18nSource(header?(active?'Remove Chapter bookmark':'Bookmark Chapter'):(active?'Remove bookmark':'Bookmark selection'));button.classList.toggle('active',active);button.setAttribute('aria-label',label);button.removeAttribute('title');if(title)title.textContent=label;if(text)text.textContent=i18nText(active?'manuscript.bookmark_remove_tooltip':'manuscript.bookmark_selection_tooltip')}
+function syncSelectionBookmarkAction(items,headerChapterId=null){const button=$('#selectionToolbar [data-selection-action="bookmark"]'),title=$('#selectionBookmarkTooltipTitle'),text=$('#selectionBookmarkTooltipText');if(!button)return;const header=entityId(headerChapterId)||0,active=header?bookmarkExactChapter(header):bookmarkRangeMatches(items),label=i18nSource(header?(active?'Remove Chapter bookmark':'Bookmark Chapter'):(active?'Remove bookmark':'Bookmark selection'));button.classList.toggle('active',active);button.setAttribute('aria-label',label);button.removeAttribute('title');if(title)title.textContent=label;if(text)text.textContent=i18nText(active?'manuscript.bookmark_remove_tooltip':'manuscript.bookmark_selection_tooltip')}

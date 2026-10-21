@@ -36,13 +36,13 @@ $('#editor').addEventListener('contextmenu',event=>{
 });
 
 function rememberMarkupMarkerUse(id){
-  const markerId=+id||null;state.lastUsedMarkupMarkerId=markerId;
+  const markerId=entityId(id)||null;state.lastUsedMarkupMarkerId=markerId;
   try{if(markerId)localStorage.setItem('breadmaker-last-markup-marker',String(markerId));else localStorage.removeItem('breadmaker-last-markup-marker')}catch{}
 }
 function markerPickerOrder(){
-  const markers=[...state.markers].sort((a,b)=>markerCreatedSortValue(b)-markerCreatedSortValue(a)||(+b.id)-(+a.id));
-  const last=+state.lastUsedMarkupMarkerId||0;if(!last)return markers;
-  const index=markers.findIndex(marker=>+marker.id===last);if(index<=0)return markers;
+  const markers=[...state.markers].sort((a,b)=>markerCreatedSortValue(b)-markerCreatedSortValue(a)||(entityId(b.id))-(entityId(a.id)));
+  const last=entityId(state.lastUsedMarkupMarkerId)||0;if(!last)return markers;
+  const index=markers.findIndex(marker=>entityId(marker.id)===last);if(index<=0)return markers;
   return [markers[index],...markers.slice(0,index),...markers.slice(index+1)];
 }
 function positionSelectionHighlightPicker(picker,anchorRect){
@@ -55,12 +55,12 @@ function openSelectionHighlightPicker(items,anchorRect){
   const picker=$('#selectionHighlightPicker'),list=$('#selectionHighlightMarkerList');if(!picker||!list)return;
   const markers=markerPickerOrder();
   list.innerHTML=markers.length?markers.map(marker=>`<button type="button" class="selection-highlight-marker" data-selection-highlight-marker="${marker.id}" role="menuitem"><span class="color-chip" style="background:${escapeHtml(marker.color)}"></span><span>${escapeHtml(marker.name)}</span></button>`).join(''):'<div class="selection-highlight-empty">{{i18n:dynamic.html.text.div.859c2900}}</div>';
-  $$('[data-selection-highlight-marker]',list).forEach(button=>{button.onpointerdown=e=>e.preventDefault();button.onclick=async()=>{const id=+button.dataset.selectionHighlightMarker,marker=state.markers.find(m=>+m.id===id);if(!marker)return;hideSelectionHighlightPicker();rememberMarkupMarkerUse(id);await applyAnnotation('highlight',items,id,'');renderMarkers();toast(i18nText('markup.highlighted_with',{name:marker.name}))}});
+  $$('[data-selection-highlight-marker]',list).forEach(button=>{button.onpointerdown=e=>e.preventDefault();button.onclick=async()=>{const id=entityId(button.dataset.selectionHighlightMarker),marker=state.markers.find(m=>entityId(m.id)===id);if(!marker)return;hideSelectionHighlightPicker();rememberMarkupMarkerUse(id);await applyAnnotation('highlight',items,id,'');renderMarkers();toast(i18nText('markup.highlighted_with',{name:marker.name}))}});
   const add=$('#selectionHighlightNewMarker');add.onpointerdown=e=>e.preventDefault();add.onclick=()=>{hideSelectionHighlightPicker();newMarkerDialog({items})};
   positionSelectionHighlightPicker(picker,anchorRect);queueMicrotask(()=>restoreSelectionToolbarRange());
 }
 
-function runInlineFormat(command){if(!restoreSelectionToolbarRange())return;const items=selectionItems(),wrap=activeManuscriptWrap();const chapterIds=[...new Set(items.length?items.map(i=>i.chapter_id):(wrap?[+wrap.dataset.chapterId]:[]))];if(!chapterIds.length)return;recordUndo(chapterIds,true);document.execCommand(command,false,null);chapterIds.forEach(markDirty);hideSelectionToolbar()}
+function runInlineFormat(command){if(!restoreSelectionToolbarRange())return;const items=selectionItems(),wrap=activeManuscriptWrap();const chapterIds=[...new Set(items.length?items.map(i=>i.chapter_id):(wrap?[entityId(wrap.dataset.chapterId)]:[]))];if(!chapterIds.length)return;recordUndo(chapterIds,true);document.execCommand(command,false,null);chapterIds.forEach(markDirty);hideSelectionToolbar()}
 function runSelectionAction(action){restoreSelectionToolbarRange();const items=state.selectionToolbarItems?.length?state.selectionToolbarItems:selectionItems(),headerChapterId=state.selectionToolbarHeaderChapterId||selectedChapterHeader(state.selectionToolbarRange||state.lastManuscriptRange,items)?.chapter_id||null;if(!items.length&&!headerChapterId)return;const trigger=$(`#selectionToolbar [data-selection-action="${action}"]`),triggerRect=trigger?.getBoundingClientRect?.();hideSelectionToolbar();hideSelectionHighlightPicker();if(action==='style'){openContextMenu(triggerRect?.left||8,(triggerRect?.bottom||80)+6,manuscriptStyleMenuItems(headerChapterId),{anchorRect:triggerRect});}else if(action==='highlight')openSelectionHighlightPicker(items,triggerRect);else if(action==='scene')createSceneFromSelection(items);else if(action==='cuts')cutSelection(items);else if(action==='task')taskFromSelection(items);else if(action==='map')mapFromSelection(items);else if(action==='comment')commentSelection(items);else if(action==='bookmark'){if(headerChapterId){const chapter=visibleChapterById(headerChapterId);if(chapter)toggleChapterBookmark(chapter)}else toggleTextBookmark(items);}else if(action==='more'){openContextMenu(triggerRect?.left||8,(triggerRect?.bottom||80)+6,selectionMoreItems(items,headerChapterId),{anchorRect:triggerRect})}}
 function beginSelectionToolbarInteraction(event){const selection=getSelection();if(selection?.rangeCount&&!selection.isCollapsed){const range=selection.getRangeAt(0);if(rangeTouchesManuscriptSurface(range)){try{state.lastManuscriptRange=range.cloneRange()}catch{}}}state.selectionToolbarInteracting=true;event.preventDefault()}
 function endSelectionToolbarInteraction(){setTimeout(()=>{state.selectionToolbarInteracting=false},0)}
@@ -71,8 +71,8 @@ $('#selectionHighlightPicker')?.addEventListener('pointerdown',e=>e.stopPropagat
 document.addEventListener('pointerdown',e=>{if(!e.target.closest?.('#selectionHighlightPicker,[data-selection-action="highlight"]'))hideSelectionHighlightPicker()});
 
 async function setBlockStyle(wrap,style){
-  style=['heading2','heading3','heading4'].includes(style)?style:'body';recordUndo([+wrap.dataset.chapterId],true);if(style==='body')state.manuscriptCollapsedHeadings.delete(wrap.dataset.blockId);wrap.dataset.style=style;const prose=wrap.querySelector('.manuscript-block');prose.dataset.semanticStyle=style;applyOutlineVisibility();persistManuscriptOutlineState();markDirty(+wrap.dataset.chapterId);
-  const existing=state.chapterOutlines.find(item=>String(item.id)===String(wrap.dataset.blockId));if(style==='body'){state.chapterOutlines=state.chapterOutlines.filter(item=>String(item.id)!==String(wrap.dataset.blockId))}else if(existing){existing.semantic_style=style;existing.text_content=prose.innerText}else state.chapterOutlines.push({id:wrap.dataset.blockId,chapter_id:+wrap.dataset.chapterId,position:wrapsForChapter(+wrap.dataset.chapterId).indexOf(wrap),semantic_style:style,text_content:prose.innerText});renderChapterTree();
+  style=['heading2','heading3','heading4'].includes(style)?style:'body';recordUndo([entityId(wrap.dataset.chapterId)],true);if(style==='body')state.manuscriptCollapsedHeadings.delete(wrap.dataset.blockId);wrap.dataset.style=style;const prose=wrap.querySelector('.manuscript-block');prose.dataset.semanticStyle=style;applyOutlineVisibility();persistManuscriptOutlineState();markDirty(entityId(wrap.dataset.chapterId));
+  const existing=state.chapterOutlines.find(item=>String(item.id)===String(wrap.dataset.blockId));if(style==='body'){state.chapterOutlines=state.chapterOutlines.filter(item=>String(item.id)!==String(wrap.dataset.blockId))}else if(existing){existing.semantic_style=style;existing.text_content=prose.innerText}else state.chapterOutlines.push({id:wrap.dataset.blockId,chapter_id:entityId(wrap.dataset.chapterId),position:wrapsForChapter(entityId(wrap.dataset.chapterId)).indexOf(wrap),semantic_style:style,text_content:prose.innerText});renderChapterTree();
 }
 
 function completeSceneBlockIds(items){
@@ -85,16 +85,16 @@ function sceneSelectionPlan(items){
   if(!items?.length)return {kind:'none',label:'Scene'};
   const wraps=$$('.manuscript-block-wrap'),first=items[0],last=items.at(-1),a=wraps.indexOf(first.wrap),b=wraps.indexOf(last.wrap);if(a<0||b<0)return {kind:'none',label:'Scene'};
   const selected=wraps.slice(Math.min(a,b),Math.max(a,b)+1).filter(w=>!w.classList.contains('scene-gap-hidden'));
-  const sceneIds=[...new Set(selected.map(w=>w.dataset.sceneId?+w.dataset.sceneId:null).filter(Boolean))];
+  const sceneIds=[...new Set(selected.map(w=>w.dataset.sceneId?entityId(w.dataset.sceneId):null).filter(Boolean))];
   if(sceneIds.length>1)return {kind:'conflict',label:'Scene',disabled:true,reason:'The selection crosses more than one Scene.'};
   if(!sceneIds.length)return {kind:'create',label:'Scene'};
-  const sceneId=sceneIds[0],scene=sceneById(sceneId),hasUnassigned=selected.some(w=>!w.dataset.sceneId),sceneSelected=selected.filter(w=>+w.dataset.sceneId===sceneId);
-  const ids=new Set(sceneSelected.map(w=>String(w.dataset.blockId))),sceneWraps=$$('.manuscript-block-wrap').filter(w=>+w.dataset.sceneId===sceneId&&!w.classList.contains('scene-gap-hidden'));
+  const sceneId=sceneIds[0],scene=sceneById(sceneId),hasUnassigned=selected.some(w=>!w.dataset.sceneId),sceneSelected=selected.filter(w=>entityId(w.dataset.sceneId)===sceneId);
+  const ids=new Set(sceneSelected.map(w=>String(w.dataset.blockId))),sceneWraps=$$('.manuscript-block-wrap').filter(w=>entityId(w.dataset.sceneId)===sceneId&&!w.classList.contains('scene-gap-hidden'));
   const touchesStart=ids.has(String(scene?.first_block_id||''))||(state.viewMode==='scene'&&sceneWraps.length&&ids.has(String(sceneWraps[0].dataset.blockId)));
   const touchesEnd=ids.has(String(scene?.last_block_id||''))||(state.viewMode==='scene'&&sceneWraps.length&&ids.has(String(sceneWraps.at(-1).dataset.blockId)));
   const canRemove=!!sceneSelected.length&&(touchesStart||touchesEnd),removeBlockIds=sceneSelected.filter(w=>w.dataset.blockId&&!w.dataset.blockId.startsWith('tmp_')).map(w=>w.dataset.blockId);
   if(hasUnassigned)return {kind:'extend',sceneId,scene,label:'Add to Scene',canRemove,removeBlockIds};
-  const allSame=selected.every(w=>+w.dataset.sceneId===sceneId);if(!allSame)return {kind:'conflict',label:'Scene',disabled:true};
+  const allSame=selected.every(w=>entityId(w.dataset.sceneId)===sceneId);if(!allSame)return {kind:'conflict',label:'Scene',disabled:true};
   if(canRemove)return {kind:'remove',sceneId,scene,label:'Remove from Scene',canRemove:true,removeBlockIds};
   return {kind:'inside',sceneId,scene,label:'Remove from Scene',disabled:true,reason:'Select from the beginning or end of the Scene to remove prose from it.',canRemove:false,removeBlockIds};
 }
@@ -134,7 +134,7 @@ async function openSceneDetails(sceneId){
 async function deleteScene(sceneId){const scene=sceneById(sceneId);if(!scene)return;if(!await confirmDialog('Delete Scene',i18nText('confirm.delete_scene',{title:scene.title}),{confirmLabel:'Delete Scene',danger:true}))return;keepStructureVisibleAfterDelete('scenes',scene.tab_id||state.activeDocumentId);await withStructuralUndo(`Delete scene: ${scene.title}`,()=>api(`/api/scenes/${sceneId}`,{method:'DELETE'}),{view:'manuscript',chapterId:state.chapter?.id});await refresh(false);await reloadManuscriptView();renderChapterTree();toast('Scene deleted')}
 async function cutScene(sceneId){const scene=sceneById(sceneId);if(!scene)return;if(!await confirmDialog('Cut Scene',i18nText('confirm.cut_scene',{title:scene.title}),{confirmLabel:'Cut Scene',danger:true}))return;keepStructureVisibleAfterDelete('scenes',scene.tab_id||state.activeDocumentId);await flushSave();await withStructuralUndo(`Cut scene: ${scene.title}`,()=>api(`/api/scenes/${sceneId}/cut`,{method:'POST'}),{view:'manuscript',chapterId:state.chapter?.id,documentId:scene.tab_id||state.activeDocumentId,manuscriptViewMode:state.viewMode});await refresh(false);if(state.viewMode==='scene')await openWholeBook(false,false);else await reloadManuscriptView();renderChapterTree();await notifyCutsChanged();toast('Scene moved to Cuts');await showCutsOnboardingOnce()}
 async function createSceneBelow(sceneId){
-  const anchor=sceneById(sceneId);if(!anchor)return;let scene;await flushSave();await withStructuralUndo(`Create Scene below: ${anchor.title}`,async()=>{scene=await api('/api/scenes',{method:'POST',body:JSON.stringify({tab_id:anchor.tab_id,after_scene_id:+anchor.id,default_title_prefix:i18nSource('Scene')})})},{view:'manuscript',chapterId:anchor.last_chapter_id||anchor.first_chapter_id||state.chapter?.id,documentId:anchor.tab_id});updateManuscriptTabPrefs({sceneMarkers:true},anchor.tab_id);await refresh(false);syncViewScenesControl();renderChapterTree();await selectScene(scene.id,false);requestAnimationFrame(()=>{const prose=$('.manuscript-block');if(prose)placeCaret(prose,0)});toast(i18nText('entity.created',{title:scene.title}));
+  const anchor=sceneById(sceneId);if(!anchor)return;let scene;await flushSave();await withStructuralUndo(`Create Scene below: ${anchor.title}`,async()=>{scene=await api('/api/scenes',{method:'POST',body:JSON.stringify({tab_id:anchor.tab_id,after_scene_id:entityId(anchor.id),default_title_prefix:i18nSource('Scene')})})},{view:'manuscript',chapterId:anchor.last_chapter_id||anchor.first_chapter_id||state.chapter?.id,documentId:anchor.tab_id});updateManuscriptTabPrefs({sceneMarkers:true},anchor.tab_id);await refresh(false);syncViewScenesControl();renderChapterTree();await selectScene(scene.id,false);requestAnimationFrame(()=>{const prose=$('.manuscript-block');if(prose)placeCaret(prose,0)});toast(i18nText('entity.created',{title:scene.title}));
 }
 function sceneMenuItems(sceneId){return [
   {label:'Add Scene Below',action:()=>createSceneBelow(sceneId)},
@@ -154,7 +154,7 @@ async function goScene(sceneId){
     const el=$(`.manuscript-block-wrap[data-scene-id="${sceneId}"]`);el?.scrollIntoView({behavior:'smooth',block:'center'});return;
   }
   if(state.viewMode==='scene'||state.viewMode==='scene-gap'){await selectScene(sceneId);return}
-  if(scene.first_chapter_id)await selectChapter(+scene.first_chapter_id,false);
+  if(scene.first_chapter_id)await selectChapter(entityId(scene.first_chapter_id),false);
   requestAnimationFrame(()=>{const wrap=$(`.manuscript-block-wrap[data-scene-id="${sceneId}"]`);if(wrap)revealOutlineTarget(wrap);($(`.ghost-scene-title[data-scene-id="${sceneId}"]`)||wrap)?.scrollIntoView({behavior:'smooth',block:'center'})});
 }
 

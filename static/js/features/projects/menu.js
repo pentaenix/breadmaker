@@ -3,9 +3,9 @@
 // -------------------- projects --------------------
 const PROJECT_MENU_GAP=5;
 $('#brandButton').addEventListener('click', e => { e.stopPropagation(); toggleProjectMenu(); });
-$('#projectImportInput').onchange = importProjectPackage;
-$('#projectJsonImportInput').onchange = importJson;
-$('#cutsImportInput').onchange = importCutsPackage;
+$('#projectImportInput').onchange = event=>importProjectPackage(event);
+$('#projectJsonImportInput').onchange = event=>importJson(event);
+$('#cutsImportInput').onchange = event=>importCutsPackage(event);
 
 function hideProjectSubmenu(){ const submenu=$('#projectSubmenu'); submenu.classList.add('hidden'); submenu.innerHTML=''; }
 function hideProjectMenu(){ $('#projectMenu').classList.add('hidden'); hideProjectSubmenu(); }

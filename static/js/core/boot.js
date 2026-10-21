@@ -34,10 +34,18 @@ function bootHostedBlankProject(){
 }
 async function restoreHostedFirstDraft(){
   if(!runtimeSupports('hosted_projects')||!state.project)return;let raw=null;try{raw=JSON.parse(sessionStorage.getItem(HOSTED_FIRST_DRAFT_KEY)||'null')}catch{}
-  if(!raw||String(raw.project_id||'')!==String(currentProjectIdentity()||''))return;try{sessionStorage.removeItem(HOSTED_FIRST_DRAFT_KEY)}catch{}
+  if(!raw||String(raw.project_id||'')!==String(currentProjectIdentity()||''))return;
   const title=String(raw.title||'Chapter 1').trim()||'Chapter 1',text=String(raw.text||'');
-  if(state.viewMode!=='chapter'||!state.chapter)return;$('#chapterTitle').textContent=title;const prose=$('.manuscript-block');if(prose)prose.textContent=text;
-  if(title!==String(state.chapter.title||'')||text.trim()){markDirty(+state.chapter.id);await flushSave()}
+  if(state.viewMode!=='chapter'||!state.chapter){
+    const chapter=state.chapters.find(item=>entityId(item.tab_id)===entityId(state.activeDocumentId));
+    if(!chapter)throw new Error('HOSTED_FIRST_DRAFT_CHAPTER_MISSING');
+    await selectChapter(chapter.id,false,false);
+  }
+  const prose=$('.manuscript-block');if(!prose)throw new Error('HOSTED_FIRST_DRAFT_EDITOR_MISSING');
+  $('#chapterTitle').textContent=title;prose.textContent=text;
+  if(title!==String(state.chapter.title||'')||text.trim()){markDirty(entityId(state.chapter.id));await flushSave()}
+  // Keep the handoff recoverable until the manuscript write has succeeded.
+  try{sessionStorage.removeItem(HOSTED_FIRST_DRAFT_KEY)}catch{}
 }
 
 // -------------------- lease / boot --------------------
@@ -90,7 +98,7 @@ async function loadRuntimeBootstrap(){
     const health=await api('/api/health');
     if(health?.app!=='Breadmaker Editor'||health?.runtime!=='local')throw error;
     const backendVersion=String(health?.version||'');
-    console.warn('Breadmaker runtime bootstrap endpoint was unavailable; continuing with attested local capabilities.',{frontend:'10.5.47',backend:backendVersion||'unknown'});
+    console.warn('Breadmaker runtime bootstrap endpoint was unavailable; continuing with attested local capabilities.',{frontend:'10.5.48',backend:backendVersion||'unknown'});
     return {...LOCAL_RUNTIME_FALLBACK,fallback:true,backend_version:backendVersion};
   }
 }
@@ -165,7 +173,7 @@ async function boot() {
   if(bootView==='manuscript'||bootView==='canvas'){
     await hydratePrimaryWorkspace(bootView);
   }else if(bootView==='maps'&&state.maps.length){
-    const rememberedMapId=state.currentMap?.id&&state.maps.some(map=>+map.id===+state.currentMap.id)?+state.currentMap.id:+state.maps[0].id;
+    const rememberedMapId=state.currentMap?.id&&state.maps.some(map=>entityId(map.id)===entityId(state.currentMap.id))?entityId(state.currentMap.id):entityId(state.maps[0].id);
     if(rememberedMapId)await selectMap(rememberedMapId,{persist:false});
   }
 
@@ -207,7 +215,7 @@ function applyCanvasConfig(){
 
 function applyBootstrapData(bootstrap,{oldDoc=null}={}){
   Object.assign(state,{project:bootstrap.project,documents:bootstrap.tabs,chapters:bootstrap.chapters,chapterOutlines:bootstrap.chapter_outlines||[],canvases:bootstrap.canvases,scenes:bootstrap.scenes,sceneGaps:bootstrap.scene_gaps||[],bookmark:bootstrap.bookmark||null,markers:bootstrap.labels,iconMarkers:bootstrap.icon_markers||[],maps:bootstrap.maps||[],reviews:bootstrap.reviews||[],features:bootstrap.features||{},metroConfig:bootstrap.metro_view_config||{},canvasConfig:bootstrap.canvas_config||{}});
-  state.chapterRevisions=new Map((state.chapters||[]).map(ch=>[+ch.id,ch.revision||'']));
+  state.chapterRevisions=new Map((state.chapters||[]).map(ch=>[entityId(ch.id),ch.revision||'']));
   applyFeatureFlags();applyCanvasConfig();
   state.activeDocumentId=oldDoc&&state.documents.some(d=>d.id===oldDoc)?oldDoc:(state.documents.find(d=>d.is_manuscript)?.id||state.documents[0]?.id||null);
 }
@@ -230,7 +238,7 @@ async function refresh(preserve=true) {
   renderMapSwitcher();
   if(state.currentReviewId&&!state.reviews.some(review=>review.id===state.currentReviewId))state.currentReviewId=null;
   renderReviews();
-  if (oldScene && state.scenes.some(scene => +scene.id === +oldScene)) await selectScene(oldScene, false);
+  if (oldScene && state.scenes.some(scene => entityId(scene.id) === entityId(oldScene))) await selectScene(oldScene, false);
   else if(oldSceneGap){const gap=state.sceneGaps.find(item=>String(item.first_block_id)===String(oldSceneGap));if(gap)await selectSceneGap(gap,false)}
   else if (oldChapter && visibleChapters().some(ch => ch.id === oldChapter)) await selectChapter(oldChapter, false);
   if (oldCanvas && state.canvases.some(c => c.id === oldCanvas)) await selectCanvas(oldCanvas);

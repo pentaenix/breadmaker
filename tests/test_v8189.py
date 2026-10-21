@@ -7,8 +7,8 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_v8189_canvas_viewport_persistence_is_bound_to_the_origin_canvas():
     js = frontend_source_from_app_path(ROOT / 'static/app.js')
     queue = js[js.index('function cancelQueuedCanvasViewportPersist'):js.index('async function persistCurrentCanvasViewport')]
-    assert 'const canvasId=+state.currentCanvas?.id||0' in queue
-    assert 'if(+state.currentCanvas?.id!==canvasId)return' in queue
+    assert 'const canvasId=entityId(state.currentCanvas?.id)||0' in queue
+    assert 'if(entityId(state.currentCanvas?.id)!==canvasId)return' in queue
     start = js.index('async function selectCanvas(id,{persist=true}={})')
     end = js.index("$('#editCanvasDetailsBtn')", start)
     select = js[start:end]

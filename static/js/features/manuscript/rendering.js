@@ -4,11 +4,11 @@
 function newTempId(){return `tmp_${uid().replaceAll('-','')}`;}
 function visibleAnnotations(){return state.viewMode==='book'||state.viewMode==='scene-gap'?(state.bookData?.annotations||[]):state.viewMode==='scene'?(state.sceneData?.annotations||[]):(state.chapterData?.annotations||[]);}
 function annotationMap(){const map=new Map();for(const a of visibleAnnotations()){if(!a.block_id)continue;if(!map.has(a.block_id))map.set(a.block_id,[]);map.get(a.block_id).push(a)}return map;}
-function chapterTitleAnnotations(chapterId){return visibleAnnotations().filter(a=>!a.block_id&&+a.chapter_id===+chapterId)}
-function chapterTitleTextElement(chapterId){if(state.viewMode==='chapter'&&+state.chapter?.id===+chapterId)return $('#chapterTitle');return $(`.book-chapter-heading[data-chapter-id="${chapterId}"] > .book-chapter-title`)}
+function chapterTitleAnnotations(chapterId){return visibleAnnotations().filter(a=>!a.block_id&&entityId(a.chapter_id)===entityId(chapterId))}
+function chapterTitleTextElement(chapterId){if(state.viewMode==='chapter'&&entityId(state.chapter?.id)===entityId(chapterId))return $('#chapterTitle');return $(`.book-chapter-heading[data-chapter-id="${chapterId}"] > .book-chapter-title`)}
 function normalizedChapterTitleElementText(element){if(!element)return'';const normalized=element.innerText.replace(/\n+/g,' ');if(normalized!==element.innerText)element.textContent=normalized;return normalized.trim()||i18nSource('Untitled Chapter')}
 function visibleChapterTitleText(chapterId){const element=chapterTitleTextElement(chapterId);return element&&element.isConnected?normalizedChapterTitleElementText(element):(storageChapterById(chapterId)?.title||i18nSource('Untitled Chapter'))}
-function updateChapterTitleState(chapterId,title,revision=null){const ch=storageChapterById(chapterId);if(ch){ch.title=title;if(revision)ch.revision=revision}if(state.chapter&&+state.chapter.id===+chapterId)state.chapter.title=title;for(const collection of [state.bookData?.chapters,state.sceneData?.chapters])for(const row of collection||[])if(+row.id===+chapterId)row.title=title}
+function updateChapterTitleState(chapterId,title,revision=null){const ch=storageChapterById(chapterId);if(ch){ch.title=title;if(revision)ch.revision=revision}if(state.chapter&&entityId(state.chapter.id)===entityId(chapterId))state.chapter.title=title;for(const collection of [state.bookData?.chapters,state.sceneData?.chapters])for(const row of collection||[])if(entityId(row.id)===entityId(chapterId))row.title=title}
 function renderChapterTitleAnnotations(container,chapterId,noteGroups){if(!container)return;$$(':scope > .note-gutter-marker,:scope > .markup-gutter',container).forEach(x=>x.remove());const rows=chapterTitleAnnotations(chapterId),highlights=rows.filter(a=>a.annotation_type==='highlight'&&a.label_id&&a.label_color);renderMarkupGutterSwatches(container,`chapter:${chapterId}`,highlights);renderNoteGutterMarker(container,null,rows,noteGroups,{chapterId})}
 function makeInlineChapterHeading(chapter,{className='book-chapter-heading',allowBoundaryDelete=false,noteGroups=null}={}){
   const heading=document.createElement('div');heading.className=className;heading.contentEditable='false';heading.tabIndex=0;heading.dataset.chapterId=chapter.id;
@@ -36,7 +36,7 @@ function outlineStyleLevel(style){const match=/^heading([2-4])$/.exec(String(sty
 function persistManuscriptOutlineState(){
   clearTimeout(state.manuscriptOutlineSaveTimer);state.manuscriptOutlineSaveTimer=setTimeout(()=>{
     const headings=[...state.manuscriptCollapsedHeadings].filter(id=>id&&!String(id).startsWith('tmp_'));
-    const chapters=[...state.manuscriptCollapsedChapters].map(Number).filter(Number.isFinite);
+    const chapters=[...state.manuscriptCollapsedChapters].map(entityId).filter(isEntityId);
     api('/api/ui-state/manuscript-outline-collapse',{method:'PUT',body:JSON.stringify({value:{headings,chapters}})}).catch(console.warn);
   },80);
 }
@@ -51,20 +51,20 @@ function toggleOutlineHeading(blockId){
   const id=String(blockId);if(state.manuscriptCollapsedHeadings.has(id))state.manuscriptCollapsedHeadings.delete(id);else state.manuscriptCollapsedHeadings.add(id);renderChapterTree();persistManuscriptOutlineState();
 }
 function toggleOutlineChapter(chapterId){
-  chapterId=+chapterId;if(!chapterOutlineItems(chapterId).length)return;if(state.manuscriptCollapsedChapters.has(chapterId))state.manuscriptCollapsedChapters.delete(chapterId);else state.manuscriptCollapsedChapters.add(chapterId);renderChapterTree();persistManuscriptOutlineState();
+  chapterId=entityId(chapterId);if(!chapterOutlineItems(chapterId).length)return;if(state.manuscriptCollapsedChapters.has(chapterId))state.manuscriptCollapsedChapters.delete(chapterId);else state.manuscriptCollapsedChapters.add(chapterId);renderChapterTree();persistManuscriptOutlineState();
 }
 function revealOutlineTarget(wrap){
-  if(!wrap)return;const chapterId=+wrap.dataset.chapterId;let changed=state.manuscriptCollapsedChapters.delete(chapterId),stack=[];const targetId=String(wrap.dataset.blockId);
+  if(!wrap)return;const chapterId=entityId(wrap.dataset.chapterId);let changed=state.manuscriptCollapsedChapters.delete(chapterId),stack=[];const targetId=String(wrap.dataset.blockId);
   for(const item of chapterOutlineItems(chapterId)){if(String(item.id)===targetId)break;const level=chapterOutlineLevel(item);while(stack.length&&stack.at(-1).level>=level)stack.pop();stack.push({level,id:String(item.id)})}
   for(const entry of stack)if(state.manuscriptCollapsedHeadings.delete(entry.id))changed=true;
   if(changed){renderChapterTree();persistManuscriptOutlineState()}
 }
 
 function appendSceneGhost(container,block,chapterId,previousScene,{book=false}={}){
-  if(!sceneMarkersVisible()||!block.scene_id||+block.scene_id===+previousScene)return;
+  if(!sceneMarkersVisible()||!block.scene_id||entityId(block.scene_id)===entityId(previousScene))return;
   const scene=sceneById(block.scene_id); if(!scene)return;
   if(book&&String(scene.first_block_id||'')!==String(block.id))return;
-  const ghost=document.createElement('div');ghost.className='ghost-scene-title';ghost.contentEditable='false';ghost.dataset.sceneId=scene.id;const continued=!book&&+scene.first_chapter_id!==+chapterId;ghost.classList.toggle('continued',continued);ghost.innerHTML=`<span>${escapeHtml(scene.title)}${continued?` · ${i18nSource('continued')}`:''}</span>`;addSceneBookmarkToHeading(ghost,scene.id);if(continued&&!bookmarkShowsOnScene(scene.id))ghost.title='{{i18n:dynamic.html.attr.title.3849ee66}}';ghost.ondblclick=e=>{if(e.target.closest('.inline-bookmark-button'))return;selectScene(scene.id)};ghost.oncontextmenu=e=>{if(e.target.closest('.inline-bookmark-button'))return;e.preventDefault();openSceneMenu(e,scene.id)};container.appendChild(ghost);
+  const ghost=document.createElement('div');ghost.className='ghost-scene-title';ghost.contentEditable='false';ghost.dataset.sceneId=scene.id;const continued=!book&&entityId(scene.first_chapter_id)!==entityId(chapterId);ghost.classList.toggle('continued',continued);ghost.innerHTML=`<span>${escapeHtml(scene.title)}${continued?` · ${i18nSource('continued')}`:''}</span>`;addSceneBookmarkToHeading(ghost,scene.id);if(continued&&!bookmarkShowsOnScene(scene.id))ghost.title='{{i18n:dynamic.html.attr.title.3849ee66}}';ghost.ondblclick=e=>{if(e.target.closest('.inline-bookmark-button'))return;selectScene(scene.id)};ghost.oncontextmenu=e=>{if(e.target.closest('.inline-bookmark-button'))return;e.preventDefault();openSceneMenu(e,scene.id)};container.appendChild(ghost);
 }
 function appendSceneEndGhost(container,block){
   if(!sceneMarkersVisible()||!block?.scene_id)return;const scene=sceneById(block.scene_id);if(!scene||String(scene.last_block_id)!==String(block.id))return;
@@ -73,7 +73,7 @@ function appendSceneEndGhost(container,block){
 
 function visibleCommentThreadGroups(){
   const rows=visibleAnnotations().filter(a=>a.annotation_type==='comment'&&a.thread_id&&a.status!=='resolved'&&!a.stale),groups=new Map();
-  for(const a of rows){const id=+a.thread_id;if(!groups.has(id))groups.set(id,[]);groups.get(id).push(a)}
+  for(const a of rows){const id=entityId(a.thread_id);if(!groups.has(id))groups.set(id,[]);groups.get(id).push(a)}
   return groups;
 }
 function renderBlockAnnotations(wrap,blockId,map,noteGroups){
@@ -98,7 +98,7 @@ function queueMarkupHover(marker,target,blockId){
 }
 function renderMarkupGutterSwatches(wrap,blockId,highlights){
   if(!highlights.length)return;const seen=new Set(),items=[];
-  for(const annotation of highlights){const id=+annotation.label_id;if(!id||seen.has(id))continue;seen.add(id);items.push({id,name:annotation.label_name||'Marker',color:annotation.label_color})}
+  for(const annotation of highlights){const id=entityId(annotation.label_id);if(!id||seen.has(id))continue;seen.add(id);items.push({id,name:annotation.label_name||'Marker',color:annotation.label_color})}
   if(!items.length)return;const gutter=document.createElement('div');gutter.className='markup-gutter';gutter.contentEditable='false';gutter.dataset.blockId=blockId;
   for(const marker of items){const swatch=document.createElement('button');swatch.type='button';swatch.className='markup-gutter-swatch';swatch.style.background=marker.color;swatch.setAttribute('aria-label',i18nText('marker.highlight_aria',{name:marker.name}));swatch.onpointerdown=e=>{e.preventDefault();e.stopPropagation()};swatch.onmouseenter=()=>queueMarkupHover(marker,swatch,blockId);swatch.onmouseleave=()=>{clearTimeout(markupHoverTimer);if(markupHoverSourceKey===`${marker.id}@${blockId}`)hideMarkupHover()};swatch.onclick=e=>{e.stopPropagation();hideMarkupHover();navigateMarker(marker.id)};gutter.appendChild(swatch)}
   wrap.appendChild(gutter);
@@ -107,7 +107,7 @@ function renderMarkupGutterSwatches(wrap,blockId,highlights){
 let commentHoverHideTimer=null;
 function visibleNoteThreadGroups(){
   const rows=visibleAnnotations().filter(a=>a.annotation_type==='comment'&&a.thread_id&&a.status!=='resolved'&&!a.stale),groups=new Map();
-  for(const a of rows){const id=+a.thread_id;if(!groups.has(id))groups.set(id,[]);groups.get(id).push(a)}
+  for(const a of rows){const id=entityId(a.thread_id);if(!groups.has(id))groups.set(id,[]);groups.get(id).push(a)}
   return groups;
 }
 function scheduleCommentRailLayout(){/* 4.15.4: block-relative Note markers reflow with the manuscript automatically. */}
@@ -142,7 +142,7 @@ function queueCommentMarkerHover(items,target){
 function showCommentMarkerHover(items,target,key=commentMarkerHoverKey(items,target)){
   cancelCommentRailHoverHide();if(commentHoverSourceKey!==key)return;const card=$('#commentHoverCard');if(!card||!items.length)return;const heading=items.length>1?`<div class="comment-hover-heading">${escapeHtml(i18nText('notes.count',{count:i18nNumber(items.length)}))}</div>`:'';
   card.innerHTML=heading+items.map(t=>`<button type="button" class="comment-hover-thread" data-hover-comment="${t.id}"><span>${escapeHtml(t.body||'Note')}</span></button>`).join('');
-  $$('[data-hover-comment]',card).forEach(button=>{const item=items.find(t=>+t.id===+button.dataset.hoverComment);button.onmouseenter=()=>paintCommentFocus(noteThreadFromMarker(item));button.onfocus=()=>paintCommentFocus(noteThreadFromMarker(item));button.onclick=()=>{hideCommentHover();openCommentsForThread(+button.dataset.hoverComment)}});
+  $$('[data-hover-comment]',card).forEach(button=>{const item=items.find(t=>entityId(t.id)===entityId(button.dataset.hoverComment));button.onmouseenter=()=>paintCommentFocus(noteThreadFromMarker(item));button.onfocus=()=>paintCommentFocus(noteThreadFromMarker(item));button.onclick=()=>{hideCommentHover();openCommentsForThread(entityId(button.dataset.hoverComment))}});
   const interactive=items.length>1;card.classList.toggle('comment-hover-picker',interactive);card.classList.toggle('comment-hover-preview',!interactive);
   // Both preview and picker receive pointer input in 4.15.5 so long Notes can
   // be scrolled. Entering the flyer owns the hover until the pointer leaves it.
@@ -151,8 +151,8 @@ function showCommentMarkerHover(items,target,key=commentMarkerHoverKey(items,tar
   if(items.length===1)paintCommentFocus(noteThreadFromMarker(items[0]));
 }
 function noteMarkerItemsForBlock(blockAnnotations,groups){
-  const ids=[...new Set(blockAnnotations.filter(a=>a.annotation_type==='comment'&&a.thread_id&&a.status!=='resolved'&&!a.stale).map(a=>+a.thread_id))];
-  return ids.map(id=>{const anchors=groups.get(id)||[];const first=anchors[0]||blockAnnotations.find(a=>+a.thread_id===id)||{};return{id,anchors,body:first.body||i18nSource('Note'),chapter:first.chapter_title||visibleChapterById(+first.chapter_id)?.title||'',scene:first.scene_title||''}}).filter(x=>x.anchors.length);
+  const ids=[...new Set(blockAnnotations.filter(a=>a.annotation_type==='comment'&&a.thread_id&&a.status!=='resolved'&&!a.stale).map(a=>entityId(a.thread_id)))];
+  return ids.map(id=>{const anchors=groups.get(id)||[];const first=anchors[0]||blockAnnotations.find(a=>entityId(a.thread_id)===id)||{};return{id,anchors,body:first.body||i18nSource('Note'),chapter:first.chapter_title||visibleChapterById(entityId(first.chapter_id))?.title||'',scene:first.scene_title||''}}).filter(x=>x.anchors.length);
 }
 function renderNoteGutterMarker(wrap,blockId,blockAnnotations,groups,{chapterId=null}={}){
   const items=noteMarkerItemsForBlock(blockAnnotations,groups);if(!items.length)return;
@@ -170,10 +170,10 @@ function renderEditor(){
 
 function renderBookEditor(){
   clearSearchPaint();const editor=$('#editor');editor.innerHTML='';$('#chapterTitle').classList.add('hidden');$('#chapterTitleBookmark')?.classList.add('hidden');const map=annotationMap(),noteGroups=visibleNoteThreadGroups(),byChapter=new Map(),fragment=document.createDocumentFragment();
-  for(const block of state.bookData?.blocks||[]){if(!byChapter.has(+block.chapter_id))byChapter.set(+block.chapter_id,[]);byChapter.get(+block.chapter_id).push(block)}
+  for(const block of state.bookData?.blocks||[]){if(!byChapter.has(entityId(block.chapter_id)))byChapter.set(entityId(block.chapter_id),[]);byChapter.get(entityId(block.chapter_id)).push(block)}
   for(const ch of state.bookData?.chapters||[]){
     if(chapterMarkersVisible()&&!ch.is_implicit)fragment.appendChild(makeInlineChapterHeading(ch,{allowBoundaryDelete:true,noteGroups}));
-    let previousScene=null;const blocks=byChapter.get(+ch.id)||[];
+    let previousScene=null;const blocks=byChapter.get(entityId(ch.id))||[];
     if(!blocks.length)fragment.appendChild(makeBlockWrap({id:newTempId(),block_type:'paragraph',semantic_style:'body',content_html:'',text_content:''},ch.id));
     for(const block of blocks){appendSceneGhost(fragment,block,ch.id,previousScene,{book:true});const wrap=makeBlockWrap(block,ch.id);fragment.appendChild(wrap);renderBlockAnnotations(wrap,block.id,map,noteGroups);appendSceneEndGhost(fragment,block);previousScene=block.scene_id||null;}
   }
@@ -183,37 +183,37 @@ function renderBookEditor(){
 function renderSceneEditor(){
   clearSearchPaint();const editor=$('#editor');editor.innerHTML='';$('#chapterTitle').classList.add('hidden');$('#chapterTitleBookmark')?.classList.add('hidden');const map=annotationMap(),noteGroups=visibleNoteThreadGroups(),scene=state.scene||state.sceneData?.scene;
   if(scene){const start=document.createElement('div');start.className='ghost-scene-title scene-view-boundary';start.contentEditable='false';start.dataset.sceneId=scene.id;start.innerHTML=`<span>${escapeHtml(scene.title||'Scene')}</span>`;addSceneBookmarkToHeading(start,scene.id);start.oncontextmenu=e=>{if(e.target.closest('.inline-bookmark-button'))return;e.preventDefault();openSceneMenu(e,scene.id)};editor.appendChild(start)}
-  let previousChapter=null;for(const block of state.sceneData?.blocks||[]){if(+block.chapter_id!==+previousChapter){const ch=visibleChapterById(block.chapter_id);if(chapterMarkersVisible()&&ch&&!ch.is_implicit)editor.appendChild(makeInlineChapterHeading(ch,{className:'book-chapter-heading scene-focused-chapter-heading'}));previousChapter=+block.chapter_id}const wrap=makeBlockWrap(block,block.chapter_id);editor.appendChild(wrap);renderBlockAnnotations(wrap,block.id,map,noteGroups)}
+  let previousChapter=null;for(const block of state.sceneData?.blocks||[]){if(entityId(block.chapter_id)!==entityId(previousChapter)){const ch=visibleChapterById(block.chapter_id);if(chapterMarkersVisible()&&ch&&!ch.is_implicit)editor.appendChild(makeInlineChapterHeading(ch,{className:'book-chapter-heading scene-focused-chapter-heading'}));previousChapter=entityId(block.chapter_id)}const wrap=makeBlockWrap(block,block.chapter_id);editor.appendChild(wrap);renderBlockAnnotations(wrap,block.id,map,noteGroups)}
   if(scene){const end=document.createElement('div');end.className='ghost-scene-end scene-view-boundary';end.contentEditable='false';end.dataset.sceneId=scene.id;end.innerHTML=`<span>${escapeHtml(i18nText('scene.end_named',{name:scene.title||i18nSource('Scene')}))}</span>`;end.oncontextmenu=e=>{e.preventDefault();openSceneMenu(e,scene.id)};editor.appendChild(end)}
   layoutManuscriptImageRows(editor);applyOutlineVisibility();countWords();paintMarkerHighlights();scheduleCommentRailLayout();scheduleManuscriptReviewAnnotations();
 }
-function orderedBookBlocks(data=state.bookData){const by=new Map();for(const block of data?.blocks||[]){if(!by.has(+block.chapter_id))by.set(+block.chapter_id,[]);by.get(+block.chapter_id).push(block)}const out=[];for(const ch of data?.chapters||[])out.push(...(by.get(+ch.id)||[]));return out}
+function orderedBookBlocks(data=state.bookData){const by=new Map();for(const block of data?.blocks||[]){if(!by.has(entityId(block.chapter_id)))by.set(entityId(block.chapter_id),[]);by.get(entityId(block.chapter_id)).push(block)}const out=[];for(const ch of data?.chapters||[])out.push(...(by.get(entityId(ch.id))||[]));return out}
 function renderSceneGapEditor(){
   clearSearchPaint();const editor=$('#editor');editor.innerHTML='';$('#chapterTitle').classList.add('hidden');$('#chapterTitleBookmark')?.classList.add('hidden');const map=annotationMap(),noteGroups=visibleNoteThreadGroups(),ordered=orderedBookBlocks(),anchor=ordered.findIndex(block=>String(block.id)===String(state.sceneGap?.first_block_id));
   if(anchor<0){editor.innerHTML='<div class="scene-view-empty"><b>{{i18n:dynamic.html.text.b.2611c45b}}</b><span>{{i18n:dynamic.html.text.span.a1195ffa}}</span></div>';return}
   let start=anchor,end=anchor;while(start>0&&ordered[start-1].scene_id==null)start--;while(end+1<ordered.length&&ordered[end+1].scene_id==null)end++;const visibleIds=new Set(ordered.slice(start,end+1).map(block=>String(block.id)));
   const begin=document.createElement('div');begin.className='ghost-scene-title scene-view-boundary scene-gap-view-boundary';begin.contentEditable='false';begin.innerHTML='<span>{{i18n:dynamic.html.text.span.2cbdacb4}}</span>';editor.appendChild(begin);
-  const byChapter=new Map();for(const block of state.bookData?.blocks||[]){if(!byChapter.has(+block.chapter_id))byChapter.set(+block.chapter_id,[]);byChapter.get(+block.chapter_id).push(block)}
-  for(const ch of state.bookData?.chapters||[]){const blocks=byChapter.get(+ch.id)||[],hasVisible=blocks.some(block=>visibleIds.has(String(block.id)));if(hasVisible&&chapterMarkersVisible()&&!ch.is_implicit)editor.appendChild(makeInlineChapterHeading(ch,{className:'book-chapter-heading scene-focused-chapter-heading'}));for(const block of blocks){const wrap=makeBlockWrap(block,ch.id);if(!visibleIds.has(String(block.id)))wrap.classList.add('scene-gap-hidden');editor.appendChild(wrap);if(visibleIds.has(String(block.id)))renderBlockAnnotations(wrap,block.id,map,noteGroups)}}
+  const byChapter=new Map();for(const block of state.bookData?.blocks||[]){if(!byChapter.has(entityId(block.chapter_id)))byChapter.set(entityId(block.chapter_id),[]);byChapter.get(entityId(block.chapter_id)).push(block)}
+  for(const ch of state.bookData?.chapters||[]){const blocks=byChapter.get(entityId(ch.id))||[],hasVisible=blocks.some(block=>visibleIds.has(String(block.id)));if(hasVisible&&chapterMarkersVisible()&&!ch.is_implicit)editor.appendChild(makeInlineChapterHeading(ch,{className:'book-chapter-heading scene-focused-chapter-heading'}));for(const block of blocks){const wrap=makeBlockWrap(block,ch.id);if(!visibleIds.has(String(block.id)))wrap.classList.add('scene-gap-hidden');editor.appendChild(wrap);if(visibleIds.has(String(block.id)))renderBlockAnnotations(wrap,block.id,map,noteGroups)}}
   const finish=document.createElement('div');finish.className='ghost-scene-end scene-view-boundary scene-gap-view-boundary';finish.contentEditable='false';finish.innerHTML='<span>{{i18n:dynamic.html.text.span.9105cc6e}}</span>';editor.appendChild(finish);layoutManuscriptImageRows(editor);applyOutlineVisibility();countWords();paintMarkerHighlights();scheduleCommentRailLayout();scheduleManuscriptReviewAnnotations();
 }
 async function selectScene(id,save=true,refreshSearch=true){
-  if(save)await flushSave();const data=await api(`/api/scenes/${id}/manuscript`);for(const [cid,rev] of Object.entries(data.chapter_revisions||{}))state.chapterRevisions.set(+cid,rev);state.viewMode='scene';state.scene=data.scene;state.sceneData=data;state.sceneGap=null;state.chapter=null;state.chapterData=null;state.bookData=null;
-  const meta=sceneById(id);if(meta?.tab_id||meta?.first_tab_id)state.activeDocumentId=+(meta.tab_id||meta.first_tab_id);normalizeManuscriptNavMode();syncManuscriptViewControls();resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();renderSceneEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
+  if(save)await flushSave();const data=await api(`/api/scenes/${id}/manuscript`);for(const [cid,rev] of Object.entries(data.chapter_revisions||{}))state.chapterRevisions.set(entityId(cid),rev);state.viewMode='scene';state.scene=data.scene;state.sceneData=data;state.sceneGap=null;state.chapter=null;state.chapterData=null;state.bookData=null;
+  const meta=sceneById(id);if(meta?.tab_id||meta?.first_tab_id)state.activeDocumentId=entityId(meta.tab_id||meta.first_tab_id);normalizeManuscriptNavMode();syncManuscriptViewControls();resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();renderSceneEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
 }
-async function loadBookData(tabId){const id=+tabId;if(state.bookCache.has(id))return state.bookCache.get(id);const data=await api(`/api/book?tab_id=${id}`);state.bookCache.set(id,data);return data}
+async function loadBookData(tabId){const id=entityId(tabId);if(state.bookCache.has(id))return state.bookCache.get(id);const data=await api(`/api/book?tab_id=${id}`);state.bookCache.set(id,data);return data}
 async function selectSceneGap(gap,save=true,refreshSearch=true){
-  if(!gap?.first_block_id)return;if(save)await flushSave();const data=await loadBookData(gap.tab_id);state.viewMode='scene-gap';state.sceneGap={...gap};state.scene=null;state.sceneData=null;state.chapter=null;state.chapterData=null;state.bookData=data;state.activeDocumentId=+gap.tab_id;normalizeManuscriptNavMode();syncManuscriptViewControls();resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();renderSceneGapEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
+  if(!gap?.first_block_id)return;if(save)await flushSave();const data=await loadBookData(gap.tab_id);state.viewMode='scene-gap';state.sceneGap={...gap};state.scene=null;state.sceneData=null;state.chapter=null;state.chapterData=null;state.bookData=data;state.activeDocumentId=entityId(gap.tab_id);normalizeManuscriptNavMode();syncManuscriptViewControls();resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();renderSceneGapEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
 }
 
 function findIsOpen(){return !$('#findPopover').classList.contains('hidden')&&!state.find.navigatingMarkup&&!!$('#findInput').value}
 function syncFindScopeLabel(){const label=$('#findScopeLabel');if(label&&!$('#findPopover').classList.contains('hidden')&&!state.find.navigatingMarkup)label.textContent=i18nSource(state.viewMode==='book'?'Book':state.viewMode==='scene'?'Scene':state.viewMode==='scene-gap'?'Tab':'Chapter')}
 function refreshFindForContext(){if($('#findPopover').classList.contains('hidden')||state.find.navigatingMarkup)return;syncFindScopeLabel();if($('#findInput').value)queueMicrotask(()=>runFind({preserveIndex:false}).catch(error=>console.warn('Find context refresh failed',error)))}
 async function selectChapter(id,save=true,refreshSearch=true){
-  clearManuscriptSelection();if(save)await flushSave();const data=await api(`/api/chapters/${id}`);state.viewMode='chapter';state.bookData=null;state.scene=null;state.sceneData=null;state.sceneGap=null;state.chapter=data.chapter;state.chapterData=data;state.chapterRevisions.set(+data.chapter.id,data.revision||data.chapter.revision||state.chapterRevisions.get(+data.chapter.id)||'');state.activeDocumentId=data.chapter.tab_id;normalizeManuscriptNavMode();syncManuscriptViewControls();resetDirtyState();$('#chapterTitle').textContent=data.chapter.title;setSaveState('Saved');renderDocuments();renderChapterTree();renderEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
+  clearManuscriptSelection();if(save)await flushSave();const data=await api(`/api/chapters/${id}`);state.viewMode='chapter';state.bookData=null;state.scene=null;state.sceneData=null;state.sceneGap=null;state.chapter=data.chapter;state.chapterData=data;state.chapterRevisions.set(entityId(data.chapter.id),data.revision||data.chapter.revision||state.chapterRevisions.get(entityId(data.chapter.id))||'');state.activeDocumentId=data.chapter.tab_id;normalizeManuscriptNavMode();syncManuscriptViewControls();resetDirtyState();$('#chapterTitle').textContent=data.chapter.title;setSaveState('Saved');renderDocuments();renderChapterTree();renderEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
 }
 async function openWholeBook(save=true,refreshSearch=true){
-  if(save)await flushSave();if(!state.activeDocumentId)return;const data=await loadBookData(state.activeDocumentId);normalizeManuscriptNavMode();syncManuscriptViewControls();state.viewMode='book';state.bookData=data;for(const ch of data.chapters||[])state.chapterRevisions.set(+ch.id,ch.revision||state.chapterRevisions.get(+ch.id)||'');state.scene=null;state.sceneData=null;state.sceneGap=null;state.chapter=null;state.chapterData=null;resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();renderBookEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
+  if(save)await flushSave();if(!state.activeDocumentId)return;const data=await loadBookData(state.activeDocumentId);normalizeManuscriptNavMode();syncManuscriptViewControls();state.viewMode='book';state.bookData=data;for(const ch of data.chapters||[])state.chapterRevisions.set(entityId(ch.id),ch.revision||state.chapterRevisions.get(entityId(ch.id))||'');state.scene=null;state.sceneData=null;state.sceneGap=null;state.chapter=null;state.chapterData=null;resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();renderBookEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
 }
 function captureManuscriptViewport(){
   const scroller=$('#documentScroller');if(!scroller)return null;
@@ -230,9 +230,9 @@ function restoreManuscriptViewport(snapshot){
   if(!anchor)return;const viewport=scroller.getBoundingClientRect(),delta=(anchor.getBoundingClientRect().top-viewport.top)-snapshot.offset;if(Math.abs(delta)>.5)scroller.scrollTop=Math.max(0,scroller.scrollTop+delta);
 }
 function manuscriptLocationPayload(){
-  if(!state.activeDocumentId)return null;const viewport=captureManuscriptViewport();const value={tab_id:+state.activeDocumentId,view:state.viewMode,viewport};
-  if(state.viewMode==='chapter'&&state.chapter)value.chapter_id=+state.chapter.id;
-  else if(state.viewMode==='scene'&&state.scene)value.scene_id=+state.scene.id;
+  if(!state.activeDocumentId)return null;const viewport=captureManuscriptViewport();const value={tab_id:entityId(state.activeDocumentId),view:state.viewMode,viewport};
+  if(state.viewMode==='chapter'&&state.chapter)value.chapter_id=entityId(state.chapter.id);
+  else if(state.viewMode==='scene'&&state.scene)value.scene_id=entityId(state.scene.id);
   else if(state.viewMode==='scene-gap'&&state.sceneGap)value.first_block_id=String(state.sceneGap.first_block_id||'');
   return value;
 }
@@ -240,12 +240,12 @@ function schedulePersistManuscriptLocation(){
   if(state.restoringManuscriptLocation)return;clearTimeout(state.manuscriptLocationSaveTimer);state.manuscriptLocationSaveTimer=setTimeout(()=>{const value=manuscriptLocationPayload();if(!value)return;api('/api/ui-state/manuscript-last-location',{method:'PUT',body:JSON.stringify({value})}).catch(error=>console.warn('Could not persist manuscript location',error))},180);
 }
 async function restoreManuscriptLocation(value){
-  if(!value||typeof value!=='object')return false;const tab=state.documents.find(d=>+d.id===+value.tab_id);if(!tab)return false;state.restoringManuscriptLocation=true;
+  if(!value||typeof value!=='object')return false;const tab=state.documents.find(d=>entityId(d.id)===entityId(value.tab_id));if(!tab)return false;state.restoringManuscriptLocation=true;
   try{
-    state.activeDocumentId=+tab.id;
-    if(value.view==='chapter'&&value.chapter_id&&visibleChapters(tab.id).some(ch=>+ch.id===+value.chapter_id))await selectChapter(+value.chapter_id,false,false);
-    else if(value.view==='scene'&&value.scene_id&&state.scenes.some(sc=>+sc.id===+value.scene_id&&+sc.tab_id===+tab.id))await selectScene(+value.scene_id,false,false);
-    else if(value.view==='scene-gap'&&value.first_block_id){const gap=state.sceneGaps.find(g=>+g.tab_id===+tab.id&&String(g.first_block_id)===String(value.first_block_id));if(!gap)return false;await selectSceneGap(gap,false,false)}
+    state.activeDocumentId=entityId(tab.id);
+    if(value.view==='chapter'&&value.chapter_id&&visibleChapters(tab.id).some(ch=>entityId(ch.id)===entityId(value.chapter_id)))await selectChapter(entityId(value.chapter_id),false,false);
+    else if(value.view==='scene'&&value.scene_id&&state.scenes.some(sc=>entityId(sc.id)===entityId(value.scene_id)&&entityId(sc.tab_id)===entityId(tab.id)))await selectScene(entityId(value.scene_id),false,false);
+    else if(value.view==='scene-gap'&&value.first_block_id){const gap=state.sceneGaps.find(g=>entityId(g.tab_id)===entityId(tab.id)&&String(g.first_block_id)===String(value.first_block_id));if(!gap)return false;await selectSceneGap(gap,false,false)}
     else if(value.view==='book')await openWholeBook(false,false);
     else return false;
     if(value.viewport)requestAnimationFrame(()=>restoreManuscriptViewport(value.viewport));return true;
@@ -261,14 +261,14 @@ async function goToBookmark({activateView=true,silent=false}={}){
   const b=state.bookmark;if(!b){if(!silent)toast('No bookmark set');return false}if(activateView)setView('manuscript');const startingMode=state.viewMode;state.restoringManuscriptLocation=true;
   try{
     const scene=b.scene_id?sceneById(b.scene_id):(b.owner_scene_id?sceneById(b.owner_scene_id):null);
-    const chapterId=+(b.target_type==='chapter'?b.chapter_id:(b.owner_chapter_id||scene?.first_chapter_id||0));
-    const tabId=+(b.tab_id||scene?.first_tab_id||scene?.tab_id||0);
+    const chapterId=entityId(b.target_type==='chapter'?b.chapter_id:(b.owner_chapter_id||scene?.first_chapter_id||0));
+    const tabId=entityId(b.tab_id||scene?.first_tab_id||scene?.tab_id||0);
     // Full Text is a deliberate reading/editing context. A bookmark jump changes
     // location, not that context. The same rule applies to focused Chapters.
-    if(startingMode==='book'&&tabId&&state.documents.some(d=>+d.id===tabId)){
+    if(startingMode==='book'&&tabId&&state.documents.some(d=>entityId(d.id)===tabId)){
       state.activeDocumentId=tabId;await openWholeBook(false,false);await new Promise(resolve=>requestAnimationFrame(resolve));
       if(b.target_type==='range')return revealBookmarkWrap(b);
-      if(b.target_type==='chapter'){scrollBookChapter(+b.chapter_id);pulseBookmarkTarget($(`.book-chapter-heading[data-chapter-id="${+b.chapter_id}"]`)||$(`.manuscript-block-wrap[data-chapter-id="${+b.chapter_id}"]`));return true}
+      if(b.target_type==='chapter'){scrollBookChapter(entityId(b.chapter_id));pulseBookmarkTarget($(`.book-chapter-heading[data-chapter-id="${entityId(b.chapter_id)}"]`)||$(`.manuscript-block-wrap[data-chapter-id="${entityId(b.chapter_id)}"]`));return true}
       if(b.target_type==='scene'&&scene){const wrap=$(`.manuscript-block-wrap[data-block-id="${CSS.escape(String(scene.first_block_id||''))}"]`);wrap?.scrollIntoView({behavior:'auto',block:'center'});pulseBookmarkTarget(wrap||$(`.ghost-scene-title[data-scene-id="${scene.id}"]`));return !!(wrap||$(`.ghost-scene-title[data-scene-id="${scene.id}"]`))}
     }
     if(startingMode==='chapter'&&chapterId&&!!visibleChapterById(chapterId)){
@@ -278,9 +278,9 @@ async function goToBookmark({activateView=true,silent=false}={}){
       pulseBookmarkTarget($('#chapterTitle'));return true
     }
     if(startingMode==='scene'&&scene){await selectScene(scene.id,false,false);await new Promise(resolve=>requestAnimationFrame(resolve));if(b.target_type==='range'&&revealBookmarkWrap(b))return true;pulseBookmarkTarget($('.scene-view-boundary'));return true}
-    if(b.target_type==='chapter'&&b.chapter_id&&!!visibleChapterById(b.chapter_id)){await selectChapter(+b.chapter_id,false,false);pulseBookmarkTarget($('#chapterTitle'));return true}
+    if(b.target_type==='chapter'&&b.chapter_id&&!!visibleChapterById(b.chapter_id)){await selectChapter(entityId(b.chapter_id),false,false);pulseBookmarkTarget($('#chapterTitle'));return true}
     if(b.target_type==='scene'&&scene){await selectScene(scene.id,false,false);pulseBookmarkTarget($('.scene-view-boundary'));return true}
-    if(b.target_type==='range'&&b.start_block_id&&tabId&&state.documents.some(d=>+d.id===tabId)){
+    if(b.target_type==='range'&&b.start_block_id&&tabId&&state.documents.some(d=>entityId(d.id)===tabId)){
       state.activeDocumentId=tabId;await openWholeBook(false,false);await new Promise(resolve=>requestAnimationFrame(resolve));return revealBookmarkWrap(b)
     }
     return false;
@@ -293,7 +293,7 @@ async function reloadManuscriptView({fresh=true}={}){
   // A reload after a server-side structural manuscript mutation must not render the
   // old Full Text cache. Navigation keeps using bookCache for instant revisits; only
   // explicit reload semantics invalidate the current Tab.
-  if(fresh&&state.activeDocumentId)state.bookCache.delete(+state.activeDocumentId);
+  if(fresh&&state.activeDocumentId)state.bookCache.delete(entityId(state.activeDocumentId));
   if(state.viewMode==='book')await openWholeBook(false,false);else if(state.viewMode==='scene'&&state.scene)await selectScene(state.scene.id,false,false);else if(state.viewMode==='scene-gap'&&state.sceneGap)await selectSceneGap(state.sceneGap,false,false);else if(state.chapter)await selectChapter(state.chapter.id,false,false);
   restoreManuscriptViewport(viewport);
 }
@@ -304,9 +304,9 @@ function manuscriptProseForStorage(prose){
 }
 function serializeWrap(wrap){
   const image=wrap.querySelector('.manuscript-image'),prose=wrap.querySelector('.manuscript-block'),clean=prose?manuscriptProseForStorage(prose):{html:'',text:''};
-  return {id:wrap.dataset.blockId.startsWith('tmp_')?null:wrap.dataset.blockId,block_type:image?'image':'paragraph',semantic_style:wrap.dataset.style||prose?.dataset.semanticStyle||'body',content_html:clean.html,text_content:clean.text,image_path:image?(wrap.dataset.imagePath||image.getAttribute('src')||''):'',image_width:image?Math.max(5,Math.min(100,Number(wrap.dataset.imageWidth)||100)):100,image_footer:image?(wrap.dataset.imageFooter||''):'',image_description:image?(wrap.dataset.imageDescription||''):'',image_row_id:image?(wrap.dataset.imageRowId||''):'',scene_id:wrap.dataset.sceneId?+wrap.dataset.sceneId:null};
+  return {id:wrap.dataset.blockId.startsWith('tmp_')?null:wrap.dataset.blockId,block_type:image?'image':'paragraph',semantic_style:wrap.dataset.style||prose?.dataset.semanticStyle||'body',content_html:clean.html,text_content:clean.text,image_path:image?(wrap.dataset.imagePath||image.getAttribute('src')||''):'',image_width:image?Math.max(5,Math.min(100,Number(wrap.dataset.imageWidth)||100)):100,image_footer:image?(wrap.dataset.imageFooter||''):'',image_description:image?(wrap.dataset.imageDescription||''):'',image_row_id:image?(wrap.dataset.imageRowId||''):'',scene_id:wrap.dataset.sceneId?entityId(wrap.dataset.sceneId):null};
 }
-function serializeSceneWrap(wrap){return {...serializeWrap(wrap),chapter_id:+wrap.dataset.chapterId}}
-function wrapsForChapter(chapterId){return $$('.manuscript-block-wrap').filter(w=>+w.dataset.chapterId===+chapterId);}
+function serializeSceneWrap(wrap){return {...serializeWrap(wrap),chapter_id:entityId(wrap.dataset.chapterId)}}
+function wrapsForChapter(chapterId){return $$('.manuscript-block-wrap').filter(w=>entityId(w.dataset.chapterId)===entityId(chapterId));}
 function localChapterSnapshot(chapterId){const wraps=wrapsForChapter(chapterId);if(!wraps.length)return null;return{id:chapterId,title:visibleChapterTitleText(chapterId),blocks:wraps.map(serializeWrap)}}
 function localSceneSnapshot(){if(state.viewMode!=='scene'||!state.scene)return null;return{id:state.scene.id,title:state.scene.title,blocks:$$('.manuscript-block-wrap').map(serializeSceneWrap)}}
