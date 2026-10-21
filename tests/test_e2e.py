@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 import requests
 from bs4 import BeautifulSoup
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, expect
 
 APP_ROOT=Path(__file__).resolve().parents[1]
 
@@ -2354,8 +2354,10 @@ def test_browser_v49_task_milestones_are_lightweight_progressive_and_linkable(li
 
         cards=page.locator('#taskMilestones .milestone-card')
         assert cards.count()==2
-        cards.nth(0).locator('[data-milestone-check]').check();page.wait_for_timeout(180)
-        assert page.locator('#taskMilestoneProgress').inner_text()=='1 / 2'
+        cards.nth(0).locator('[data-milestone-check]').check()
+        # Completion awaits the durable PATCH/undo transaction before rendering.
+        # Wait for that observable result, never an assumed 180ms response time.
+        expect(page.locator('#taskMilestoneProgress')).to_have_text('1 / 2',timeout=3000)
         assert page.locator('#taskStatus').input_value()=='open'
 
         # Expanded milestone supports both Breadmaker and ordinary web references.
@@ -2384,16 +2386,17 @@ def test_browser_v49_task_milestones_are_lightweight_progressive_and_linkable(li
         assert milestone_count.count()==1
 
         # Completing every milestone never silently completes the parent Task.
-        page.locator('#taskMilestones .milestone-card').nth(1).locator('[data-milestone-check]').check();page.wait_for_timeout(180)
-        assert 'All complete' in page.locator('#taskMilestoneProgress').inner_text()
+        page.locator('#taskMilestones .milestone-card').nth(1).locator('[data-milestone-check]').check()
+        expect(page.locator('#taskMilestoneProgress')).to_contain_text('All complete',timeout=3000)
         assert page.locator('#taskStatus').input_value()=='open'
         page.locator('#modalClose').click();page.wait_for_selector('#modal',state='hidden')
         row=page.locator('.task-row').filter(has_text='Developmental edit Chapter 12');row.wait_for(state='visible')
-        assert '2 / 2 milestones' in row.inner_text()
+        expect(row).to_contain_text('2 / 2 milestones',timeout=3000)
 
         # Reopen one milestone, then task completion asks before overriding unfinished work.
         row.click();page.wait_for_selector('#modal:not(.hidden) [data-milestone-id]')
-        page.locator('#taskMilestones .milestone-card').nth(1).locator('[data-milestone-check]').uncheck();page.wait_for_timeout(160)
+        page.locator('#taskMilestones .milestone-card').nth(1).locator('[data-milestone-check]').uncheck()
+        expect(page.locator('#taskMilestoneProgress')).to_have_text('1 / 2',timeout=3000)
         page.locator('#modalClose').click();page.wait_for_selector('#modal',state='hidden')
         row=page.locator('.task-row').filter(has_text='Developmental edit Chapter 12')
         checkbox=row.locator('.task-check input');checkbox.check();page.wait_for_selector('#dialogConfirm')
