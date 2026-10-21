@@ -61,6 +61,8 @@ def test_google_popup_loader_csp_is_path_limited_and_hosted_only(monkeypatch):
         assert 'https://apis.google.com' not in scripts
         assert "'unsafe-inline'" not in scripts and "'unsafe-eval'" not in scripts
         assert '*' not in scripts
+        assert ('https://auth.breadmaker.studio' in directives['frame-src']) is allowed
+        assert 'https://*.breadmaker.studio' not in directives['frame-src']
         assert directives['object-src']==["'none'"]
         assert directives['frame-ancestors']==["'none'"]
         assert directives['form-action']==["'self'"]

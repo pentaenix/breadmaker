@@ -39,7 +39,7 @@ def _security_headers(request:Request) -> dict[str,str]:
     # its SDK paths, not arbitrary Google hosts or unsafe-inline/unsafe-eval.
     script_policy="'self'"+(f" '{_INDEX_INLINE_SCRIPT_CSP_HASH}'" if _INDEX_INLINE_SCRIPT_CSP_HASH else '')+(" https://www.gstatic.com https://apis.google.com/js/ https://apis.google.com/_/scs/" if identity_web else '')
     connect_policy="'self'"+(" https://identitytoolkit.googleapis.com https://securetoken.googleapis.com" if identity_web else '')
-    frame_policy="'self'"+(" https://accounts.google.com https://appleid.apple.com https://*.firebaseapp.com" if identity_web else '')
+    frame_policy="'self'"+(" https://accounts.google.com https://appleid.apple.com https://*.firebaseapp.com https://auth.breadmaker.studio" if identity_web else '')
     headers={
         'Content-Security-Policy':f"default-src 'self'; script-src {script_policy}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src {connect_policy}; frame-src {frame_policy}; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
         'X-Frame-Options':'DENY',
