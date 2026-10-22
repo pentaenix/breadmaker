@@ -85,6 +85,13 @@ def _error(exc: Exception) -> HTTPException:
 
 async def hosted_request_boundary(request: Request, call_next):
     path=canonical_request_path(request)
+    # These installed application files are already anonymously readable. Do
+    # not perform synchronous provider/Firestore session reads for every CSS/JS
+    # file: they serialize concurrent startup downloads on the ASGI event loop.
+    # Private assets remain under /api/assets and MUST use the full boundary.
+    if request.method.upper() in {'GET','HEAD'} and (
+            path.startswith('/static/') or re.fullmatch(r'/locales/[A-Za-z0-9_-]+\.json',path)):
+        return await call_next(request)
     if request.method.upper() in {'GET','HEAD'} and path=='/api/runtime':
         return JSONResponse({
             'mode':runtime.mode,'capabilities':runtime.capabilities.public(),'metadata':runtime.capabilities.metadata(),
@@ -441,13 +448,22 @@ def _delete(entity:str,ids:Mapping[str,str]):
     except Exception as exc:raise _error(exc)
 
 
-def _project_snapshot(pid:str) -> dict[str,Any]:
+def _project_snapshot(pid:str, *, manuscript_only:bool=False) -> dict[str,Any]:
     uid=_uid();domain=_domain();parents={'project_id':pid}
     begin_generation=int(runtime.projects.get(pid).get('generation') or 0)
     tabs=domain.list('document_tab',parents,user_id=uid)
     chapters=domain.list('chapter',parents,user_id=uid)
     scenes=domain.list('scene',parents,user_id=uid)
     blocks=domain.list('manuscript_block',parents,user_id=uid)
+    if manuscript_only:
+        final_project=runtime.projects.get(pid)
+        if int(final_project.get('generation') or 0)!=begin_generation:
+            raise DocumentConflict('HOSTED_SNAPSHOT_GENERATION_CHANGED')
+        # Full Text needs only manuscript entities. Keep each authorized read,
+        # immutable payload verification, and the original generation fence.
+        return {'project':final_project,'tabs':tabs,'documents':tabs,
+            'chapters':[{**chapter,'revision':str(begin_generation)} for chapter in chapters],
+            'scenes':scenes,'blocks':blocks,'scene_gaps':[]}
     labels=domain.list('markup_label',parents,user_id=uid)
     icon_markers=domain.list('icon_marker',parents,user_id=uid)
     canvases=domain.list('canvas',parents,user_id=uid)
@@ -476,7 +492,7 @@ def hosted_bootstrap(request:Request):
 
 @product_router.get('/api/book')
 def hosted_book(request:Request):
-    try:return _project_snapshot(_pid(request))
+    try:return _project_snapshot(_pid(request),manuscript_only=True)
     except Exception as exc:raise _error(exc)
 
 # Tabs/documents
