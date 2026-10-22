@@ -184,3 +184,25 @@ def test_shell_title_is_readable_before_any_translation_loads(client):
         assert '<title>Breadmaker Studio</title>' in response.text
         assert '<title>{{i18n:' not in response.text
         assert response.headers['cache-control']=='no-store, max-age=0'
+
+
+def test_sandbox_unwraps_only_known_journal_facade_and_still_rejects_cloud_provider(monkeypatch):
+    from hosted.action_journal import ActionDocumentStore
+    from hosted.firestore.google_driver import GoogleFirestoreDocumentStore
+    from hosted.purge_discovery import MemoryProjectTreeDiscovery
+    from hosted.purge_planning import HostedPurgePlanner
+    from hosted.purge_receipts import HostedPurgePreparationService
+    from hosted.purge_sandbox import HostedSandboxPurgeExecutor
+    from hosted.storage.memory import MemoryObjectStore
+    one,_,docs,_,_=_replicas(monkeypatch)
+    discovery=MemoryProjectTreeDiscovery(docs)
+    planner=HostedPurgePlanner(one.projects,MemoryObjectStore(),discovery=discovery)
+    assert planner.documents is docs
+    HostedSandboxPurgeExecutor(HostedPurgePreparationService(planner))
+    # Constructing an SDK boundary with an inert injected client performs no I/O.
+    google=GoogleFirestoreDocumentStore(client=object())
+    one.projects.documents=ActionDocumentStore(google)
+    planner=HostedPurgePlanner(one.projects,MemoryObjectStore(),discovery=discovery)
+    assert planner.documents is google
+    with pytest.raises(ValueError,match='MEMORY_ONLY'):
+        HostedSandboxPurgeExecutor(HostedPurgePreparationService(planner))

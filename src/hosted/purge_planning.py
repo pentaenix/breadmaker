@@ -87,7 +87,12 @@ class HostedPurgePlanner:
         # delegate independently verified pre-delete backup reads through it.
         # Its Firestore/GCS stores are still the sole runtime authority.
         self.projects = projects
-        self.documents: DocumentStore = projects.documents
+        # Operator inventory/rehearsal must inspect the physical provider, not
+        # the HTTP action-journal facade. Unwrap only this exact known wrapper;
+        # the executor still requires exact MemoryDocumentStore/ObjectStore types.
+        from hosted.action_journal import ActionDocumentStore
+        provider = projects.documents
+        self.documents: DocumentStore = provider.store if type(provider) is ActionDocumentStore else provider
         self.content_objects: ObjectStore = projects.objects
         self.recovery_objects = recovery_objects
         self.discovery = discovery

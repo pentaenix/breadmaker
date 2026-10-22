@@ -39,3 +39,19 @@ def test_failed_startup_keeps_editor_hidden_and_offers_retry(tmp_path):
         expect(page.locator('#app')).to_be_hidden()
         expect(page.locator('#startupMessage')).to_contain_text('Please try again')
         expect(page).to_have_title('Breadmaker Studio')
+
+
+def test_startup_modal_is_interactive_without_revealing_editor(tmp_path):
+    with hosted_browser(tmp_path) as (base,page):
+        pending=[]
+        page.route('**/api/runtime',lambda route:pending.append(route))
+        with page.expect_request('**/api/runtime'):
+            page.goto(base,wait_until='domcontentloaded',timeout=8000)
+        page.evaluate('()=>{showModal("Synthetic startup decision","<p>Continue opening?</p>","<button id=syntheticStartupContinue>Continue</button>");document.getElementById("syntheticStartupContinue").onclick=()=>{window.syntheticStartupContinued=true;closeModal(false)}}')
+        expect(page.locator('#startupScreen')).to_be_visible()
+        expect(page.locator('#app')).to_be_hidden()
+        assert page.locator('#app').evaluate('(el)=>el.inert')
+        page.locator('#syntheticStartupContinue').click()
+        assert page.evaluate('()=>window.syntheticStartupContinued')
+        pending.pop().continue_()
+        page.wait_for_function('()=>document.documentElement.dataset.breadmakerBootReady==="true"')

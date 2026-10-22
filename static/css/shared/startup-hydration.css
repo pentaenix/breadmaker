@@ -1,6 +1,9 @@
 /* The critical head rule hides ALL chrome before any external stylesheet loads.
    Keep layout measurable while preferences and the routed workspace hydrate. */
 html:not([data-breadmaker-boot-ready]) .view{visibility:hidden}
+/* Boot can require a passphrase/recovery decision. Keep that modal usable above
+   the warm screen without exposing or enabling the unhydrated editor. */
+html:not([data-breadmaker-boot-ready]) #modal{z-index:10000}
 .startup-content{width:min(320px,calc(100vw - 48px));text-align:center;font-family:Georgia,'Times New Roman',serif}
 .startup-content img{display:block;margin:0 auto 24px;object-fit:contain}
 .startup-content h1{font-size:28px;line-height:1.2;font-weight:normal;margin:0 0 12px;letter-spacing:-.5px}
