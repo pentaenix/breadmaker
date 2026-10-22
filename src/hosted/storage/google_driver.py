@@ -38,12 +38,16 @@ class GoogleCloudObjectStore(ObjectStore):
     def _translate(exc: Exception) -> Exception:
         try:
             from google.api_core.exceptions import NotFound, PreconditionFailed
-            from google.cloud.storage.exceptions import DataCorruption
+            from google.cloud.storage.exceptions import DataCorruption, InvalidResponse
         except ImportError:  # pragma: no cover
             return exc
         if isinstance(exc, NotFound):
             return ObjectNotFound("HOSTED_OBJECT_NOT_FOUND")
         if isinstance(exc, PreconditionFailed):
+            return ObjectGenerationConflict("HOSTED_OBJECT_GENERATION_CONFLICT")
+        # BlobWriter's resumable upload does not wrap media HTTP errors in
+        # api_core exceptions. Preserve create-only replay semantics on HTTP412.
+        if isinstance(exc, InvalidResponse) and exc.response.status_code == 412:
             return ObjectGenerationConflict("HOSTED_OBJECT_GENERATION_CONFLICT")
         if isinstance(exc, DataCorruption):
             return ObjectIntegrityError("HOSTED_OBJECT_PROVIDER_CHECKSUM_MISMATCH")
@@ -113,18 +117,16 @@ class GoogleCloudObjectStore(ObjectStore):
                     raise ObjectIntegrityError("HOSTED_OBJECT_DECLARED_SHA_MISMATCH")
                 blob.metadata = {**custom, 'breadmaker-sha256': local_sha}
                 staged.seek(0)
-                with blob.open(
-                    "wb",
-                    chunk_size=_CHUNK_BYTES,
+                # The staged, bounded file is already seekable. Use the SDK's
+                # managed upload/error translation, not BlobWriter.close(), which
+                # leaves a failed resumable transfer open for destructor retries.
+                blob.upload_from_file(
+                    staged,
+                    size=total,
                     content_type=str(content_type or "application/octet-stream"),
                     if_generation_match=expected,
                     checksum="auto",
-                ) as handle:
-                    while True:
-                        data = staged.read(_CHUNK_BYTES)
-                        if not data:
-                            break
-                        handle.write(data)
+                )
             # No storage.objects.update / blob.patch permission is necessary.
             if not blob.generation:
                 blob.reload()

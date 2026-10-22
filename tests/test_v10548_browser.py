@@ -83,6 +83,10 @@ def test_hosted_first_write_and_all_workspaces_persist_with_opaque_ids(tmp_path)
                 page.locator('#newCanvasName').fill('Synthetic opaque canvas')
                 page.locator('#createCanvasConfirm').click()
                 page.wait_for_function('()=>state.currentCanvas?.name==="Synthetic opaque canvas"')
+                await_undo='async()=>{await appUndo();return state.canvases.length}'
+                assert page.evaluate(await_undo)==0
+                page.evaluate('async()=>await appRedo()')
+                page.wait_for_function('()=>state.canvases.some(c=>c.name==="Synthetic opaque canvas")')
             elif view=='maps':
                 page.evaluate('()=>{void newMapDialog()}')
                 page.locator('#dialogText').fill('Synthetic opaque map')

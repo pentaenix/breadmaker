@@ -25,6 +25,7 @@ from backend.environment import STORY_TEMPLATES_CONFIG, runtime
 from hosted.firestore.contracts import DocumentNotFound
 from hosted.firestore.ids import require_opaque_id
 from hosted.firestore.model_registry import MODELS
+from hosted.action_journal import ActionJournal
 from hosted.http_api import (
     _body, _create, _delete, _documents, _domain, _error, _get, _json_public,
     _list, _pid, _project_snapshot, _uid, _update,
@@ -479,27 +480,19 @@ def hosted_history_repair():raise HTTPException(409,detail='HOSTED_LOCAL_REPAIR_
 @router.post('/api/history/edit-baseline')
 def hosted_history_edit_baseline():return {'ok':True,'mode':'hosted','baseline':'authoritative'}
 
-# Structural undo is deliberately working-session state at M5. Tokens only record the
-# project generation boundary; losing the process loses undo availability but cannot
-# roll committed canonical state backward or corrupt it. Full horizontally safe undo is
-# revisited in M8.
-_UNDO:dict[str,dict[str,Any]]={}
+# Journal images and each product write commit atomically in shared Firestore.
 @router.post('/api/undo/begin')
 def hosted_undo_begin(request:Request,label:str='',scope:str='full',scope_id:str|None=None):
-    pid=_pid(request);token='undo_'+secrets.token_hex(16);_UNDO[token]={'project_id':pid,'user_id':_uid(),'generation':runtime.projects.get(pid).get('generation'),'label':label,'scope':scope,'scope_id':scope_id};return {'token':token}
+    return ActionJournal(_documents()).begin(_pid(request),_uid(),label,scope,scope_id)
 @router.post('/api/undo/finish/{token}')
 def hosted_undo_finish(token:str,request:Request):
-    row=_UNDO.get(token)
-    if not row or row['project_id']!=_pid(request) or row['user_id']!=_uid():raise HTTPException(404,detail='UNDO_TOKEN_NOT_FOUND')
-    changed=int(runtime.projects.get(row['project_id']).get('generation') or 0)!=int(row.get('generation') or 0);row['changed']=changed;return {'ok':True,'changed':changed}
+    return ActionJournal(_documents()).finish(_pid(request),_uid(),token)
 @router.post('/api/undo/apply/{token}')
 def hosted_undo_apply(token:str,request:Request,direction:str='undo'):
-    raise HTTPException(409,detail='HOSTED_UNDO_RESTORE_UNAVAILABLE_UNTIL_M8')
+    return ActionJournal(_documents()).restore(_pid(request),_uid(),token,direction)
 @router.post('/api/undo/rollback/{token}')
 def hosted_undo_rollback(token:str,request:Request):
-    # A failed multi-request action cannot be silently rolled back from process memory.
-    # Surface the limitation rather than claiming rollback succeeded.
-    raise HTTPException(409,detail='HOSTED_UNDO_ROLLBACK_UNAVAILABLE_UNTIL_M8')
+    return ActionJournal(_documents()).restore(_pid(request),_uid(),token,'rollback')
 
 
 # ---------------------------------------------------------------------------

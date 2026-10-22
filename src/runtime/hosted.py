@@ -31,6 +31,7 @@ from hosted.runtime_services import (
 )
 from hosted.storage import MemoryObjectStore
 from hosted.storage.google_driver import GoogleCloudObjectStore
+from hosted.action_journal import ActionDocumentStore
 from runtime.contracts import RuntimeServices
 
 def _validate_worker_configuration() -> None:
@@ -110,6 +111,7 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
     _validate_worker_configuration()
 
     documents,objects=_stores(runtime_mode, documents, objects)
+    documents=ActionDocumentStore(documents)
     project_authority=FirestoreProjectRepository(documents)
     users=HostedUserRepository(HostedStructuredRepository(documents))
 

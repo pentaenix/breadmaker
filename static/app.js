@@ -9,5 +9,5 @@ openFind=function(){
 // Start only after every event handler above exists.
 installBreadReviewDropTarget();
 window.__breadmakerBootPromise=boot();
-window.__breadmakerBootPromise.then(()=>{document.documentElement.dataset.breadmakerBootReady='true'}).catch(error=>{console.error('BREADMAKER_BOOT_001',error);showModal('Breadmaker could not open this project',`<p>${escapeHtml(error?.message||String(error))}</p><p class="small-muted">{{i18n:dynamic.html.text.p.4fa5b320}}</p>`)});
+window.__breadmakerBootPromise.then(()=>{clearTimeout(window.__breadmakerStartupDeadline);delete document.documentElement.dataset.breadmakerBootFailed;window.breadmakerStartupProgress?.(100);document.title=String(state.project?.name||state.project?.title||'Breadmaker Studio');document.documentElement.dataset.breadmakerBootReady='true';const app=document.getElementById('app');app.inert=false;app.removeAttribute('aria-hidden');app.setAttribute('aria-busy','false')}).catch(error=>{clearTimeout(window.__breadmakerStartupDeadline);console.error('BREADMAKER_BOOT_001',error);window.breadmakerStartupFailed?.()});
 

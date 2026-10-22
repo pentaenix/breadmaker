@@ -100,8 +100,13 @@ def test_v10525_generic_gcs_writer_does_not_require_patch_or_object_update():
         content_type = 'application/vnd.breadmaker.encrypted+json'
         metadata = {}
         def open(self, mode, **kwargs):
-            assert mode == 'wb' and kwargs['if_generation_match'] == 0
-            return Writer(self)
+            raise AssertionError('Uploads use the managed SDK method, not BlobWriter')
+        def upload_from_file(self, file_obj, **kwargs):
+            assert kwargs['if_generation_match'] == 0 and kwargs['checksum'] == 'auto'
+            self.payload = file_obj.read()
+            self.size = len(self.payload)
+            assert self.size == kwargs['size']
+            self.generation = 1
         def reload(self, **kwargs):
             assert not kwargs or kwargs.get('if_generation_match') == 1
         def patch(self, **kwargs):

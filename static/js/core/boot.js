@@ -98,7 +98,7 @@ async function loadRuntimeBootstrap(){
     const health=await api('/api/health');
     if(health?.app!=='Breadmaker Editor'||health?.runtime!=='local')throw error;
     const backendVersion=String(health?.version||'');
-    console.warn('Breadmaker runtime bootstrap endpoint was unavailable; continuing with attested local capabilities.',{frontend:'10.5.48',backend:backendVersion||'unknown'});
+    console.warn('Breadmaker runtime bootstrap endpoint was unavailable; continuing with attested local capabilities.',{frontend:'10.5.49',backend:backendVersion||'unknown'});
     return {...LOCAL_RUNTIME_FALLBACK,fallback:true,backend_version:backendVersion};
   }
 }
@@ -108,6 +108,7 @@ async function boot() {
   // desktop launch does not pay one full request/parse round trip before beginning the
   // next. Neither is project scoped.
   const [,runtimePayload]=await Promise.all([ensureI18n(),loadRuntimeBootstrap()]);
+  window.breadmakerStartupProgress?.(25);
   // Focus/Reviewer shells are transient session modes and must never suppress the
   // application chrome during a fresh document boot.
   document.body.classList.remove('focus','reviewer-mode-active');
@@ -122,6 +123,7 @@ async function boot() {
   const portablePromise=api('/api/portable-review/status').catch(()=>({active:false}));
   const workspacePromise=api('/api/workspace');
   const [,portable,workspace]=await Promise.all([profilePromise,portablePromise,workspacePromise]);
+  window.breadmakerStartupProgress?.(45);
   if(portable?.active){if(portable.locked){const unlocked=await unlockPortableBreadReview(portable);if(!unlocked)return;await openPortableReviewerMode(unlocked.payload,{temporary:!!unlocked.temporary,filename:unlocked.filename||''});return}await openPortableReviewerMode(portable.payload,{temporary:!!portable.temporary,filename:portable.filename||''});return}
 
   // Resolve the profile's actual project before any project-scoped request. Startup
@@ -156,6 +158,7 @@ async function boot() {
   setInterval(heartbeatLease,5000);
   state.bootUIState=bootUI;
   invalidateTaskCache();invalidateQuickOpenDetailIndex();applyBootstrapData(bootstrap);
+  window.breadmakerStartupProgress?.(70);
 
   // Hydrate all lightweight navigation state without painting intermediate defaults.
   // Only the routed heavy workspace is loaded below; inactive Canvas/Map/Manuscript
@@ -178,6 +181,7 @@ async function boot() {
   }
 
   setView(bootView,{historyMode:'replace'});
+  window.breadmakerStartupProgress?.(90);
   await restoreHostedFirstDraft();
   // Normal application boot must never finish inside a transient Focus/Reviewer shell.
   // Reviewer Mode returns earlier above, so this is safe and keeps global profile chrome
@@ -215,6 +219,7 @@ function applyCanvasConfig(){
 
 function applyBootstrapData(bootstrap,{oldDoc=null}={}){
   Object.assign(state,{project:bootstrap.project,documents:bootstrap.tabs,chapters:bootstrap.chapters,chapterOutlines:bootstrap.chapter_outlines||[],canvases:bootstrap.canvases,scenes:bootstrap.scenes,sceneGaps:bootstrap.scene_gaps||[],bookmark:bootstrap.bookmark||null,markers:bootstrap.labels,iconMarkers:bootstrap.icon_markers||[],maps:bootstrap.maps||[],reviews:bootstrap.reviews||[],features:bootstrap.features||{},metroConfig:bootstrap.metro_view_config||{},canvasConfig:bootstrap.canvas_config||{}});
+  if(document.documentElement.dataset.breadmakerBootReady)document.title=String(state.project?.name||state.project?.title||'Breadmaker Studio');
   state.chapterRevisions=new Map((state.chapters||[]).map(ch=>[entityId(ch.id),ch.revision||'']));
   applyFeatureFlags();applyCanvasConfig();
   state.activeDocumentId=oldDoc&&state.documents.some(d=>d.id===oldDoc)?oldDoc:(state.documents.find(d=>d.is_manuscript)?.id||state.documents[0]?.id||null);

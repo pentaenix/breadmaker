@@ -25,6 +25,7 @@ from hosted.firestore.contracts import DocumentAlreadyExists, DocumentConflict, 
 from hosted.firestore.ids import require_opaque_id, require_project_id, require_user_id
 from hosted.packages import HostedProjectPackageService
 from hosted.idempotency import bind_operations, operation_for, request_scope_key, stable_entity_id
+from hosted.action_journal import bind_action
 from security.http_request import canonical_request_path
 
 platform_router=APIRouter()
@@ -133,7 +134,11 @@ async def hosted_request_boundary(request: Request, call_next):
                 except (UnicodeError,ValueError):
                     return JSONResponse({'detail':'HOSTED_IDEMPOTENCY_KEY_INVALID'},status_code=400)
             cm=runtime.context.bind(project_id,user_id=user_id or None) if project_id else nullcontext(None)
-            with cm, bind_operations(scope_key):
+            action_headers=request.headers.getlist('x-breadmaker-action')
+            if len(action_headers)>1:
+                return JSONResponse({'detail':'HOSTED_ACTION_HEADER_INVALID'},status_code=400)
+            action_token=action_headers[0] if action_headers and mutating and not path.startswith('/api/undo/') else None
+            with cm, bind_operations(scope_key), bind_action(action_token,project_id,user_id):
                 response=await call_next(request)
                 if runtime.sessions.requires_authentication and path.startswith('/api/'):
                     response.headers['Cache-Control']='private, no-store'
@@ -144,6 +149,10 @@ async def hosted_request_boundary(request: Request, call_next):
         return JSONResponse({'detail':'PROJECT_NOT_FOUND'},status_code=404,headers={'Cache-Control':'private, no-store'})
     except HostedValidationError as exc:
         return JSONResponse({'detail':str(exc)},status_code=400)
+    except DocumentNotFound:
+        return JSONResponse({'detail':'UNDO_TOKEN_NOT_FOUND'},status_code=404)
+    except DocumentConflict as exc:
+        return JSONResponse({'detail':str(exc)},status_code=409)
 
 
 def install_request_boundary(app: FastAPI) -> None:

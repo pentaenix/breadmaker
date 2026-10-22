@@ -312,7 +312,8 @@ def test_v10348_google_sdk_and_streaming_are_isolated_to_hosted_storage_boundary
     package = "\n".join(path.read_text(encoding="utf-8").lower() for path in (ROOT / "src/hosted/storage").glob("*.py"))
     local = (ROOT / "src/runtime/local.py").read_text(encoding="utf-8")
     assert "from google.cloud import storage" in google
-    assert 'blob.open(' in google and '"wb"' in google and '"rb"' in google
+    assert 'blob.upload_from_file(' in google and 'size=total' in google
+    assert 'blob.open(' in google and '"rb"' in google
     assert "if_generation_match=expected" in google
     assert "require_hybrid_entity_object_key" in (ROOT / "src/hosted/storage/publication.py").read_text(encoding="utf-8")
     assert "HOSTED_OBJECT_KEY_HASH_MISMATCH" in (ROOT / "src/hosted/storage/publication.py").read_text(encoding="utf-8")

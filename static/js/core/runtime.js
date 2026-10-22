@@ -38,6 +38,7 @@ const EDITORS_EYE_PRESETS = [
   {font:"'Trebuchet MS', 'Gill Sans', Arial, sans-serif",size:15.45,lineHeight:1.78,width:852,pad:70,gap:.6,tracking:.01,light:{bg:'#d9f0ee',text:'#162624'},dusk:{bg:'#c2cdca',text:'#273130'},dark:{bg:'#123536',text:'#eff9f8'}},
 ];
 
+let hostedStructuralActionToken=null;
 class BreadmakerError extends Error {
   constructor(message, status=0, code='', params={}) { super(message); this.status=status; this.code=code; this.params=params||{}; }
 }
@@ -66,7 +67,7 @@ async function api(url, options={}) {
   const method=String(options.method||'GET').toUpperCase();
   const mutates=!['GET','HEAD','OPTIONS'].includes(method);
   const hosted=typeof runtimeSupports==='function'&&runtimeSupports('hosted_persistence');
-  const nonceHeaders=hosted&&mutates?{'Idempotency-Key':String(options.idempotencyKey||uid())}:{};
+  const nonceHeaders=hosted&&mutates?{'Idempotency-Key':String(options.idempotencyKey||uid()),...(hostedStructuralActionToken&&!url.startsWith('/api/undo/')?{'X-Breadmaker-Action':hostedStructuralActionToken}:{})}:{};
   const {idempotencyKey,...fetchOptions}=options;
   const response = await fetch(url, {...fetchOptions, headers:{...headers, ...contextHeaders, ...nonceHeaders, 'X-Breadmaker-Client':CLIENT_ID, 'X-Breadmaker-Locale':i18nLocale(), ...(options.headers||{})}});
   if (!response.ok) {

@@ -79,11 +79,14 @@ function withStructuralUndo(label,fn,context={}){
   const run=async()=>withManuscriptMutationBarrier(async()=>{
     const scope=context.undoScope||'full',scopeId=scope==='canvas'?(context.canvasId||state.currentCanvas?.id||null):scope==='maps'?(context.mapId||state.currentMap?.id||null):null;const before=await beginStructuralUndo(label,scope,scopeId);
     try{
+      if(runtimeSupports('hosted_persistence'))hostedStructuralActionToken=before;
       const result=await fn();
+      hostedStructuralActionToken=null;
       await finishStructuralUndo(before,label,context);
       invalidateTaskCache();invalidateQuickOpenDetailIndex();
       return result;
     }catch(error){
+      hostedStructuralActionToken=null;
       // Treat a multi-step user action as one application-level transaction. API
       // calls inside fn may each be valid SQLite transactions, but a later failure
       // must not strand an earlier successful step or destructive DOM mutation.

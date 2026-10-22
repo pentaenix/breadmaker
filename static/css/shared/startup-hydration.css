@@ -1,7 +1,17 @@
-/* 9.6.5 — keep the chrome stable while restored project state hydrates. The routed
-   workspace is already selected synchronously in <head>; hiding only workspace bodies
-   prevents default rail/manuscript state from flashing before the saved state arrives. */
+/* The critical head rule hides ALL chrome before any external stylesheet loads.
+   Keep layout measurable while preferences and the routed workspace hydrate. */
 html:not([data-breadmaker-boot-ready]) .view{visibility:hidden}
+.startup-content{width:min(320px,calc(100vw - 48px));text-align:center;font-family:Georgia,'Times New Roman',serif}
+.startup-content img{display:block;margin:0 auto 24px;object-fit:contain}
+.startup-content h1{font-size:28px;line-height:1.2;font-weight:normal;margin:0 0 12px;letter-spacing:-.5px}
+.startup-content p{font:14px/1.5 Arial,sans-serif;margin:0 0 28px;color:#756454}
+.startup-content progress{display:block;width:100%;height:5px;border:0;border-radius:8px;overflow:hidden;background:#dfd1c1;accent-color:#98734f}
+.startup-content progress::-webkit-progress-bar{background:#dfd1c1;border-radius:8px}
+.startup-content progress::-webkit-progress-value{background:#98734f;border-radius:8px;transition:width .2s ease}
+.startup-content progress::-moz-progress-bar{background:#98734f;border-radius:8px}
+.startup-content button{margin-top:24px}
+html[data-breadmaker-boot-failed] #startupProgress{visibility:hidden}
+@media(prefers-reduced-motion:reduce){.startup-content progress::-webkit-progress-value{transition:none}}
 .topbar .brand-button,.topbar .top-actions{flex:none}
 .topbar .main-tabs{min-width:0;flex:1 1 auto;overflow:hidden}
 .user-profile-control,.user-avatar-button{visibility:visible}

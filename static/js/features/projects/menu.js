@@ -84,7 +84,7 @@ async function startProjectMenuRename(){
   const active=activeWorkspaceProject(),holder=$('.project-menu-current-copy');if(!active||!holder)return;
   const original=active.name;holder.innerHTML=`<small>{{i18n:dynamic.html.text.small.4f798f98}}</small><input id="projectMenuRenameInput" class="project-menu-rename-input" value="${escapeHtml(original)}" aria-label="{{i18n:dynamic.html.attr.aria.label.ac5d3eaf}}">`;
   $('#projectMenuRename')?.classList.add('hidden');const input=$('#projectMenuRenameInput');let finished=false;
-  const finish=async save=>{if(finished)return;finished=true;const name=input.value.trim();if(save&&name&&name!==original){try{await api(`/api/projects/${active.id}`,{method:'PATCH',body:JSON.stringify({name})});active.name=name}catch(error){toast(error.message||'Could not rename project',4000)}}renderProjectMenu();positionProjectMenu()};
+  const finish=async save=>{if(finished)return;finished=true;const name=input.value.trim();if(save&&name&&name!==original){try{await api(`/api/projects/${active.id}`,{method:'PATCH',body:JSON.stringify({name})});active.name=name;document.title=name}catch(error){toast(error.message||'Could not rename project',4000)}}renderProjectMenu();positionProjectMenu()};
   input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();finish(true)}else if(e.key==='Escape'){e.preventDefault();finish(false)}});
   input.addEventListener('blur',()=>finish(true));queueMicrotask(()=>{input.focus();input.select()});
 }
