@@ -1,8 +1,15 @@
 """Startup never paints translation keys or partially hydrated editor chrome."""
 import re
+from urllib.parse import urlsplit
 
 from playwright.sync_api import expect
 from tests.test_v10548_browser import hosted_browser
+
+
+def is_bootstrap_url(url):
+    # Startup may choose a lightweight projection through query parameters.
+    # Intercept the endpoint, not one spelling of the transport URL.
+    return urlsplit(url).path=='/api/bootstrap'
 
 
 def test_startup_hides_untranslated_chrome_until_real_project_is_ready(tmp_path):
@@ -11,8 +18,8 @@ def test_startup_hides_untranslated_chrome_until_real_project_is_ready(tmp_path)
         assert created.ok
         project_id=created.json()['project']['id']
         pending=[]
-        page.route('**/api/bootstrap', lambda route: pending.append(route))
-        with page.expect_request('**/api/bootstrap'):
+        page.route(is_bootstrap_url, lambda route: pending.append(route))
+        with page.expect_request(lambda request:is_bootstrap_url(request.url),timeout=5000):
             page.goto(base+'/p/'+project_id,wait_until='domcontentloaded',timeout=8000)
         expect(page.locator('#startupScreen')).to_be_visible()
         expect(page).to_have_title('Breadmaker Studio')
@@ -33,9 +40,14 @@ def test_failed_startup_keeps_editor_hidden_and_offers_retry(tmp_path):
         created=page.request.post(base+'/api/projects',data={'name':'Synthetic failed startup'},headers={'Origin':base})
         assert created.ok
         project_id=created.json()['project']['id']
-        page.route('**/api/bootstrap',lambda route:route.fulfill(status=503,json={'detail':'Synthetic unavailable'}))
+        intercepted=[]
+        def unavailable(route):
+            intercepted.append(route.request.url)
+            route.fulfill(status=503,json={'detail':'Synthetic unavailable'})
+        page.route(is_bootstrap_url,unavailable)
         page.goto(base+'/p/'+project_id,wait_until='domcontentloaded',timeout=8000)
         expect(page.locator('#startupRetry')).to_be_visible()
+        assert intercepted,'Startup failure must be injected into the actual bootstrap request'
         expect(page.locator('#app')).to_be_hidden()
         expect(page.locator('#startupMessage')).to_contain_text('Please try again')
         expect(page).to_have_title('Breadmaker Studio')
