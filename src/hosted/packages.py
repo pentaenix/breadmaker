@@ -10,10 +10,12 @@ SQLite is never used as hosted persistence.
 
 import base64
 import hashlib
+import gzip
 import io
 import json
 import sqlite3
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from string import Formatter
 from typing import Any, Mapping
 
@@ -381,7 +383,7 @@ class HostedProjectPackageService:
         # it until the final project+owner transaction commits.
         return stable_project_id(operation) if operation else new_project_id()
 
-    def _stage_entity(self, logical:str, ids:Mapping[str,str], data:Mapping[str,Any], *, entity_id:str) -> None:
+    def _prepare_import_entity(self, logical:str, ids:Mapping[str,str], data:Mapping[str,Any], *, entity_id:str,payload_pointer=None):
         if self.domain.encrypted_objects is not None or self.domain.encrypted_fields is not None:
             # Import stages records before the new project's membership exists.
             # This path must be redesigned instead of bypassing authorizer/KMS.
@@ -404,7 +406,7 @@ class HostedProjectPackageService:
         if hybrid is not None:
             structured,encoded=hybrid
             stored=dict(structured)
-            stored['payload_object']=self.domain._publish_hybrid(logical,full_ids,encoded)
+            stored['payload_object']=payload_pointer or self.domain._publish_hybrid(logical,full_ids,encoded)
         else:
             stored=dict(public)
         stamp=self.domain.clock.now_iso()
@@ -416,14 +418,68 @@ class HostedProjectPackageService:
         stored['updated_at']=stamp
         stored['_bm_create_operation']=op
         stored['_bm_create_fingerprint']=fingerprint
+        return path,stored
+
+    def _stage_entity(self, logical:str, ids:Mapping[str,str], data:Mapping[str,Any], *, entity_id:str) -> None:
+        path,stored=self._prepare_import_entity(logical,ids,data,entity_id=entity_id)
         def create(tx):
             old=tx.get(path)
             if old is not None:
-                if old.data.get('_bm_create_operation')==op and old.data.get('_bm_create_fingerprint')==fingerprint:
+                if (old.data.get('_bm_create_operation')==stored['_bm_create_operation']
+                        and old.data.get('_bm_create_fingerprint')==stored['_bm_create_fingerprint']):
                     return
                 raise ValueError('HOSTED_PACKAGE_ENTITY_COLLISION')
             tx.create(path,stored)
         self.documents.run_transaction(create)
+
+    def stage_import_batch(self,pid:str,entries:list[dict],*,bundle_blocks:bool=False) -> None:
+        """Bounded object-first staging under an UNPUBLISHED project only.
+
+        No membership/authority is created here. All object integrity checks finish
+        before the single metadata transaction; retries compare exact fingerprints.
+        Never use this path to mutate an existing, visible project.
+        """
+        pid=require_project_id(pid)
+        if not 1<=len(entries)<=64:raise ValueError('HOSTED_IMPORT_BATCH_SIZE_INVALID')
+        if self.documents.get(('projects',pid)) is not None:
+            raise ValueError('HOSTED_IMPORT_PROJECT_ALREADY_PUBLISHED')
+        pointers={}
+        if bundle_blocks:
+            if self.domain.encrypted_objects is not None or self.domain.encrypted_fields is not None:
+                raise ValueError('HOSTED_ENCRYPTED_PACKAGE_IMPORT_NOT_READY')
+            # One verified immutable object per bounded batch, not one object per
+            # paragraph. Individual edits continue using the ordinary block codec.
+            bodies={entry['id']:{field:entry['data'].get(field,'') for field in ('content_html','text_content')}
+                for entry in entries if entry['entity']=='manuscript_block'}
+            if bodies:
+                encoded=gzip.compress(json.dumps({'entries':bodies},sort_keys=True,
+                    separators=(',',':'),ensure_ascii=False).encode(),mtime=0)
+                if len(encoded)>8*1024*1024:raise ValueError('HOSTED_IMPORT_BATCH_TOO_LARGE')
+                bid='b_bundle_'+hashlib.sha256('\0'.join(sorted(bodies)).encode()).hexdigest()[:24]
+                pointer=self.domain._publish_hybrid('manuscript_block',{'project_id':pid,'block_id':bid},encoded)
+                pointers={eid:{**pointer,'bundle_entry':eid} for eid in bodies}
+        def prepare(entry):
+            return self._prepare_import_entity(entry['entity'],{'project_id':pid},
+                entry['data'],entity_id=entry['id'],payload_pointer=pointers.get(entry['id']))
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            prepared=list(pool.map(prepare,entries))
+        if len({path for path,_ in prepared})!=len(prepared):
+            raise ValueError('HOSTED_IMPORT_DUPLICATE_ENTITY')
+        def stage(tx):
+            # Recheck in the SAME transaction, before writes. A delayed step
+            # must never write canonical content after final publication.
+            if tx.get(('projects',pid)) is not None:
+                raise ValueError('HOSTED_IMPORT_PROJECT_ALREADY_PUBLISHED')
+            paths=[path for path,_ in prepared]
+            batch_get=getattr(tx,'get_many',None)
+            previous=batch_get(paths) if batch_get is not None else [tx.get(path) for path in paths]
+            for old,(_,stored) in zip(previous,prepared):
+                if old is not None and any(old.data.get(key)!=stored[key] for key in
+                        ('_bm_create_operation','_bm_create_fingerprint')):
+                    raise ValueError('HOSTED_PACKAGE_ENTITY_COLLISION')
+            for old,(path,stored) in zip(previous,prepared):
+                if old is None:tx.create(path,stored)
+        self.documents.run_transaction(stage)
 
     def _stage_asset(self,pid:str,user_id:str,data:bytes,extension:str,*,expected_digest:str|None=None) -> None:
         ext='.'+str(extension or '').lower().lstrip('.')

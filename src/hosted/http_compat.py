@@ -15,11 +15,14 @@ import json
 import re
 import secrets
 import zipfile
+from functools import partial
 from collections import defaultdict
 from typing import Any, Mapping
 
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse, Response
+from starlette.concurrency import run_in_threadpool
+from anyio import CapacityLimiter, to_thread
 
 from backend.environment import STORY_TEMPLATES_CONFIG, runtime
 from hosted.firestore.contracts import DocumentNotFound
@@ -32,6 +35,13 @@ from hosted.http_api import (
 )
 
 router=APIRouter()
+_document_import_capacity=CapacityLimiter(1)
+
+
+async def _run_document_import(fn,*args,**kwargs):
+    # One active import step per instance; waiting requests do not occupy the
+    # ASGI loop or expand storage parallelism without bound. Not a durable lock.
+    return await to_thread.run_sync(partial(fn,*args,**kwargs),limiter=_document_import_capacity)
 
 
 # A deliberately conservative bound: no tenant-wide collection-group query.
@@ -1180,44 +1190,71 @@ def _download_name(value:str,fallback:str) -> str:
 @router.get('/api/import/readiness')
 def hosted_import_readiness(request:Request):
     from hosted.document_io import manuscript_is_default_blank
-    pid=_pid(request);return {'empty':manuscript_is_default_blank(_domain(),pid,_uid()),'hosted':True,'supported_extensions':['.docx','.txt']}
+    pid=_pid(request);empty=manuscript_is_default_blank(_domain(),pid,_uid())
+    return {'empty':empty,'manuscript_empty':empty,'hosted':True,'supported_extensions':['.docx','.txt']}
 
 
 @router.post('/api/import')
 async def hosted_import_manuscript(request:Request,file:UploadFile=File(...),chapter_heading:str='heading1'):
     from hosted.document_io import manuscript_is_default_blank,parse_document_bytes,install_parsed_tabs
     pid=_pid(request);uid=_uid()
-    if not manuscript_is_default_blank(_domain(),pid,uid):raise HTTPException(409,detail='HOSTED_IMPORT_MAIN_MANUSCRIPT_NOT_EMPTY')
+    if not await run_in_threadpool(manuscript_is_default_blank,_domain(),pid,uid):raise HTTPException(409,detail='HOSTED_IMPORT_MAIN_MANUSCRIPT_NOT_EMPTY')
     raw=await _upload_bytes(file)
-    try:tabs,warnings=parse_document_bytes(raw,file.filename or 'book.docx',chapter_heading)
+    try:tabs,warnings=await run_in_threadpool(parse_document_bytes,raw,file.filename or 'book.docx',chapter_heading)
     except ValueError as exc:raise HTTPException(400 if str(exc)!='HOSTED_LEGACY_DOC_DISABLED' else 415,detail=str(exc)) from exc
-    result=install_parsed_tabs(_domain(),pid,uid,tabs,replace_default=True)
+    result=await run_in_threadpool(install_parsed_tabs,_domain(),pid,uid,tabs,replace_default=True)
     return {'ok':True,'reload':True,**result,'warnings':warnings}
 
 
 @router.post('/api/import/new-project')
-async def hosted_import_new_project(request:Request,file:UploadFile=File(...),chapter_heading:str='heading1',project_name:str=''):
-    from hosted.document_io import parse_document_bytes,install_parsed_tabs
+async def hosted_import_new_project(request:Request,file:UploadFile=File(...),chapter_heading:str='heading1',project_name:str='',resumable:bool=False):
+    from hosted.document_import import DocumentImport
+    from hosted.idempotency import operation_for
     raw=await _upload_bytes(file)
-    try:tabs,warnings=parse_document_bytes(raw,file.filename or 'book.docx',chapter_heading)
-    except ValueError as exc:raise HTTPException(400 if str(exc)!='HOSTED_LEGACY_DOC_DISABLED' else 415,detail=str(exc)) from exc
-    stem=(str(file.filename or 'Imported').rsplit('.',1)[0]).strip();project=runtime.projects.create(project_name or stem or 'Imported Project')
-    pid=str(project['id'])
-    try:result=install_parsed_tabs(runtime.projects.domain,pid,_uid(),tabs,replace_default=True)
-    except Exception:
-        try:runtime.projects.delete(pid)
-        except Exception:pass
-        raise
-    return {'ok':True,'reload':True,'project':project,**result,'warnings':warnings}
+    service=DocumentImport(runtime.projects)
+    try:
+        progress=await _run_document_import(service.begin,raw,
+            file.filename or 'book.docx',chapter_heading,project_name,_uid(),operation_for('document_import'))
+        if resumable:return progress
+        # Old browser code can still import small files, but must never start an
+        # unbounded inline job or expose a partially constructed project.
+        if progress['total_batches']>1:
+            raise HTTPException(409,detail='Refresh Breadmaker to use resumable document import.')
+        if not progress['ready']:
+            await _run_document_import(service.step,_uid(),progress['job_id'],0)
+        return await _run_document_import(service.finish,_uid(),progress['job_id'])
+    except HTTPException:raise
+    except Exception as exc:raise _error(exc)
+
+
+@router.get('/api/import/jobs/{job_id}')
+def hosted_document_import_status(job_id:str):
+    from hosted.document_import import DocumentImport
+    try:return DocumentImport(runtime.projects).status(_uid(),job_id)
+    except Exception as exc:raise _error(exc)
+
+
+@router.post('/api/import/jobs/{job_id}/step')
+async def hosted_document_import_step(job_id:str,batch:int):
+    from hosted.document_import import DocumentImport
+    try:return await _run_document_import(DocumentImport(runtime.projects).step,_uid(),job_id,batch)
+    except Exception as exc:raise _error(exc)
+
+
+@router.post('/api/import/jobs/{job_id}/finish')
+async def hosted_document_import_finish(job_id:str):
+    from hosted.document_import import DocumentImport
+    try:return await _run_document_import(DocumentImport(runtime.projects).finish,_uid(),job_id)
+    except Exception as exc:raise _error(exc)
 
 
 @router.post('/api/documents/import')
 async def hosted_import_document_tabs(request:Request,file:UploadFile=File(...),after_document_id:str='',chapter_heading:str='heading1'):
     from hosted.document_io import parse_document_bytes,install_parsed_tabs
     raw=await _upload_bytes(file)
-    try:tabs,warnings=parse_document_bytes(raw,file.filename or 'document.docx',chapter_heading)
+    try:tabs,warnings=await run_in_threadpool(parse_document_bytes,raw,file.filename or 'document.docx',chapter_heading)
     except ValueError as exc:raise HTTPException(400 if str(exc)!='HOSTED_LEGACY_DOC_DISABLED' else 415,detail=str(exc)) from exc
-    result=install_parsed_tabs(_domain(),_pid(request),_uid(),tabs,replace_default=False,after_document_id=after_document_id)
+    result=await run_in_threadpool(install_parsed_tabs,_domain(),_pid(request),_uid(),tabs,replace_default=False,after_document_id=after_document_id)
     return {'ok':True,'reload':False,**result,'warnings':warnings}
 
 

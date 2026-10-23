@@ -7557,12 +7557,12 @@
     },
     {
       "file": "src/hosted/chapter_mutations.py",
-      "lines": 218,
+      "lines": 245,
       "symbols": [
         {
           "name": "replace_chapter_blocks",
           "kind": "function",
-          "line": 29
+          "line": 30
         }
       ]
     },
@@ -7579,6 +7579,17 @@
           "name": "require_checkpoint_assets_present",
           "kind": "function",
           "line": 26
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/document_import.py",
+      "lines": 148,
+      "symbols": [
+        {
+          "name": "DocumentImport",
+          "kind": "class",
+          "line": 28
         }
       ]
     },
@@ -7630,42 +7641,42 @@
     },
     {
       "file": "src/hosted/domain_store.py",
-      "lines": 946,
+      "lines": 977,
       "symbols": [
         {
           "name": "_check_encrypted_block_metadata",
           "kind": "function",
-          "line": 119
+          "line": 120
         },
         {
           "name": "new_entity_id",
           "kind": "function",
-          "line": 145
+          "line": 146
         },
         {
           "name": "operation_id",
           "kind": "function",
-          "line": 153
+          "line": 154
         },
         {
           "name": "_json_gzip",
           "kind": "function",
-          "line": 158
+          "line": 159
         },
         {
           "name": "_json_gunzip",
           "kind": "function",
-          "line": 163
+          "line": 164
         },
         {
           "name": "_public",
           "kind": "function",
-          "line": 173
+          "line": 174
         },
         {
           "name": "HostedDomainStore",
           "kind": "class",
-          "line": 177
+          "line": 178
         }
       ]
     },
@@ -7728,7 +7739,7 @@
     },
     {
       "file": "src/hosted/firestore/contracts.py",
-      "lines": 111,
+      "lines": 112,
       "symbols": [
         {
           "name": "HostedStoreError",
@@ -7783,28 +7794,28 @@
         {
           "name": "DocumentStore",
           "kind": "class",
-          "line": 64
+          "line": 65
         },
         {
           "name": "Clock",
           "kind": "class",
-          "line": 90
+          "line": 91
         },
         {
           "name": "require_document_path",
           "kind": "function",
-          "line": 94
+          "line": 95
         },
         {
           "name": "require_collection_path",
           "kind": "function",
-          "line": 104
+          "line": 105
         }
       ]
     },
     {
       "file": "src/hosted/firestore/google_driver.py",
-      "lines": 186,
+      "lines": 196,
       "symbols": [
         {
           "name": "_GoogleTransaction",
@@ -7814,12 +7825,12 @@
         {
           "name": "_snapshot_revision",
           "kind": "function",
-          "line": 56
+          "line": 66
         },
         {
           "name": "GoogleFirestoreDocumentStore",
           "kind": "class",
-          "line": 64
+          "line": 74
         }
       ]
     },
@@ -7861,7 +7872,7 @@
     },
     {
       "file": "src/hosted/firestore/memory.py",
-      "lines": 169,
+      "lines": 172,
       "symbols": [
         {
           "name": "_MemoryTransaction",
@@ -7871,7 +7882,7 @@
         {
           "name": "MemoryDocumentStore",
           "kind": "class",
-          "line": 55
+          "line": 58
         }
       ]
     },
@@ -8540,32 +8551,37 @@
     },
     {
       "file": "src/hosted/http_compat.py",
-      "lines": 1345,
+      "lines": 1382,
       "symbols": [
+        {
+          "name": "_run_document_import",
+          "kind": "async_function",
+          "line": 41
+        },
         {
           "name": "_locate",
           "kind": "function",
-          "line": 43
+          "line": 53
         },
         {
           "name": "_all_blocks",
           "kind": "function",
-          "line": 96
+          "line": 106
         },
         {
           "name": "_sort_position",
           "kind": "function",
-          "line": 100
+          "line": 110
         },
         {
           "name": "_regex",
           "kind": "function",
-          "line": 104
+          "line": 114
         },
         {
           "name": "hosted_profile_create_disabled",
           "kind": "async_function",
-          "line": 117,
+          "line": 127,
           "routes": [
             {
               "method": "POST",
@@ -8576,7 +8592,7 @@
         {
           "name": "hosted_profile_activate",
           "kind": "function",
-          "line": 121,
+          "line": 131,
           "routes": [
             {
               "method": "POST",
@@ -8587,7 +8603,7 @@
         {
           "name": "hosted_danger_challenge",
           "kind": "function",
-          "line": 126,
+          "line": 136,
           "routes": [
             {
               "method": "POST",
@@ -8598,7 +8614,7 @@
         {
           "name": "hosted_delete_all_data",
           "kind": "function",
-          "line": 132,
+          "line": 142,
           "routes": [
             {
               "method": "POST",
@@ -8609,7 +8625,7 @@
         {
           "name": "hosted_project_title",
           "kind": "async_function",
-          "line": 136,
+          "line": 146,
           "routes": [
             {
               "method": "PATCH",
@@ -8620,7 +8636,7 @@
         {
           "name": "hosted_find",
           "kind": "async_function",
-          "line": 148,
+          "line": 158,
           "routes": [
             {
               "method": "POST",
@@ -8631,7 +8647,7 @@
         {
           "name": "hosted_replace",
           "kind": "async_function",
-          "line": 171,
+          "line": 181,
           "routes": [
             {
               "method": "POST",
@@ -8642,7 +8658,7 @@
         {
           "name": "hosted_icon_markers",
           "kind": "function",
-          "line": 205,
+          "line": 215,
           "routes": [
             {
               "method": "GET",
@@ -8653,7 +8669,7 @@
         {
           "name": "hosted_icon_marker_create",
           "kind": "async_function",
-          "line": 207,
+          "line": 217,
           "routes": [
             {
               "method": "POST",
@@ -8664,7 +8680,7 @@
         {
           "name": "hosted_icon_marker_update",
           "kind": "async_function",
-          "line": 209,
+          "line": 219,
           "routes": [
             {
               "method": "PATCH",
@@ -8675,7 +8691,7 @@
         {
           "name": "hosted_icon_marker_delete",
           "kind": "function",
-          "line": 211,
+          "line": 221,
           "routes": [
             {
               "method": "DELETE",
@@ -8686,7 +8702,7 @@
         {
           "name": "hosted_label_update",
           "kind": "async_function",
-          "line": 214,
+          "line": 224,
           "routes": [
             {
               "method": "PATCH",
@@ -8697,7 +8713,7 @@
         {
           "name": "hosted_label_usage",
           "kind": "function",
-          "line": 216,
+          "line": 226,
           "routes": [
             {
               "method": "GET",
@@ -8708,7 +8724,7 @@
         {
           "name": "hosted_label_delete",
           "kind": "function",
-          "line": 219,
+          "line": 229,
           "routes": [
             {
               "method": "DELETE",
@@ -8719,7 +8735,7 @@
         {
           "name": "hosted_clear_highlights",
           "kind": "function",
-          "line": 221,
+          "line": 231,
           "routes": [
             {
               "method": "POST",
@@ -8730,7 +8746,7 @@
         {
           "name": "hosted_comment_get",
           "kind": "function",
-          "line": 229,
+          "line": 239,
           "routes": [
             {
               "method": "GET",
@@ -8741,7 +8757,7 @@
         {
           "name": "hosted_comment_delete_action",
           "kind": "function",
-          "line": 232,
+          "line": 242,
           "routes": [
             {
               "method": "POST",
@@ -8752,7 +8768,7 @@
         {
           "name": "hosted_comment_message_update",
           "kind": "async_function",
-          "line": 234,
+          "line": 244,
           "routes": [
             {
               "method": "PATCH",
@@ -8763,7 +8779,7 @@
         {
           "name": "hosted_references",
           "kind": "function",
-          "line": 238,
+          "line": 248,
           "routes": [
             {
               "method": "GET",
@@ -8774,7 +8790,7 @@
         {
           "name": "hosted_reference_create",
           "kind": "async_function",
-          "line": 244,
+          "line": 254,
           "routes": [
             {
               "method": "POST",
@@ -8785,7 +8801,7 @@
         {
           "name": "hosted_reference_delete",
           "kind": "function",
-          "line": 246,
+          "line": 256,
           "routes": [
             {
               "method": "DELETE",
@@ -8796,7 +8812,7 @@
         {
           "name": "hosted_cuts",
           "kind": "function",
-          "line": 254,
+          "line": 264,
           "routes": [
             {
               "method": "GET",
@@ -8807,7 +8823,7 @@
         {
           "name": "hosted_cut_create",
           "kind": "async_function",
-          "line": 256,
+          "line": 266,
           "routes": [
             {
               "method": "POST",
@@ -8818,7 +8834,7 @@
         {
           "name": "hosted_cut_update",
           "kind": "async_function",
-          "line": 258,
+          "line": 268,
           "routes": [
             {
               "method": "PATCH",
@@ -8829,7 +8845,7 @@
         {
           "name": "hosted_cut_delete",
           "kind": "function",
-          "line": 260,
+          "line": 270,
           "routes": [
             {
               "method": "DELETE",
@@ -8840,7 +8856,7 @@
         {
           "name": "hosted_cut_insert",
           "kind": "async_function",
-          "line": 262,
+          "line": 272,
           "routes": [
             {
               "method": "POST",
@@ -8851,7 +8867,7 @@
         {
           "name": "hosted_cuts_export",
           "kind": "function",
-          "line": 279,
+          "line": 289,
           "routes": [
             {
               "method": "GET",
@@ -8862,7 +8878,7 @@
         {
           "name": "hosted_cuts_import",
           "kind": "async_function",
-          "line": 283,
+          "line": 293,
           "routes": [
             {
               "method": "POST",
@@ -8873,7 +8889,7 @@
         {
           "name": "hosted_milestone_update",
           "kind": "async_function",
-          "line": 292,
+          "line": 302,
           "routes": [
             {
               "method": "PATCH",
@@ -8884,7 +8900,7 @@
         {
           "name": "hosted_milestone_delete",
           "kind": "function",
-          "line": 295,
+          "line": 305,
           "routes": [
             {
               "method": "DELETE",
@@ -8895,7 +8911,7 @@
         {
           "name": "hosted_task_duplicate",
           "kind": "function",
-          "line": 297,
+          "line": 307,
           "routes": [
             {
               "method": "POST",
@@ -8906,7 +8922,7 @@
         {
           "name": "hosted_milestone_reorder",
           "kind": "async_function",
-          "line": 302,
+          "line": 312,
           "routes": [
             {
               "method": "POST",
@@ -8917,7 +8933,7 @@
         {
           "name": "hosted_chapter_reorder",
           "kind": "async_function",
-          "line": 314,
+          "line": 324,
           "routes": [
             {
               "method": "POST",
@@ -8928,7 +8944,7 @@
         {
           "name": "hosted_chapter_dissolve",
           "kind": "function",
-          "line": 320,
+          "line": 330,
           "routes": [
             {
               "method": "POST",
@@ -8939,7 +8955,7 @@
         {
           "name": "hosted_chapter_permanent",
           "kind": "function",
-          "line": 331,
+          "line": 341,
           "routes": [
             {
               "method": "DELETE",
@@ -8950,7 +8966,7 @@
         {
           "name": "hosted_chapter_split",
           "kind": "async_function",
-          "line": 336,
+          "line": 346,
           "routes": [
             {
               "method": "POST",
@@ -8961,7 +8977,7 @@
         {
           "name": "hosted_scene_blocks",
           "kind": "async_function",
-          "line": 342,
+          "line": 352,
           "routes": [
             {
               "method": "PUT",
@@ -8972,7 +8988,7 @@
         {
           "name": "hosted_scene_extend",
           "kind": "async_function",
-          "line": 350,
+          "line": 360,
           "routes": [
             {
               "method": "POST",
@@ -8983,7 +8999,7 @@
         {
           "name": "hosted_scene_remove_blocks",
           "kind": "async_function",
-          "line": 355,
+          "line": 365,
           "routes": [
             {
               "method": "POST",
@@ -8994,7 +9010,7 @@
         {
           "name": "hosted_scene_move",
           "kind": "async_function",
-          "line": 360,
+          "line": 370,
           "routes": [
             {
               "method": "POST",
@@ -9005,7 +9021,7 @@
         {
           "name": "hosted_scene_cut",
           "kind": "function",
-          "line": 362,
+          "line": 372,
           "routes": [
             {
               "method": "POST",
@@ -9016,7 +9032,7 @@
         {
           "name": "hosted_scene_map_memberships",
           "kind": "function",
-          "line": 365,
+          "line": 375,
           "routes": [
             {
               "method": "GET",
@@ -9027,7 +9043,7 @@
         {
           "name": "hosted_questionnaire_update",
           "kind": "async_function",
-          "line": 375,
+          "line": 385,
           "routes": [
             {
               "method": "PATCH",
@@ -9038,7 +9054,7 @@
         {
           "name": "hosted_questionnaire_delete",
           "kind": "function",
-          "line": 377,
+          "line": 387,
           "routes": [
             {
               "method": "DELETE",
@@ -9049,7 +9065,7 @@
         {
           "name": "hosted_question_create",
           "kind": "async_function",
-          "line": 379,
+          "line": 389,
           "routes": [
             {
               "method": "POST",
@@ -9060,7 +9076,7 @@
         {
           "name": "hosted_question_update",
           "kind": "async_function",
-          "line": 381,
+          "line": 391,
           "routes": [
             {
               "method": "PATCH",
@@ -9071,7 +9087,7 @@
         {
           "name": "hosted_question_delete",
           "kind": "function",
-          "line": 383,
+          "line": 393,
           "routes": [
             {
               "method": "DELETE",
@@ -9082,7 +9098,7 @@
         {
           "name": "hosted_questionnaire_populate",
           "kind": "async_function",
-          "line": 385,
+          "line": 395,
           "routes": [
             {
               "method": "POST",
@@ -9093,7 +9109,7 @@
         {
           "name": "hosted_review_markers",
           "kind": "function",
-          "line": 390,
+          "line": 400,
           "routes": [
             {
               "method": "GET",
@@ -9104,7 +9120,7 @@
         {
           "name": "hosted_review_marker_create",
           "kind": "async_function",
-          "line": 392,
+          "line": 402,
           "routes": [
             {
               "method": "POST",
@@ -9115,7 +9131,7 @@
         {
           "name": "hosted_review_marker_update",
           "kind": "async_function",
-          "line": 394,
+          "line": 404,
           "routes": [
             {
               "method": "PATCH",
@@ -9126,7 +9142,7 @@
         {
           "name": "hosted_review_marker_delete",
           "kind": "function",
-          "line": 396,
+          "line": 406,
           "routes": [
             {
               "method": "DELETE",
@@ -9137,7 +9153,7 @@
         {
           "name": "hosted_review_marker_populate",
           "kind": "async_function",
-          "line": 398,
+          "line": 408,
           "routes": [
             {
               "method": "POST",
@@ -9148,7 +9164,7 @@
         {
           "name": "hosted_review_marker_attach",
           "kind": "function",
-          "line": 402,
+          "line": 412,
           "routes": [
             {
               "method": "POST",
@@ -9159,7 +9175,7 @@
         {
           "name": "hosted_review_marker_detach",
           "kind": "function",
-          "line": 405,
+          "line": 415,
           "routes": [
             {
               "method": "DELETE",
@@ -9170,7 +9186,7 @@
         {
           "name": "hosted_review_participants",
           "kind": "function",
-          "line": 408,
+          "line": 418,
           "routes": [
             {
               "method": "GET",
@@ -9181,7 +9197,7 @@
         {
           "name": "hosted_review_participant_update",
           "kind": "async_function",
-          "line": 410,
+          "line": 420,
           "routes": [
             {
               "method": "PATCH",
@@ -9192,7 +9208,7 @@
         {
           "name": "hosted_review_participant_status",
           "kind": "async_function",
-          "line": 412,
+          "line": 422,
           "routes": [
             {
               "method": "PATCH",
@@ -9203,7 +9219,7 @@
         {
           "name": "hosted_review_participant_delete",
           "kind": "function",
-          "line": 414,
+          "line": 424,
           "routes": [
             {
               "method": "DELETE",
@@ -9214,7 +9230,7 @@
         {
           "name": "hosted_review_archive",
           "kind": "function",
-          "line": 417,
+          "line": 427,
           "routes": [
             {
               "method": "POST",
@@ -9225,7 +9241,7 @@
         {
           "name": "hosted_review_unarchive",
           "kind": "function",
-          "line": 419,
+          "line": 429,
           "routes": [
             {
               "method": "POST",
@@ -9236,7 +9252,7 @@
         {
           "name": "hosted_review_pause",
           "kind": "function",
-          "line": 421,
+          "line": 431,
           "routes": [
             {
               "method": "POST",
@@ -9247,7 +9263,7 @@
         {
           "name": "hosted_review_resume",
           "kind": "function",
-          "line": 423,
+          "line": 433,
           "routes": [
             {
               "method": "POST",
@@ -9258,7 +9274,7 @@
         {
           "name": "hosted_review_start",
           "kind": "function",
-          "line": 425,
+          "line": 435,
           "routes": [
             {
               "method": "POST",
@@ -9269,7 +9285,7 @@
         {
           "name": "hosted_review_duplicate",
           "kind": "function",
-          "line": 428,
+          "line": 438,
           "routes": [
             {
               "method": "POST",
@@ -9280,7 +9296,7 @@
         {
           "name": "hosted_review_reorder",
           "kind": "async_function",
-          "line": 431,
+          "line": 441,
           "routes": [
             {
               "method": "POST",
@@ -9291,7 +9307,7 @@
         {
           "name": "hosted_review_snapshot",
           "kind": "function",
-          "line": 436,
+          "line": 446,
           "routes": [
             {
               "method": "GET",
@@ -9302,7 +9318,7 @@
         {
           "name": "hosted_review_round",
           "kind": "function",
-          "line": 439,
+          "line": 449,
           "routes": [
             {
               "method": "GET",
@@ -9313,7 +9329,7 @@
         {
           "name": "hosted_review_feedback",
           "kind": "function",
-          "line": 441,
+          "line": 451,
           "routes": [
             {
               "method": "GET",
@@ -9324,7 +9340,7 @@
         {
           "name": "hosted_checkpoint_update",
           "kind": "async_function",
-          "line": 450,
+          "line": 460,
           "routes": [
             {
               "method": "PATCH",
@@ -9335,7 +9351,7 @@
         {
           "name": "hosted_checkpoint_delete",
           "kind": "function",
-          "line": 455,
+          "line": 465,
           "routes": [
             {
               "method": "DELETE",
@@ -9346,7 +9362,7 @@
         {
           "name": "hosted_checkpoint_compare",
           "kind": "function",
-          "line": 461,
+          "line": 471,
           "routes": [
             {
               "method": "GET",
@@ -9357,7 +9373,7 @@
         {
           "name": "hosted_checkpoint_preflight",
           "kind": "function",
-          "line": 463,
+          "line": 473,
           "routes": [
             {
               "method": "POST",
@@ -9368,7 +9384,7 @@
         {
           "name": "hosted_checkpoint_apply",
           "kind": "function",
-          "line": 465,
+          "line": 475,
           "routes": [
             {
               "method": "POST",
@@ -9379,7 +9395,7 @@
         {
           "name": "hosted_history_retention",
           "kind": "function",
-          "line": 469,
+          "line": 479,
           "routes": [
             {
               "method": "GET",
@@ -9390,7 +9406,7 @@
         {
           "name": "hosted_history_retention_put",
           "kind": "async_function",
-          "line": 471,
+          "line": 481,
           "routes": [
             {
               "method": "PUT",
@@ -9401,7 +9417,7 @@
         {
           "name": "hosted_history_sync",
           "kind": "async_function",
-          "line": 474,
+          "line": 484,
           "routes": [
             {
               "method": "POST",
@@ -9412,7 +9428,7 @@
         {
           "name": "hosted_history_gc",
           "kind": "function",
-          "line": 477,
+          "line": 487,
           "routes": [
             {
               "method": "POST",
@@ -9423,7 +9439,7 @@
         {
           "name": "hosted_history_repair",
           "kind": "function",
-          "line": 479,
+          "line": 489,
           "routes": [
             {
               "method": "POST",
@@ -9434,7 +9450,7 @@
         {
           "name": "hosted_history_edit_baseline",
           "kind": "function",
-          "line": 481,
+          "line": 491,
           "routes": [
             {
               "method": "POST",
@@ -9445,7 +9461,7 @@
         {
           "name": "hosted_undo_begin",
           "kind": "function",
-          "line": 485,
+          "line": 495,
           "routes": [
             {
               "method": "POST",
@@ -9456,7 +9472,7 @@
         {
           "name": "hosted_undo_finish",
           "kind": "function",
-          "line": 488,
+          "line": 498,
           "routes": [
             {
               "method": "POST",
@@ -9467,7 +9483,7 @@
         {
           "name": "hosted_undo_apply",
           "kind": "function",
-          "line": 491,
+          "line": 501,
           "routes": [
             {
               "method": "POST",
@@ -9478,7 +9494,7 @@
         {
           "name": "hosted_undo_rollback",
           "kind": "function",
-          "line": 494,
+          "line": 504,
           "routes": [
             {
               "method": "POST",
@@ -9489,7 +9505,7 @@
         {
           "name": "hosted_recovery_backup_update",
           "kind": "function",
-          "line": 503,
+          "line": 513,
           "routes": [
             {
               "method": "POST",
@@ -9500,7 +9516,7 @@
         {
           "name": "hosted_recovery_status",
           "kind": "function",
-          "line": 505,
+          "line": 515,
           "routes": [
             {
               "method": "GET",
@@ -9511,27 +9527,27 @@
         {
           "name": "_story_template_catalog_raw",
           "kind": "function",
-          "line": 512
+          "line": 522
         },
         {
           "name": "_story_template",
           "kind": "function",
-          "line": 519
+          "line": 529
         },
         {
           "name": "_story_source_items",
           "kind": "function",
-          "line": 526
+          "line": 536
         },
         {
           "name": "_story_catalog_for_project",
           "kind": "function",
-          "line": 537
+          "line": 547
         },
         {
           "name": "hosted_canvas_populate_catalog",
           "kind": "function",
-          "line": 550,
+          "line": 560,
           "routes": [
             {
               "method": "GET",
@@ -9542,7 +9558,7 @@
         {
           "name": "hosted_canvas_populate",
           "kind": "async_function",
-          "line": 553,
+          "line": 563,
           "routes": [
             {
               "method": "POST",
@@ -9553,7 +9569,7 @@
         {
           "name": "hosted_canvas_node_update",
           "kind": "async_function",
-          "line": 588,
+          "line": 598,
           "routes": [
             {
               "method": "PATCH",
@@ -9564,7 +9580,7 @@
         {
           "name": "hosted_canvas_node_delete",
           "kind": "function",
-          "line": 590,
+          "line": 600,
           "routes": [
             {
               "method": "DELETE",
@@ -9575,7 +9591,7 @@
         {
           "name": "hosted_canvas_edge_update",
           "kind": "async_function",
-          "line": 592,
+          "line": 602,
           "routes": [
             {
               "method": "PATCH",
@@ -9586,7 +9602,7 @@
         {
           "name": "hosted_canvas_edge_delete",
           "kind": "function",
-          "line": 594,
+          "line": 604,
           "routes": [
             {
               "method": "DELETE",
@@ -9597,7 +9613,7 @@
         {
           "name": "hosted_canvas_node_positions",
           "kind": "async_function",
-          "line": 597,
+          "line": 607,
           "routes": [
             {
               "method": "PATCH",
@@ -9608,7 +9624,7 @@
         {
           "name": "hosted_canvas_delete_batch",
           "kind": "async_function",
-          "line": 609,
+          "line": 619,
           "routes": [
             {
               "method": "POST",
@@ -9619,7 +9635,7 @@
         {
           "name": "hosted_canvas_reorder",
           "kind": "async_function",
-          "line": 619,
+          "line": 629,
           "routes": [
             {
               "method": "POST",
@@ -9630,12 +9646,12 @@
         {
           "name": "_canvas_version_payload",
           "kind": "function",
-          "line": 625
+          "line": 635
         },
         {
           "name": "hosted_canvas_versions",
           "kind": "function",
-          "line": 629,
+          "line": 639,
           "routes": [
             {
               "method": "GET",
@@ -9646,7 +9662,7 @@
         {
           "name": "hosted_canvas_version_detail",
           "kind": "function",
-          "line": 633,
+          "line": 643,
           "routes": [
             {
               "method": "GET",
@@ -9657,12 +9673,12 @@
         {
           "name": "_create_canvas_version",
           "kind": "function",
-          "line": 637
+          "line": 647
         },
         {
           "name": "hosted_canvas_version_create",
           "kind": "async_function",
-          "line": 649,
+          "line": 659,
           "routes": [
             {
               "method": "POST",
@@ -9673,7 +9689,7 @@
         {
           "name": "hosted_canvas_version_rename",
           "kind": "async_function",
-          "line": 654,
+          "line": 664,
           "routes": [
             {
               "method": "PATCH",
@@ -9684,7 +9700,7 @@
         {
           "name": "hosted_canvas_version_refresh",
           "kind": "async_function",
-          "line": 657,
+          "line": 667,
           "routes": [
             {
               "method": "POST",
@@ -9695,7 +9711,7 @@
         {
           "name": "hosted_canvas_version_activate",
           "kind": "function",
-          "line": 663,
+          "line": 673,
           "routes": [
             {
               "method": "POST",
@@ -9706,7 +9722,7 @@
         {
           "name": "hosted_canvas_version_delete",
           "kind": "function",
-          "line": 681,
+          "line": 691,
           "routes": [
             {
               "method": "DELETE",
@@ -9717,7 +9733,7 @@
         {
           "name": "hosted_canvas_version_item_delete",
           "kind": "function",
-          "line": 683,
+          "line": 693,
           "routes": [
             {
               "method": "DELETE",
@@ -9728,7 +9744,7 @@
         {
           "name": "hosted_canvas_developmental_layout",
           "kind": "async_function",
-          "line": 686,
+          "line": 696,
           "routes": [
             {
               "method": "POST",
@@ -9739,7 +9755,7 @@
         {
           "name": "hosted_canvas_developmental_promote",
           "kind": "function",
-          "line": 688,
+          "line": 698,
           "routes": [
             {
               "method": "POST",
@@ -9750,7 +9766,7 @@
         {
           "name": "hosted_developmental_preflight",
           "kind": "async_function",
-          "line": 690,
+          "line": 700,
           "routes": [
             {
               "method": "POST",
@@ -9761,7 +9777,7 @@
         {
           "name": "hosted_developmental_apply",
           "kind": "async_function",
-          "line": 692,
+          "line": 702,
           "routes": [
             {
               "method": "POST",
@@ -9772,7 +9788,7 @@
         {
           "name": "hosted_map_line_update",
           "kind": "async_function",
-          "line": 700,
+          "line": 710,
           "routes": [
             {
               "method": "PATCH",
@@ -9783,7 +9799,7 @@
         {
           "name": "hosted_map_line_delete",
           "kind": "function",
-          "line": 702,
+          "line": 712,
           "routes": [
             {
               "method": "DELETE",
@@ -9794,7 +9810,7 @@
         {
           "name": "hosted_map_item_update",
           "kind": "async_function",
-          "line": 704,
+          "line": 714,
           "routes": [
             {
               "method": "PATCH",
@@ -9805,7 +9821,7 @@
         {
           "name": "hosted_map_item_delete",
           "kind": "function",
-          "line": 706,
+          "line": 716,
           "routes": [
             {
               "method": "DELETE",
@@ -9816,7 +9832,7 @@
         {
           "name": "hosted_map_junction_update",
           "kind": "async_function",
-          "line": 708,
+          "line": 718,
           "routes": [
             {
               "method": "PATCH",
@@ -9827,7 +9843,7 @@
         {
           "name": "hosted_map_junction_delete",
           "kind": "function",
-          "line": 710,
+          "line": 720,
           "routes": [
             {
               "method": "DELETE",
@@ -9838,7 +9854,7 @@
         {
           "name": "hosted_maps_reorder",
           "kind": "async_function",
-          "line": 713,
+          "line": 723,
           "routes": [
             {
               "method": "POST",
@@ -9849,7 +9865,7 @@
         {
           "name": "hosted_map_lines_reorder",
           "kind": "async_function",
-          "line": 718,
+          "line": 728,
           "routes": [
             {
               "method": "POST",
@@ -9860,7 +9876,7 @@
         {
           "name": "hosted_map_duplicate",
           "kind": "function",
-          "line": 723,
+          "line": 733,
           "routes": [
             {
               "method": "POST",
@@ -9871,7 +9887,7 @@
         {
           "name": "hosted_map_auto_arrange",
           "kind": "function",
-          "line": 730,
+          "line": 740,
           "routes": [
             {
               "method": "POST",
@@ -9882,7 +9898,7 @@
         {
           "name": "hosted_map_line_sync",
           "kind": "function",
-          "line": 746,
+          "line": 756,
           "routes": [
             {
               "method": "POST",
@@ -9893,7 +9909,7 @@
         {
           "name": "hosted_map_populate_catalog",
           "kind": "function",
-          "line": 748,
+          "line": 758,
           "routes": [
             {
               "method": "GET",
@@ -9904,12 +9920,12 @@
         {
           "name": "_map_item_payload",
           "kind": "function",
-          "line": 750
+          "line": 760
         },
         {
           "name": "hosted_map_populate",
           "kind": "async_function",
-          "line": 760,
+          "line": 770,
           "routes": [
             {
               "method": "POST",
@@ -9920,7 +9936,7 @@
         {
           "name": "hosted_map_line_populate",
           "kind": "async_function",
-          "line": 777,
+          "line": 787,
           "routes": [
             {
               "method": "POST",
@@ -9931,7 +9947,7 @@
         {
           "name": "hosted_map_line_duplicate",
           "kind": "function",
-          "line": 792,
+          "line": 802,
           "routes": [
             {
               "method": "POST",
@@ -9942,7 +9958,7 @@
         {
           "name": "hosted_make_manuscript",
           "kind": "function",
-          "line": 798,
+          "line": 808,
           "routes": [
             {
               "method": "POST",
@@ -9953,17 +9969,17 @@
         {
           "name": "_active_review_snapshot",
           "kind": "function",
-          "line": 825
+          "line": 835
         },
         {
           "name": "_review_feedback_rows",
           "kind": "function",
-          "line": 836
+          "line": 846
         },
         {
           "name": "hosted_review_populate_options",
           "kind": "function",
-          "line": 845,
+          "line": 855,
           "routes": [
             {
               "method": "GET",
@@ -9974,7 +9990,7 @@
         {
           "name": "hosted_review_populate",
           "kind": "async_function",
-          "line": 850,
+          "line": 860,
           "routes": [
             {
               "method": "POST",
@@ -9985,7 +10001,7 @@
         {
           "name": "hosted_review_participant_reader",
           "kind": "function",
-          "line": 865,
+          "line": 875,
           "routes": [
             {
               "method": "GET",
@@ -9996,7 +10012,7 @@
         {
           "name": "hosted_review_participant_begin",
           "kind": "function",
-          "line": 877,
+          "line": 887,
           "routes": [
             {
               "method": "POST",
@@ -10007,7 +10023,7 @@
         {
           "name": "hosted_review_participant_bookmark",
           "kind": "async_function",
-          "line": 886,
+          "line": 896,
           "routes": [
             {
               "method": "PUT",
@@ -10018,7 +10034,7 @@
         {
           "name": "hosted_review_participant_bookmark_clear",
           "kind": "function",
-          "line": 895,
+          "line": 905,
           "routes": [
             {
               "method": "DELETE",
@@ -10029,7 +10045,7 @@
         {
           "name": "hosted_review_participant_complete",
           "kind": "function",
-          "line": 900,
+          "line": 910,
           "routes": [
             {
               "method": "POST",
@@ -10040,7 +10056,7 @@
         {
           "name": "hosted_review_questionnaire_attach",
           "kind": "async_function",
-          "line": 907,
+          "line": 917,
           "routes": [
             {
               "method": "POST",
@@ -10051,7 +10067,7 @@
         {
           "name": "hosted_review_questionnaire_detach",
           "kind": "function",
-          "line": 915,
+          "line": 925,
           "routes": [
             {
               "method": "DELETE",
@@ -10062,7 +10078,7 @@
         {
           "name": "hosted_review_general_feedback",
           "kind": "async_function",
-          "line": 920,
+          "line": 930,
           "routes": [
             {
               "method": "PUT",
@@ -10073,12 +10089,12 @@
         {
           "name": "_review_participant_feedback_create",
           "kind": "function",
-          "line": 928
+          "line": 938
         },
         {
           "name": "hosted_review_highlight_create",
           "kind": "async_function",
-          "line": 936,
+          "line": 946,
           "routes": [
             {
               "method": "POST",
@@ -10089,7 +10105,7 @@
         {
           "name": "hosted_review_comment_create",
           "kind": "async_function",
-          "line": 938,
+          "line": 948,
           "routes": [
             {
               "method": "POST",
@@ -10100,7 +10116,7 @@
         {
           "name": "hosted_review_suggestion_create",
           "kind": "async_function",
-          "line": 940,
+          "line": 950,
           "routes": [
             {
               "method": "POST",
@@ -10111,7 +10127,7 @@
         {
           "name": "hosted_review_feedback_status",
           "kind": "async_function",
-          "line": 946,
+          "line": 956,
           "routes": [
             {
               "method": "PATCH",
@@ -10122,7 +10138,7 @@
         {
           "name": "hosted_review_feedback_task",
           "kind": "async_function",
-          "line": 957,
+          "line": 967,
           "routes": [
             {
               "method": "POST",
@@ -10133,7 +10149,7 @@
         {
           "name": "hosted_review_item_context",
           "kind": "function",
-          "line": 966,
+          "line": 976,
           "routes": [
             {
               "method": "GET",
@@ -10144,7 +10160,7 @@
         {
           "name": "hosted_review_suggestion_reject",
           "kind": "function",
-          "line": 973,
+          "line": 983,
           "routes": [
             {
               "method": "POST",
@@ -10155,7 +10171,7 @@
         {
           "name": "hosted_review_suggestion_accept",
           "kind": "function",
-          "line": 978,
+          "line": 988,
           "routes": [
             {
               "method": "POST",
@@ -10166,7 +10182,7 @@
         {
           "name": "hosted_review_participants_populate",
           "kind": "async_function",
-          "line": 994,
+          "line": 1004,
           "routes": [
             {
               "method": "POST",
@@ -10177,7 +10193,7 @@
         {
           "name": "hosted_review_checkpoint_update",
           "kind": "function",
-          "line": 1006,
+          "line": 1016,
           "routes": [
             {
               "method": "POST",
@@ -10188,7 +10204,7 @@
         {
           "name": "hosted_review_round_close",
           "kind": "function",
-          "line": 1014,
+          "line": 1024,
           "routes": [
             {
               "method": "POST",
@@ -10199,7 +10215,7 @@
         {
           "name": "hosted_review_round_reopen",
           "kind": "function",
-          "line": 1024,
+          "line": 1034,
           "routes": [
             {
               "method": "POST",
@@ -10210,17 +10226,17 @@
         {
           "name": "_chapter_blocks",
           "kind": "function",
-          "line": 1033
+          "line": 1043
         },
         {
           "name": "_renumber_chapter",
           "kind": "function",
-          "line": 1037
+          "line": 1047
         },
         {
           "name": "hosted_manuscript_image_insert",
           "kind": "async_function",
-          "line": 1044,
+          "line": 1054,
           "routes": [
             {
               "method": "POST",
@@ -10231,7 +10247,7 @@
         {
           "name": "hosted_manuscript_image_move",
           "kind": "async_function",
-          "line": 1086,
+          "line": 1096,
           "routes": [
             {
               "method": "POST",
@@ -10242,12 +10258,12 @@
         {
           "name": "_revision_snapshot",
           "kind": "function",
-          "line": 1112
+          "line": 1122
         },
         {
           "name": "hosted_history_revision_asset",
           "kind": "function",
-          "line": 1124,
+          "line": 1134,
           "routes": [
             {
               "method": "GET",
@@ -10258,7 +10274,7 @@
         {
           "name": "hosted_history_compare_current",
           "kind": "function",
-          "line": 1132,
+          "line": 1142,
           "routes": [
             {
               "method": "GET",
@@ -10269,7 +10285,7 @@
         {
           "name": "hosted_history_revision_checkpoint",
           "kind": "async_function",
-          "line": 1147,
+          "line": 1157,
           "routes": [
             {
               "method": "POST",
@@ -10280,7 +10296,7 @@
         {
           "name": "hosted_history_revision_restore",
           "kind": "function",
-          "line": 1153,
+          "line": 1163,
           "routes": [
             {
               "method": "POST",
@@ -10291,17 +10307,17 @@
         {
           "name": "_upload_bytes",
           "kind": "async_function",
-          "line": 1164
+          "line": 1174
         },
         {
           "name": "_download_name",
           "kind": "function",
-          "line": 1175
+          "line": 1185
         },
         {
           "name": "hosted_import_readiness",
           "kind": "function",
-          "line": 1181,
+          "line": 1191,
           "routes": [
             {
               "method": "GET",
@@ -10312,7 +10328,7 @@
         {
           "name": "hosted_import_manuscript",
           "kind": "async_function",
-          "line": 1187,
+          "line": 1198,
           "routes": [
             {
               "method": "POST",
@@ -10323,7 +10339,7 @@
         {
           "name": "hosted_import_new_project",
           "kind": "async_function",
-          "line": 1199,
+          "line": 1210,
           "routes": [
             {
               "method": "POST",
@@ -10332,9 +10348,42 @@
           ]
         },
         {
+          "name": "hosted_document_import_status",
+          "kind": "function",
+          "line": 1231,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/api/import/jobs/{job_id}"
+            }
+          ]
+        },
+        {
+          "name": "hosted_document_import_step",
+          "kind": "async_function",
+          "line": 1238,
+          "routes": [
+            {
+              "method": "POST",
+              "path": "/api/import/jobs/{job_id}/step"
+            }
+          ]
+        },
+        {
+          "name": "hosted_document_import_finish",
+          "kind": "async_function",
+          "line": 1245,
+          "routes": [
+            {
+              "method": "POST",
+              "path": "/api/import/jobs/{job_id}/finish"
+            }
+          ]
+        },
+        {
           "name": "hosted_import_document_tabs",
           "kind": "async_function",
-          "line": 1215,
+          "line": 1252,
           "routes": [
             {
               "method": "POST",
@@ -10345,7 +10394,7 @@
         {
           "name": "hosted_export_docx",
           "kind": "function",
-          "line": 1225,
+          "line": 1262,
           "routes": [
             {
               "method": "GET",
@@ -10356,7 +10405,7 @@
         {
           "name": "hosted_export_pdf",
           "kind": "async_function",
-          "line": 1232,
+          "line": 1269,
           "routes": [
             {
               "method": "POST",
@@ -10367,12 +10416,12 @@
         {
           "name": "_hosted_json_upload",
           "kind": "async_function",
-          "line": 1242
+          "line": 1279
         },
         {
           "name": "hosted_project_json_preview",
           "kind": "async_function",
-          "line": 1251,
+          "line": 1288,
           "routes": [
             {
               "method": "POST",
@@ -10383,7 +10432,7 @@
         {
           "name": "hosted_project_json_import",
           "kind": "async_function",
-          "line": 1260,
+          "line": 1297,
           "routes": [
             {
               "method": "POST",
@@ -10394,7 +10443,7 @@
         {
           "name": "hosted_any_json_preview",
           "kind": "async_function",
-          "line": 1269,
+          "line": 1306,
           "routes": [
             {
               "method": "POST",
@@ -10405,7 +10454,7 @@
         {
           "name": "hosted_any_json_import",
           "kind": "async_function",
-          "line": 1277,
+          "line": 1314,
           "routes": [
             {
               "method": "POST",
@@ -10416,7 +10465,7 @@
         {
           "name": "hosted_project_json_export",
           "kind": "function",
-          "line": 1285,
+          "line": 1322,
           "routes": [
             {
               "method": "GET",
@@ -10427,7 +10476,7 @@
         {
           "name": "hosted_portable_review_status",
           "kind": "function",
-          "line": 1296,
+          "line": 1333,
           "routes": [
             {
               "method": "GET",
@@ -10438,7 +10487,7 @@
         {
           "name": "hosted_portable_review_unavailable",
           "kind": "function",
-          "line": 1319,
+          "line": 1356,
           "routes": [
             {
               "method": "POST",
@@ -10517,7 +10566,7 @@
         {
           "name": "hosted_backup_recovery_unavailable",
           "kind": "function",
-          "line": 1342,
+          "line": 1379,
           "routes": [
             {
               "method": "POST",
@@ -10772,32 +10821,32 @@
     },
     {
       "file": "src/hosted/packages.py",
-      "lines": 578,
+      "lines": 634,
       "symbols": [
         {
           "name": "_fields",
           "kind": "function",
-          "line": 43
+          "line": 45
         },
         {
           "name": "_public",
           "kind": "function",
-          "line": 47
+          "line": 49
         },
         {
           "name": "_json_safe",
           "kind": "function",
-          "line": 53
+          "line": 55
         },
         {
           "name": "_restore_safe",
           "kind": "function",
-          "line": 61
+          "line": 63
         },
         {
           "name": "HostedProjectPackageService",
           "kind": "class",
-          "line": 70
+          "line": 72
         }
       ]
     },
@@ -17897,7 +17946,7 @@
     },
     {
       "file": "static/js/features/manuscript/imports.js",
-      "lines": 125,
+      "lines": 156,
       "symbols": [
         {
           "name": "beginDocumentImport",
@@ -17972,27 +18021,32 @@
         {
           "name": "finish",
           "kind": "function",
-          "line": 89
+          "line": 90
         },
         {
           "name": "dismissImport",
           "kind": "function",
-          "line": 90
+          "line": 91
         },
         {
           "name": "heading",
           "kind": "function",
-          "line": 107
+          "line": 109
         },
         {
           "name": "performManuscriptImport",
           "kind": "function",
-          "line": 117
+          "line": 119
         },
         {
           "name": "performManuscriptImportAsNewProject",
           "kind": "function",
-          "line": 121
+          "line": 123
+        },
+        {
+          "name": "performHostedProjectImport",
+          "kind": "function",
+          "line": 130
         }
       ]
     },
@@ -24661,1402 +24715,1423 @@
       "method": "POST",
       "function": "hosted_profile_create_disabled",
       "file": "src/hosted/http_compat.py",
-      "line": 117,
+      "line": 127,
       "path": "/api/profiles"
     },
     {
       "method": "POST",
       "function": "hosted_profile_activate",
       "file": "src/hosted/http_compat.py",
-      "line": 121,
+      "line": 131,
       "path": "/api/profiles/{user_id}/activate"
     },
     {
       "method": "POST",
       "function": "hosted_danger_challenge",
       "file": "src/hosted/http_compat.py",
-      "line": 126,
+      "line": 136,
       "path": "/api/danger/challenge"
     },
     {
       "method": "POST",
       "function": "hosted_delete_all_data",
       "file": "src/hosted/http_compat.py",
-      "line": 132,
+      "line": 142,
       "path": "/api/danger/delete-all-data"
     },
     {
       "method": "PATCH",
       "function": "hosted_project_title",
       "file": "src/hosted/http_compat.py",
-      "line": 136,
+      "line": 146,
       "path": "/api/project/title"
     },
     {
       "method": "POST",
       "function": "hosted_find",
       "file": "src/hosted/http_compat.py",
-      "line": 148,
+      "line": 158,
       "path": "/api/find"
     },
     {
       "method": "POST",
       "function": "hosted_replace",
       "file": "src/hosted/http_compat.py",
-      "line": 171,
+      "line": 181,
       "path": "/api/replace"
     },
     {
       "method": "GET",
       "function": "hosted_icon_markers",
       "file": "src/hosted/http_compat.py",
-      "line": 205,
+      "line": 215,
       "path": "/api/icon-markers"
     },
     {
       "method": "POST",
       "function": "hosted_icon_marker_create",
       "file": "src/hosted/http_compat.py",
-      "line": 207,
+      "line": 217,
       "path": "/api/icon-markers"
     },
     {
       "method": "PATCH",
       "function": "hosted_icon_marker_update",
       "file": "src/hosted/http_compat.py",
-      "line": 209,
+      "line": 219,
       "path": "/api/icon-markers/{mid}"
     },
     {
       "method": "DELETE",
       "function": "hosted_icon_marker_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 211,
+      "line": 221,
       "path": "/api/icon-markers/{mid}"
     },
     {
       "method": "PATCH",
       "function": "hosted_label_update",
       "file": "src/hosted/http_compat.py",
-      "line": 214,
+      "line": 224,
       "path": "/api/labels/{lid}"
     },
     {
       "method": "GET",
       "function": "hosted_label_usage",
       "file": "src/hosted/http_compat.py",
-      "line": 216,
+      "line": 226,
       "path": "/api/labels/{lid}/usage"
     },
     {
       "method": "DELETE",
       "function": "hosted_label_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 219,
+      "line": 229,
       "path": "/api/labels/{lid}"
     },
     {
       "method": "POST",
       "function": "hosted_clear_highlights",
       "file": "src/hosted/http_compat.py",
-      "line": 221,
+      "line": 231,
       "path": "/api/annotations/clear-highlights"
     },
     {
       "method": "GET",
       "function": "hosted_comment_get",
       "file": "src/hosted/http_compat.py",
-      "line": 229,
+      "line": 239,
       "path": "/api/comments/{tid}"
     },
     {
       "method": "POST",
       "function": "hosted_comment_delete_action",
       "file": "src/hosted/http_compat.py",
-      "line": 232,
+      "line": 242,
       "path": "/api/comments/{tid}/delete"
     },
     {
       "method": "PATCH",
       "function": "hosted_comment_message_update",
       "file": "src/hosted/http_compat.py",
-      "line": 234,
+      "line": 244,
       "path": "/api/comment-messages/{mid}"
     },
     {
       "method": "GET",
       "function": "hosted_references",
       "file": "src/hosted/http_compat.py",
-      "line": 238,
+      "line": 248,
       "path": "/api/references"
     },
     {
       "method": "POST",
       "function": "hosted_reference_create",
       "file": "src/hosted/http_compat.py",
-      "line": 244,
+      "line": 254,
       "path": "/api/references"
     },
     {
       "method": "DELETE",
       "function": "hosted_reference_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 246,
+      "line": 256,
       "path": "/api/references/{rid}"
     },
     {
       "method": "GET",
       "function": "hosted_cuts",
       "file": "src/hosted/http_compat.py",
-      "line": 254,
+      "line": 264,
       "path": "/api/cuts"
     },
     {
       "method": "POST",
       "function": "hosted_cut_create",
       "file": "src/hosted/http_compat.py",
-      "line": 256,
+      "line": 266,
       "path": "/api/cuts"
     },
     {
       "method": "PATCH",
       "function": "hosted_cut_update",
       "file": "src/hosted/http_compat.py",
-      "line": 258,
+      "line": 268,
       "path": "/api/cuts/{cid}"
     },
     {
       "method": "DELETE",
       "function": "hosted_cut_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 260,
+      "line": 270,
       "path": "/api/cuts/{cid}"
     },
     {
       "method": "POST",
       "function": "hosted_cut_insert",
       "file": "src/hosted/http_compat.py",
-      "line": 262,
+      "line": 272,
       "path": "/api/cuts/{cid}/insert"
     },
     {
       "method": "GET",
       "function": "hosted_cuts_export",
       "file": "src/hosted/http_compat.py",
-      "line": 279,
+      "line": 289,
       "path": "/api/cuts/export"
     },
     {
       "method": "POST",
       "function": "hosted_cuts_import",
       "file": "src/hosted/http_compat.py",
-      "line": 283,
+      "line": 293,
       "path": "/api/cuts/import"
     },
     {
       "method": "PATCH",
       "function": "hosted_milestone_update",
       "file": "src/hosted/http_compat.py",
-      "line": 292,
+      "line": 302,
       "path": "/api/task-milestones/{mid}"
     },
     {
       "method": "DELETE",
       "function": "hosted_milestone_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 295,
+      "line": 305,
       "path": "/api/task-milestones/{mid}"
     },
     {
       "method": "POST",
       "function": "hosted_task_duplicate",
       "file": "src/hosted/http_compat.py",
-      "line": 297,
+      "line": 307,
       "path": "/api/tasks/{tid}/duplicate"
     },
     {
       "method": "POST",
       "function": "hosted_milestone_reorder",
       "file": "src/hosted/http_compat.py",
-      "line": 302,
+      "line": 312,
       "path": "/api/tasks/{tid}/milestones/reorder"
     },
     {
       "method": "POST",
       "function": "hosted_chapter_reorder",
       "file": "src/hosted/http_compat.py",
-      "line": 314,
+      "line": 324,
       "path": "/api/chapters/reorder"
     },
     {
       "method": "POST",
       "function": "hosted_chapter_dissolve",
       "file": "src/hosted/http_compat.py",
-      "line": 320,
+      "line": 330,
       "path": "/api/chapters/{cid}/dissolve"
     },
     {
       "method": "DELETE",
       "function": "hosted_chapter_permanent",
       "file": "src/hosted/http_compat.py",
-      "line": 331,
+      "line": 341,
       "path": "/api/chapters/{cid}/permanent"
     },
     {
       "method": "POST",
       "function": "hosted_chapter_split",
       "file": "src/hosted/http_compat.py",
-      "line": 336,
+      "line": 346,
       "path": "/api/chapters/{cid}/split"
     },
     {
       "method": "PUT",
       "function": "hosted_scene_blocks",
       "file": "src/hosted/http_compat.py",
-      "line": 342,
+      "line": 352,
       "path": "/api/scenes/{sid}/blocks"
     },
     {
       "method": "POST",
       "function": "hosted_scene_extend",
       "file": "src/hosted/http_compat.py",
-      "line": 350,
+      "line": 360,
       "path": "/api/scenes/{sid}/extend"
     },
     {
       "method": "POST",
       "function": "hosted_scene_remove_blocks",
       "file": "src/hosted/http_compat.py",
-      "line": 355,
+      "line": 365,
       "path": "/api/scenes/{sid}/remove-blocks"
     },
     {
       "method": "POST",
       "function": "hosted_scene_move",
       "file": "src/hosted/http_compat.py",
-      "line": 360,
+      "line": 370,
       "path": "/api/scenes/{sid}/move"
     },
     {
       "method": "POST",
       "function": "hosted_scene_cut",
       "file": "src/hosted/http_compat.py",
-      "line": 362,
+      "line": 372,
       "path": "/api/scenes/{sid}/cut"
     },
     {
       "method": "GET",
       "function": "hosted_scene_map_memberships",
       "file": "src/hosted/http_compat.py",
-      "line": 365,
+      "line": 375,
       "path": "/api/scenes/{scene_id}/map-memberships"
     },
     {
       "method": "PATCH",
       "function": "hosted_questionnaire_update",
       "file": "src/hosted/http_compat.py",
-      "line": 375,
+      "line": 385,
       "path": "/api/questionnaires/{questionnaire_id}"
     },
     {
       "method": "DELETE",
       "function": "hosted_questionnaire_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 377,
+      "line": 387,
       "path": "/api/questionnaires/{questionnaire_id}"
     },
     {
       "method": "POST",
       "function": "hosted_question_create",
       "file": "src/hosted/http_compat.py",
-      "line": 379,
+      "line": 389,
       "path": "/api/questionnaires/{questionnaire_id}/questions"
     },
     {
       "method": "PATCH",
       "function": "hosted_question_update",
       "file": "src/hosted/http_compat.py",
-      "line": 381,
+      "line": 391,
       "path": "/api/questionnaire-questions/{question_id}"
     },
     {
       "method": "DELETE",
       "function": "hosted_question_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 383,
+      "line": 393,
       "path": "/api/questionnaire-questions/{question_id}"
     },
     {
       "method": "POST",
       "function": "hosted_questionnaire_populate",
       "file": "src/hosted/http_compat.py",
-      "line": 385,
+      "line": 395,
       "path": "/api/questionnaires/populate"
     },
     {
       "method": "GET",
       "function": "hosted_review_markers",
       "file": "src/hosted/http_compat.py",
-      "line": 390,
+      "line": 400,
       "path": "/api/review-markers"
     },
     {
       "method": "POST",
       "function": "hosted_review_marker_create",
       "file": "src/hosted/http_compat.py",
-      "line": 392,
+      "line": 402,
       "path": "/api/review-markers"
     },
     {
       "method": "PATCH",
       "function": "hosted_review_marker_update",
       "file": "src/hosted/http_compat.py",
-      "line": 394,
+      "line": 404,
       "path": "/api/review-markers/{marker_id}"
     },
     {
       "method": "DELETE",
       "function": "hosted_review_marker_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 396,
+      "line": 406,
       "path": "/api/review-markers/{marker_id}"
     },
     {
       "method": "POST",
       "function": "hosted_review_marker_populate",
       "file": "src/hosted/http_compat.py",
-      "line": 398,
+      "line": 408,
       "path": "/api/review-markers/populate"
     },
     {
       "method": "POST",
       "function": "hosted_review_marker_attach",
       "file": "src/hosted/http_compat.py",
-      "line": 402,
+      "line": 412,
       "path": "/api/reviews/{rid}/markers/{marker_id}"
     },
     {
       "method": "DELETE",
       "function": "hosted_review_marker_detach",
       "file": "src/hosted/http_compat.py",
-      "line": 405,
+      "line": 415,
       "path": "/api/reviews/{rid}/markers/{marker_id}"
     },
     {
       "method": "GET",
       "function": "hosted_review_participants",
       "file": "src/hosted/http_compat.py",
-      "line": 408,
+      "line": 418,
       "path": "/api/reviews/{rid}/participants"
     },
     {
       "method": "PATCH",
       "function": "hosted_review_participant_update",
       "file": "src/hosted/http_compat.py",
-      "line": 410,
+      "line": 420,
       "path": "/api/review-participants/{participant_id}"
     },
     {
       "method": "PATCH",
       "function": "hosted_review_participant_status",
       "file": "src/hosted/http_compat.py",
-      "line": 412,
+      "line": 422,
       "path": "/api/review-participants/{participant_id}/status"
     },
     {
       "method": "DELETE",
       "function": "hosted_review_participant_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 414,
+      "line": 424,
       "path": "/api/review-participants/{participant_id}"
     },
     {
       "method": "POST",
       "function": "hosted_review_archive",
       "file": "src/hosted/http_compat.py",
-      "line": 417,
+      "line": 427,
       "path": "/api/reviews/{rid}/archive"
     },
     {
       "method": "POST",
       "function": "hosted_review_unarchive",
       "file": "src/hosted/http_compat.py",
-      "line": 419,
+      "line": 429,
       "path": "/api/reviews/{rid}/unarchive"
     },
     {
       "method": "POST",
       "function": "hosted_review_pause",
       "file": "src/hosted/http_compat.py",
-      "line": 421,
+      "line": 431,
       "path": "/api/reviews/{rid}/pause"
     },
     {
       "method": "POST",
       "function": "hosted_review_resume",
       "file": "src/hosted/http_compat.py",
-      "line": 423,
+      "line": 433,
       "path": "/api/reviews/{rid}/resume"
     },
     {
       "method": "POST",
       "function": "hosted_review_start",
       "file": "src/hosted/http_compat.py",
-      "line": 425,
+      "line": 435,
       "path": "/api/reviews/{rid}/start"
     },
     {
       "method": "POST",
       "function": "hosted_review_duplicate",
       "file": "src/hosted/http_compat.py",
-      "line": 428,
+      "line": 438,
       "path": "/api/reviews/{rid}/duplicate"
     },
     {
       "method": "POST",
       "function": "hosted_review_reorder",
       "file": "src/hosted/http_compat.py",
-      "line": 431,
+      "line": 441,
       "path": "/api/reviews/reorder"
     },
     {
       "method": "GET",
       "function": "hosted_review_snapshot",
       "file": "src/hosted/http_compat.py",
-      "line": 436,
+      "line": 446,
       "path": "/api/reviews/{rid}/snapshot"
     },
     {
       "method": "GET",
       "function": "hosted_review_round",
       "file": "src/hosted/http_compat.py",
-      "line": 439,
+      "line": 449,
       "path": "/api/reviews/{rid}/manuscript-round"
     },
     {
       "method": "GET",
       "function": "hosted_review_feedback",
       "file": "src/hosted/http_compat.py",
-      "line": 441,
+      "line": 451,
       "path": "/api/reviews/{rid}/feedback"
     },
     {
       "method": "PATCH",
       "function": "hosted_checkpoint_update",
       "file": "src/hosted/http_compat.py",
-      "line": 450,
+      "line": 460,
       "path": "/api/checkpoints/{cid}"
     },
     {
       "method": "DELETE",
       "function": "hosted_checkpoint_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 455,
+      "line": 465,
       "path": "/api/checkpoints/{cid}"
     },
     {
       "method": "GET",
       "function": "hosted_checkpoint_compare",
       "file": "src/hosted/http_compat.py",
-      "line": 461,
+      "line": 471,
       "path": "/api/checkpoints/compare/versions"
     },
     {
       "method": "POST",
       "function": "hosted_checkpoint_preflight",
       "file": "src/hosted/http_compat.py",
-      "line": 463,
+      "line": 473,
       "path": "/api/checkpoints/{cid}/preflight"
     },
     {
       "method": "POST",
       "function": "hosted_checkpoint_apply",
       "file": "src/hosted/http_compat.py",
-      "line": 465,
+      "line": 475,
       "path": "/api/checkpoints/{cid}/apply"
     },
     {
       "method": "GET",
       "function": "hosted_history_retention",
       "file": "src/hosted/http_compat.py",
-      "line": 469,
+      "line": 479,
       "path": "/api/history/retention"
     },
     {
       "method": "PUT",
       "function": "hosted_history_retention_put",
       "file": "src/hosted/http_compat.py",
-      "line": 471,
+      "line": 481,
       "path": "/api/history/retention"
     },
     {
       "method": "POST",
       "function": "hosted_history_sync",
       "file": "src/hosted/http_compat.py",
-      "line": 474,
+      "line": 484,
       "path": "/api/history/sync"
     },
     {
       "method": "POST",
       "function": "hosted_history_gc",
       "file": "src/hosted/http_compat.py",
-      "line": 477,
+      "line": 487,
       "path": "/api/history/gc"
     },
     {
       "method": "POST",
       "function": "hosted_history_repair",
       "file": "src/hosted/http_compat.py",
-      "line": 479,
+      "line": 489,
       "path": "/api/history/repair-local"
     },
     {
       "method": "POST",
       "function": "hosted_history_edit_baseline",
       "file": "src/hosted/http_compat.py",
-      "line": 481,
+      "line": 491,
       "path": "/api/history/edit-baseline"
     },
     {
       "method": "POST",
       "function": "hosted_undo_begin",
       "file": "src/hosted/http_compat.py",
-      "line": 485,
+      "line": 495,
       "path": "/api/undo/begin"
     },
     {
       "method": "POST",
       "function": "hosted_undo_finish",
       "file": "src/hosted/http_compat.py",
-      "line": 488,
+      "line": 498,
       "path": "/api/undo/finish/{token}"
     },
     {
       "method": "POST",
       "function": "hosted_undo_apply",
       "file": "src/hosted/http_compat.py",
-      "line": 491,
+      "line": 501,
       "path": "/api/undo/apply/{token}"
     },
     {
       "method": "POST",
       "function": "hosted_undo_rollback",
       "file": "src/hosted/http_compat.py",
-      "line": 494,
+      "line": 504,
       "path": "/api/undo/rollback/{token}"
     },
     {
       "method": "POST",
       "function": "hosted_recovery_backup_update",
       "file": "src/hosted/http_compat.py",
-      "line": 503,
+      "line": 513,
       "path": "/api/recovery-backups/update"
     },
     {
       "method": "GET",
       "function": "hosted_recovery_status",
       "file": "src/hosted/http_compat.py",
-      "line": 505,
+      "line": 515,
       "path": "/api/recovery/status"
     },
     {
       "method": "GET",
       "function": "hosted_canvas_populate_catalog",
       "file": "src/hosted/http_compat.py",
-      "line": 550,
+      "line": 560,
       "path": "/api/canvas-populate"
     },
     {
       "method": "POST",
       "function": "hosted_canvas_populate",
       "file": "src/hosted/http_compat.py",
-      "line": 553,
+      "line": 563,
       "path": "/api/canvases/{cid}/populate"
     },
     {
       "method": "PATCH",
       "function": "hosted_canvas_node_update",
       "file": "src/hosted/http_compat.py",
-      "line": 588,
+      "line": 598,
       "path": "/api/nodes/{nid}"
     },
     {
       "method": "DELETE",
       "function": "hosted_canvas_node_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 590,
+      "line": 600,
       "path": "/api/nodes/{nid}"
     },
     {
       "method": "PATCH",
       "function": "hosted_canvas_edge_update",
       "file": "src/hosted/http_compat.py",
-      "line": 592,
+      "line": 602,
       "path": "/api/edges/{eid}"
     },
     {
       "method": "DELETE",
       "function": "hosted_canvas_edge_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 594,
+      "line": 604,
       "path": "/api/edges/{eid}"
     },
     {
       "method": "PATCH",
       "function": "hosted_canvas_node_positions",
       "file": "src/hosted/http_compat.py",
-      "line": 597,
+      "line": 607,
       "path": "/api/canvases/{cid}/nodes/positions"
     },
     {
       "method": "POST",
       "function": "hosted_canvas_delete_batch",
       "file": "src/hosted/http_compat.py",
-      "line": 609,
+      "line": 619,
       "path": "/api/canvases/{cid}/nodes/delete-batch"
     },
     {
       "method": "POST",
       "function": "hosted_canvas_reorder",
       "file": "src/hosted/http_compat.py",
-      "line": 619,
+      "line": 629,
       "path": "/api/canvases/reorder"
     },
     {
       "method": "GET",
       "function": "hosted_canvas_versions",
       "file": "src/hosted/http_compat.py",
-      "line": 629,
+      "line": 639,
       "path": "/api/canvases/{cid}/versions"
     },
     {
       "method": "GET",
       "function": "hosted_canvas_version_detail",
       "file": "src/hosted/http_compat.py",
-      "line": 633,
+      "line": 643,
       "path": "/api/canvases/{cid}/versions/{vid}"
     },
     {
       "method": "POST",
       "function": "hosted_canvas_version_create",
       "file": "src/hosted/http_compat.py",
-      "line": 649,
+      "line": 659,
       "path": "/api/canvases/{cid}/versions"
     },
     {
       "method": "PATCH",
       "function": "hosted_canvas_version_rename",
       "file": "src/hosted/http_compat.py",
-      "line": 654,
+      "line": 664,
       "path": "/api/canvases/{cid}/versions/{vid}"
     },
     {
       "method": "POST",
       "function": "hosted_canvas_version_refresh",
       "file": "src/hosted/http_compat.py",
-      "line": 657,
+      "line": 667,
       "path": "/api/canvases/{cid}/versions/{vid}/update"
     },
     {
       "method": "POST",
       "function": "hosted_canvas_version_activate",
       "file": "src/hosted/http_compat.py",
-      "line": 663,
+      "line": 673,
       "path": "/api/canvases/{cid}/versions/{vid}/activate"
     },
     {
       "method": "DELETE",
       "function": "hosted_canvas_version_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 681,
+      "line": 691,
       "path": "/api/canvases/{cid}/versions/{vid}"
     },
     {
       "method": "DELETE",
       "function": "hosted_canvas_version_item_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 683,
+      "line": 693,
       "path": "/api/canvases/{cid}/versions/{vid}/items/{item_id}"
     },
     {
       "method": "POST",
       "function": "hosted_canvas_developmental_layout",
       "file": "src/hosted/http_compat.py",
-      "line": 686,
+      "line": 696,
       "path": "/api/canvases/{cid}/developmental-layout"
     },
     {
       "method": "POST",
       "function": "hosted_canvas_developmental_promote",
       "file": "src/hosted/http_compat.py",
-      "line": 688,
+      "line": 698,
       "path": "/api/canvases/{cid}/developmental-promote/{node_id}"
     },
     {
       "method": "POST",
       "function": "hosted_developmental_preflight",
       "file": "src/hosted/http_compat.py",
-      "line": 690,
+      "line": 700,
       "path": "/api/developmental/preflight"
     },
     {
       "method": "POST",
       "function": "hosted_developmental_apply",
       "file": "src/hosted/http_compat.py",
-      "line": 692,
+      "line": 702,
       "path": "/api/developmental/apply"
     },
     {
       "method": "PATCH",
       "function": "hosted_map_line_update",
       "file": "src/hosted/http_compat.py",
-      "line": 700,
+      "line": 710,
       "path": "/api/map-lines/{lid}"
     },
     {
       "method": "DELETE",
       "function": "hosted_map_line_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 702,
+      "line": 712,
       "path": "/api/map-lines/{lid}"
     },
     {
       "method": "PATCH",
       "function": "hosted_map_item_update",
       "file": "src/hosted/http_compat.py",
-      "line": 704,
+      "line": 714,
       "path": "/api/map-items/{iid}"
     },
     {
       "method": "DELETE",
       "function": "hosted_map_item_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 706,
+      "line": 716,
       "path": "/api/map-items/{iid}"
     },
     {
       "method": "PATCH",
       "function": "hosted_map_junction_update",
       "file": "src/hosted/http_compat.py",
-      "line": 708,
+      "line": 718,
       "path": "/api/map-junctions/{jid}"
     },
     {
       "method": "DELETE",
       "function": "hosted_map_junction_delete",
       "file": "src/hosted/http_compat.py",
-      "line": 710,
+      "line": 720,
       "path": "/api/map-junctions/{jid}"
     },
     {
       "method": "POST",
       "function": "hosted_maps_reorder",
       "file": "src/hosted/http_compat.py",
-      "line": 713,
+      "line": 723,
       "path": "/api/maps/reorder"
     },
     {
       "method": "POST",
       "function": "hosted_map_lines_reorder",
       "file": "src/hosted/http_compat.py",
-      "line": 718,
+      "line": 728,
       "path": "/api/maps/{mid}/lines/reorder"
     },
     {
       "method": "POST",
       "function": "hosted_map_duplicate",
       "file": "src/hosted/http_compat.py",
-      "line": 723,
+      "line": 733,
       "path": "/api/maps/{mid}/duplicate"
     },
     {
       "method": "POST",
       "function": "hosted_map_auto_arrange",
       "file": "src/hosted/http_compat.py",
-      "line": 730,
+      "line": 740,
       "path": "/api/maps/{mid}/auto-arrange"
     },
     {
       "method": "POST",
       "function": "hosted_map_line_sync",
       "file": "src/hosted/http_compat.py",
-      "line": 746,
+      "line": 756,
       "path": "/api/map-lines/{lid}/sync"
     },
     {
       "method": "GET",
       "function": "hosted_map_populate_catalog",
       "file": "src/hosted/http_compat.py",
-      "line": 748,
+      "line": 758,
       "path": "/api/map-populate"
     },
     {
       "method": "POST",
       "function": "hosted_map_populate",
       "file": "src/hosted/http_compat.py",
-      "line": 760,
+      "line": 770,
       "path": "/api/maps/{mid}/populate"
     },
     {
       "method": "POST",
       "function": "hosted_map_line_populate",
       "file": "src/hosted/http_compat.py",
-      "line": 777,
+      "line": 787,
       "path": "/api/map-lines/{lid}/populate"
     },
     {
       "method": "POST",
       "function": "hosted_map_line_duplicate",
       "file": "src/hosted/http_compat.py",
-      "line": 792,
+      "line": 802,
       "path": "/api/map-lines/{lid}/duplicate-manual"
     },
     {
       "method": "POST",
       "function": "hosted_make_manuscript",
       "file": "src/hosted/http_compat.py",
-      "line": 798,
+      "line": 808,
       "path": "/api/documents/{did}/make-manuscript"
     },
     {
       "method": "GET",
       "function": "hosted_review_populate_options",
       "file": "src/hosted/http_compat.py",
-      "line": 845,
+      "line": 855,
       "path": "/api/reviews/populate-options"
     },
     {
       "method": "POST",
       "function": "hosted_review_populate",
       "file": "src/hosted/http_compat.py",
-      "line": 850,
+      "line": 860,
       "path": "/api/reviews/populate"
     },
     {
       "method": "GET",
       "function": "hosted_review_participant_reader",
       "file": "src/hosted/http_compat.py",
-      "line": 865,
+      "line": 875,
       "path": "/api/reviews/{rid}/participants/{participant_id}/reader"
     },
     {
       "method": "POST",
       "function": "hosted_review_participant_begin",
       "file": "src/hosted/http_compat.py",
-      "line": 877,
+      "line": 887,
       "path": "/api/reviews/{rid}/participants/{participant_id}/begin"
     },
     {
       "method": "PUT",
       "function": "hosted_review_participant_bookmark",
       "file": "src/hosted/http_compat.py",
-      "line": 886,
+      "line": 896,
       "path": "/api/reviews/{rid}/participants/{participant_id}/bookmark"
     },
     {
       "method": "DELETE",
       "function": "hosted_review_participant_bookmark_clear",
       "file": "src/hosted/http_compat.py",
-      "line": 895,
+      "line": 905,
       "path": "/api/reviews/{rid}/participants/{participant_id}/bookmark"
     },
     {
       "method": "POST",
       "function": "hosted_review_participant_complete",
       "file": "src/hosted/http_compat.py",
-      "line": 900,
+      "line": 910,
       "path": "/api/reviews/{rid}/participants/{participant_id}/complete"
     },
     {
       "method": "POST",
       "function": "hosted_review_questionnaire_attach",
       "file": "src/hosted/http_compat.py",
-      "line": 907,
+      "line": 917,
       "path": "/api/reviews/{rid}/questionnaires"
     },
     {
       "method": "DELETE",
       "function": "hosted_review_questionnaire_detach",
       "file": "src/hosted/http_compat.py",
-      "line": 915,
+      "line": 925,
       "path": "/api/reviews/{rid}/questionnaires/{questionnaire_id}"
     },
     {
       "method": "PUT",
       "function": "hosted_review_general_feedback",
       "file": "src/hosted/http_compat.py",
-      "line": 920,
+      "line": 930,
       "path": "/api/reviews/{rid}/participants/{participant_id}/feedback"
     },
     {
       "method": "POST",
       "function": "hosted_review_highlight_create",
       "file": "src/hosted/http_compat.py",
-      "line": 936,
+      "line": 946,
       "path": "/api/reviews/{rid}/participants/{participant_id}/highlights"
     },
     {
       "method": "POST",
       "function": "hosted_review_comment_create",
       "file": "src/hosted/http_compat.py",
-      "line": 938,
+      "line": 948,
       "path": "/api/reviews/{rid}/participants/{participant_id}/comments"
     },
     {
       "method": "POST",
       "function": "hosted_review_suggestion_create",
       "file": "src/hosted/http_compat.py",
-      "line": 940,
+      "line": 950,
       "path": "/api/reviews/{rid}/participants/{participant_id}/suggestions"
     },
     {
       "method": "PATCH",
       "function": "hosted_review_feedback_status",
       "file": "src/hosted/http_compat.py",
-      "line": 946,
+      "line": 956,
       "path": "/api/reviews/{rid}/feedback/{kind}/{item_id}/status"
     },
     {
       "method": "POST",
       "function": "hosted_review_feedback_task",
       "file": "src/hosted/http_compat.py",
-      "line": 957,
+      "line": 967,
       "path": "/api/reviews/{rid}/feedback/{kind}/{item_id}/task"
     },
     {
       "method": "GET",
       "function": "hosted_review_item_context",
       "file": "src/hosted/http_compat.py",
-      "line": 966,
+      "line": 976,
       "path": "/api/review-items/{kind}/{item_id}"
     },
     {
       "method": "POST",
       "function": "hosted_review_suggestion_reject",
       "file": "src/hosted/http_compat.py",
-      "line": 973,
+      "line": 983,
       "path": "/api/reviews/{rid}/suggestions/{suggestion_id}/reject"
     },
     {
       "method": "POST",
       "function": "hosted_review_suggestion_accept",
       "file": "src/hosted/http_compat.py",
-      "line": 978,
+      "line": 988,
       "path": "/api/reviews/{rid}/suggestions/{suggestion_id}/accept"
     },
     {
       "method": "POST",
       "function": "hosted_review_participants_populate",
       "file": "src/hosted/http_compat.py",
-      "line": 994,
+      "line": 1004,
       "path": "/api/reviews/{rid}/participants/populate"
     },
     {
       "method": "POST",
       "function": "hosted_review_checkpoint_update",
       "file": "src/hosted/http_compat.py",
-      "line": 1006,
+      "line": 1016,
       "path": "/api/reviews/{rid}/checkpoint/update"
     },
     {
       "method": "POST",
       "function": "hosted_review_round_close",
       "file": "src/hosted/http_compat.py",
-      "line": 1014,
+      "line": 1024,
       "path": "/api/reviews/{rid}/rounds/{snapshot_id}/close"
     },
     {
       "method": "POST",
       "function": "hosted_review_round_reopen",
       "file": "src/hosted/http_compat.py",
-      "line": 1024,
+      "line": 1034,
       "path": "/api/reviews/{rid}/rounds/{snapshot_id}/reopen"
     },
     {
       "method": "POST",
       "function": "hosted_manuscript_image_insert",
       "file": "src/hosted/http_compat.py",
-      "line": 1044,
+      "line": 1054,
       "path": "/api/manuscript/images/insert"
     },
     {
       "method": "POST",
       "function": "hosted_manuscript_image_move",
       "file": "src/hosted/http_compat.py",
-      "line": 1086,
+      "line": 1096,
       "path": "/api/manuscript/images/{block_id}/move"
     },
     {
       "method": "GET",
       "function": "hosted_history_revision_asset",
       "file": "src/hosted/http_compat.py",
-      "line": 1124,
+      "line": 1134,
       "path": "/api/history/v2/revisions/{revision_id}/assets/{asset_path:path}"
     },
     {
       "method": "GET",
       "function": "hosted_history_compare_current",
       "file": "src/hosted/http_compat.py",
-      "line": 1132,
+      "line": 1142,
       "path": "/api/history/v2/revisions/{revision_id}/compare-current"
     },
     {
       "method": "POST",
       "function": "hosted_history_revision_checkpoint",
       "file": "src/hosted/http_compat.py",
-      "line": 1147,
+      "line": 1157,
       "path": "/api/history/v2/revisions/{revision_id}/checkpoint"
     },
     {
       "method": "POST",
       "function": "hosted_history_revision_restore",
       "file": "src/hosted/http_compat.py",
-      "line": 1153,
+      "line": 1163,
       "path": "/api/history/v2/revisions/{revision_id}/restore"
     },
     {
       "method": "GET",
       "function": "hosted_import_readiness",
       "file": "src/hosted/http_compat.py",
-      "line": 1181,
+      "line": 1191,
       "path": "/api/import/readiness"
     },
     {
       "method": "POST",
       "function": "hosted_import_manuscript",
       "file": "src/hosted/http_compat.py",
-      "line": 1187,
+      "line": 1198,
       "path": "/api/import"
     },
     {
       "method": "POST",
       "function": "hosted_import_new_project",
       "file": "src/hosted/http_compat.py",
-      "line": 1199,
+      "line": 1210,
       "path": "/api/import/new-project"
+    },
+    {
+      "method": "GET",
+      "function": "hosted_document_import_status",
+      "file": "src/hosted/http_compat.py",
+      "line": 1231,
+      "path": "/api/import/jobs/{job_id}"
+    },
+    {
+      "method": "POST",
+      "function": "hosted_document_import_step",
+      "file": "src/hosted/http_compat.py",
+      "line": 1238,
+      "path": "/api/import/jobs/{job_id}/step"
+    },
+    {
+      "method": "POST",
+      "function": "hosted_document_import_finish",
+      "file": "src/hosted/http_compat.py",
+      "line": 1245,
+      "path": "/api/import/jobs/{job_id}/finish"
     },
     {
       "method": "POST",
       "function": "hosted_import_document_tabs",
       "file": "src/hosted/http_compat.py",
-      "line": 1215,
+      "line": 1252,
       "path": "/api/documents/import"
     },
     {
       "method": "GET",
       "function": "hosted_export_docx",
       "file": "src/hosted/http_compat.py",
-      "line": 1225,
+      "line": 1262,
       "path": "/api/export/docx"
     },
     {
       "method": "POST",
       "function": "hosted_export_pdf",
       "file": "src/hosted/http_compat.py",
-      "line": 1232,
+      "line": 1269,
       "path": "/api/export/pdf"
     },
     {
       "method": "POST",
       "function": "hosted_project_json_preview",
       "file": "src/hosted/http_compat.py",
-      "line": 1251,
+      "line": 1288,
       "path": "/api/projects/import-json/preview"
     },
     {
       "method": "POST",
       "function": "hosted_project_json_import",
       "file": "src/hosted/http_compat.py",
-      "line": 1260,
+      "line": 1297,
       "path": "/api/projects/import-json"
     },
     {
       "method": "POST",
       "function": "hosted_any_json_preview",
       "file": "src/hosted/http_compat.py",
-      "line": 1269,
+      "line": 1306,
       "path": "/api/json-import/preview"
     },
     {
       "method": "POST",
       "function": "hosted_any_json_import",
       "file": "src/hosted/http_compat.py",
-      "line": 1277,
+      "line": 1314,
       "path": "/api/json-import"
     },
     {
       "method": "GET",
       "function": "hosted_project_json_export",
       "file": "src/hosted/http_compat.py",
-      "line": 1285,
+      "line": 1322,
       "path": "/api/projects/{project_id}/export-json"
     },
     {
       "method": "GET",
       "function": "hosted_portable_review_status",
       "file": "src/hosted/http_compat.py",
-      "line": 1296,
+      "line": 1333,
       "path": "/api/portable-review/status"
     },
     {
       "method": "DELETE",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/portable-review/bookmark"
     },
     {
       "method": "GET",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/portable-review/package"
     },
     {
       "method": "GET",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/portable-review/reader"
     },
     {
       "method": "GET",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/portable-review/assets/{asset_name}"
     },
     {
       "method": "GET",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/reviews/{rid}/participants/{participant_id}/breadreview"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/portable-review/open-temporary"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/portable-review/unlock"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/portable-review/close-temporary"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/portable-review/import-current"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/portable-review/begin"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/portable-review/complete"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/portable-review/highlights"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/portable-review/comments"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/portable-review/suggestions"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/reviews/{rid}/participants/{participant_id}/breadreview"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/reviews/import-breadreview"
     },
     {
       "method": "PUT",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/portable-review/bookmark"
     },
     {
       "method": "PUT",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1319,
+      "line": 1356,
       "path": "/api/portable-review/feedback"
     },
     {
       "method": "DELETE",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup-destinations/{destination_id}"
     },
     {
       "method": "GET",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup-destinations"
     },
     {
       "method": "GET",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup-destinations/google-drive/config"
     },
     {
       "method": "GET",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup-destinations/google-drive/oauth/callback"
     },
     {
       "method": "GET",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup-destinations/google-drive/oauth/status/{state}"
     },
     {
       "method": "GET",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup-destinations/{destination_id}/backups"
     },
     {
       "method": "GET",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup-destinations/{destination_id}/discover"
     },
     {
       "method": "GET",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backups"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup-destinations/pick-folder"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup-destinations"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup-destinations/google-drive/oauth/start"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup-destinations/webdav"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup-destinations/{destination_id}/now"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup-destinations/catch-up"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup-destinations/{destination_id}/backups/{filename}/restore-as-project"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backups/{filename}/restore-as-project"
     },
     {
       "method": "PUT",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup-destinations/{destination_id}/webdav"
     },
     {
       "method": "PUT",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1342,
+      "line": 1379,
       "path": "/api/backup-destinations/{destination_id}"
     }
   ],
-  "route_decorator_count": 518
+  "route_decorator_count": 521
 }

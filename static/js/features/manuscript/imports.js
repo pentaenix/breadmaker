@@ -78,7 +78,7 @@ function restoreImportModalClose(){const close=$('#modalClose');if(close){close.
 async function runManuscriptImportWithProgress(file,label,operation,{reload=false}={}){
   beginManuscriptImportProgress(file,label);
   try{
-    const result=await operation();await completeManuscriptImportProgress();restoreImportModalClose();currentModalDismiss=null;dismissModalTree();if(reload)location.reload();return {ok:true,result};
+    const result=await operation();await completeManuscriptImportProgress();restoreImportModalClose();currentModalDismiss=null;dismissModalTree();if(reload){if(runtimeSupports('hosted_projects')&&result?.project?.id)openWorkspaceProject(result.project.id);else location.reload()}return {ok:true,result};
   }catch(error){console.error('Manuscript import failed',error);failManuscriptImportProgress(error);return {ok:false,error}}
 }
 
@@ -86,10 +86,11 @@ $('#importInput').onchange=async event=>{
   const input=event.target,returnToProjects=input.dataset.returnToProjects==='1';delete input.dataset.returnToProjects;
   const file=input.files[0];if(!file){if(returnToProjects)openProjectCenter();return}
   const preferredHeading=await preferredImportChapterHeading(file),readiness=await importReadiness();
+  const hostedImport=runtimeSupports('hosted_persistence');
   const finish=()=>{input.value='';if(returnToProjects)openProjectCenter()};
   const dismissImport=()=>{stopManuscriptImportProgress();restoreImportModalClose();finish()};
   const cancelActions='<button id="cancelImportManuscript" type="button">{{i18n:dynamic.html.text.button.92113f72}}</button>';
-  if(readiness.manuscript_empty){
+  if(readiness.manuscript_empty&&!hostedImport){
     showModal('Import Manuscript',`<p><b>${escapeHtml(file.name)}</b></p><p class="small-muted">{{i18n:dynamic.html.text.p.45ac775d}}</p>${importHeadingControl(file,preferredHeading)}`,`${cancelActions}<button id="confirmImportManuscript">{{i18n:dynamic.html.text.button.d74537c8}}</button>`,dismissImport);
     $('#cancelImportManuscript').onclick=()=>closeModal();
     $('#confirmImportManuscript').onclick=async()=>{const chapterHeading=$('#importChapterHeading')?.value||'heading1';await rememberImportHeading(file,chapterHeading);const outcome=await runManuscriptImportWithProgress(file,'Preparing document…',()=>performManuscriptImport(file,chapterHeading));if(outcome.ok)finish()};
@@ -98,10 +99,11 @@ $('#importInput').onchange=async event=>{
   showModal('Import Manuscript',`
     <p><b>${escapeHtml(file.name)}</b></p>
     ${importHeadingControl(file,preferredHeading)}
+    ${hostedImport?'<p class="small-muted">Hosted imports currently create a separate project and preserve this one. Replacement and appending are unavailable until safe publication and recovery support is complete.</p>':''}
     <div class="import-destination-list">
-      <button id="importDestinationReplace" class="project-settings-row import-destination-row" type="button"><span><b>{{i18n:dynamic.html.text.b.68a52141}}</b><small>{{i18n:dynamic.html.text.small.eb38cc20}}</small></span><span class="project-settings-row-caret" aria-hidden="true">›</span></button>
+      <button id="importDestinationReplace" class="project-settings-row import-destination-row" type="button" ${hostedImport?'disabled aria-disabled="true"':''}><span><b>{{i18n:dynamic.html.text.b.68a52141}}</b><small>{{i18n:dynamic.html.text.small.eb38cc20}}</small></span><span class="project-settings-row-caret" aria-hidden="true">›</span></button>
       <button id="importDestinationNew" class="project-settings-row import-destination-row" type="button"><span><b>{{i18n:dynamic.html.text.b.4fd07995}}</b><small>Create a separate project named “${escapeHtml(importedProjectName(file))}” and import the document there. This project stays untouched.</small></span><span class="project-settings-row-caret" aria-hidden="true">›</span></button>
-      <button id="importDestinationTabs" class="project-settings-row import-destination-row" type="button"><span><b>{{i18n:dynamic.html.text.b.d7612017}}</b><small>{{i18n:dynamic.html.text.small.da7c50c5}}</small></span><span class="project-settings-row-caret" aria-hidden="true">›</span></button>
+      <button id="importDestinationTabs" class="project-settings-row import-destination-row" type="button" ${hostedImport?'disabled aria-disabled="true"':''}><span><b>{{i18n:dynamic.html.text.b.d7612017}}</b><small>{{i18n:dynamic.html.text.small.da7c50c5}}</small></span><span class="project-settings-row-caret" aria-hidden="true">›</span></button>
     </div>`, cancelActions, dismissImport);
   $('#cancelImportManuscript').onclick=()=>closeModal();
   const heading=()=>$('#importChapterHeading')?.value||'heading1';
@@ -120,6 +122,35 @@ async function performManuscriptImport(file,chapterHeading){
 }
 async function performManuscriptImportAsNewProject(file,chapterHeading){
   await flushSave();const fd=new FormData();fd.append('file',file);setSaveState('Importing…');
-  try{return await api(`/api/import/new-project?chapter_heading=${encodeURIComponent(chapterHeading)}&project_name=${encodeURIComponent(importedProjectName(file))}`,{method:'POST',body:fd})}finally{setSaveState('Saved')}
+  try{
+    if(!runtimeSupports('hosted_persistence'))return await api(`/api/import/new-project?chapter_heading=${encodeURIComponent(chapterHeading)}&project_name=${encodeURIComponent(importedProjectName(file))}`,{method:'POST',body:fd});
+    return await performHostedProjectImport(file,chapterHeading,fd);
+  }finally{setSaveState('Saved')}
+}
+
+async function performHostedProjectImport(file,chapterHeading,fd){
+  if(file.size>64*1024*1024)throw new Error('The document exceeds the 64 MiB import limit.');
+  const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await file.arrayBuffer())),b=>b.toString(16).padStart(2,'0')).join('');
+  const storageKey='breadmaker-pending-document-import';let pending=null;
+  try{pending=JSON.parse(sessionStorage.getItem(storageKey)||'null')}catch{}
+  const signature=JSON.stringify([digest,file.name,chapterHeading]);
+  if(pending?.signature!==signature||Date.now()-Number(pending.created)>86400000){pending={signature,key:uid(),created:Date.now()};sessionStorage.setItem(storageKey,JSON.stringify(pending))}
+  let progress;
+  if(pending.job){
+    try{progress=await api(`/api/import/jobs/${encodeURIComponent(pending.job)}`)}
+    catch(error){if(error.status!==404)throw error;pending={signature,key:uid(),created:Date.now()};sessionStorage.setItem(storageKey,JSON.stringify(pending))}
+  }
+  if(!progress){
+    progress=await api(`/api/import/new-project?resumable=true&chapter_heading=${encodeURIComponent(chapterHeading)}&project_name=${encodeURIComponent(importedProjectName(file))}`,{method:'POST',body:fd,idempotencyKey:pending.key});
+    pending.job=progress.job_id;sessionStorage.setItem(storageKey,JSON.stringify(pending));
+  }
+  stopManuscriptImportProgress();
+  while(!progress.ready){
+    setManuscriptImportProgress(10+85*progress.next_batch/progress.total_batches,`Importing content: ${progress.next_batch} / ${progress.total_batches}`);
+    progress=await api(`/api/import/jobs/${encodeURIComponent(progress.job_id)}/step?batch=${progress.next_batch}`,{method:'POST'});
+  }
+  setManuscriptImportProgress(97,'Publishing completed manuscript…');
+  const result=await api(`/api/import/jobs/${encodeURIComponent(progress.job_id)}/finish`,{method:'POST'});
+  sessionStorage.removeItem(storageKey);return result;
 }
 

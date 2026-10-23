@@ -43,6 +43,16 @@ class _GoogleTransaction(Transaction):
         snapshots = query.stream(transaction=self._transaction)
         return [StoredDocument(tuple(doc.reference.path.split("/")), doc.to_dict() or {}, _snapshot_revision(doc)) for doc in snapshots]
 
+    def get_many(self, paths: list[tuple[str, ...]]) -> list[StoredDocument | None]:
+        keys=[require_document_path(path) for path in paths]
+        # Firestore BatchGet results are unordered and may include missing rows.
+        # Keep caller order and use the SAME transaction, before any writes.
+        snapshots=self._client.get_all([self._ref(path) for path in keys],transaction=self._transaction)
+        found={tuple(doc.reference.path.split('/')):StoredDocument(
+            tuple(doc.reference.path.split('/')),doc.to_dict() or {},_snapshot_revision(doc))
+            for doc in snapshots if doc.exists}
+        return [found.get(path) for path in keys]
+
     def create(self, path: tuple[str, ...], data: Mapping[str, Any]) -> None:
         self._transaction.create(self._ref(path), dict(data))
 

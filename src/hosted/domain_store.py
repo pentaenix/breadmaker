@@ -14,6 +14,7 @@ import json
 import re
 import secrets
 import string
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Mapping
 
 from hosted.firestore import HostedProjectEntityRepository, HostedProjectRepository
@@ -351,8 +352,26 @@ class HostedDomainStore:
         path = render_model_path(model, **dict(ids))
         return hashlib.sha256("/".join(path).encode("ascii")).hexdigest()
 
+    @staticmethod
+    def _payload_key(pointer):
+        return (str(pointer['object_name']),int(pointer['object_generation']),
+            int(pointer.get('object_size') or -1),str(pointer.get('object_sha256') or ''))
+
+    def _read_hybrid_body(self,pointer):
+        try:
+            encoded=b''.join(self.objects.read_chunks(str(pointer['object_name']),
+                max_bytes=_MAX_HYBRID_BYTES,if_generation_match=int(pointer['object_generation'])))
+        except ObjectNotFound as exc:
+            raise RuntimeError('HOSTED_POINTER_OBJECT_MISSING') from exc
+        if pointer.get('object_sha256') and hashlib.sha256(encoded).hexdigest()!=str(pointer['object_sha256']):
+            raise RuntimeError('HOSTED_POINTER_OBJECT_HASH_MISMATCH')
+        if int(pointer.get('object_size') or -1)!=len(encoded):
+            raise RuntimeError('HOSTED_POINTER_OBJECT_SIZE_MISMATCH')
+        return _json_gunzip(encoded)
+
     def _hydrate(self, logical_entity: str, row: Mapping[str, Any], *,
-                 ids: Mapping[str, str] | None = None, user_id: str | None = None) -> dict[str, Any]:
+                 ids: Mapping[str, str] | None = None, user_id: str | None = None,
+                 payload_cache=None) -> dict[str, Any]:
         if self.encrypted_fields is not None and self.encrypted_fields.protects(logical_entity):
             if ids is None or user_id is None:
                 raise HostedValidationError("HOSTED_PRIVATE_FIRESTORE_CONTEXT_REQUIRED")
@@ -399,22 +418,18 @@ class HostedDomainStore:
             return public
         if not isinstance(pointer, dict) or not pointer.get("object_name"):
             return public
-        try:
-            encoded = b"".join(
-                self.objects.read_chunks(
-                    str(pointer["object_name"]),
-                    max_bytes=_MAX_HYBRID_BYTES,
-                    if_generation_match=int(pointer["object_generation"]),
-                )
-            )
-        except ObjectNotFound as exc:
-            raise RuntimeError("HOSTED_POINTER_OBJECT_MISSING") from exc
-        digest = hashlib.sha256(encoded).hexdigest()
-        if pointer.get("object_sha256") and digest != str(pointer["object_sha256"]):
-            raise RuntimeError("HOSTED_POINTER_OBJECT_HASH_MISMATCH")
-        if int(pointer.get("object_size") or -1) != len(encoded):
-            raise RuntimeError("HOSTED_POINTER_OBJECT_SIZE_MISMATCH")
-        public.update(_json_gunzip(encoded))
+        key=self._payload_key(pointer)
+        body=payload_cache[key] if payload_cache is not None and key in payload_cache else self._read_hybrid_body(pointer)
+        if 'bundle_entry' in pointer:
+            eid=str(pointer['bundle_entry'])
+            if (logical_entity!='manuscript_block' or eid!=str(public.get('block_id'))
+                    or not pointer.get('object_sha256')):
+                raise HostedValidationError('HOSTED_BLOCK_BUNDLE_ID_INVALID')
+            entries=body.get('entries')
+            body=entries.get(eid) if isinstance(entries,dict) and len(entries)<=64 else None
+            if not isinstance(body,dict) or set(body)!={'content_html','text_content'}:
+                raise HostedValidationError('HOSTED_BLOCK_BUNDLE_INVALID')
+        public.update(body)
         return public
 
     def create(
@@ -719,7 +734,23 @@ class HostedDomainStore:
                         str(row.get("block_id") or row.get("id") or "")), user_id=uid,
                 ) for row in rows]
             else:
-                public = [self._hydrate(logical_entity, row) for row in rows]
+                # Collection authorization completed above. These are immutable,
+                # generation-pinned reads, not a cache or permission shortcut.
+                # Bound both parallelism and compressed input size; large payloads
+                # retain the sequential path instead of multiplying memory usage.
+                unique_pointers={self._payload_key(row['payload_object']):row['payload_object'] for row in rows
+                    if isinstance(row.get('payload_object'),dict) and row['payload_object'].get('object_name')}
+                if (logical_entity=='manuscript_block' and len(rows)>1
+                        and sum(int(pointer.get('object_size') or 0) for pointer in unique_pointers.values())<=8*1024*1024):
+                    bundles={self._payload_key(row['payload_object']):row['payload_object'] for row in rows
+                        if 'bundle_entry' in (row.get('payload_object') or {})}
+                    with ThreadPoolExecutor(max_workers=4) as pool:
+                        # Memoization is limited to this authorized collection
+                        # read and exact generation/hash. Never a stale text cache.
+                        verified=dict(zip(bundles,pool.map(self._read_hybrid_body,bundles.values())))
+                        public=list(pool.map(lambda row:self._hydrate(logical_entity,row,payload_cache=verified),rows))
+                else:
+                    public = [self._hydrate(logical_entity, row) for row in rows]
 
         def key(row: Mapping[str, Any]):
             out = []

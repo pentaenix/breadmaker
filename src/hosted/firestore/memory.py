@@ -23,6 +23,9 @@ class _MemoryTransaction(Transaction):
     def get(self, path: tuple[str, ...]) -> StoredDocument | None:
         return self._owner._get_locked(require_document_path(path))
 
+    def get_many(self, paths: list[tuple[str, ...]]) -> list[StoredDocument | None]:
+        return [self.get(path) for path in paths]
+
     def query_collection(
         self, collection_path: tuple[str, ...], *, field: str | None = None, value: Any = None
     ) -> list[StoredDocument]:

@@ -17,10 +17,11 @@ from hosted.firestore.ids import require_opaque_id, require_project_id, require_
 from hosted.firestore.repositories import _canonical_payload, _fingerprint, _operation_id, render_model_path
 from hosted.idempotency import stable_entity_id
 
-# Leave capacity for membership, chapter, receipt and project document writes/reads.
-# Large chapters need the future durable-job/segmented-edit protocol, not an
-# unbounded synchronous Firestore transaction.
+# Leave capacity for membership, chapter, receipt and project metadata. Large
+# chapters may be read within the JSON budget, but at most 150 records can change
+# per operation; large structural rewrites still require segmented publication.
 MAX_REPLACEMENT_BLOCKS = 150
+MAX_CHAPTER_BLOCKS = 10000
 MAX_REPLACEMENT_JSON_BYTES = 8 * 1024 * 1024
 MAX_REPLACEMENT_DOCUMENT_BYTES = 512 * 1024
 MAX_REPLACEMENT_METADATA_BYTES = 2 * 1024 * 1024
@@ -32,7 +33,7 @@ def replace_chapter_blocks(domain, *, project_id: str, chapter_id: str, user_id:
     pid = require_project_id(project_id)
     cid = require_opaque_id(chapter_id, label='chapter_id')
     uid = require_user_id(user_id)
-    if not isinstance(blocks, list) or len(blocks) > MAX_REPLACEMENT_BLOCKS:
+    if not isinstance(blocks, list) or len(blocks) > MAX_CHAPTER_BLOCKS:
         raise HostedValidationError('HOSTED_CHAPTER_REPLACE_TOO_LARGE')
     if any(not isinstance(row, Mapping) for row in blocks):
         raise HostedValidationError('HOSTED_CHAPTER_BLOCK_INVALID')
@@ -43,7 +44,7 @@ def replace_chapter_blocks(domain, *, project_id: str, chapter_id: str, user_id:
     collection_path = ('projects', pid, 'blocks')
     receipt_path = ('projects', pid, 'mutation_receipts', hashlib.sha256(op.encode('ascii')).hexdigest()[:40])
     existing = domain.list('manuscript_block', {'project_id':pid}, user_id=uid, field='chapter_id', value=cid)
-    if len(existing) > MAX_REPLACEMENT_BLOCKS:
+    if len(existing) > MAX_CHAPTER_BLOCKS:
         raise HostedValidationError('HOSTED_CHAPTER_REPLACE_TOO_LARGE')
     originals = {str(row['id']):row for row in existing}
     expected_project_generation = domain.project_generation(pid, uid)
@@ -96,11 +97,20 @@ def replace_chapter_blocks(domain, *, project_id: str, chapter_id: str, user_id:
     canonical = json.dumps(logical,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode('utf-8')
     if len(canonical) > MAX_REPLACEMENT_JSON_BYTES:
         raise HostedValidationError('HOSTED_CHAPTER_REPLACE_TOO_LARGE')
+    # Keep the SAME bounded write budget. A large chapter with one edited
+    # paragraph is not a 2,000-record replacement. Never republish unchanged
+    # immutable bodies or rewrite their Firestore metadata.
+    unchanged=({eid for eid,public,_ in normalized if eid in originals
+        and all(originals[eid].get(key)==value for key,value in public.items())}
+        if domain.encrypted_objects is None and domain.encrypted_fields is None else set())
+    if len(normalized)-len(unchanged)+len(set(originals)-seen)>MAX_REPLACEMENT_BLOCKS:
+        raise HostedValidationError('HOSTED_CHAPTER_REPLACE_TOO_LARGE')
     digest = hashlib.sha256(canonical).hexdigest()
     # Staging publication may leave unreferenced immutable objects on a failed
     # CAS, but no malformed/stale operation can write authoritative pointers.
     prepared = []
     metadata_size = 0
+    resolved={}
     for eid, public, meta in normalized:
         ids = {'project_id':pid,'block_id':eid}
         old = originals.get(eid)
@@ -113,6 +123,10 @@ def replace_chapter_blocks(domain, *, project_id: str, chapter_id: str, user_id:
             merged = {**old,**public}
         else:
             merged = public
+        resolved[eid]=merged
+        if eid in unchanged:
+            prepared.append((eid,render_model_path(model,**ids),dict(old),meta['expected_generation']))
+            continue
         hybrid = domain._hybrid_payload('manuscript_block', merged)
         if domain.encrypted_objects is not None and hybrid is None:
             raise HostedValidationError('HOSTED_ENCRYPTED_BLOCK_PAYLOAD_REQUIRED')
@@ -158,8 +172,9 @@ def replace_chapter_blocks(domain, *, project_id: str, chapter_id: str, user_id:
             current = tx.query_collection(collection_path, field='chapter_id',value=cid)
             if {str(row.data.get('id')) for row in current} != set(data['ids']):
                 raise DocumentConflict('HOSTED_REPLAY_SUPERSEDED')
+            changed=set(data.get('changed_ids',data['ids']))
             for row in current:
-                if row.data.get('_bm_last_operation') != op:
+                if str(row.data.get('id')) in changed and row.data.get('_bm_last_operation') != op:
                     raise DocumentConflict('HOSTED_REPLAY_SUPERSEDED')
             return (int(data['generation']), [dict(row.data) for row in current])
         # These reads must happen before *any* transaction writes (Firestore rule).
@@ -184,6 +199,9 @@ def replace_chapter_blocks(domain, *, project_id: str, chapter_id: str, user_id:
         result=[]
         for eid,path,stored,_gen in prepared:
             previous=now.get(eid)
+            if eid in unchanged:
+                result.append(dict(previous.data))
+                continue
             if previous is None:
                 row={**stored,'generation':1,'created_at':stamp,'updated_at':stamp,
                      '_bm_create_operation':op,'_bm_create_fingerprint':_fingerprint(stored),
@@ -206,12 +224,21 @@ def replace_chapter_blocks(domain, *, project_id: str, chapter_id: str, user_id:
         project['updated_at']=stamp
         tx.set(project_path,project)
         tx.create(receipt_path,{'actor':uid,'chapter_id':cid,'digest':digest,
-                                'ids':[eid for eid,*_ in prepared], 'generation':next_generation,'created_at':stamp})
+                                'ids':[eid for eid,*_ in prepared],
+                                'changed_ids':[eid for eid,*_ in prepared if eid not in unchanged],
+                                'generation':next_generation,'created_at':stamp})
         return (next_generation,result)
 
     generation, result = domain.documents.run_transaction(mutate)
-    hydrated = [domain._hydrate('manuscript_block', row,
-                        ids={'project_id':pid,'block_id':str(row['block_id'])}, user_id=uid) for row in result]
+    # Existing payloads were authorized/verified in domain.list; new immutable
+    # objects were verified during staging. The successful generation CAS binds
+    # those bodies to these exact committed pointers. Do not download them again.
+    if domain.encrypted_objects is not None or domain.encrypted_fields is not None:
+        hydrated=[domain._hydrate('manuscript_block',row,
+            ids={'project_id':pid,'block_id':str(row['block_id'])},user_id=uid) for row in result]
+    else:
+        hydrated = [{**_public(row),**{field:resolved[str(row['id'])][field]
+            for field in ('content_html','text_content') if field in resolved[str(row['id'])]}} for row in result]
     by_id = {str(row['id']):row for row in hydrated}
     ordered = [by_id[eid] for eid,_data,_gen in normalized]
     return {'ok':True,'ids':[eid for eid,_data,_gen in normalized],
