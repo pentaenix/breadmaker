@@ -357,6 +357,18 @@ class HostedDomainStore:
         return (str(pointer['object_name']),int(pointer['object_generation']),
             int(pointer.get('object_size') or -1),str(pointer.get('object_sha256') or ''))
 
+    @staticmethod
+    def _read_pointer(row):
+        pointer=row.get('payload_object')
+        bundle=row.get('_bm_read_bundle')
+        # An edit by ANY supported release changes the canonical pointer. Never
+        # serve old bundled text after that edit, including a rollback writer.
+        if (isinstance(pointer,dict) and isinstance(bundle,dict)
+                and pointer.get('object_sha256')
+                and bundle.get('source_sha256')==pointer['object_sha256']):
+            return bundle
+        return pointer
+
     def _read_hybrid_body(self,pointer):
         try:
             encoded=b''.join(self.objects.read_chunks(str(pointer['object_name']),
@@ -418,6 +430,7 @@ class HostedDomainStore:
             return public
         if not isinstance(pointer, dict) or not pointer.get("object_name"):
             return public
+        pointer=self._read_pointer(row)
         key=self._payload_key(pointer)
         body=payload_cache[key] if payload_cache is not None and key in payload_cache else self._read_hybrid_body(pointer)
         if 'bundle_entry' in pointer:
@@ -429,6 +442,9 @@ class HostedDomainStore:
             body=entries.get(eid) if isinstance(entries,dict) and len(entries)<=64 else None
             if not isinstance(body,dict) or set(body)!={'content_html','text_content'}:
                 raise HostedValidationError('HOSTED_BLOCK_BUNDLE_INVALID')
+            if (pointer.get('source_sha256') and
+                    hashlib.sha256(_json_gzip(body)).hexdigest()!=pointer['source_sha256']):
+                raise HostedValidationError('HOSTED_BLOCK_BUNDLE_SOURCE_MISMATCH')
         public.update(body)
         return public
 
@@ -738,12 +754,11 @@ class HostedDomainStore:
                 # generation-pinned reads, not a cache or permission shortcut.
                 # Bound both parallelism and compressed input size; large payloads
                 # retain the sequential path instead of multiplying memory usage.
-                unique_pointers={self._payload_key(row['payload_object']):row['payload_object'] for row in rows
-                    if isinstance(row.get('payload_object'),dict) and row['payload_object'].get('object_name')}
+                unique_pointers={self._payload_key(self._read_pointer(row)):self._read_pointer(row) for row in rows
+                    if isinstance(self._read_pointer(row),dict) and self._read_pointer(row).get('object_name')}
                 if (logical_entity=='manuscript_block' and len(rows)>1
                         and sum(int(pointer.get('object_size') or 0) for pointer in unique_pointers.values())<=8*1024*1024):
-                    bundles={self._payload_key(row['payload_object']):row['payload_object'] for row in rows
-                        if 'bundle_entry' in (row.get('payload_object') or {})}
+                    bundles={key:pointer for key,pointer in unique_pointers.items() if 'bundle_entry' in pointer}
                     with ThreadPoolExecutor(max_workers=4) as pool:
                         # Memoization is limited to this authorized collection
                         # read and exact generation/hash. Never a stale text cache.

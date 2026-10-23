@@ -290,10 +290,16 @@ async function preserveManuscriptViewport(action){const snapshot=captureManuscri
 $('#documentScroller')?.addEventListener('scroll',()=>{if(currentView()==='manuscript')schedulePersistManuscriptLocation()},{passive:true});
 async function reloadManuscriptView({fresh=true}={}){
   const viewport=captureManuscriptViewport();
-  // A reload after a server-side structural manuscript mutation must not render the
-  // old Full Text cache. Navigation keeps using bookCache for instant revisits; only
-  // explicit reload semantics invalidate the current Tab.
-  if(fresh&&state.activeDocumentId)state.bookCache.delete(entityId(state.activeDocumentId));
+  // Revalidate the exact cached snapshot, never attach a new revision to old text.
+  // An unchanged book needs one authorized generation check, not all body reads.
+  let revalidated=false;
+  if(fresh&&runtimeSupports('hosted_persistence')&&state.viewMode==='book'&&state.bookData?.read_tag&&state.bookCache.get(entityId(state.activeDocumentId))===state.bookData){
+    const updated=await api(`/api/book?tab_id=${encodeURIComponent(state.activeDocumentId)}`,{headers:{'If-None-Match':state.bookData.read_tag},acceptNotModified:true});
+    if(updated===null){restoreManuscriptViewport(viewport);return}
+    state.bookCache.set(entityId(state.activeDocumentId),updated);revalidated=true;
+  }
+  // Mutations which cleared the cache still force a complete fresh snapshot.
+  if(fresh&&!revalidated&&state.activeDocumentId)state.bookCache.delete(entityId(state.activeDocumentId));
   if(state.viewMode==='book')await openWholeBook(false,false);else if(state.viewMode==='scene'&&state.scene)await selectScene(state.scene.id,false,false);else if(state.viewMode==='scene-gap'&&state.sceneGap)await selectSceneGap(state.sceneGap,false,false);else if(state.chapter)await selectChapter(state.chapter.id,false,false);
   restoreManuscriptViewport(viewport);
 }

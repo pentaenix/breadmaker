@@ -38,3 +38,24 @@ def test_new_project_import_resumes_batches_and_preserves_source(tmp_path):
         assert page.evaluate('()=>sessionStorage.getItem("breadmaker-pending-document-import")') is None
         page.goto(base+'/p/'+original,wait_until='domcontentloaded')
         expect(page.locator('.manuscript-block').first).to_have_text('Original must survive')
+
+
+def test_book_revalidation_reuses_unchanged_text_but_never_hides_concurrent_edit(tmp_path):
+    with hosted_browser(tmp_path) as (base,page):
+        made=page.request.post(base+'/api/projects',data={'name':'Synthetic revalidation'},headers={'Origin':base})
+        pid=made.json()['project']['id']
+        page.goto(base+'/p/'+pid,wait_until='domcontentloaded')
+        page.wait_for_function('()=>document.documentElement.dataset.breadmakerBootReady==="true"')
+        statuses=[]
+        page.on('response',lambda response:statuses.append(response.status) if '/api/book?' in response.url else None)
+        assert page.evaluate('async()=>{const before=state.bookData;await reloadManuscriptView();return state.bookData===before}')
+        assert statuses==[304]
+        data=page.evaluate('()=>({chapter:state.bookData.chapters[0].id,block:state.bookData.blocks[0].id,revision:state.bookData.project.generation})')
+        changed=page.request.put(base+'/api/chapters/'+data['chapter']+'/blocks',
+            headers={'Origin':base,'X-Breadmaker-Project':pid},
+            data={'expected_revision':data['revision'],'blocks':[{'id':data['block'],
+                'content_html':'Concurrent synthetic edit','text_content':'Concurrent synthetic edit'}]})
+        assert changed.ok
+        page.evaluate('async()=>await reloadManuscriptView()')
+        expect(page.locator('.manuscript-block').first).to_have_text('Concurrent synthetic edit')
+        assert statuses==[304,200]

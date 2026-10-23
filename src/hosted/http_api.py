@@ -9,6 +9,7 @@ writes through ``HostedDomainStore`` or the specialized hosted project/asset por
 """
 
 import json
+import hashlib
 import re
 from contextlib import nullcontext
 from typing import Any, Mapping
@@ -492,7 +493,21 @@ def hosted_bootstrap(request:Request):
 
 @product_router.get('/api/book')
 def hosted_book(request:Request):
-    try:return _project_snapshot(_pid(request),manuscript_only=True)
+    def tag(pid,tab,generation):
+        material=json.dumps([pid,tab,int(generation)],separators=(',',':')).encode()
+        return '"bm-'+hashlib.sha256(material).hexdigest()+'"'
+    try:
+        pid=_pid(request);tab=str(request.query_params.get('tab_id') or '')
+        conditional=request.headers.get('if-none-match')
+        if conditional:
+            # This explicitly checks CURRENT membership before considering 304.
+            # Reuse means the SAME revision; never rebase old text to a newer one.
+            generation=_domain().project_generation(pid,_uid())
+            if conditional==tag(pid,tab,generation):
+                return Response(status_code=304,headers={'Cache-Control':'private, no-store','ETag':conditional})
+        data=_project_snapshot(pid,manuscript_only=True)
+        data['read_tag']=tag(pid,tab,data['project']['generation'])
+        return JSONResponse(data,headers={'Cache-Control':'private, no-store','ETag':data['read_tag']})
     except Exception as exc:raise _error(exc)
 
 # Tabs/documents

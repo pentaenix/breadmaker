@@ -155,12 +155,27 @@ def test_bundle_entry_integrity_authorization_and_portable_roundtrip(monkeypatch
         progress=service.step(OWNER,progress['job_id'],progress['next_batch'])
     pid=service.finish(OWNER,progress['job_id'])['project']['id']
     metadata=dict(docs.query_collection(('projects',pid,'blocks'))[0].data)
-    bad=deepcopy(metadata);bad['payload_object']['bundle_entry']='b_wrong'
+    bad=deepcopy(metadata);bad['_bm_read_bundle']['bundle_entry']='b_wrong'
     with pytest.raises(HostedValidationError,match='BUNDLE_ID_INVALID'):
         one.projects.domain._hydrate('manuscript_block',bad)
     bad=deepcopy(metadata);bad['payload_object']['object_sha256']='0'*64
     with pytest.raises(RuntimeError,match='HASH_MISMATCH'):
         one.projects.domain._hydrate('manuscript_block',bad)
+    # Rollback compatibility: the old release ignores _bm_* fields and reads
+    # the ordinary canonical per-block object. It must receive real text, not
+    # a bundle envelope or an empty manuscript.
+    import gzip,json
+    pointer=metadata['payload_object']
+    legacy_body=json.loads(gzip.decompress(b''.join(one.projects.domain.objects.read_chunks(
+        pointer['object_name'],max_bytes=8*1024*1024,if_generation_match=pointer['object_generation']))))
+    assert set(legacy_body)=={'content_html','text_content'}
+    assert legacy_body['text_content'].startswith('Synthetic paragraph ')
+    # A normal/legacy writer changes the canonical body; a stale accelerator
+    # must then be ignored rather than returning the old paragraph.
+    one.projects.domain.update('manuscript_block',{'project_id':pid,'block_id':metadata['id']},
+        {'text_content':'Legacy-compatible edit','content_html':'Legacy-compatible edit'},user_id=OWNER)
+    fresh=make().projects.domain.get('manuscript_block',{'project_id':pid,'block_id':metadata['id']},user_id=OWNER)
+    assert fresh['text_content']=='Legacy-compatible edit' and '_bm_read_bundle' not in fresh
     reads=[];native=one.projects.domain.objects.read_chunks
     def read(*args,**kwargs):reads.append(True);return native(*args,**kwargs)
     monkeypatch.setattr(one.projects.domain.objects,'read_chunks',read)
@@ -172,7 +187,7 @@ def test_bundle_entry_integrity_authorization_and_portable_roundtrip(monkeypatch
     package=HostedProjectPackageService(one.projects).export_local_bytes(pid,OWNER)
     restored=HostedProjectPackageService(make().projects).import_bytes(package,OWNER)
     rows=make().projects.domain.list('manuscript_block',{'project_id':restored['id']},user_id=OWNER)
-    assert len(rows)==65 and rows[-1]['text_content']=='Synthetic paragraph 64'
+    assert len(rows)==65 and any(row['text_content']=='Legacy-compatible edit' for row in rows)
 
 
 def test_google_batch_get_uses_one_transaction_and_preserves_missing_and_order():
@@ -190,3 +205,30 @@ def test_google_batch_get_uses_one_transaction_and_preserves_missing_and_order()
     result=_GoogleTransaction(Client(),transaction).get_many(paths)
     assert len(calls)==1 and calls[0][1]['transaction'] is transaction
     assert result[0].path==paths[0] and result[1] is None and result[2].path==paths[2]
+
+
+def test_book_revalidation_skips_bodies_only_for_same_revision_and_current_member(monkeypatch):
+    import json
+    import hosted.http_api as http
+    from starlette.requests import Request
+    one,_,_,pid,_=_replicas(monkeypatch)
+    monkeypatch.setattr(http,'runtime',one)
+    def request(tag=''):
+        headers=[(b'x-breadmaker-project',pid.encode())]
+        if tag:headers.append((b'if-none-match',tag.encode()))
+        return Request({'type':'http','method':'GET','path':'/api/book',
+            'query_string':b'tab_id=tab_manuscript','headers':headers})
+    first=json.loads(http.hosted_book(request()).body)
+    tag=first['read_tag'];native=one.projects.domain.list
+    def no_body(*args,**kwargs):raise AssertionError('Unchanged book downloaded body data')
+    monkeypatch.setattr(one.projects.domain,'list',no_body)
+    assert http.hosted_book(request(tag)).status_code==304
+    monkeypatch.setattr(http,'_uid',lambda:'usr_'+'f'*32)
+    from fastapi import HTTPException
+    with pytest.raises(HTTPException) as denied:http.hosted_book(request(tag))
+    assert denied.value.status_code==404
+    monkeypatch.setattr(http,'_uid',lambda:OWNER)
+    monkeypatch.setattr(one.projects.domain,'list',native)
+    one.projects.rename(pid,'Changed project')
+    changed=http.hosted_book(request(tag))
+    assert changed.status_code==200 and json.loads(changed.body)['read_tag']!=tag

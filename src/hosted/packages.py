@@ -383,7 +383,7 @@ class HostedProjectPackageService:
         # it until the final project+owner transaction commits.
         return stable_project_id(operation) if operation else new_project_id()
 
-    def _prepare_import_entity(self, logical:str, ids:Mapping[str,str], data:Mapping[str,Any], *, entity_id:str,payload_pointer=None):
+    def _prepare_import_entity(self, logical:str, ids:Mapping[str,str], data:Mapping[str,Any], *, entity_id:str,read_bundle=None):
         if self.domain.encrypted_objects is not None or self.domain.encrypted_fields is not None:
             # Import stages records before the new project's membership exists.
             # This path must be redesigned instead of bypassing authorizer/KMS.
@@ -406,7 +406,12 @@ class HostedProjectPackageService:
         if hybrid is not None:
             structured,encoded=hybrid
             stored=dict(structured)
-            stored['payload_object']=payload_pointer or self.domain._publish_hybrid(logical,full_ids,encoded)
+            stored['payload_object']=self.domain._publish_hybrid(logical,full_ids,encoded)
+            if read_bundle is not None:
+                # Expand/contract rollout: old releases MUST still read canonical
+                # per-block pointers. The new bundle is an optional, hash-bound
+                # read accelerator, never the sole copy of a paragraph.
+                stored['_bm_read_bundle']={**read_bundle,'source_sha256':stored['payload_object']['object_sha256']}
         else:
             stored=dict(public)
         stamp=self.domain.clock.now_iso()
@@ -447,8 +452,9 @@ class HostedProjectPackageService:
         if bundle_blocks:
             if self.domain.encrypted_objects is not None or self.domain.encrypted_fields is not None:
                 raise ValueError('HOSTED_ENCRYPTED_PACKAGE_IMPORT_NOT_READY')
-            # One verified immutable object per bounded batch, not one object per
-            # paragraph. Individual edits continue using the ordinary block codec.
+            # One optional verified read bundle per bounded batch. Canonical
+            # per-block objects remain readable by the previous release during
+            # rollback. A future writer cutover needs a bundle-capable baseline.
             bodies={entry['id']:{field:entry['data'].get(field,'') for field in ('content_html','text_content')}
                 for entry in entries if entry['entity']=='manuscript_block'}
             if bodies:
@@ -460,7 +466,7 @@ class HostedProjectPackageService:
                 pointers={eid:{**pointer,'bundle_entry':eid} for eid in bodies}
         def prepare(entry):
             return self._prepare_import_entity(entry['entity'],{'project_id':pid},
-                entry['data'],entity_id=entry['id'],payload_pointer=pointers.get(entry['id']))
+                entry['data'],entity_id=entry['id'],read_bundle=pointers.get(entry['id']))
         with ThreadPoolExecutor(max_workers=8) as pool:
             prepared=list(pool.map(prepare,entries))
         if len({path for path,_ in prepared})!=len(prepared):

@@ -68,8 +68,9 @@ async function api(url, options={}) {
   const mutates=!['GET','HEAD','OPTIONS'].includes(method);
   const hosted=typeof runtimeSupports==='function'&&runtimeSupports('hosted_persistence');
   const nonceHeaders=hosted&&mutates?{'Idempotency-Key':String(options.idempotencyKey||uid()),...(hostedStructuralActionToken&&!url.startsWith('/api/undo/')?{'X-Breadmaker-Action':hostedStructuralActionToken}:{})}:{};
-  const {idempotencyKey,...fetchOptions}=options;
+  const {idempotencyKey,acceptNotModified,...fetchOptions}=options;
   const response = await fetch(url, {...fetchOptions, headers:{...headers, ...contextHeaders, ...nonceHeaders, 'X-Breadmaker-Client':CLIENT_ID, 'X-Breadmaker-Locale':i18nLocale(), ...(options.headers||{})}});
+  if(response.status===304&&acceptNotModified&&method==='GET')return null;
   if (!response.ok) {
     const raw=await response.text().catch(()=> '');let payload;
     try{payload=raw?JSON.parse(raw):{}}catch{payload={detail:raw||`Request failed (${response.status})`}}
