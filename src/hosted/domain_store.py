@@ -705,6 +705,36 @@ class HostedDomainStore:
         )
         return self._hydrate(logical_entity, row, ids=ids, user_id=require_user_id(user_id))
 
+    def manuscript_navigation(self, project_id: str, *, user_id: str) -> dict[str, Any]:
+        """Read navigation metadata without downloading ordinary paragraph bodies.
+
+        Older projects have one GCS object per paragraph. Only headings need
+        their verified body for the outline; counts and chapter IDs are metadata.
+        No new persistent index, migration, or cross-request text cache.
+        """
+        parents={'project_id':project_id}
+        if self.encrypted_objects is not None or self.encrypted_fields is not None:
+            # Preserve the opt-in private codecs, never inspect sealed fields as
+            # plaintext or manufacture an outline from unverified ciphertext.
+            rows=self.list('manuscript_block',parents,user_id=user_id)
+            headings=[row for row in rows if row.get('semantic_style') in {'heading2','heading3','heading4'}]
+        else:
+            uid=require_user_id(user_id)
+            model=self._model('manuscript_block')
+            path,ids=self._collection_path('manuscript_block',parents)
+            def read(tx):
+                self.entities._authorize(tx,model,ids,uid,mutation=False)
+                return [dict(row.data) for row in tx.query_collection(path)]
+            rows=self.documents.run_transaction(read)
+            selected=[row for row in rows if row.get('semantic_style') in {'heading2','heading3','heading4'}]
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                headings=list(pool.map(lambda row:self._hydrate('manuscript_block',row),selected))
+        pointers=(self._read_pointer(row) for row in rows)
+        legacy=sum(not isinstance(pointer,dict) or 'bundle_entry' not in pointer for pointer in pointers)
+        return {'chapter_first':len(rows)>512 and legacy>0,'block_count':len(rows),
+            'chapter_outlines':[{key:row.get(key) for key in
+                ('id','chapter_id','position','semantic_style','text_content')} for row in headings]}
+
     def list(
         self,
         logical_entity: str,
@@ -714,7 +744,22 @@ class HostedDomainStore:
         field: str | None = None,
         value: Any = None,
         order_by: tuple[str, ...] = ("position", "created_at", "id"),
+        page_offset: int = 0,
+        page_size: int | None = None,
     ) -> list[dict[str, Any]]:
+        if page_size is not None and (logical_entity!='manuscript_block' or
+                not 1<=page_size<=128 or page_offset<0):
+            raise HostedValidationError('HOSTED_MANUSCRIPT_PAGE_INVALID')
+        def key(row: Mapping[str, Any]):
+            out=[]
+            for name in order_by:
+                cell=row.get(name)
+                if name=='position':
+                    try:cell=int(cell)
+                    except (TypeError,ValueError):cell=0
+                else:cell=str(cell or '')
+                out.append(cell)
+            return tuple(out)
         if self.encrypted_objects is not None and self.encrypted_fields is not None:
             require_private_entity_supported(logical_entity)
         uid = require_user_id(user_id)
@@ -741,8 +786,12 @@ class HostedDomainStore:
                 for row in rows]
             if field is not None:
                 public = [row for row in public if row.get(field) == value]
+            if page_size is not None:
+                public=sorted(public,key=key)[page_offset:page_offset+page_size]
         else:
             rows = self.documents.run_transaction(read)
+            if page_size is not None:
+                rows=sorted(rows,key=key)[page_offset:page_offset+page_size]
             if self.encrypted_objects is not None and logical_entity == "manuscript_block":
                 public = [self._hydrate(
                     logical_entity, row,
@@ -752,34 +801,26 @@ class HostedDomainStore:
             else:
                 # Collection authorization completed above. These are immutable,
                 # generation-pinned reads, not a cache or permission shortcut.
-                # Bound both parallelism and compressed input size; large payloads
-                # retain the sequential path instead of multiplying memory usage.
+                # Bound parallelism and memoized compressed input size. Large
+                # collections still use bounded reads, without a whole-book memo.
                 unique_pointers={self._payload_key(self._read_pointer(row)):self._read_pointer(row) for row in rows
                     if isinstance(self._read_pointer(row),dict) and self._read_pointer(row).get('object_name')}
                 if (logical_entity=='manuscript_block' and len(rows)>1
                         and sum(int(pointer.get('object_size') or 0) for pointer in unique_pointers.values())<=8*1024*1024):
                     bundles={key:pointer for key,pointer in unique_pointers.items() if 'bundle_entry' in pointer}
-                    with ThreadPoolExecutor(max_workers=4) as pool:
+                    with ThreadPoolExecutor(max_workers=8) as pool:
                         # Memoization is limited to this authorized collection
                         # read and exact generation/hash. Never a stale text cache.
                         verified=dict(zip(bundles,pool.map(self._read_hybrid_body,bundles.values())))
                         public=list(pool.map(lambda row:self._hydrate(logical_entity,row,payload_cache=verified),rows))
+                elif logical_entity=='manuscript_block' and len(rows)>1:
+                    # The compressed memo budget is not a reason to serialize
+                    # every legacy object read. Concurrency stays bounded even
+                    # when a collection is too large for bundle memoization.
+                    with ThreadPoolExecutor(max_workers=8) as pool:
+                        public=list(pool.map(lambda row:self._hydrate(logical_entity,row),rows))
                 else:
                     public = [self._hydrate(logical_entity, row) for row in rows]
-
-        def key(row: Mapping[str, Any]):
-            out = []
-            for name in order_by:
-                cell = row.get(name)
-                if name == "position":
-                    try:
-                        cell = int(cell)
-                    except (TypeError, ValueError):
-                        cell = 0
-                else:
-                    cell = str(cell or "")
-                out.append(cell)
-            return tuple(out)
 
         return sorted(public, key=key)
 

@@ -53,6 +53,18 @@ async function hydratePrimaryWorkspace(view){
     await flushSave();await reloadManuscriptView();return;
   }
   if(view==='manuscript'&&!state.manuscriptWorkspaceHydrated){
+    if(state.hostedChapterFirst){
+      // A cold legacy book can mean thousands of object reads. Open a complete,
+      // editable chapter, never a partial book that could later overwrite text.
+      const last=state.bootUIState?.['manuscript-last-location'];
+      if(last?.view==='chapter'||last?.view==='scene'){
+        if(await restoreLastManuscriptLocation(state.bootUIState)){state.manuscriptWorkspaceHydrated=true;syncBookmarkToolbar();return}
+      }
+      const chapterId=last?.viewport?.chapter_id||state.bookmark?.owner_chapter_id||state.bookmark?.chapter_id;
+      const chapter=state.chapters.find(row=>String(row.id)===String(chapterId))||visibleChapters(state.activeDocumentId)[0];
+      if(chapter){await selectChapter(chapter.id,false,false);if(last?.viewport)requestAnimationFrame(()=>restoreManuscriptViewport(last.viewport))}
+      state.manuscriptWorkspaceHydrated=true;syncBookmarkToolbar();return;
+    }
     let restored=await restoreLastManuscriptLocation(state.bootUIState);
     if(!restored&&state.bookmark)restored=await goToBookmark({activateView:false,silent:true});
     if(!restored&&state.activeDocumentId)await openWholeBook(false,false);

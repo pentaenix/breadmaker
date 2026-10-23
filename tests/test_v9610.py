@@ -25,7 +25,7 @@ def test_v9610_boot_overlaps_independent_io_but_keeps_lease_gate():
     assert 'Promise.all([ensureI18n(),loadRuntimeBootstrap()])' in boot
     assert 'Promise.all([profilePromise,portablePromise,workspacePromise])' in boot
     assert "const leasePromise=api('/api/lease',{method:'POST'})" in boot
-    assert "api('/api/bootstrap')" in boot
+    assert "'/api/bootstrap?navigation_only=true'" in boot and "'/api/bootstrap'" in boot
     assert 'loadBootUIState()' in boot
     assert 'crashJournalForProject(currentProjectIdentity())' in boot
     assert 'if(!leaseGranted){showLeaseLost(true);return}' in boot

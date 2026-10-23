@@ -201,7 +201,32 @@ async function selectScene(id,save=true,refreshSearch=true){
   if(save)await flushSave();const data=await api(`/api/scenes/${id}/manuscript`);for(const [cid,rev] of Object.entries(data.chapter_revisions||{}))state.chapterRevisions.set(entityId(cid),rev);state.viewMode='scene';state.scene=data.scene;state.sceneData=data;state.sceneGap=null;state.chapter=null;state.chapterData=null;state.bookData=null;
   const meta=sceneById(id);if(meta?.tab_id||meta?.first_tab_id)state.activeDocumentId=entityId(meta.tab_id||meta.first_tab_id);normalizeManuscriptNavMode();syncManuscriptViewControls();resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();renderSceneEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
 }
-async function loadBookData(tabId){const id=entityId(tabId);if(state.bookCache.has(id))return state.bookCache.get(id);const data=await api(`/api/book?tab_id=${id}`);state.bookCache.set(id,data);return data}
+async function loadBookData(tabId){
+  const id=entityId(tabId);if(state.bookCache.has(id))return state.bookCache.get(id);
+  if(!state.hostedChapterFirst){const data=await api(`/api/book?tab_id=${id}`);state.bookCache.set(id,data);return data}
+  const project=currentProjectIdentity(),editGeneration=state.editGeneration,data=await api(`/api/book?tab_id=${encodeURIComponent(id)}&manifest=true`);
+  const results=new Array(data.chapters.length);let next=0,completed=0,failure=null;
+  async function worker(){
+    while(!failure){
+      const index=next++;if(index>=data.chapters.length)return;
+      try{
+        const cached=state.chapterData;
+        const row=cached?.next_block_offset===null&&String(cached.chapter?.id)===String(data.chapters[index].id)&&String(cached.revision)===String(data.project.generation)
+          ?cached:await loadChapterData(data.chapters[index].id);
+        if(String(row.revision)!==String(data.project.generation))throw new Error('The manuscript changed while loading. Please reopen Full Text.');
+        results[index]=row.blocks;completed++;setSaveState(`Loading Full Text ${completed}/${data.chapters.length}…`);
+      }catch(error){failure=error;return}
+    }
+  }
+  try{
+    // Bounded chapter reads keep every request below the gateway deadline.
+    // Do not publish/cache/render ANY partial book or rebase stale revisions.
+    await Promise.all([worker(),worker()]);if(failure)throw failure;
+    const changed=await api(`/api/book?tab_id=${encodeURIComponent(id)}&manifest=true`,{headers:{'If-None-Match':data.read_tag},acceptNotModified:true});
+    if(changed!==null||String(currentProjectIdentity())!==String(project)||state.editGeneration!==editGeneration||state.dirty||state.saveInFlight)throw new Error('The manuscript changed while loading. Please reopen Full Text.');
+    data.blocks=results.flat();state.bookCache.set(id,data);return data;
+  }finally{setSaveState(state.dirty?'Not saved':'Saved')}
+}
 async function selectSceneGap(gap,save=true,refreshSearch=true){
   if(!gap?.first_block_id)return;if(save)await flushSave();const data=await loadBookData(gap.tab_id);state.viewMode='scene-gap';state.sceneGap={...gap};state.scene=null;state.sceneData=null;state.chapter=null;state.chapterData=null;state.bookData=data;state.activeDocumentId=entityId(gap.tab_id);normalizeManuscriptNavMode();syncManuscriptViewControls();resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();renderSceneGapEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
 }
@@ -210,7 +235,20 @@ function findIsOpen(){return !$('#findPopover').classList.contains('hidden')&&!s
 function syncFindScopeLabel(){const label=$('#findScopeLabel');if(label&&!$('#findPopover').classList.contains('hidden')&&!state.find.navigatingMarkup)label.textContent=i18nSource(state.viewMode==='book'?'Book':state.viewMode==='scene'?'Scene':state.viewMode==='scene-gap'?'Tab':'Chapter')}
 function refreshFindForContext(){if($('#findPopover').classList.contains('hidden')||state.find.navigatingMarkup)return;syncFindScopeLabel();if($('#findInput').value)queueMicrotask(()=>runFind({preserveIndex:false}).catch(error=>console.warn('Find context refresh failed',error)))}
 async function selectChapter(id,save=true,refreshSearch=true){
-  clearManuscriptSelection();if(save)await flushSave();const data=await api(`/api/chapters/${id}`);state.viewMode='chapter';state.bookData=null;state.scene=null;state.sceneData=null;state.sceneGap=null;state.chapter=data.chapter;state.chapterData=data;state.chapterRevisions.set(entityId(data.chapter.id),data.revision||data.chapter.revision||state.chapterRevisions.get(entityId(data.chapter.id))||'');state.activeDocumentId=data.chapter.tab_id;normalizeManuscriptNavMode();syncManuscriptViewControls();resetDirtyState();$('#chapterTitle').textContent=data.chapter.title;setSaveState('Saved');renderDocuments();renderChapterTree();renderEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
+  clearManuscriptSelection();if(save)await flushSave();const data=await loadChapterData(id);state.viewMode='chapter';state.bookData=null;state.scene=null;state.sceneData=null;state.sceneGap=null;state.chapter=data.chapter;state.chapterData=data;state.chapterRevisions.set(entityId(data.chapter.id),data.revision||data.chapter.revision||state.chapterRevisions.get(entityId(data.chapter.id))||'');state.activeDocumentId=data.chapter.tab_id;normalizeManuscriptNavMode();syncManuscriptViewControls();resetDirtyState();$('#chapterTitle').textContent=data.chapter.title;setSaveState('Saved');renderDocuments();renderChapterTree();renderEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
+}
+async function loadChapterData(id){
+  if(!state.hostedChapterFirst)return api(`/api/chapters/${id}`);
+  const project=currentProjectIdentity(),editGeneration=state.editGeneration,path=`/api/chapters/${encodeURIComponent(id)}`;
+  const data=await api(`${path}?block_offset=0`);let offset=data.next_block_offset;
+  while(offset!==null&&offset!==undefined){
+    const page=await api(`${path}?block_offset=${offset}`);
+    if(String(page.revision)!==String(data.revision))throw new Error('The manuscript changed while loading. Please reopen the chapter.');
+    data.blocks.push(...page.blocks);offset=page.next_block_offset;
+  }
+  if(String(currentProjectIdentity())!==String(project)||state.editGeneration!==editGeneration||state.dirty||state.saveInFlight)throw new Error('The manuscript changed while loading. Please reopen the chapter.');
+  data.next_block_offset=null;
+  return data;
 }
 async function openWholeBook(save=true,refreshSearch=true){
   if(save)await flushSave();if(!state.activeDocumentId)return;const data=await loadBookData(state.activeDocumentId);normalizeManuscriptNavMode();syncManuscriptViewControls();state.viewMode='book';state.bookData=data;for(const ch of data.chapters||[])state.chapterRevisions.set(entityId(ch.id),ch.revision||state.chapterRevisions.get(entityId(ch.id))||'');state.scene=null;state.sceneData=null;state.sceneGap=null;state.chapter=null;state.chapterData=null;resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();renderBookEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
@@ -221,7 +259,7 @@ function captureManuscriptViewport(){
   const anchor=candidates.find(el=>el.getBoundingClientRect().bottom>viewport.top+1)||null;let key=null;
   if(anchor?.classList.contains('manuscript-block-wrap'))key={kind:'block',id:String(anchor.dataset.blockId||'')};
   else if(anchor?.classList.contains('book-chapter-heading'))key={kind:'chapter',id:String(anchor.dataset.chapterId||'')};
-  return {scrollTop:scroller.scrollTop,key,offset:anchor?anchor.getBoundingClientRect().top-viewport.top:null};
+  return {scrollTop:scroller.scrollTop,key,chapter_id:anchor?.dataset.chapterId||state.chapter?.id||null,offset:anchor?anchor.getBoundingClientRect().top-viewport.top:null};
 }
 function restoreManuscriptViewport(snapshot){
   const scroller=$('#documentScroller');if(!snapshot||!scroller)return;scroller.scrollTop=Math.max(0,snapshot.scrollTop||0);
@@ -294,9 +332,11 @@ async function reloadManuscriptView({fresh=true}={}){
   // An unchanged book needs one authorized generation check, not all body reads.
   let revalidated=false;
   if(fresh&&runtimeSupports('hosted_persistence')&&state.viewMode==='book'&&state.bookData?.read_tag&&state.bookCache.get(entityId(state.activeDocumentId))===state.bookData){
-    const updated=await api(`/api/book?tab_id=${encodeURIComponent(state.activeDocumentId)}`,{headers:{'If-None-Match':state.bookData.read_tag},acceptNotModified:true});
+    const updated=await api(`/api/book?tab_id=${encodeURIComponent(state.activeDocumentId)}${state.hostedChapterFirst?'&manifest=true':''}`,{headers:{'If-None-Match':state.bookData.read_tag},acceptNotModified:true});
     if(updated===null){restoreManuscriptViewport(viewport);return}
-    state.bookCache.set(entityId(state.activeDocumentId),updated);revalidated=true;
+    if(state.hostedChapterFirst)state.bookCache.delete(entityId(state.activeDocumentId));
+    else state.bookCache.set(entityId(state.activeDocumentId),updated);
+    revalidated=true;
   }
   // Mutations which cleared the cache still force a complete fresh snapshot.
   if(fresh&&!revalidated&&state.activeDocumentId)state.bookCache.delete(entityId(state.activeDocumentId));

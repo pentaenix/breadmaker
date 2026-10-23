@@ -311,7 +311,7 @@ $('#navigatorMenuBtn').onclick=openNavigatorMenu;
 $('#navigatorMenuBtn').oncontextmenu=openNavigatorMenu;
 $('#chapterTree').oncontextmenu=e=>{if(e.target.closest('.chapter-row,.scene-outline-row,.outline-nav,.scene-gap-row'))return;openNavigatorMenu(e)};
 
-$('#bookViewBtn').onclick=()=>openWholeBook();$('#collapsedFullTextBtn').onclick=()=>openWholeBook();
+$('#bookViewBtn').onclick=()=>openWholeBook().catch(error=>toast(error.message||'Full Text could not be loaded.',5000));$('#collapsedFullTextBtn').onclick=()=>openWholeBook().catch(error=>toast(error.message||'Full Text could not be loaded.',5000));
 $('#toggleBookNavBtn').onclick=e=>{e.stopPropagation();state.bookNavCollapsed=!state.bookNavCollapsed;renderChapterTree();api('/api/ui-state/book-nav-collapsed',{method:'PUT',body:JSON.stringify({value:state.bookNavCollapsed})}).catch(console.warn)};
 async function configureChapterDetails(chapter){
   const current=visibleChapterById(chapter.id)||chapter;showModal('Chapter Details',`<div class="field"><label>{{i18n:dynamic.html.text.label.d1ac14a8}}</label><textarea id="chapterDescription" rows="6" placeholder="{{i18n:dynamic.html.attr.placeholder.7d612628}}">${escapeHtml(current.description||'')}</textarea></div>`,'<button id="saveChapterDescription">{{i18n:dynamic.html.text.button.9faf5fce}}</button>');

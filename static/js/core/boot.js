@@ -98,7 +98,7 @@ async function loadRuntimeBootstrap(){
     const health=await api('/api/health');
     if(health?.app!=='Breadmaker Editor'||health?.runtime!=='local')throw error;
     const backendVersion=String(health?.version||'');
-    console.warn('Breadmaker runtime bootstrap endpoint was unavailable; continuing with attested local capabilities.',{frontend:'10.5.51',backend:backendVersion||'unknown'});
+    console.warn('Breadmaker runtime bootstrap endpoint was unavailable; continuing with attested local capabilities.',{frontend:'10.5.52',backend:backendVersion||'unknown'});
     return {...LOCAL_RUNTIME_FALLBACK,fallback:true,backend_version:backendVersion};
   }
 }
@@ -150,7 +150,7 @@ async function boot() {
   const leasePromise=api('/api/lease',{method:'POST'}).then(()=>true).catch(error=>{if(error.status===409)return false;throw error});
   const [leaseGranted,bootstrap,bootUI,bootCrashDrafts]=await Promise.all([
     leasePromise,
-    api('/api/bootstrap'),
+    api(runtimeSupports('hosted_projects')?'/api/bootstrap?navigation_only=true':'/api/bootstrap'),
     loadBootUIState(),
     crashJournalForProject(currentProjectIdentity()),
   ]);
@@ -189,7 +189,7 @@ async function boot() {
   if(!state.reviewerSession)document.body.classList.remove('focus','reviewer-mode-active');
   // Prime Full Text only after the routed workspace is interactive. This keeps boot
   // light while making the first Book/Full Text switch a cache hit in normal use.
-  if(bootView==='manuscript'&&state.activeDocumentId){const prefetch=()=>loadBookData(state.activeDocumentId).catch(()=>{});if('requestIdleCallback'in window)requestIdleCallback(prefetch,{timeout:1800});else setTimeout(prefetch,700)}
+  if(bootView==='manuscript'&&state.activeDocumentId&&!state.hostedChapterFirst){const prefetch=()=>loadBookData(state.activeDocumentId).catch(()=>{});if('requestIdleCallback'in window)requestIdleCallback(prefetch,{timeout:1800});else setTimeout(prefetch,700)}
   if(bootView==='manuscript'&&manuscriptReviewsWorkspace.panelOpen){
     manuscriptReviewsWorkspace.panelOpen=false;
     await openManuscriptReviewsPanel();
@@ -218,6 +218,7 @@ function applyCanvasConfig(){
 }
 
 function applyBootstrapData(bootstrap,{oldDoc=null}={}){
+  state.hostedChapterFirst=runtimeSupports('hosted_projects')&&bootstrap.manuscript_navigation?.chapter_first===true;
   Object.assign(state,{project:bootstrap.project,documents:bootstrap.tabs,chapters:bootstrap.chapters,chapterOutlines:bootstrap.chapter_outlines||[],canvases:bootstrap.canvases,scenes:bootstrap.scenes,sceneGaps:bootstrap.scene_gaps||[],bookmark:bootstrap.bookmark||null,markers:bootstrap.labels,iconMarkers:bootstrap.icon_markers||[],maps:bootstrap.maps||[],reviews:bootstrap.reviews||[],features:bootstrap.features||{},metroConfig:bootstrap.metro_view_config||{},canvasConfig:bootstrap.canvas_config||{}});
   if(document.documentElement.dataset.breadmakerBootReady)document.title=String(state.project?.name||state.project?.title||'Breadmaker Studio');
   state.chapterRevisions=new Map((state.chapters||[]).map(ch=>[entityId(ch.id),ch.revision||'']));
@@ -225,7 +226,7 @@ function applyBootstrapData(bootstrap,{oldDoc=null}={}){
   state.activeDocumentId=oldDoc&&state.documents.some(d=>d.id===oldDoc)?oldDoc:(state.documents.find(d=>d.is_manuscript)?.id||state.documents[0]?.id||null);
 }
 async function refresh(preserve=true) {
-  const bootstrap = await api('/api/bootstrap');invalidateTaskCache();invalidateQuickOpenDetailIndex();state.bookCache.clear();
+  const bootstrap = await api(runtimeSupports('hosted_projects')?'/api/bootstrap?navigation_only=true':'/api/bootstrap');invalidateTaskCache();invalidateQuickOpenDetailIndex();state.bookCache.clear();
   const oldChapter = preserve ? state.chapter?.id : null;
   const oldScene = preserve && state.viewMode==='scene' ? state.scene?.id : null;
   const oldSceneGap = preserve && state.viewMode==='scene-gap' ? state.sceneGap?.first_block_id : null;

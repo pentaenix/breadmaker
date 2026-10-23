@@ -449,13 +449,14 @@ def _delete(entity:str,ids:Mapping[str,str]):
     except Exception as exc:raise _error(exc)
 
 
-def _project_snapshot(pid:str, *, manuscript_only:bool=False) -> dict[str,Any]:
+def _project_snapshot(pid:str, *, manuscript_only:bool=False, navigation_only:bool=False, manifest_only:bool=False) -> dict[str,Any]:
     uid=_uid();domain=_domain();parents={'project_id':pid}
     begin_generation=int(runtime.projects.get(pid).get('generation') or 0)
     tabs=domain.list('document_tab',parents,user_id=uid)
     chapters=domain.list('chapter',parents,user_id=uid)
     scenes=domain.list('scene',parents,user_id=uid)
-    blocks=domain.list('manuscript_block',parents,user_id=uid)
+    navigation=domain.manuscript_navigation(pid,user_id=uid) if navigation_only else {}
+    blocks=[] if navigation_only or manifest_only else domain.list('manuscript_block',parents,user_id=uid)
     if manuscript_only:
         final_project=runtime.projects.get(pid)
         if int(final_project.get('generation') or 0)!=begin_generation:
@@ -471,7 +472,7 @@ def _project_snapshot(pid:str, *, manuscript_only:bool=False) -> dict[str,Any]:
     maps=domain.list('story_map',parents,user_id=uid)
     reviews=domain.list('review',parents,user_id=uid)
     bookmark=runtime.projects.member_state(pid,user_id=uid)
-    chapter_outlines=[{k:row.get(k) for k in ('id','chapter_id','position','semantic_style','text_content')} for row in blocks if str(row.get('semantic_style') or '') in {'heading2','heading3','heading4'}]
+    chapter_outlines=navigation.get('chapter_outlines') if navigation_only else [{k:row.get(k) for k in ('id','chapter_id','position','semantic_style','text_content')} for row in blocks if str(row.get('semantic_style') or '') in {'heading2','heading3','heading4'}]
     final_project=runtime.projects.get(pid)
     if int(final_project.get('generation') or 0)!=begin_generation:
         raise DocumentConflict('HOSTED_SNAPSHOT_GENERATION_CHANGED')
@@ -482,13 +483,13 @@ def _project_snapshot(pid:str, *, manuscript_only:bool=False) -> dict[str,Any]:
         'project':final_project,'tabs':tabs,'documents':tabs,'chapters':chapters,'chapter_outlines':chapter_outlines,
         'canvases':canvases,'scenes':scenes,'scene_gaps':[],'bookmark':bookmark,'labels':labels,'icon_markers':icon_markers,
         'maps':maps,'reviews':reviews,'features':_feature_flags_raw()['features'],'metro_view_config':_metro_view_config_raw(),
-        'canvas_config':_canvas_config_raw(),'blocks':blocks,
+        'canvas_config':_canvas_config_raw(),'blocks':blocks,'manuscript_navigation':navigation,
     }
 
 
 @product_router.get('/api/bootstrap')
 def hosted_bootstrap(request:Request):
-    try:return _project_snapshot(_pid(request))
+    try:return _project_snapshot(_pid(request),navigation_only=request.query_params.get('navigation_only')=='true')
     except Exception as exc:raise _error(exc)
 
 @product_router.get('/api/book')
@@ -505,7 +506,12 @@ def hosted_book(request:Request):
             generation=_domain().project_generation(pid,_uid())
             if conditional==tag(pid,tab,generation):
                 return Response(status_code=304,headers={'Cache-Control':'private, no-store','ETag':conditional})
-        data=_project_snapshot(pid,manuscript_only=True)
+        manifest=request.query_params.get('manifest')=='true'
+        data=_project_snapshot(pid,manuscript_only=True,manifest_only=manifest)
+        if manifest:
+            if tab and not any(str(row['id'])==tab for row in data['tabs']):
+                raise DocumentNotFound('DOCUMENT_NOT_FOUND')
+            data['chapters']=[row for row in data['chapters'] if not tab or str(row.get('tab_id'))==tab]
         data['read_tag']=tag(pid,tab,data['project']['generation'])
         return JSONResponse(data,headers={'Cache-Control':'private, no-store','ETag':data['read_tag']})
     except Exception as exc:raise _error(exc)
@@ -526,11 +532,19 @@ def hosted_chapter_get(cid:str,request:Request):
     pid=_pid(request)
     generation=_domain().project_generation(pid,_uid())
     chapter=_get('chapter',{'project_id':pid,'chapter_id':cid})
-    blocks=_list('manuscript_block',{'project_id':pid},field='chapter_id',value=cid)
+    page={}
+    if 'block_offset' in request.query_params:
+        try:
+            offset=int(request.query_params['block_offset'])
+            if offset<0:raise ValueError()
+        except ValueError:raise HTTPException(400,detail='HOSTED_MANUSCRIPT_PAGE_INVALID')
+        page={'page_offset':offset,'page_size':128}
+    blocks=_list('manuscript_block',{'project_id':pid},field='chapter_id',value=cid,**page)
     if _domain().project_generation(pid,_uid())!=generation:
         raise HTTPException(409,detail='HOSTED_SNAPSHOT_GENERATION_CHANGED')
     revision=str(generation)
-    return {'chapter':{**chapter,'revision':revision},'blocks':blocks,'revision':revision}
+    return {'chapter':{**chapter,'revision':revision},'blocks':blocks,'revision':revision,
+        'next_block_offset':page['page_offset']+len(blocks) if page and len(blocks)==128 else None}
 @product_router.patch('/api/chapters/{cid}')
 @product_router.patch('/api/chapters/{cid}/title')
 async def hosted_chapter_update(cid:str,request:Request):
