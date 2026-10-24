@@ -53,6 +53,11 @@ class _GoogleTransaction(Transaction):
             for doc in snapshots if doc.exists}
         return [found.get(path) for path in keys]
 
+    def count_collection(self, collection_path: tuple[str, ...]) -> int:
+        key = require_collection_path(collection_path)
+        results = self._client.collection('/'.join(key)).count(alias='total').get(transaction=self._transaction)
+        return int(results[0][0].value)
+
     def create(self, path: tuple[str, ...], data: Mapping[str, Any]) -> None:
         self._transaction.create(self._ref(path), dict(data))
 

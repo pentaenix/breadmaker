@@ -12,6 +12,8 @@ import json
 import hashlib
 import re
 from contextlib import nullcontext
+from contextvars import copy_context
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Mapping
 from urllib.parse import urlparse
 
@@ -465,10 +467,24 @@ def _delete(entity:str,ids:Mapping[str,str]):
 def _project_snapshot(pid:str, *, manuscript_only:bool=False, navigation_only:bool=False, manifest_only:bool=False) -> dict[str,Any]:
     uid=_uid();domain=_domain();parents={'project_id':pid}
     begin_generation=int(runtime.projects.get(pid).get('generation') or 0)
-    tabs=domain.list('document_tab',parents,user_id=uid)
-    chapters=domain.list('chapter',parents,user_id=uid)
-    scenes=domain.list('scene',parents,user_id=uid)
-    navigation=domain.manuscript_navigation(pid,user_id=uid) if navigation_only else {}
+    if navigation_only:
+        # Each task retains the original authenticated request context and its
+        # own current membership check/transaction. Never share transactions
+        # across threads or cache authorization across requests. The final
+        # generation fence still rejects mixed-revision results.
+        entities=('document_tab','chapter','scene','markup_label','icon_marker','canvas','story_map','review')
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            pending={entity:pool.submit(copy_context().run,domain.list,entity,parents,user_id=uid) for entity in entities}
+            nav=pool.submit(copy_context().run,domain.manuscript_navigation,pid,user_id=uid)
+            member=pool.submit(copy_context().run,runtime.projects.member_state,pid,user_id=uid)
+            values={entity:future.result() for entity,future in pending.items()}
+            navigation=nav.result();bookmark=member.result()
+        tabs=values['document_tab'];chapters=values['chapter'];scenes=values['scene']
+    else:
+        tabs=domain.list('document_tab',parents,user_id=uid)
+        chapters=domain.list('chapter',parents,user_id=uid)
+        scenes=domain.list('scene',parents,user_id=uid)
+        navigation={}
     cache_refresh=set()
     blocks=[] if navigation_only or manifest_only else domain.list('manuscript_block',parents,user_id=uid,
         **({'cache_refresh_chapters':cache_refresh} if manuscript_only else {}))
@@ -482,12 +498,12 @@ def _project_snapshot(pid:str, *, manuscript_only:bool=False, navigation_only:bo
             'chapters':[{**chapter,'revision':str(begin_generation)} for chapter in chapters],
             'scenes':scenes,'blocks':blocks,'scene_gaps':[],
             'cache_refresh_chapters':sorted(cache_refresh)}
-    labels=domain.list('markup_label',parents,user_id=uid)
-    icon_markers=domain.list('icon_marker',parents,user_id=uid)
-    canvases=domain.list('canvas',parents,user_id=uid)
-    maps=domain.list('story_map',parents,user_id=uid)
-    reviews=domain.list('review',parents,user_id=uid)
-    bookmark=runtime.projects.member_state(pid,user_id=uid)
+    labels=values['markup_label'] if navigation_only else domain.list('markup_label',parents,user_id=uid)
+    icon_markers=values['icon_marker'] if navigation_only else domain.list('icon_marker',parents,user_id=uid)
+    canvases=values['canvas'] if navigation_only else domain.list('canvas',parents,user_id=uid)
+    maps=values['story_map'] if navigation_only else domain.list('story_map',parents,user_id=uid)
+    reviews=values['review'] if navigation_only else domain.list('review',parents,user_id=uid)
+    if not navigation_only:bookmark=runtime.projects.member_state(pid,user_id=uid)
     chapter_outlines=navigation.get('chapter_outlines') if navigation_only else [{k:row.get(k) for k in ('id','chapter_id','position','semantic_style','text_content')} for row in blocks if str(row.get('semantic_style') or '') in {'heading2','heading3','heading4'}]
     final_project=runtime.projects.get(pid)
     if int(final_project.get('generation') or 0)!=begin_generation:

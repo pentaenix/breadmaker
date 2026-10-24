@@ -708,8 +708,7 @@ class HostedDomainStore:
     def manuscript_navigation(self, project_id: str, *, user_id: str) -> dict[str, Any]:
         """Read navigation metadata without downloading ordinary paragraph bodies.
 
-        Older projects have one GCS object per paragraph. Only headings need
-        their verified body for the outline; counts and chapter IDs are metadata.
+        Count on the provider's existing index, fetching only outline headings.
         No new persistent index, migration, or cross-request text cache.
         """
         parents={'project_id':project_id}
@@ -717,6 +716,7 @@ class HostedDomainStore:
             # Preserve the opt-in private codecs, never inspect sealed fields as
             # plaintext or manufacture an outline from unverified ciphertext.
             rows=self.list('manuscript_block',parents,user_id=user_id)
+            count=len(rows)
             headings=[row for row in rows if row.get('semantic_style') in {'heading2','heading3','heading4'}]
         else:
             uid=require_user_id(user_id)
@@ -724,14 +724,25 @@ class HostedDomainStore:
             path,ids=self._collection_path('manuscript_block',parents)
             def read(tx):
                 self.entities._authorize(tx,model,ids,uid,mutation=False)
-                return [dict(row.data) for row in tx.query_collection(path)]
-            rows=self.documents.run_transaction(read)
-            selected=[row for row in rows if row.get('semantic_style') in {'heading2','heading3','heading4'}]
+                counter=getattr(tx,'count_collection',None)
+                if counter is None:
+                    # Specialized recovery/journal adapters retain the same
+                    # authorized semantics without requiring provider APIs.
+                    rows=[dict(row.data) for row in tx.query_collection(path)]
+                    return len(rows),[row for row in rows if row.get('semantic_style') in {'heading2','heading3','heading4'}]
+                count=counter(path)
+                selected=[dict(row.data) for style in ('heading2','heading3','heading4')
+                    for row in tx.query_collection(path,field='semantic_style',value=style)]
+                return count,selected
+            count,selected=self.documents.run_transaction(read)
+            selected.sort(key=lambda row:str(row.get('id') or row.get('block_id') or ''))
             with ThreadPoolExecutor(max_workers=8) as pool:
-                headings=list(pool.map(lambda row:self._hydrate('manuscript_block',row),selected))
-        pointers=(self._read_pointer(row) for row in rows)
-        legacy=sum(not isinstance(pointer,dict) or 'bundle_entry' not in pointer for pointer in pointers)
-        return {'chapter_first':len(rows)>512 and legacy>0,'block_count':len(rows),
+                pointers={self._payload_key(self._read_pointer(row)):self._read_pointer(row) for row in selected
+                    if isinstance(self._read_pointer(row),dict) and 'bundle_entry' in self._read_pointer(row)}
+                memo=(dict(zip(pointers,pool.map(self._read_hybrid_body,pointers.values())))
+                    if sum(int(p.get('object_size') or 0) for p in pointers.values())<=8*1024*1024 else {})
+                headings=list(pool.map(lambda row:self._hydrate('manuscript_block',row,payload_cache=memo),selected))
+        return {'chapter_first':count>512,'block_count':count,
             'chapter_outlines':[{key:row.get(key) for key in
                 ('id','chapter_id','position','semantic_style','text_content')} for row in headings]}
 

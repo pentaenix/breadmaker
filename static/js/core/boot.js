@@ -98,7 +98,7 @@ async function loadRuntimeBootstrap(){
     const health=await api('/api/health');
     if(health?.app!=='Breadmaker Editor'||health?.runtime!=='local')throw error;
     const backendVersion=String(health?.version||'');
-    console.warn('Breadmaker runtime bootstrap endpoint was unavailable; continuing with attested local capabilities.',{frontend:'10.5.54',backend:backendVersion||'unknown'});
+    console.warn('Breadmaker runtime bootstrap endpoint was unavailable; continuing with attested local capabilities.',{frontend:'10.5.55',backend:backendVersion||'unknown'});
     return {...LOCAL_RUNTIME_FALLBACK,fallback:true,backend_version:backendVersion};
   }
 }
@@ -187,9 +187,9 @@ async function boot() {
   // Reviewer Mode returns earlier above, so this is safe and keeps global profile chrome
   // reachable even if stale transient UI state leaked into the document during restore.
   if(!state.reviewerSession)document.body.classList.remove('focus','reviewer-mode-active');
-  // Prime Full Text only after the routed workspace is interactive. This keeps boot
-  // light while making the first Book/Full Text switch a cache hit in normal use.
-  if(bootView==='manuscript'&&state.activeDocumentId&&!state.hostedChapterFirst){const prefetch=()=>loadBookData(state.activeDocumentId).catch(()=>{});if('requestIdleCallback'in window)requestIdleCallback(prefetch,{timeout:1800});else setTimeout(prefetch,700)}
+  // Local-only Full Text warming. Hosted books load on explicit demand: a
+  // healthy read cache must never trigger an unsolicited whole-book download.
+  if(bootView==='manuscript'&&state.activeDocumentId&&!runtimeSupports('hosted_projects')){const prefetch=()=>loadBookData(state.activeDocumentId).catch(()=>{});if('requestIdleCallback'in window)requestIdleCallback(prefetch,{timeout:1800});else setTimeout(prefetch,700)}
   if(bootView==='manuscript'&&manuscriptReviewsWorkspace.panelOpen){
     manuscriptReviewsWorkspace.panelOpen=false;
     await openManuscriptReviewsPanel();

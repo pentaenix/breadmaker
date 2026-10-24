@@ -41,6 +41,10 @@ class _MemoryTransaction(Transaction):
             out = [row for row in out if row.data.get(field) == value]
         return out
 
+    def count_collection(self, collection_path: tuple[str, ...]) -> int:
+        prefix = require_collection_path(collection_path)
+        return sum(len(path) == len(prefix)+1 and path[:-1] == prefix for path in self._owner._documents)
+
     def create(self, path: tuple[str, ...], data: Mapping[str, Any]) -> None:
         key = require_document_path(path)
         if key in self._owner._documents:

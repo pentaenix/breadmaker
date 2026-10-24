@@ -1,6 +1,6 @@
 {
   "schema": 3,
-  "generated_for": "10.5.54",
+  "generated_for": "10.5.55",
   "platform_domains": [
     {
       "module": "api.project_management",
