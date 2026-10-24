@@ -138,11 +138,43 @@ def test_v10364_replay_after_subsequent_commit_is_rejected_not_reapplied(monkeyp
     assert [r['text_content'] for r in _rows(make(),pid,cid)]==['second']
 
 
-def test_v10364_old_chapter_mutation_is_not_a_per_block_loop():
-    api=(SRC/'hosted/http_api.py').read_text()
-    assert 'replace_chapter_blocks(_domain()' in api
-    function=api.split("@product_router.put('/api/chapters/{cid}/blocks')",1)[1].split('# Scenes',1)[0]
-    assert "for pos,item in enumerate(rows)" not in function
+def test_v10364_old_chapter_mutation_is_not_a_per_block_loop(monkeypatch):
+    import asyncio
+    import json
+    from fastapi import HTTPException
+    from starlette.requests import Request
+    import hosted.chapter_mutations as mutations
+    import hosted.http_api as http
+
+    one,make,_,pid,cid=_replicas(monkeypatch)
+    monkeypatch.setattr(http,'runtime',one)
+    calls=[];native=mutations.replace_chapter_blocks
+    def delegated(domain,**kwargs):
+        calls.append(kwargs)
+        return native(domain,**kwargs)
+    def individual_write(*args,**kwargs):
+        pytest.fail('Chapter HTTP save must not publish individual CRUD writes')
+    monkeypatch.setattr(mutations,'replace_chapter_blocks',delegated)
+    monkeypatch.setattr(http,'_create',individual_write)
+    monkeypatch.setattr(http,'_update',individual_write)
+    monkeypatch.setattr(http,'_delete',individual_write)
+    prior=one.projects.get(pid)['generation']
+    blocks=[{'text_content':f'Synthetic paragraph {index}','content_html':f'Synthetic paragraph {index}'} for index in range(20)]
+    def request(revision):
+        async def receive():return {'type':'http.request','body':json.dumps(
+            {'blocks':blocks,'expected_revision':revision}).encode(),'more_body':False}
+        return Request({'type':'http','method':'PUT','path':f'/api/chapters/{cid}/blocks',
+            'query_string':b'','headers':[(b'x-breadmaker-project',pid.encode())]},receive)
+    result=asyncio.run(http.hosted_chapter_blocks(cid,request(prior)))
+    assert len(calls)==1 and calls[0]['project_id']==pid and calls[0]['chapter_id']==cid
+    assert calls[0]['user_id']==_DEV_USER_ID and calls[0]['blocks']==blocks
+    assert result['generation']==prior+1 and make().projects.get(pid)['generation']==prior+1
+    assert [row['text_content'] for row in _rows(make(),pid,cid)]==[row['text_content'] for row in blocks]
+    with pytest.raises(HTTPException) as stale:
+        asyncio.run(http.hosted_chapter_blocks(cid,request(prior)))
+    assert stale.value.status_code==409 and len(calls)==2
+    assert make().projects.get(pid)['generation']==prior+1
+    assert [row['text_content'] for row in _rows(make(),pid,cid)]==[row['text_content'] for row in blocks]
     lifecycle=(ROOT/'docs/HOSTED_CLOUD_RUN_LIFECYCLE_M8B.md').read_text()
     assert 'Cloud Run' in lifecycle and 'SIGTERM' in lifecycle and 'no sticky session' in lifecycle
     assert 'whole-request replay' in lifecycle

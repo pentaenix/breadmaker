@@ -14,7 +14,6 @@ def test_v940_request_context_contract_is_project_and_actor_scoped():
     contracts=ROOT.joinpath('src','runtime','contracts.py').read_text(encoding='utf-8')
     local=ROOT.joinpath('src','runtime','local.py').read_text(encoding='utf-8')
     storage=storage_source(ROOT)
-    app=backend_source(ROOT)
     frontend=frontend_source_from_app_path(ROOT.joinpath('static','app.js'))
 
     assert 'class ProjectRequestContext' in contracts
@@ -27,8 +26,6 @@ def test_v940_request_context_contract_is_project_and_actor_scoped():
     assert 'storage_database.acquire_instance_lock()' in local
     assert 'ContextVar' in storage and 'def project_context(' in storage
     assert 'current_db_path()' in storage
-    assert "project_id=_request_project_identity(request)" in app
-    assert "user_id=_request_user_identity(request)" in app
     assert "'X-Breadmaker-Project'" in frontend
     assert "'X-Breadmaker-User'" in frontend
     assert 'projectAssetDisplayUrl' in frontend
@@ -39,6 +36,40 @@ def test_v940_request_context_contract_is_project_and_actor_scoped():
     assert 'state.workspace=workspace' in boot
     assert "const leasePromise=api('/api/lease',{method:'POST'})" in boot
     assert boot.index('state.workspace=workspace') < boot.index("const leasePromise=api('/api/lease',{method:'POST'})")
+
+
+def test_v940_request_pipeline_binds_resolved_project_and_actor_per_request(monkeypatch):
+    import asyncio
+    import json
+    from starlette.requests import Request
+    from starlette.responses import JSONResponse
+    import backend.request_pipeline as pipeline
+    from hosted.runtime_services import _DEV_USER_ID as owner
+    from tests.test_v10364 import _replicas
+
+    one,_,_,first,_=_replicas(monkeypatch)
+    second=one.projects.create('Second synthetic request scope')['id']
+    monkeypatch.setattr(pipeline,'runtime',one)
+    monkeypatch.setattr(pipeline,'_HOSTED_LIMITS',None)
+    monkeypatch.setattr(pipeline,'_prune_expired_temporary_portable_reviews',lambda:None)
+    async def exercise():
+        async def dispatch(pid):
+            req=Request({'type':'http','method':'GET','path':'/api/bootstrap','query_string':b'',
+                'headers':[(b'x-breadmaker-project',pid.encode()),
+                           (b'x-breadmaker-user',('usr_'+'f'*32).encode())]})
+            async def downstream(request):
+                await asyncio.sleep(.001) # Interleave requests, not provider state.
+                context=one.context.current()
+                assert context.project_id==pid and context.actor.user_id==owner
+                assert request.state.breadmaker_project_id==pid
+                assert request.state.breadmaker_user_id==owner
+                return JSONResponse({'project_id':context.project_id,'user_id':context.actor.user_id})
+            response=await pipeline.local_origin_guard(req,downstream)
+            assert response.status_code==200
+            assert json.loads(response.body)=={'project_id':pid,'user_id':owner}
+            assert one.context.current() is None
+        await asyncio.gather(dispatch(first),dispatch(second))
+    asyncio.run(exercise())
 
 
 def test_v940_two_local_profiles_can_address_their_projects_without_global_active_cross_talk(client):
