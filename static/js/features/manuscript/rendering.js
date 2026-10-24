@@ -203,7 +203,7 @@ async function selectScene(id,save=true,refreshSearch=true){
 }
 async function loadBookData(tabId){
   const id=entityId(tabId);if(state.bookCache.has(id))return state.bookCache.get(id);
-  if(!state.hostedChapterFirst){const data=await api(`/api/book?tab_id=${id}`);state.bookCache.set(id,data);return data}
+  if(!state.hostedChapterFirst){const data=await api(`/api/book?tab_id=${id}`);state.bookCache.set(id,data);for(const cid of data.cache_refresh_chapters||[])queueHostedReadCache(cid,data.project?.generation);return data}
   const project=currentProjectIdentity(),editGeneration=state.editGeneration,data=await api(`/api/book?tab_id=${encodeURIComponent(id)}&manifest=true`);
   const results=new Array(data.chapters.length);let next=0,completed=0,failure=null;
   async function worker(){
@@ -247,11 +247,13 @@ async function loadChapterData(id){
   while(offset!==null&&offset!==undefined){
     const page=await api(`${path}?block_offset=${offset}`);
     if(String(page.revision)!==String(data.revision))throw new Error('The manuscript changed while loading. Please reopen the chapter.');
+    data.cache_refresh_needed=!!(data.cache_refresh_needed||page.cache_refresh_needed);
     data.blocks.push(...page.blocks);offset=page.next_block_offset;
   }
   if(String(currentProjectIdentity())!==String(project)||state.editGeneration!==editGeneration||state.dirty||state.saveInFlight)throw new Error('The manuscript changed while loading. Please reopen the chapter.');
   data.next_block_offset=null;
   cache.set(key,data);
+  if(data.cache_refresh_needed)queueHostedReadCache(id,data.revision);
   while(cache.size>16)cache.delete(cache.keys().next().value);
   return data;
 }

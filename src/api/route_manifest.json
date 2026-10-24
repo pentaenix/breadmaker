@@ -1,6 +1,6 @@
 {
   "schema": 3,
-  "generated_for": "10.5.51",
+  "generated_for": "10.5.54",
   "platform_domains": [
     {
       "module": "api.project_management",
@@ -2050,28 +2050,28 @@
           "method": "GET",
           "path": "/api/import/readiness",
           "function": "import_readiness",
-          "line": 172,
+          "line": 186,
           "file": "src/api/import_export/docx_import.py"
         },
         {
           "method": "POST",
           "path": "/api/import",
           "function": "import_file",
-          "line": 178,
+          "line": 192,
           "file": "src/api/import_export/docx_import.py"
         },
         {
           "method": "POST",
           "path": "/api/import/new-project",
           "function": "import_file_as_new_project",
-          "line": 189,
+          "line": 203,
           "file": "src/api/import_export/docx_import.py"
         },
         {
           "method": "POST",
           "path": "/api/documents/import",
           "function": "import_document_tabs",
-          "line": 223,
+          "line": 237,
           "file": "src/api/import_export/docx_import.py"
         },
         {

@@ -73,7 +73,13 @@ def _same_generation(root, action):
 
 
 def _semantic(data):
-    return None if data is None else {k:v for k,v in data.items() if k not in {'generation','updated_at'}}
+    return None if data is None else {k:v for k,v in data.items() if k not in {'generation','updated_at','_bm_read_bundle'}}
+
+
+def _without_read_cache(data):
+    # Cache attachment changes no canonical field, generation or authority.
+    # Keep ALL other journal comparisons strict, including ABA generations.
+    return None if data is None else {k:v for k,v in data.items() if k!='_bm_read_bundle'}
 
 
 class _BufferedTransaction:
@@ -147,7 +153,7 @@ class ActionDocumentStore:
                 if (path[:2] != root_path or len(path) < 4 or path[2] not in _PRODUCT_COLLECTIONS
                         or any(p in _DENIED_COLLECTIONS for p in path[2::2])):
                     raise HostedValidationError('HOSTED_ACTION_ENTITY_UNSUPPORTED')
-                if path in records and records[path]['after'] != before:
+                if path in records and _without_read_cache(records[path]['after']) != _without_read_cache(before):
                     raise DocumentConflict('HOSTED_ACTION_RECORD_CHANGED')
                 record = records.setdefault(path, {'path': list(path), 'before': before})
                 record['after'] = after
@@ -234,7 +240,7 @@ class ActionJournal:
                 path = tuple(record['path'])
                 current = _data(tx.get(path))
                 expected = record.get('current', record['after'])
-                if current != expected:
+                if _without_read_cache(current) != _without_read_cache(expected):
                     raise DocumentConflict('HOSTED_ACTION_RECORD_CHANGED')
                 desired = deepcopy(record['after' if direction == 'redo' else 'before'])
                 if desired is not None:

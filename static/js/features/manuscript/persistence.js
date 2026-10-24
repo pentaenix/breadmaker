@@ -11,6 +11,48 @@ function scheduleQuietHistory(){
   clearTimeout(state.historyQuietTimer);
   state.historyQuietTimer=setTimeout(()=>captureAutoHistory('quiet').catch(err=>console.warn('Quiet History save failed',err)),90*1000);
 }
+// Active-editor work only: one bounded request at a time, no periodic polling,
+// persisted manuscript cache, or dependency of a successful save on maintenance.
+const hostedReadCacheQueue=new Map(),hostedReadCacheCompleted=new Map();
+let hostedReadCacheScheduled=false,hostedReadCacheRunning=false;
+function queueHostedReadCache(chapterId,revision){
+  if(!runtimeSupports('hosted_persistence')||!chapterId)return;
+  const project=String(currentProjectIdentity()||'');if(!project)return;
+  const key=`${project}:${chapterId}`,version=String(revision||'');
+  for(const [id,job] of hostedReadCacheQueue)if(job.project!==project)hostedReadCacheQueue.delete(id);
+  if(hostedReadCacheCompleted.get(key)===version)return;
+  if(hostedReadCacheQueue.get(key)?.revision!==version)hostedReadCacheQueue.set(key,{project,chapterId,revision:version});
+  while(hostedReadCacheQueue.size>64)hostedReadCacheQueue.delete(hostedReadCacheQueue.keys().next().value);
+  kickHostedReadCache();
+}
+function kickHostedReadCache(){
+  if(hostedReadCacheScheduled||hostedReadCacheRunning||!hostedReadCacheQueue.size||state.dirty||state.saveInFlight||document.visibilityState==='hidden')return;
+  hostedReadCacheScheduled=true;
+  const run=()=>{void drainHostedReadCache()};
+  if(typeof window.requestIdleCallback==='function')window.requestIdleCallback(run,{timeout:1500});else setTimeout(run,150);
+}
+async function drainHostedReadCache(){
+  hostedReadCacheScheduled=false;
+  if(hostedReadCacheRunning||state.dirty||state.saveInFlight||document.visibilityState==='hidden')return;
+  const entry=hostedReadCacheQueue.entries().next().value;if(!entry)return;
+  const [key,job]=entry;
+  if(String(currentProjectIdentity()||'')!==job.project){hostedReadCacheQueue.delete(key);kickHostedReadCache();return}
+  hostedReadCacheRunning=true;
+  try{
+    const result=await api(`/api/chapters/${encodeURIComponent(job.chapterId)}/read-cache`,{method:'POST'});
+    if(hostedReadCacheQueue.get(key)===job&&!result.more){
+      hostedReadCacheQueue.delete(key);hostedReadCacheCompleted.set(key,job.revision);
+      while(hostedReadCacheCompleted.size>64)hostedReadCacheCompleted.delete(hostedReadCacheCompleted.keys().next().value);
+    }
+  }catch(error){
+    // An outage/rate limit cannot fail a saved manuscript or cause an idle retry
+    // loop. A later open/save receives fresh server hints and resumes the work.
+    if(hostedReadCacheQueue.get(key)===job)hostedReadCacheQueue.delete(key);
+    console.warn('Read cache maintenance deferred; manuscript save is unaffected',error);
+  }finally{hostedReadCacheRunning=false;kickHostedReadCache()}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')kickHostedReadCache()});
+
 function resetDirtyState(){state.dirty=false;state.dirtyChapters.clear();state.chapterDirtyGeneration.clear();state.chapterSavedGeneration.clear();}
 function manuscriptMutationBarrier(on){state.mutationBarrierDepth=Math.max(0,state.mutationBarrierDepth+(on?1:-1));document.body.classList.toggle('manuscript-mutating',state.mutationBarrierDepth>0);}
 async function withManuscriptMutationBarrier(fn){manuscriptMutationBarrier(true);try{return await fn()}finally{manuscriptMutationBarrier(false)}}
@@ -25,7 +67,7 @@ async function saveOneChapter(chapterId){
   const wraps=wrapsForChapter(chapterId),blocks=wraps.map(serializeWrap),ch=storageChapterById(chapterId);if(!ch)return;
   await ensureEditBaseline();let revision=state.chapterRevisions.get(entityId(chapterId))||ch.revision||'',title=visibleChapterTitleText(chapterId);
   if(title!==ch.title){const titled=await api(`/api/chapters/${chapterId}/title`,{method:'PATCH',body:JSON.stringify({title,expected_revision:revision})});revision=titled.revision||revision;state.chapterRevisions.set(entityId(chapterId),revision);updateChapterTitleState(chapterId,title,revision)}
-  const result=await api(`/api/chapters/${chapterId}/blocks`,{method:'PUT',body:JSON.stringify({blocks,expected_revision:revision})});state.chapterRevisions.set(entityId(chapterId),result.revision||revision);ch.revision=result.revision||revision;await clearCrashDraft(chapterId);let outlineIdsChanged=false;wraps.forEach((wrap,index)=>{if(wrap.isConnected&&result.ids[index]&&wrap.dataset.blockId.startsWith('tmp_')){const previous=wrap.dataset.blockId;wrap.dataset.blockId=result.ids[index];if(state.manuscriptCollapsedHeadings.delete(previous)){state.manuscriptCollapsedHeadings.add(result.ids[index]);outlineIdsChanged=true}}});state.chapterOutlines=state.chapterOutlines.filter(item=>entityId(item.chapter_id)!==entityId(chapterId));wraps.forEach((wrap,index)=>{if(outlineStyleLevel(wrap.dataset.style))state.chapterOutlines.push({id:wrap.dataset.blockId,chapter_id:entityId(chapterId),position:index,semantic_style:wrap.dataset.style,text_content:wrap.querySelector('.manuscript-block')?.innerText||''})});renderChapterTree();if(outlineIdsChanged)persistManuscriptOutlineState();
+  const result=await api(`/api/chapters/${chapterId}/blocks`,{method:'PUT',body:JSON.stringify({blocks,expected_revision:revision})});state.chapterRevisions.set(entityId(chapterId),result.revision||revision);ch.revision=result.revision||revision;queueHostedReadCache(chapterId,result.revision||revision);await clearCrashDraft(chapterId);let outlineIdsChanged=false;wraps.forEach((wrap,index)=>{if(wrap.isConnected&&result.ids[index]&&wrap.dataset.blockId.startsWith('tmp_')){const previous=wrap.dataset.blockId;wrap.dataset.blockId=result.ids[index];if(state.manuscriptCollapsedHeadings.delete(previous)){state.manuscriptCollapsedHeadings.add(result.ids[index]);outlineIdsChanged=true}}});state.chapterOutlines=state.chapterOutlines.filter(item=>entityId(item.chapter_id)!==entityId(chapterId));wraps.forEach((wrap,index)=>{if(outlineStyleLevel(wrap.dataset.style))state.chapterOutlines.push({id:wrap.dataset.blockId,chapter_id:entityId(chapterId),position:index,semantic_style:wrap.dataset.style,text_content:wrap.querySelector('.manuscript-block')?.innerText||''})});renderChapterTree();if(outlineIdsChanged)persistManuscriptOutlineState();
 }
 async function saveSceneView(){
   if(state.viewMode!=='scene'||!state.scene)return;await ensureEditBaseline();const wraps=$$('.manuscript-block-wrap'),payload=wraps.map(serializeSceneWrap),chapterIds=[...new Set(payload.map(b=>entityId(b.chapter_id)))],expected_revisions=Object.fromEntries(chapterIds.map(id=>[String(id),state.chapterRevisions.get(id)||'']));
@@ -51,6 +93,7 @@ async function flushSave(){
   }catch(error){for(const [id,generation] of pending){state.dirtyChapters.add(id);state.chapterDirtyGeneration.set(id,Math.max(state.chapterDirtyGeneration.get(id)||0,generation))}state.dirty=true;setSaveState('Save failed');toast('Save failed. Your text remains in this window.',5000);throw error}finally{state.saveInFlight=null}})();
   try{await state.saveInFlight}catch(error){clearTimeout(state.saveTimer);if(error.code==='MANUSCRIPT_CONFLICT_001')showManuscriptConflict(error);else if(error.status===409)showLeaseLost(false);else state.saveTimer=setTimeout(()=>flushSave().catch(()=>{}),1500);throw error}
   if(state.dirty||state.dirtyChapters.size)return flushSave();
+  kickHostedReadCache();
   if(state.split?.type==='checkpoint')scheduleCheckpointSplitRender();if(state.split?.type==='history')scheduleHistorySplitRender();
 }
 

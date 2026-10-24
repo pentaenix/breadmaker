@@ -116,7 +116,7 @@ HEAVY_EXACT=frozenset({
     '/api/projects/import','/api/data/export','/api/export/pdf','/api/import','/api/import/new-project',
     '/api/import/tabs','/api/portable-review/open-temporary','/api/reviews/import-breadreview','/api/cuts/import',
 })
-HEAVY_SUFFIXES=('/export','/restore-as-project','/apply')
+HEAVY_SUFFIXES=('/export','/restore-as-project','/apply','/read-cache')
 
 
 def is_heavy_request(path:str,method:str) -> bool:

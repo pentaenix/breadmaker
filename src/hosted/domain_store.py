@@ -746,6 +746,7 @@ class HostedDomainStore:
         order_by: tuple[str, ...] = ("position", "created_at", "id"),
         page_offset: int = 0,
         page_size: int | None = None,
+        cache_refresh_chapters: set[str] | None = None,
     ) -> list[dict[str, Any]]:
         if page_size is not None and (logical_entity!='manuscript_block' or
                 not 1<=page_size<=128 or page_offset<0):
@@ -822,6 +823,10 @@ class HostedDomainStore:
                 else:
                     public = [self._hydrate(logical_entity, row) for row in rows]
 
+        if (cache_refresh_chapters is not None and logical_entity=='manuscript_block'
+                and self.encrypted_objects is None and self.encrypted_fields is None):
+            from hosted.manuscript_read_cache import pending_read_cache_chapters
+            cache_refresh_chapters.update(pending_read_cache_chapters(rows))
         return sorted(public, key=key)
 
     def update(

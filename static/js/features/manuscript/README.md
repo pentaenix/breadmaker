@@ -8,7 +8,7 @@ The Manuscript browser domain is split by responsibility while preserving Breadm
 - `rendering.js` — Chapter/Book/Scene rendering, block wrappers, outline visibility, gutter presentation, view selection, and viewport/location state.
 - `history.js` — Manuscript/Scene working-session edit snapshots used by the application-wide history coordinator in `core/history.js`.
 - `workspace.js` — Focus Mode, Manuscript tooltips, Checkpoint toolbar presentation, and Editor's Eye.
-- `persistence.js` — dirty-state tracking, autosave/flush coordination, conflict handling, and status counts.
+- `persistence.js` — dirty-state tracking, autosave/flush coordination, conflict handling, status counts, and bounded active-editor hosted read-cache maintenance (no periodic polling or dependency of saving on cache availability).
 - `editing.js` — block editing, selection handling, and edit interaction wiring.
 - `scenes.js` — selection actions, Scene assignment/splitting/movement, and Scene-focused editor actions.
 - `annotations.js` — Markers, annotations, Notes/comments presentation, selection markup, and related gutter behavior.

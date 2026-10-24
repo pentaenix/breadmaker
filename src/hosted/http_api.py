@@ -18,6 +18,7 @@ from urllib.parse import urlparse
 from fastapi import APIRouter, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from starlette.concurrency import run_in_threadpool
+from anyio import CapacityLimiter
 
 from auth.identity import AuthorizationError
 from auth.sessions import AuthenticationError
@@ -32,6 +33,7 @@ from security.http_request import canonical_request_path
 
 platform_router=APIRouter()
 product_router=APIRouter()
+_read_cache_capacity=CapacityLimiter(1)
 
 _PROJECT_PATH_RE=re.compile(r'^/api/projects/([0-9a-f]{32})(?:/|$)')
 _SHELL_PROJECT_RE=re.compile(r'^/p/([0-9a-f]{32})(?:/|$)')
@@ -467,7 +469,9 @@ def _project_snapshot(pid:str, *, manuscript_only:bool=False, navigation_only:bo
     chapters=domain.list('chapter',parents,user_id=uid)
     scenes=domain.list('scene',parents,user_id=uid)
     navigation=domain.manuscript_navigation(pid,user_id=uid) if navigation_only else {}
-    blocks=[] if navigation_only or manifest_only else domain.list('manuscript_block',parents,user_id=uid)
+    cache_refresh=set()
+    blocks=[] if navigation_only or manifest_only else domain.list('manuscript_block',parents,user_id=uid,
+        **({'cache_refresh_chapters':cache_refresh} if manuscript_only else {}))
     if manuscript_only:
         final_project=runtime.projects.get(pid)
         if int(final_project.get('generation') or 0)!=begin_generation:
@@ -476,7 +480,8 @@ def _project_snapshot(pid:str, *, manuscript_only:bool=False, navigation_only:bo
         # immutable payload verification, and the original generation fence.
         return {'project':final_project,'tabs':tabs,'documents':tabs,
             'chapters':[{**chapter,'revision':str(begin_generation)} for chapter in chapters],
-            'scenes':scenes,'blocks':blocks,'scene_gaps':[]}
+            'scenes':scenes,'blocks':blocks,'scene_gaps':[],
+            'cache_refresh_chapters':sorted(cache_refresh)}
     labels=domain.list('markup_label',parents,user_id=uid)
     icon_markers=domain.list('icon_marker',parents,user_id=uid)
     canvases=domain.list('canvas',parents,user_id=uid)
@@ -555,13 +560,25 @@ def hosted_chapter_get(cid:str,request:Request):
         # identical project revision, never rebases cached text after an edit.
         return Response(status_code=304,headers={'Cache-Control':'private, no-store','ETag':tag})
     chapter=_get('chapter',{'project_id':pid,'chapter_id':cid})
-    blocks=_list('manuscript_block',{'project_id':pid},field='chapter_id',value=cid,**page)
+    cache_refresh=set()
+    blocks=_list('manuscript_block',{'project_id':pid},field='chapter_id',value=cid,
+        cache_refresh_chapters=cache_refresh,**page)
     if _domain().project_generation(pid,_uid())!=generation:
         raise HTTPException(409,detail='HOSTED_SNAPSHOT_GENERATION_CHANGED')
     revision=str(generation)
     return {'chapter':{**chapter,'revision':revision},'blocks':blocks,'revision':revision,
         'read_tag':tag,
+        'cache_refresh_needed':bool(cache_refresh),
         'next_block_offset':page['page_offset']+len(blocks) if page and len(blocks)==128 else None}
+
+@product_router.post('/api/chapters/{cid}/read-cache')
+async def hosted_chapter_read_cache(cid:str,request:Request):
+    from hosted.manuscript_read_cache import refresh_chapter_read_cache
+    try:
+        async with _read_cache_capacity:
+            return await run_in_threadpool(refresh_chapter_read_cache,_domain(),
+                project_id=_pid(request),chapter_id=cid,user_id=_uid())
+    except Exception as exc:raise _error(exc)
 @product_router.patch('/api/chapters/{cid}')
 @product_router.patch('/api/chapters/{cid}/title')
 async def hosted_chapter_update(cid:str,request:Request):
