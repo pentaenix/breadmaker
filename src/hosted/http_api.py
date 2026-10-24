@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 
 from fastapi import APIRouter, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
+from starlette.concurrency import run_in_threadpool
 
 from auth.identity import AuthorizationError
 from auth.sessions import AuthenticationError
@@ -425,6 +426,12 @@ async def _bounded_upload(file:UploadFile, *, max_bytes:int) -> bytes:
 
 def _create(entity:str,parents:Mapping[str,str],payload:Mapping[str,Any],entity_id:str|None=None):
     try:
+        from hosted.population import current_plan
+        plan=current_plan()
+        if plan is not None:
+            if entity_id is not None:raise ValueError('HOSTED_POPULATE_ID_RESERVED')
+            if entity=='map_line':payload={**_MAP_LINE_DEFAULTS,**payload}
+            return plan.create(entity,parents,payload)
         op=operation_for('entity_create:'+entity)
         if op is not None and entity_id is None:
             from hosted.domain_store import _ID_FIELDS
@@ -441,10 +448,14 @@ def _get(entity:str,ids:Mapping[str,str]):
     except Exception as exc:raise _error(exc)
 
 def _update(entity:str,ids:Mapping[str,str],patch:Mapping[str,Any]):
+    from hosted.population import current_plan
+    if current_plan() is not None:raise HTTPException(409,detail='HOSTED_POPULATE_CREATE_ONLY')
     try:return _json_public(_domain().update(entity,ids,patch,user_id=_uid(),expected_generation=patch.get('generation') if isinstance(patch,dict) else None,operation=operation_for('entity_update:'+entity)))
     except Exception as exc:raise _error(exc)
 
 def _delete(entity:str,ids:Mapping[str,str]):
+    from hosted.population import current_plan
+    if current_plan() is not None:raise HTTPException(409,detail='HOSTED_POPULATE_CREATE_ONLY')
     try:_domain().delete(entity,ids,user_id=_uid());return {'ok':True}
     except Exception as exc:raise _error(exc)
 
@@ -530,8 +541,6 @@ async def hosted_chapter_create(request:Request):return _create('chapter',{'proj
 @product_router.get('/api/chapters/{cid}')
 def hosted_chapter_get(cid:str,request:Request):
     pid=_pid(request)
-    generation=_domain().project_generation(pid,_uid())
-    chapter=_get('chapter',{'project_id':pid,'chapter_id':cid})
     page={}
     if 'block_offset' in request.query_params:
         try:
@@ -539,11 +548,19 @@ def hosted_chapter_get(cid:str,request:Request):
             if offset<0:raise ValueError()
         except ValueError:raise HTTPException(400,detail='HOSTED_MANUSCRIPT_PAGE_INVALID')
         page={'page_offset':offset,'page_size':128}
+    generation=_domain().project_generation(pid,_uid())
+    tag='"bm-chapter-'+hashlib.sha256(json.dumps([pid,cid,generation],separators=(',',':')).encode()).hexdigest()+'"'
+    if request.headers.get('if-none-match')==tag:
+        # The generation check above authorizes the CURRENT actor. A 304 proves
+        # identical project revision, never rebases cached text after an edit.
+        return Response(status_code=304,headers={'Cache-Control':'private, no-store','ETag':tag})
+    chapter=_get('chapter',{'project_id':pid,'chapter_id':cid})
     blocks=_list('manuscript_block',{'project_id':pid},field='chapter_id',value=cid,**page)
     if _domain().project_generation(pid,_uid())!=generation:
         raise HTTPException(409,detail='HOSTED_SNAPSHOT_GENERATION_CHANGED')
     revision=str(generation)
     return {'chapter':{**chapter,'revision':revision},'blocks':blocks,'revision':revision,
+        'read_tag':tag,
         'next_block_offset':page['page_offset']+len(blocks) if page and len(blocks)==128 else None}
 @product_router.patch('/api/chapters/{cid}')
 @product_router.patch('/api/chapters/{cid}/title')
@@ -566,7 +583,7 @@ async def hosted_chapter_blocks(cid:str,request:Request):
     rows=body.get('blocks')
     if not isinstance(rows,list):raise HTTPException(400,detail='HOSTED_CHAPTER_BLOCKS_REQUIRED')
     try:
-        return replace_chapter_blocks(_domain(),project_id=_pid(request),chapter_id=cid,user_id=_uid(),
+        return await run_in_threadpool(replace_chapter_blocks,_domain(),project_id=_pid(request),chapter_id=cid,user_id=_uid(),
             blocks=rows,expected_revision=body.get('expected_revision'),operation=operation_for('chapter_replace'))
     except Exception as exc:raise _error(exc)
 
@@ -637,7 +654,7 @@ def hosted_ui_state_get(key:str,request:Request):
     key=require_opaque_id(key,label='key');return runtime.projects.member_state(_pid(request),key=key,user_id=_uid()) or {'key':key,'value':None}
 @product_router.put('/api/ui-state/{key}')
 async def hosted_ui_state_put(key:str,request:Request):
-    key=require_opaque_id(key,label='key');return runtime.projects.put_member_state(_pid(request),await _body(request),key=key,user_id=_uid())
+    key=require_opaque_id(key,label='key');return await run_in_threadpool(runtime.projects.put_member_state,_pid(request),await _body(request),key=key,user_id=_uid())
 
 # Tasks
 @product_router.get('/api/tasks')
@@ -655,7 +672,7 @@ async def hosted_milestone_create(tid:str,request:Request):return _create('task_
 
 # Canvases
 @product_router.post('/api/canvases')
-async def hosted_canvas_create(request:Request):return _create('canvas',{'project_id':_pid(request)},await _body(request))
+async def hosted_canvas_create(request:Request):return await run_in_threadpool(_create,'canvas',{'project_id':_pid(request)},await _body(request))
 @product_router.get('/api/canvases/{cid}')
 def hosted_canvas_get(cid:str,request:Request):
     pid=_pid(request);return {'canvas':_get('canvas',{'project_id':pid,'canvas_id':cid}),'nodes':_list('canvas_node',{'project_id':pid,'canvas_id':cid}),'edges':_list('canvas_edge',{'project_id':pid,'canvas_id':cid})}
@@ -664,24 +681,32 @@ async def hosted_canvas_update(cid:str,request:Request):return _update('canvas',
 @product_router.delete('/api/canvases/{cid}')
 def hosted_canvas_delete(cid:str,request:Request):return _delete('canvas',{'project_id':_pid(request),'canvas_id':cid})
 @product_router.post('/api/canvases/{cid}/nodes')
-async def hosted_canvas_node(cid:str,request:Request):return _create('canvas_node',{'project_id':_pid(request),'canvas_id':cid},await _body(request))
+async def hosted_canvas_node(cid:str,request:Request):return await run_in_threadpool(_create,'canvas_node',{'project_id':_pid(request),'canvas_id':cid},await _body(request))
 @product_router.post('/api/canvases/{cid}/edges')
-async def hosted_canvas_edge(cid:str,request:Request):return _create('canvas_edge',{'project_id':_pid(request),'canvas_id':cid},await _body(request))
+async def hosted_canvas_edge(cid:str,request:Request):return await run_in_threadpool(_create,'canvas_edge',{'project_id':_pid(request),'canvas_id':cid},await _body(request))
 
 # Story maps
+_MAP_DEFAULTS={'orientation':'horizontal','layout_mode':'scaled','label_mode':'minimal','ruler':'chapters','background':'#f3f3f1','description':''}
+_MAP_LINE_DEFAULTS={'description':'','color':'#4f7d8a','visible':True,'provenance':'manual','layout_locked':False,'lane_offset':0,
+    'planned_start':0.0,'planned_end':1.0,'schematic_start':0.0,'schematic_end':1.0}
 @product_router.get('/api/maps')
 def hosted_maps(request:Request):return {'maps':_list('story_map',{'project_id':_pid(request)})}
 @product_router.post('/api/maps')
-async def hosted_map_create(request:Request):return _create('story_map',{'project_id':_pid(request)},await _body(request))
+async def hosted_map_create(request:Request):return await run_in_threadpool(_create,'story_map',{'project_id':_pid(request)},{**_MAP_DEFAULTS,**await _body(request)})
 @product_router.get('/api/maps/{mid}')
 def hosted_map_get(mid:str,request:Request):
-    pid=_pid(request);lines=_list('map_line',{'project_id':pid,'map_id':mid});return {'map':_get('story_map',{'project_id':pid,'map_id':mid}),'lines':lines,'junctions':_list('map_junction',{'project_id':pid,'map_id':mid})}
+    pid=_pid(request);mapping=_get('story_map',{'project_id':pid,'map_id':mid})
+    lines=[]
+    for index,row in enumerate(_list('map_line',{'project_id':pid,'map_id':mid})):
+        items=_list('map_item',{'project_id':pid,'map_id':mid,'line_id':str(row['id'])})
+        lines.append({**_MAP_LINE_DEFAULTS,'position':index,**row,'items':items})
+    return {'map':{**_MAP_DEFAULTS,**mapping},'lines':lines,'junctions':_list('map_junction',{'project_id':pid,'map_id':mid})}
 @product_router.patch('/api/maps/{mid}')
 async def hosted_map_update(mid:str,request:Request):return _update('story_map',{'project_id':_pid(request),'map_id':mid},await _body(request))
 @product_router.delete('/api/maps/{mid}')
 def hosted_map_delete(mid:str,request:Request):return _delete('story_map',{'project_id':_pid(request),'map_id':mid})
 @product_router.post('/api/maps/{mid}/lines')
-async def hosted_map_line(mid:str,request:Request):return _create('map_line',{'project_id':_pid(request),'map_id':mid},await _body(request))
+async def hosted_map_line(mid:str,request:Request):return await run_in_threadpool(_create,'map_line',{'project_id':_pid(request),'map_id':mid},{**_MAP_LINE_DEFAULTS,**await _body(request)})
 @product_router.post('/api/map-lines/{lid}/items')
 async def hosted_map_item(lid:str,request:Request):
     body=await _body(request);mid=str(body.get('map_id') or '');return _create('map_item',{'project_id':_pid(request),'map_id':mid,'line_id':lid},body)
@@ -723,13 +748,17 @@ def hosted_checkpoint_get(cid:str,request:Request):return _get('checkpoint',{'pr
 def hosted_history_list():return {'revisions':runtime.history.list_revisions()}
 @product_router.post('/api/autocommit')
 async def hosted_autocommit(request:Request):
-    body=await _body(request)
-    try:snapshot=_project_snapshot(_pid(request))
+    body=await _body(request) if await request.body() else {}
+    reason=str(body.get('reason') or request.query_params.get('label') or 'autocommit')[:240]
+    return await run_in_threadpool(_commit_history_snapshot,_pid(request),reason)
+
+def _commit_history_snapshot(pid:str,reason:str):
+    try:snapshot=_project_snapshot(pid)
     except Exception as exc:raise _error(exc)
     envelope=json.dumps({'snapshot':snapshot},sort_keys=True,separators=(',',':')).encode('utf-8')
     import gzip
     if not hasattr(runtime.history,'create_revision'):raise HTTPException(501,detail='HOSTED_HISTORY_WRITE_UNAVAILABLE')
-    return runtime.history.create_revision(gzip.compress(envelope,mtime=0),{'reason':str(body.get('reason') or 'autocommit')})
+    return runtime.history.create_revision(gzip.compress(envelope,mtime=0),{'reason':reason})
 
 # Local-destination backup surfaces are intentionally capability-disabled in M5.
 @product_router.api_route('/api/backup-destinations{rest:path}',methods=['GET','POST','PUT','PATCH','DELETE'])
@@ -744,8 +773,6 @@ def hosted_local_backup_unavailable(rest:str=''):
 # a single-commit operation contract is implemented (M8B audit boundary).
 @product_router.put('/api/scenes/{scene_id}/blocks')
 @product_router.post('/api/scenes/{scene_id}/remove-blocks')
-@product_router.post('/api/canvases/{canvas_id}/populate')
-@product_router.post('/api/maps/{map_id}/populate')
 @product_router.post('/api/map-lines/{line_id}/populate')
 def hosted_unported_bulk_mutation():
     raise HTTPException(409,detail='HOSTED_ATOMIC_BULK_OPERATION_UNAVAILABLE')

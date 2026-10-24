@@ -238,9 +238,12 @@ async function selectChapter(id,save=true,refreshSearch=true){
   clearManuscriptSelection();if(save)await flushSave();const data=await loadChapterData(id);state.viewMode='chapter';state.bookData=null;state.scene=null;state.sceneData=null;state.sceneGap=null;state.chapter=data.chapter;state.chapterData=data;state.chapterRevisions.set(entityId(data.chapter.id),data.revision||data.chapter.revision||state.chapterRevisions.get(entityId(data.chapter.id))||'');state.activeDocumentId=data.chapter.tab_id;normalizeManuscriptNavMode();syncManuscriptViewControls();resetDirtyState();$('#chapterTitle').textContent=data.chapter.title;setSaveState('Saved');renderDocuments();renderChapterTree();renderEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
 }
 async function loadChapterData(id){
-  if(!state.hostedChapterFirst)return api(`/api/chapters/${id}`);
+  if(!runtimeSupports('hosted_persistence'))return api(`/api/chapters/${id}`);
   const project=currentProjectIdentity(),editGeneration=state.editGeneration,path=`/api/chapters/${encodeURIComponent(id)}`;
-  const data=await api(`${path}?block_offset=0`);let offset=data.next_block_offset;
+  const cache=state.chapterCache||(state.chapterCache=new Map()),key=`${project}:${id}`,cached=cache.get(key);
+  const options=cached?.read_tag?{headers:{'If-None-Match':cached.read_tag},acceptNotModified:true}:undefined;
+  const reply=await api(state.hostedChapterFirst?`${path}?block_offset=0`:path,options);
+  const data=reply===null?cached:reply;let offset=reply===null?null:data.next_block_offset;
   while(offset!==null&&offset!==undefined){
     const page=await api(`${path}?block_offset=${offset}`);
     if(String(page.revision)!==String(data.revision))throw new Error('The manuscript changed while loading. Please reopen the chapter.');
@@ -248,6 +251,8 @@ async function loadChapterData(id){
   }
   if(String(currentProjectIdentity())!==String(project)||state.editGeneration!==editGeneration||state.dirty||state.saveInFlight)throw new Error('The manuscript changed while loading. Please reopen the chapter.');
   data.next_block_offset=null;
+  cache.set(key,data);
+  while(cache.size>16)cache.delete(cache.keys().next().value);
   return data;
 }
 async function openWholeBook(save=true,refreshSearch=true){

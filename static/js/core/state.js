@@ -43,6 +43,7 @@ const state = {
   chapterData: null,
   bookData: null,
   bookCache: new Map(),
+  chapterCache: new Map(),
   chapterRevisions: new Map(),
   editBaselinePromise: null,
   editBaselineReady: false,

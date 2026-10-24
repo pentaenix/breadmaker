@@ -125,7 +125,10 @@ function applyNodeVisualStyle(el,node){
   if(node.shape!=='text'&&node.node_type!=='image'&&color)el.style.background=color;
   const textColor=(isDevelopmentalStructureCard(node)||node.node_type==='free')?automaticCanvasTextColor(node):node.text_color;if(textColor)el.style.color=textColor;else el.style.color='';
 }
+let canvasNodeMeasureFrame=null;
 function renderNodes(){
+  if(canvasNodeMeasureFrame!==null)cancelAnimationFrame(canvasNodeMeasureFrame);
+  const measurements=[];
   const box=$('#nodes'),figures=$('#figures');box.innerHTML='';if(figures)figures.innerHTML='';
   for(const node of state.canvasNodes){
     if(!developmentalObjectVisible(node)||nodeInDevelopmentalLane(node))continue;
@@ -137,10 +140,11 @@ function renderNodes(){
     else if(node.node_type==='image'){el.style.width=`${node.w}px`;el.style.height=`${node.h}px`;const ports=nodePorts(node).map(port=>`<span class="node-port ${port}" data-port="${port}"></span>`).join('');el.innerHTML=`<img class="canvas-free-image" src="${escapeHtml(projectAssetDisplayUrl(node.image_path))}" alt="${escapeHtml(i18nSource('Canvas image'))}" draggable="false">${ports}<span class="node-resize-handle" title="{{i18n:dynamic.html.attr.title.697680bc}}"></span>`}
     else if(structural){el.style.width='143px';el.style.height='52px';el.style.minHeight='52px';applyNodeVisualStyle(el,node);const scope=state.currentCanvas?.developmental_scope==='scenes'?'Scene':'Chapter',ports=nodePorts(node).map(port=>`<span class="node-port ${port}" data-port="${port}"></span>`).join('');el.innerHTML=`<div class="developmental-desk-tile"><span class="developmental-tile-title">${escapeHtml(node.title||scope)}</span></div>${ports}`}
     else{const display=cardDisplayMode(node),textAlign=cardTextAlign(node);el.classList.add(`card-display-${display}`,`text-align-${textAlign}`);el.style.width=`${node.w}px`;el.style.height='auto';el.style.minHeight=display==='header'?'0px':`${node.h}px`;applyNodeVisualStyle(el,node);const title=display==='body'?'':`<div class="node-title-line"><span class="node-icon">${escapeHtml(node.icon||'')}</span><div class="node-title" contenteditable="true">${escapeHtml(node.title||'')}</div></div>`,body=display==='header'?'':`<div class="node-body" contenteditable="true">${escapeHtml(node.body||'')}</div>`,ports=nodePorts(node).map(port=>`<span class="node-port ${port}" data-port="${port}"></span>`).join('');el.innerHTML=`<div class="node-drag-strip" title="{{i18n:dynamic.html.attr.title.bdaf758c}}"></div><div class="node-inner">${title}${body}</div>${ports}<span class="node-resize-handle" title="{{i18n:dynamic.html.attr.title.165b6298}}"></span>`}
-    (node.node_type==='figure'&&figureLayer(node)==='back'&&figures?figures:box).appendChild(el);wireNode(el,node);wireCanvasNodeContextMenu(el,node);requestAnimationFrame(()=>{syncRenderedNodeSize(node,el);drawEdges()})
+    (node.node_type==='figure'&&figureLayer(node)==='back'&&figures?figures:box).appendChild(el);wireNode(el,node);wireCanvasNodeContextMenu(el,node);measurements.push([node,el])
   }
   for(const item of developmentalMissingItems().filter(item=>Number(item.placed)!==1)){const ghost=document.createElement('div');ghost.className='canvas-node developmental-missing';ghost.dataset.versionItemId=item.id;ghost.style.left=`${Number(item.x)||DEVELOPMENTAL_LANE_START_X}px`;ghost.style.top=`${Number(item.y)||DEVELOPMENTAL_FREE_Y}px`;ghost.style.width='220px';ghost.innerHTML=`<div class="node-inner"><div class="node-title-line"><span class="node-icon">⚠</span><div class="node-title">${escapeHtml(item.title||`${item.entity_type} ${item.entity_id}`)}</div></div><div class="node-body">{{i18n:dynamic.html.text.div.335618e9}}</div></div><button class="developmental-missing-remove" title="{{i18n:dynamic.html.attr.title.f9a9c222}}">×</button>`;ghost.querySelector('.developmental-missing-remove').onclick=e=>{e.stopPropagation();removeMissingVersionItem(entityId(item.id))};box.appendChild(ghost)}
   syncDevelopmentalDeskTileScale();renderDevelopmentalLane();applyLegendFilter(false);refreshDevelopmentalDirtyState();renderCanvasGuides();
+  canvasNodeMeasureFrame=requestAnimationFrame(()=>{canvasNodeMeasureFrame=null;for(const [node,el] of measurements)syncRenderedNodeSize(node,el);drawEdges()});
 }
 function canvasSelectedEdgeIds(){if(!(state.selectedEdgeIds instanceof Set))state.selectedEdgeIds=new Set(state.selectedEdgeId?[state.selectedEdgeId]:[]);return state.selectedEdgeIds}
 function clearCanvasEdgeSelection(){canvasSelectedEdgeIds().clear();state.selectedEdgeId=null}

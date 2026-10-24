@@ -425,9 +425,11 @@ class HostedProjectPackageService:
         stored['_bm_create_fingerprint']=fingerprint
         return path,stored
 
-    def _stage_entity(self, logical:str, ids:Mapping[str,str], data:Mapping[str,Any], *, entity_id:str) -> None:
+    def _stage_entity(self, logical:str, ids:Mapping[str,str], data:Mapping[str,Any], *, entity_id:str, unpublished_only:bool=False) -> None:
         path,stored=self._prepare_import_entity(logical,ids,data,entity_id=entity_id)
         def create(tx):
+            if unpublished_only and tx.get(('projects',ids['project_id'])) is not None:
+                raise ValueError('HOSTED_IMPORT_PROJECT_ALREADY_PUBLISHED')
             old=tx.get(path)
             if old is not None:
                 if (old.data.get('_bm_create_operation')==stored['_bm_create_operation']
@@ -507,6 +509,7 @@ class HostedProjectPackageService:
             'project_asset',{'project_id':pid},
             {'api_path':'/api/assets/'+name,'name':name,'sha256':digest,'object_name':obj.name,'object_generation':obj.generation,'object_sha256':obj.sha256,'object_size':obj.size},
             entity_id='asset_'+digest,
+            unpublished_only=True,
         )
 
     def _finish_import(self,pid:str,title:str,user_id:str) -> dict[str,Any]:

@@ -156,7 +156,7 @@ async function scenario(mode){
     blocks:Array.from({length:129},(_,i)=>({id:'one'+i})),next_block_offset:mode==='partial-cache'?128:null};
   let active='project',inflight=0,peak=0;const calls=[],statuses=[];
   const manifest={project:{generation:7},chapters:[{id:'one'},{id:'two'},{id:'three'}],read_tag:'tag7',blocks:[]};
-  const context=vm.createContext({state,entityId:String,currentProjectIdentity:()=>active,setSaveState:value=>statuses.push(value),
+  const context=vm.createContext({state,entityId:String,runtimeSupports:()=>true,currentProjectIdentity:()=>active,setSaveState:value=>statuses.push(value),
     api:async(url,options)=>{
       calls.push(url);
       if(options?.acceptNotModified){

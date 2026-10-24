@@ -12,7 +12,7 @@ identity store; email is metadata only and is never account authority.
 import hashlib
 import secrets
 import time
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import timedelta
@@ -346,6 +346,21 @@ class IdentityPlatformSessionService:
 
     def current(self):
         return self._current.get()
+
+    @asynccontextmanager
+    async def bind_async(self, token: str | None):
+        # Perform the SAME revocation/admission checks on every request, off the
+        # ASGI loop. Bind the result in the requesting task, not in the worker.
+        from anyio import to_thread
+        def resolve():
+            with self.bind(token) as principal:
+                return principal
+        principal = await to_thread.run_sync(resolve)
+        handle = self._current.set(principal)
+        try:
+            yield principal
+        finally:
+            self._current.reset(handle)
 
     @contextmanager
     def bind(self, token: str | None):

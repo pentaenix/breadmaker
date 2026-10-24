@@ -5,12 +5,13 @@ from __future__ import annotations
 import ipaddress
 import os
 import re
-from contextlib import nullcontext
+from contextlib import asynccontextmanager, nullcontext
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 
 from auth import identity as identity_service
 from auth.sessions import AuthenticationError
@@ -112,6 +113,16 @@ _AUTH_PUBLIC_EXACT={
     '/api/auth/session','/api/auth/logout','/api/auth/csrf','/api/auth/client-config','/api/auth/session/exchange',
 }
 
+@asynccontextmanager
+async def _request_binding(provider,*args,**kwargs):
+    # Local storage remains on its existing binding path. Hosted providers
+    # resolve blocking authority in bounded workers, then bind task-local state.
+    asynchronous=getattr(provider,'bind_async',None) if runtime.mode in {'hosted','hosted_dev'} else None
+    if asynchronous is not None:
+        async with asynchronous(*args,**kwargs) as value:yield value
+    else:
+        with provider.bind(*args,**kwargs) as value:yield value
+
 
 def _runtime_bootstrap_payload() -> dict:
     """Return project-free runtime metadata used before any project/profile binding.
@@ -200,7 +211,7 @@ async def local_origin_guard(request: Request, call_next):
 
     session_token=request.cookies.get(runtime.sessions.cookie_name)
     try:
-        with runtime.sessions.bind(session_token):
+        async with _request_binding(runtime.sessions,session_token):
             # Opaque-session resolution prunes expired sessions first. Mirror that
             # lifecycle into detached Portable Review state so expired sessions cannot
             # leave package bytes/passphrases resident until process restart.
@@ -217,19 +228,21 @@ async def local_origin_guard(request: Request, call_next):
                 if mutating:
                     allowed,retry=_HOSTED_RATE_LIMITER.allow(rate_identity,'write',limit=_HOSTED_LIMITS.writes_per_minute)
                     if not allowed:return JSONResponse({'detail':{'code':'HOSTED_RATE_LIMITED','message':'Too many Breadmaker changes. Try again shortly.','params':{}}},status_code=429,headers={'Retry-After':str(retry),'Cache-Control':'private, no-store'})
-            project_id=_request_project_identity(request) if is_api else ''
+            project_id=(await run_in_threadpool(_request_project_identity,request) if runtime.mode in {'hosted','hosted_dev'} else _request_project_identity(request)) if is_api else ''
             user_id=_request_user_identity(request) if is_api and (not runtime.sessions.requires_authentication or runtime.sessions.current() is not None) else ''
             request.state.breadmaker_project_id=project_id or None
             request.state.breadmaker_user_id=user_id or None
             request.state.breadmaker_session=runtime.sessions.current()
-            context_manager=runtime.context.bind(project_id,user_id=user_id or None) if project_id else nullcontext(None)
-            with context_manager:
+            context_manager=_request_binding(runtime.context,project_id,user_id=user_id or None) if project_id else nullcontext(None)
+            async with context_manager:
                 if _HOSTED_LIMITS is not None and mutating and project_id and path not in {'/api/projects','/api/projects/import','/api/projects/import-json','/api/import/new-project'}:
                     raw_length=str(request.headers.get('content-length') or '').strip();declared=0
                     if raw_length:
                         try:declared=max(0,int(raw_length))
                         except ValueError:declared=0
-                    _enforce_hosted_project_storage(project_id=project_id,additional_bytes=declared)
+                    if runtime.mode in {'hosted','hosted_dev'}:
+                        await run_in_threadpool(_enforce_hosted_project_storage,project_id=project_id,additional_bytes=declared)
+                    else:_enforce_hosted_project_storage(project_id=project_id,additional_bytes=declared)
                 if mutating:
                     client=(request.headers.get("x-breadmaker-client") or '').strip()[:120] or None
                     if client:

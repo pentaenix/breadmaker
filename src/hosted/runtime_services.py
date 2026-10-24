@@ -12,7 +12,7 @@ import hashlib
 import os
 import secrets
 import time
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any, Callable, Mapping
@@ -275,6 +275,19 @@ class HostedProjectContextProvider:
 
     def current(self):
         return self._current.get()
+
+    @asynccontextmanager
+    async def bind_async(self, project_id: str | None = None, *, user_id: str | None = None, require_membership: bool = True):
+        from anyio import to_thread
+        def resolve():
+            with self.bind(project_id,user_id=user_id,require_membership=require_membership) as context:
+                return context
+        context = await to_thread.run_sync(resolve)
+        token = self._current.set(context)
+        try:
+            yield context
+        finally:
+            self._current.reset(token)
 
     @contextmanager
     def bind(self, project_id: str | None = None, *, user_id: str | None = None, require_membership: bool = True):

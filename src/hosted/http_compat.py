@@ -29,6 +29,9 @@ from hosted.firestore.contracts import DocumentNotFound
 from hosted.firestore.ids import require_opaque_id
 from hosted.firestore.model_registry import MODELS
 from hosted.action_journal import ActionJournal
+from hosted.domain_store import operation_id
+from hosted.idempotency import operation_for
+from hosted.population import atomic_population
 from hosted.http_api import (
     _body, _create, _delete, _documents, _domain, _error, _get, _json_public,
     _list, _pid, _project_snapshot, _uid, _update,
@@ -562,6 +565,17 @@ def hosted_canvas_populate_catalog(request:Request):return _story_catalog_for_pr
 @router.post('/api/canvases/{cid}/populate')
 async def hosted_canvas_populate(cid:str,request:Request):
     body=await _body(request);pid=_pid(request)
+    return await run_in_threadpool(_populate_atomic,'canvas',cid,pid,body)
+
+def _populate_atomic(kind,entity_id,pid,body):
+    try:
+        operation=operation_for('populate:'+kind) or operation_id('populate_'+kind)
+        with atomic_population(_domain(),pid,_uid(),operation):
+            return (_canvas_populate_plan if kind=='canvas' else _map_populate_plan)(entity_id,pid,body)
+    except HTTPException:raise
+    except Exception as exc:raise _error(exc)
+
+def _canvas_populate_plan(cid,pid,body):
     template_id=str(body.get('template_id') or '')
     if not template_id:
         # Retain the M5A low-level payload for API compatibility with any early hosted client.
@@ -768,7 +782,11 @@ def _map_item_payload(item:Mapping[str,Any],index:int,count:int) -> dict[str,Any
 
 @router.post('/api/maps/{mid}/populate')
 async def hosted_map_populate(mid:str,request:Request):
-    body=await _body(request);pid=_pid(request);template_id=str(body.get('template_id') or '')
+    body=await _body(request);pid=_pid(request)
+    return await run_in_threadpool(_populate_atomic,'map',mid,pid,body)
+
+def _map_populate_plan(mid,pid,body):
+    template_id=str(body.get('template_id') or '')
     if not template_id:
         lines=body.get('lines') or [];saved=[]
         for line in lines if isinstance(lines,list) else []:

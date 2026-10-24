@@ -37,6 +37,14 @@ def _imported_tab_title(tab:dict,index:int,total:int,source_stem:str)->str:
 
 def _insert_parsed_tabs(con,pid:int,tabs:list[dict],start_position:int,t:str,*,manuscript_first:bool=False,source_stem:str=''):
     if not tabs: return {'document_ids':[],'chapters':0,'images':0}
+    # Parsing happens before the destination project exists. Materialize image
+    # bytes only after its request/storage context is bound, never in the
+    # previously-open project's asset directory.
+    pending=tabs[0].get('_pending_images',{})
+    materialized={}
+    for reference,(blob,ext) in pending.items():
+        from .docx_parser import _save_image_blob
+        materialized[reference]=_save_image_blob(blob,ext)
     con.execute("UPDATE document_tabs SET position=position+?,updated_at=? WHERE project_id=? AND position>=?",(len(tabs),t,pid,start_position))
     document_ids=[]; chapter_count=0; image_count=0
     for ti,tab in enumerate(tabs):
@@ -47,7 +55,7 @@ def _insert_parsed_tabs(con,pid:int,tabs:list[dict],start_position:int,t:str,*,m
             chapter_count+=1
             cid=con.execute("INSERT INTO chapters(project_id,tab_id,position,title,description,content_html,content_hash,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)",(pid,tabid,ci,(ch.get('title') or f'Chapter {ci+1}')[:240],str(ch.get('description') or '')[:12000], '', '',t,t)).lastrowid
             for bi,b in enumerate(ch['blocks']):
-                bid=storage_values.uid('b_'); typ='image' if b.get('kind')=='image' else 'paragraph'; text=b.get('text',''); image_path=b.get('image_path',''); h=storage_values.sha((b.get('html',''))+'\0'+text+'\0'+image_path)
+                bid=storage_values.uid('b_'); typ='image' if b.get('kind')=='image' else 'paragraph'; text=b.get('text',''); image_path=materialized.get(b.get('image_path',''),b.get('image_path','')); h=storage_values.sha((b.get('html',''))+'\0'+text+'\0'+image_path)
                 if typ=='image': image_count+=1
                 con.execute("INSERT INTO manuscript_blocks(id,project_id,tab_id,chapter_id,position,block_type,semantic_style,content_html,text_content,image_path,content_hash,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",(bid,pid,tabid,cid,bi,typ,b.get('style','body'),b.get('html',''),text,image_path,h,t,t))
                 for hi in b.get('highlights',[]):
@@ -86,11 +94,17 @@ async def _parse_import_upload(file:UploadFile,chapter_heading:str='heading1'):
             # HTTP graph must not pay the native/XML parser startup cost unless the
             # writer actually imports a DOCX file.
             from .docx_parser import parse_docx
-            tabs=parse_docx(src,chapter_heading)
+            images={}
+            def stage_image(blob,ext):
+                reference=f'import-image-{len(images)}'
+                images[reference]=(bytes(blob),ext)
+                return reference
+            tabs=parse_docx(src,chapter_heading,image_store=stage_image)
+            if images:tabs[0]['_pending_images']=images
     return safe_filename,tabs
 
 def _parsed_tabs_text_bytes(tabs:list[dict]) -> int:
-    total=0
+    total=sum(len(blob) for blob,_ in (tabs[0].get('_pending_images',{}).values() if tabs else []))
     for tab in tabs or []:
         total+=len(str(tab.get('title') or '').encode('utf-8'))
         for chapter in tab.get('chapters',[]) or []:

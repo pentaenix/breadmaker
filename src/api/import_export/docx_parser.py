@@ -43,7 +43,7 @@ def _styled_html(run,text):
     if run.underline:s=f'<u>{s}</u>'
     return s
 
-def paragraph_parts(p:Paragraph):
+def paragraph_parts(p:Paragraph, *, image_store=None):
     """Return text/image parts in run-child order. Literal Word tabs remain \t."""
     parts=[]; text=''; html_bits=[]; highlights=[]; offset=0
     def flush():
@@ -68,7 +68,7 @@ def paragraph_parts(p:Paragraph):
                     rid=blip.get(qn('r:embed'))
                     if rid and rid in p.part.rels:
                         part=p.part.rels[rid].target_part; blob=part.blob; ext=(part.content_type.split('/')[-1] or 'png').replace('jpeg','jpg')
-                        parts.append({'kind':'image','image_path':_save_image_blob(blob,ext)})
+                        parts.append({'kind':'image','image_path':(image_store or _save_image_blob)(blob,ext)})
                 continue
             if seg:
                 st=offset; text+=seg; html_bits.append(_styled_html(run,seg)); offset+=len(seg)
@@ -84,7 +84,7 @@ def paragraph_parts(p:Paragraph):
 def has_page_break(p:Paragraph)->bool:
     return bool(p._p.xpath('.//w:br[@w:type="page"]')) or bool(p._p.xpath('./w:pPr/w:pageBreakBefore'))
 
-def parse_docx(path:Path, chapter_heading:str='heading1'):
+def parse_docx(path:Path, chapter_heading:str='heading1', *, image_store=None):
     doc=Document(path); entries=[]
     for item in iter_block_items(doc):
         if isinstance(item,Table):
@@ -94,7 +94,7 @@ def parse_docx(path:Path, chapter_heading:str='heading1'):
         heading_match=re.match(r'^heading\s+([1-6])(?:\b|$)',style)
         if heading_match: semantic=f'heading{heading_match.group(1)}'
         elif style=='title': semantic='title'
-        parts=paragraph_parts(p); first=True
+        parts=paragraph_parts(p,image_store=image_store); first=True
         for part in parts:
             if part['kind']=='text': entries.append({'kind':'paragraph','text':part['text'],'html':part['html'],'highlights':part.get('highlights',[]),'style':semantic,'page_break':has_page_break(p) if first else False})
             else: entries.append({'kind':'image','image_path':part['image_path'],'text':'','html':'','highlights':[],'style':'image','page_break':False})

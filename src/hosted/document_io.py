@@ -13,6 +13,7 @@ import zipfile
 from typing import Any, Mapping
 
 from docx import Document
+from docx.oxml.ns import qn
 from docx.shared import Inches
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -46,7 +47,7 @@ def validate_docx_bytes(data:bytes) -> None:
     except zipfile.BadZipFile as exc:raise ValueError('HOSTED_DOCX_INVALID') from exc
 
 
-def parse_document_bytes(data:bytes, filename:str, chapter_heading:str='heading1') -> tuple[list[dict[str,Any]],list[str]]:
+def parse_document_bytes(data:bytes, filename:str, chapter_heading:str='heading1', *, image_store=None) -> tuple[list[dict[str,Any]],list[str]]:
     payload=read_upload_bytes_sync(data);lower=str(filename or 'document.docx').lower();warnings=[]
     if lower.endswith('.txt'):
         text=payload.decode('utf-8',errors='replace')
@@ -70,13 +71,37 @@ def parse_document_bytes(data:bytes, filename:str, chapter_heading:str='heading1
         style=str(getattr(paragraph.style,'name','') or '').strip().lower()
         match=re.fullmatch(r'heading\s*([1-6])',style)
         text=str(paragraph.text or '')
-        if match and int(match.group(1))==chapter_level:
+        is_chapter=bool(match and int(match.group(1))==chapter_level and text.strip())
+        if is_chapter:
             if current['blocks'] or chapters:push()
             current['title']=text.strip()[:240] or f'Chapter {len(chapters)+1}'
-            continue
-        if any('drawing' in child.tag.lower() or 'pict' in child.tag.lower() for run in paragraph.runs for child in run._r):
-            warnings.append('Embedded DOCX images were omitted during hosted text import; add them again from the manuscript image tool.')
-        current['blocks'].append({'kind':'paragraph','text':text,'html':html.escape(text),'style':'body'})
+        pieces=[];pending=[]
+        def flush():
+            if pending:
+                value=''.join(pending)
+                if not is_chapter:pieces.append({'kind':'paragraph','text':value,'html':html.escape(value),'style':'body'})
+                pending.clear()
+        for run in paragraph.runs:
+            for child in run._r:
+                if child.tag==qn('w:t'):pending.append(child.text or '')
+                elif child.tag==qn('w:tab'):pending.append('\t')
+                elif child.tag==qn('w:br') and child.get(qn('w:type'))!='page':pending.append('\n')
+                elif child.tag in {qn('w:drawing'),qn('w:pict')}:
+                    flush()
+                    if image_store is None:raise ValueError('HOSTED_DOCX_IMAGES_REQUIRE_RESUMABLE_IMPORT')
+                    references=[(node.get(qn('r:embed')),node.get(qn('r:link'))) for node in child.xpath('.//a:blip')]
+                    references.extend((node.get(qn('r:id')),None) for node in child.xpath('.//*[local-name()="imagedata"]'))
+                    if not references:raise ValueError('HOSTED_DOCX_IMAGE_UNSUPPORTED')
+                    for rid,external in references:
+                        relation=paragraph.part.rels.get(rid) if rid else None
+                        if external or relation is None or relation.is_external:raise ValueError('HOSTED_DOCX_EXTERNAL_IMAGE_UNSUPPORTED')
+                        part=relation.target_part
+                        extension='.'+str(part.partname).rsplit('.',1)[-1].lower()
+                        path=image_store(bytes(part.blob),extension)
+                        pieces.append({'kind':'image','image_path':path,'text':'','html':'','style':'image'})
+        flush()
+        if pieces:current['blocks'].extend(pieces)
+        elif not is_chapter:current['blocks'].append({'kind':'paragraph','text':text,'html':html.escape(text),'style':'body'})
     if current['blocks'] or not chapters:chapters.append(current)
     for chapter in chapters:
         if not chapter['blocks']:chapter['blocks']=[{'kind':'paragraph','text':'','html':'','style':'body'}]
