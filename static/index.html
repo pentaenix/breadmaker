@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Breadmaker Studio</title>
-<link rel="icon" type="image/svg+xml" href="/static/breadmaker_logo.svg?v=10.5.56">
+<link rel="icon" type="image/svg+xml" href="/static/breadmaker_logo.svg?v=10.5.57">
 <style>
 html{background:#f4ebdf}html:not([data-breadmaker-boot-ready]) #app{visibility:hidden}#startupScreen{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#f4ebdf;color:#47392d}html[data-breadmaker-boot-ready] #startupScreen{display:none}
 </style>
@@ -15,29 +15,29 @@ window.addEventListener('error',event=>{if(event.target?.tagName==='SCRIPT')wind
 window.__breadmakerStartupDeadline=setTimeout(()=>window.breadmakerStartupFailed(),60000);
 (()=>{const path=String(location.pathname||'/').replace(/\/+$/,'')||'/';const project=path.match(/^\/p\/[0-9a-f]{32}(?:\/(canvas|maps|tasks|reviews))?$/);const view=project?(project[1]||'manuscript'):path==='/canvas'?'canvas':path==='/maps'?'maps':path==='/tasks'?'tasks':path==='/reviews'?'reviews':'manuscript';document.documentElement.dataset.initialView=view;let code='en';try{code=(localStorage.getItem('breadmaker-language')||'en').replace(/[^A-Za-z0-9_-]/g,'')||'en'}catch{}const load=async locale=>{const r=await fetch(`/locales/${encodeURIComponent(locale)}.json`,{cache:'no-store'});if(!r.ok)throw new Error('Locale file could not be loaded');return r.json()};window.__breadmakerLocalePromise=load(code).catch(error=>code==='en'?Promise.reject(error):load('en'))})();
 </script>
-<link rel="stylesheet" href="/static/styles.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/shared/workspace-foundations.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/canvas/navigation-and-legend.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/projects/center-interactions.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/canvas/object-presentation.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/maps/workspace.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/manuscript/editor-tools.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/projects/history-verification-export.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/canvas/configuration.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/projects/metadata-danger.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/manuscript/workspace.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/projects/settings.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/canvas/workspace.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/projects/import-browse.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/maps/presentation.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/shared/application-controls.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/projects/recovery-backups.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/reviews/workspace.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/manuscript/media-and-split.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/reviews/manuscript-layer.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/profile/local-profile.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/profile/account-security.css?v=10.5.56">
-<link rel="stylesheet" href="/static/css/shared/startup-hydration.css?v=10.5.56">
+<link rel="stylesheet" href="/static/styles.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/shared/workspace-foundations.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/canvas/navigation-and-legend.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/projects/center-interactions.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/canvas/object-presentation.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/maps/workspace.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/manuscript/editor-tools.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/projects/history-verification-export.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/canvas/configuration.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/projects/metadata-danger.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/manuscript/workspace.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/projects/settings.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/canvas/workspace.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/projects/import-browse.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/maps/presentation.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/shared/application-controls.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/projects/recovery-backups.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/reviews/workspace.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/manuscript/media-and-split.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/reviews/manuscript-layer.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/profile/local-profile.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/profile/account-security.css?v=10.5.57">
+<link rel="stylesheet" href="/static/css/shared/startup-hydration.css?v=10.5.57">
 </head>
 <body>
 <section id="startupScreen" role="status" aria-live="polite" aria-label="Opening Breadmaker Studio">
@@ -596,53 +596,53 @@ window.__breadmakerStartupDeadline=setTimeout(()=>window.breadmakerStartupFailed
   </div>
 </div>
 <div id="toast" class="toast hidden"></div>
-<script src="/static/js/core/i18n.js?v=10.5.56"></script>
-<script src="/static/js/core/runtime.js?v=10.5.56"></script>
-<script src="/static/js/core/state.js?v=10.5.56"></script>
-<script src="/static/js/core/typography.js?v=10.5.56"></script>
-<script src="/static/js/core/ui.js?v=10.5.56"></script>
-<script src="/static/js/features/account/security.js?v=10.5.56"></script>
-<script src="/static/js/core/collections.js?v=10.5.56"></script>
-<script src="/static/js/core/routing.js?v=10.5.56"></script>
-<script src="/static/js/core/history.js?v=10.5.56"></script>
-<script src="/static/js/features/reviews/view.js?v=10.5.56"></script>
-<script src="/static/js/features/reviews/reader.js?v=10.5.56"></script>
-<script src="/static/js/features/reviews/workspace.js?v=10.5.56"></script>
-<script src="/static/js/features/reviews/details.js?v=10.5.56"></script>
-<script src="/static/js/features/reviews/panels.js?v=10.5.56"></script>
-<script src="/static/js/features/reviews/lifecycle.js?v=10.5.56"></script>
-<script src="/static/js/core/recovery.js?v=10.5.56"></script>
-<script src="/static/js/core/boot.js?v=10.5.56"></script>
-<script src="/static/js/features/projects/menu.js?v=10.5.56"></script>
-<script src="/static/js/features/projects/settings.js?v=10.5.56"></script>
-<script src="/static/js/features/projects/backups.js?v=10.5.56"></script>
-<script src="/static/js/features/projects/lifecycle.js?v=10.5.56"></script>
-<script src="/static/js/features/projects/export_recovery.js?v=10.5.56"></script>
-<script src="/static/js/features/manuscript/view.js?v=10.5.56"></script>
-<script src="/static/js/features/manuscript/bookmarks.js?v=10.5.56"></script>
-<script src="/static/js/features/manuscript/navigation.js?v=10.5.56"></script>
-<script src="/static/js/features/manuscript/rendering.js?v=10.5.56"></script>
-<script src="/static/js/features/manuscript/history.js?v=10.5.56"></script>
-<script src="/static/js/features/manuscript/workspace.js?v=10.5.56"></script>
-<script src="/static/js/features/manuscript/persistence.js?v=10.5.56"></script>
-<script src="/static/js/features/manuscript/editing.js?v=10.5.56"></script>
-<script src="/static/js/features/manuscript/scenes.js?v=10.5.56"></script>
-<script src="/static/js/features/manuscript/annotations.js?v=10.5.56"></script>
-<script src="/static/js/features/manuscript/find_replace.js?v=10.5.56"></script>
-<script src="/static/js/features/tasks.js?v=10.5.56"></script>
-<script src="/static/js/features/linking.js?v=10.5.56"></script>
-<script src="/static/js/features/canvas/hierarchy.js?v=10.5.56"></script>
-<script src="/static/js/features/canvas/nodes.js?v=10.5.56"></script>
-<script src="/static/js/features/canvas/connectors.js?v=10.5.56"></script>
-<script src="/static/js/features/maps/view.js?v=10.5.56"></script>
-<script src="/static/js/features/maps/workspace.js?v=10.5.56"></script>
-<script src="/static/js/features/maps/metro.js?v=10.5.56"></script>
-<script src="/static/js/features/split_view.js?v=10.5.56"></script>
-<script src="/static/js/features/manuscript/imports.js?v=10.5.56"></script>
-<script src="/static/js/features/checkpoints/workspace.js?v=10.5.56"></script>
-<script src="/static/js/features/durability/history.js?v=10.5.56"></script>
-<script src="/static/js/features/notes/comments.js?v=10.5.56"></script>
-<script src="/static/js/core/quick_open.js?v=10.5.56"></script>
-<script src="/static/app.js?v=10.5.56"></script>
+<script src="/static/js/core/i18n.js?v=10.5.57"></script>
+<script src="/static/js/core/runtime.js?v=10.5.57"></script>
+<script src="/static/js/core/state.js?v=10.5.57"></script>
+<script src="/static/js/core/typography.js?v=10.5.57"></script>
+<script src="/static/js/core/ui.js?v=10.5.57"></script>
+<script src="/static/js/features/account/security.js?v=10.5.57"></script>
+<script src="/static/js/core/collections.js?v=10.5.57"></script>
+<script src="/static/js/core/routing.js?v=10.5.57"></script>
+<script src="/static/js/core/history.js?v=10.5.57"></script>
+<script src="/static/js/features/reviews/view.js?v=10.5.57"></script>
+<script src="/static/js/features/reviews/reader.js?v=10.5.57"></script>
+<script src="/static/js/features/reviews/workspace.js?v=10.5.57"></script>
+<script src="/static/js/features/reviews/details.js?v=10.5.57"></script>
+<script src="/static/js/features/reviews/panels.js?v=10.5.57"></script>
+<script src="/static/js/features/reviews/lifecycle.js?v=10.5.57"></script>
+<script src="/static/js/core/recovery.js?v=10.5.57"></script>
+<script src="/static/js/core/boot.js?v=10.5.57"></script>
+<script src="/static/js/features/projects/menu.js?v=10.5.57"></script>
+<script src="/static/js/features/projects/settings.js?v=10.5.57"></script>
+<script src="/static/js/features/projects/backups.js?v=10.5.57"></script>
+<script src="/static/js/features/projects/lifecycle.js?v=10.5.57"></script>
+<script src="/static/js/features/projects/export_recovery.js?v=10.5.57"></script>
+<script src="/static/js/features/manuscript/view.js?v=10.5.57"></script>
+<script src="/static/js/features/manuscript/bookmarks.js?v=10.5.57"></script>
+<script src="/static/js/features/manuscript/navigation.js?v=10.5.57"></script>
+<script src="/static/js/features/manuscript/rendering.js?v=10.5.57"></script>
+<script src="/static/js/features/manuscript/history.js?v=10.5.57"></script>
+<script src="/static/js/features/manuscript/workspace.js?v=10.5.57"></script>
+<script src="/static/js/features/manuscript/persistence.js?v=10.5.57"></script>
+<script src="/static/js/features/manuscript/editing.js?v=10.5.57"></script>
+<script src="/static/js/features/manuscript/scenes.js?v=10.5.57"></script>
+<script src="/static/js/features/manuscript/annotations.js?v=10.5.57"></script>
+<script src="/static/js/features/manuscript/find_replace.js?v=10.5.57"></script>
+<script src="/static/js/features/tasks.js?v=10.5.57"></script>
+<script src="/static/js/features/linking.js?v=10.5.57"></script>
+<script src="/static/js/features/canvas/hierarchy.js?v=10.5.57"></script>
+<script src="/static/js/features/canvas/nodes.js?v=10.5.57"></script>
+<script src="/static/js/features/canvas/connectors.js?v=10.5.57"></script>
+<script src="/static/js/features/maps/view.js?v=10.5.57"></script>
+<script src="/static/js/features/maps/workspace.js?v=10.5.57"></script>
+<script src="/static/js/features/maps/metro.js?v=10.5.57"></script>
+<script src="/static/js/features/split_view.js?v=10.5.57"></script>
+<script src="/static/js/features/manuscript/imports.js?v=10.5.57"></script>
+<script src="/static/js/features/checkpoints/workspace.js?v=10.5.57"></script>
+<script src="/static/js/features/durability/history.js?v=10.5.57"></script>
+<script src="/static/js/features/notes/comments.js?v=10.5.57"></script>
+<script src="/static/js/core/quick_open.js?v=10.5.57"></script>
+<script src="/static/app.js?v=10.5.57"></script>
 </body>
 </html>

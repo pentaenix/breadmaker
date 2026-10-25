@@ -201,8 +201,8 @@ async function selectScene(id,save=true,refreshSearch=true){
   if(save)await flushSave();const data=await api(`/api/scenes/${id}/manuscript`);for(const [cid,rev] of Object.entries(data.chapter_revisions||{}))state.chapterRevisions.set(entityId(cid),rev);state.viewMode='scene';state.scene=data.scene;state.sceneData=data;state.sceneGap=null;state.chapter=null;state.chapterData=null;state.bookData=null;
   const meta=sceneById(id);if(meta?.tab_id||meta?.first_tab_id)state.activeDocumentId=entityId(meta.tab_id||meta.first_tab_id);normalizeManuscriptNavMode();syncManuscriptViewControls();resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();renderSceneEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
 }
-async function loadBookData(tabId,{preview=null}={}){
-  const id=entityId(tabId);if(state.bookCache.has(id))return state.bookCache.get(id);
+async function loadBookData(tabId,{preview=null,force=false}={}){
+  const id=entityId(tabId);if(!force&&state.bookCache.has(id))return state.bookCache.get(id);
   if(!state.hostedChapterFirst){const data=await api(`/api/book?tab_id=${id}`);state.bookCache.set(id,data);for(const cid of data.cache_refresh_chapters||[])queueHostedReadCache(cid,data.project?.generation);return data}
   const project=currentProjectIdentity(),editGeneration=state.editGeneration,data=await api(`/api/book?tab_id=${encodeURIComponent(id)}&manifest=true`);
   function active(){if(preview?.cancelled)throw Object.assign(new Error('Full Text loading cancelled'),{cancelled:true})}
@@ -259,25 +259,33 @@ async function loadChapterData(id){
   while(cache.size>16)cache.delete(cache.keys().next().value);
   return data;
 }
-let fullTextLoading=false;
+let fullTextLoading=false,fullTextSettled=Promise.resolve();
+let activeFullTextPreview=null;
+function cancelFullTextPreview(){activeFullTextPreview?.cancel()}
 function fullTextPreview(){
-  const dialog=document.createElement('dialog');dialog.className='full-text-preview';dialog.setAttribute('aria-label',i18nSource('Full Text'));
+  const dialog=document.createElement('section');dialog.className='full-text-preview';dialog.setAttribute('aria-label',i18nSource('Full Text'));
   const header=document.createElement('header'),title=document.createElement('h2'),status=document.createElement('p'),cancel=document.createElement('button'),body=document.createElement('div');
   title.textContent=i18nSource('Full Text');status.textContent=i18nSource('Loading…');status.setAttribute('role','status');
   cancel.textContent=i18nSource('Cancel');cancel.type='button';body.className='full-text-preview-body';header.append(title,status,cancel);dialog.append(header,body);
+  const pane=$('#manuscriptPrimaryPane'),scroller=$('#documentScroller'),display=scroller.style.display;
+  const siblings=[...pane.children].map(element=>[element,element.inert]);
+  for(const [element] of siblings)element.inert=true;
+  scroller.style.display='none';pane.insertBefore(dialog,scroller);
   const slots=[],preview={cancelled:false,
     initialize(chapters){for(const chapter of chapters){const section=document.createElement('section'),heading=document.createElement('h3'),text=document.createElement('div');heading.textContent=chapter.title;section.append(heading,text);body.append(section);slots.push(text)}},
     chapter(index,blocks,completed){const fragment=document.createDocumentFragment();for(const block of blocks){const p=document.createElement('p');p.textContent=block.block_type==='image'?i18nSource('Images'):block.text_content||'';fragment.append(p)}slots[index].replaceChildren(fragment);status.textContent=`${completed}/${slots.length} · ${i18nSource('Loading…')}`},
-    close(){dialog.close();dialog.remove()}};
-  const stop=()=>{preview.cancelled=true;preview.close()};cancel.onclick=stop;dialog.addEventListener('cancel',e=>{e.preventDefault();stop()});
-  // Modal, text-only preview: no partial editor DOM/state or manuscript actions.
-  dialog.addEventListener('keydown',e=>e.stopPropagation());document.body.append(dialog);dialog.showModal();cancel.focus();return preview;
+    close(){if(!dialog.isConnected)return;dialog.remove();scroller.style.display=display;for(const [element,inert] of siblings)element.inert=inert;if(activeFullTextPreview===preview)activeFullTextPreview=null},
+    cancel(){preview.cancelled=true;preview.close()}};
+  cancel.onclick=()=>preview.cancel();
+  // Inline, text-only preview. Workspaces remain navigable; leaving cancels it.
+  dialog.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')preview.cancel()});activeFullTextPreview=preview;return preview;
 }
-async function openWholeBook(save=true,refreshSearch=true){
+async function openWholeBook(save=true,refreshSearch=true,{keepLoaded=false,force=false}={}){
   if(fullTextLoading)return;if(save)await flushSave();if(!state.activeDocumentId)return;
-  fullTextLoading=true;const preview=runtimeSupports('hosted_persistence')&&state.hostedChapterFirst?fullTextPreview():null;
-  try{const data=await loadBookData(state.activeDocumentId,{preview});if(preview?.cancelled)return;normalizeManuscriptNavMode();syncManuscriptViewControls();state.viewMode='book';state.bookData=data;for(const ch of data.chapters||[])state.chapterRevisions.set(entityId(ch.id),ch.revision||state.chapterRevisions.get(entityId(ch.id))||'');state.scene=null;state.sceneData=null;state.sceneGap=null;state.chapter=null;state.chapterData=null;resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();renderBookEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
-  }catch(error){if(!error.cancelled)throw error}finally{preview?.close();fullTextLoading=false}
+  fullTextLoading=true;let settle;fullTextSettled=new Promise(resolve=>{settle=resolve});const documentId=state.activeDocumentId,cached=state.bookCache.has(entityId(documentId));
+  const preview=!keepLoaded&&!cached&&runtimeSupports('hosted_persistence')&&state.hostedChapterFirst?fullTextPreview():null;
+  try{const data=await loadBookData(documentId,{preview,force});if(preview?.cancelled||(keepLoaded&&(state.viewMode!=='book'||state.activeDocumentId!==documentId)))return;normalizeManuscriptNavMode();syncManuscriptViewControls();state.viewMode='book';state.bookData=data;for(const ch of data.chapters||[])state.chapterRevisions.set(entityId(ch.id),ch.revision||state.chapterRevisions.get(entityId(ch.id))||'');state.scene=null;state.sceneData=null;state.sceneGap=null;state.chapter=null;state.chapterData=null;resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();renderBookEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
+  }catch(error){if(!error.cancelled)throw error}finally{preview?.close();fullTextLoading=false;settle()}
 }
 function captureManuscriptViewport(){
   const scroller=$('#documentScroller');if(!scroller)return null;
@@ -352,22 +360,24 @@ async function goToBookmark({activateView=true,silent=false}={}){
 }
 async function preserveManuscriptViewport(action){const snapshot=captureManuscriptViewport();try{return await action()}finally{restoreManuscriptViewport(snapshot)}}
 $('#documentScroller')?.addEventListener('scroll',()=>{if(currentView()==='manuscript')schedulePersistManuscriptLocation()},{passive:true});
-async function reloadManuscriptView({fresh=true}={}){
-  const viewport=captureManuscriptViewport();
+async function reloadManuscriptView({fresh=true,keepLoaded=false}={}){
+  if(fullTextLoading)await fullTextSettled;
+  const viewport=captureManuscriptViewport(),mode=state.viewMode,chapterId=state.chapter?.id;
   // Revalidate the exact cached snapshot, never attach a new revision to old text.
   // An unchanged book needs one authorized generation check, not all body reads.
   let revalidated=false;
-  if(fresh&&runtimeSupports('hosted_persistence')&&state.viewMode==='book'&&state.bookData?.read_tag&&state.bookCache.get(entityId(state.activeDocumentId))===state.bookData){
-    const updated=await api(`/api/book?tab_id=${encodeURIComponent(state.activeDocumentId)}${state.hostedChapterFirst?'&manifest=true':''}`,{headers:{'If-None-Match':state.bookData.read_tag},acceptNotModified:true});
-    if(updated===null){restoreManuscriptViewport(viewport);return}
-    if(state.hostedChapterFirst)state.bookCache.delete(entityId(state.activeDocumentId));
-    else state.bookCache.set(entityId(state.activeDocumentId),updated);
+  if(fresh&&runtimeSupports('hosted_persistence')&&state.viewMode==='book'&&state.bookData?.read_tag){
+    const retained=state.bookData,documentId=state.activeDocumentId;
+    const updated=await api(`/api/book?tab_id=${encodeURIComponent(documentId)}${state.hostedChapterFirst?'&manifest=true':''}`,{headers:{'If-None-Match':retained.read_tag},acceptNotModified:true});
+    if(updated===null){state.bookCache.set(entityId(documentId),retained);if(state.viewMode===mode&&state.chapter?.id===chapterId)restoreManuscriptViewport(viewport);return}
+    if(state.activeDocumentId!==documentId||state.viewMode!==mode||state.chapter?.id!==chapterId)return;
+    if(!state.hostedChapterFirst)state.bookCache.set(entityId(state.activeDocumentId),updated);
     revalidated=true;
   }
-  // Mutations which cleared the cache still force a complete fresh snapshot.
-  if(fresh&&!revalidated&&state.activeDocumentId)state.bookCache.delete(entityId(state.activeDocumentId));
-  if(state.viewMode==='book')await openWholeBook(false,false);else if(state.viewMode==='scene'&&state.scene)await selectScene(state.scene.id,false,false);else if(state.viewMode==='scene-gap'&&state.sceneGap)await selectSceneGap(state.sceneGap,false,false);else if(state.chapter)await selectChapter(state.chapter.id,false,false);
-  restoreManuscriptViewport(viewport);
+  // Retain the previous verified snapshot until its complete replacement has
+  // passed all generation/authority fences. A failure must not erase it.
+  if(state.viewMode==='book')await openWholeBook(false,false,{keepLoaded,force:fresh&&(!revalidated||state.hostedChapterFirst)});else if(state.viewMode==='scene'&&state.scene)await selectScene(state.scene.id,false,false);else if(state.viewMode==='scene-gap'&&state.sceneGap)await selectSceneGap(state.sceneGap,false,false);else if(state.chapter)await selectChapter(state.chapter.id,false,false);
+  if(state.viewMode===mode&&state.chapter?.id===chapterId)restoreManuscriptViewport(viewport);
 }
 function scheduleCommentsWorkspaceSync(){if(!commentsPanelOpen())return;commentsWorkspace.dirty=true;queueMicrotask(()=>reloadCommentsWorkspace(commentsWorkspace.selectedId).catch(error=>console.warn('Notes refresh failed',error)))}
 

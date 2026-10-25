@@ -14170,7 +14170,7 @@
     },
     {
       "file": "static/js/core/routing.js",
-      "lines": 91,
+      "lines": 99,
       "symbols": [
         {
           "name": "reportViewRenderError",
@@ -14220,7 +14220,7 @@
         {
           "name": "hydratePrimaryWorkspace",
           "kind": "function",
-          "line": 49
+          "line": 50
         }
       ]
     },
@@ -18626,7 +18626,7 @@
     },
     {
       "file": "static/js/features/manuscript/rendering.js",
-      "lines": 384,
+      "lines": 394,
       "symbols": [
         {
           "name": "newTempId",
@@ -18884,114 +18884,114 @@
           "line": 242
         },
         {
-          "name": "fullTextPreview",
+          "name": "cancelFullTextPreview",
           "kind": "function",
-          "line": 263
+          "line": 264
         },
         {
-          "name": "stop",
+          "name": "fullTextPreview",
           "kind": "function",
-          "line": 272
+          "line": 265
         },
         {
           "name": "openWholeBook",
           "kind": "function",
-          "line": 276
+          "line": 283
         },
         {
           "name": "captureManuscriptViewport",
           "kind": "function",
-          "line": 282
+          "line": 290
         },
         {
           "name": "restoreManuscriptViewport",
           "kind": "function",
-          "line": 290
+          "line": 298
         },
         {
           "name": "manuscriptLocationPayload",
           "kind": "function",
-          "line": 296
+          "line": 304
         },
         {
           "name": "schedulePersistManuscriptLocation",
           "kind": "function",
-          "line": 303
+          "line": 311
         },
         {
           "name": "restoreManuscriptLocation",
           "kind": "function",
-          "line": 306
+          "line": 314
         },
         {
           "name": "restoreLastManuscriptLocation",
           "kind": "function",
-          "line": 318
+          "line": 326
         },
         {
           "name": "pulseBookmarkTarget",
           "kind": "function",
-          "line": 321
+          "line": 329
         },
         {
           "name": "bookmarkStartWrap",
           "kind": "function",
-          "line": 322
+          "line": 330
         },
         {
           "name": "revealBookmarkWrap",
           "kind": "function",
-          "line": 323
+          "line": 331
         },
         {
           "name": "goToBookmark",
           "kind": "function",
-          "line": 324
+          "line": 332
         },
         {
           "name": "preserveManuscriptViewport",
           "kind": "function",
-          "line": 353
+          "line": 361
         },
         {
           "name": "reloadManuscriptView",
           "kind": "function",
-          "line": 355
+          "line": 363
         },
         {
           "name": "scheduleCommentsWorkspaceSync",
           "kind": "function",
-          "line": 372
+          "line": 382
         },
         {
           "name": "manuscriptProseForStorage",
           "kind": "function",
-          "line": 373
+          "line": 383
         },
         {
           "name": "serializeWrap",
           "kind": "function",
-          "line": 377
+          "line": 387
         },
         {
           "name": "serializeSceneWrap",
           "kind": "function",
-          "line": 381
+          "line": 391
         },
         {
           "name": "wrapsForChapter",
           "kind": "function",
-          "line": 382
+          "line": 392
         },
         {
           "name": "localChapterSnapshot",
           "kind": "function",
-          "line": 383
+          "line": 393
         },
         {
           "name": "localSceneSnapshot",
           "kind": "function",
-          "line": 384
+          "line": 394
         }
       ]
     },

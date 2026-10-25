@@ -46,11 +46,17 @@ function setView(view,{historyMode='push'}={}) {
   if (view === 'reviews') renderReviews();
   document.documentElement.removeAttribute('data-initial-view');
 }
+let workspaceNavigation=0;
 async function hydratePrimaryWorkspace(view){
-  if(view==='manuscript'&&state.manuscriptWorkspaceHydrated&&runtimeSupports('hosted_projects')&&currentView()!=='manuscript'){
-    // Other workspaces advance the hosted project revision. Re-enter only from
-    // a fresh server snapshot; never attach a newer token to stale editor text.
-    await flushSave();await reloadManuscriptView();return;
+  if(view==='manuscript'&&state.manuscriptWorkspaceHydrated&&runtimeSupports('hosted_projects')&&(currentView()!=='manuscript'||state.manuscriptNeedsValidation)){
+    // Paint the retained workspace immediately, but keep edits locked until
+    // current authority/revision validation completes. Never rebase old text.
+    const navigation=workspaceNavigation;await flushSave();if(navigation!==workspaceNavigation)return;
+    setView('manuscript');const pane=$('#manuscriptPrimaryPane');pane.inert=true;pane.setAttribute('aria-busy','true');state.manuscriptNeedsValidation=true;
+    try{await reloadManuscriptView({keepLoaded:true});state.manuscriptNeedsValidation=false;pane.inert=false}
+    catch(error){toast(error.message||i18nSource('Loading…'),5000)}
+    finally{pane.setAttribute('aria-busy','false')}
+    return;
   }
   if(view==='manuscript'&&!state.manuscriptWorkspaceHydrated){
     if(state.hostedChapterFirst){
@@ -77,15 +83,17 @@ async function hydratePrimaryWorkspace(view){
 }
 
 $$('.main-tab').forEach(tab => tab.addEventListener('click', async () => {
-  const view=tab.dataset.view;
+  const view=tab.dataset.view,navigation=++workspaceNavigation;
+  if(view!=='manuscript')cancelFullTextPreview();
   if(view!=='manuscript')await flushSave();
   await hydratePrimaryWorkspace(view);
-  setView(view);
+  if(navigation===workspaceNavigation)setView(view);
 }));
 window.addEventListener('popstate',async()=>{
-  const view=viewFromRoute();
+  const view=viewFromRoute(),navigation=++workspaceNavigation;
+  if(view!=='manuscript')cancelFullTextPreview();
   if(view!=='manuscript')await flushSave();
   await hydratePrimaryWorkspace(view);
-  setView(view,{historyMode:'none'});
+  if(navigation===workspaceNavigation)setView(view,{historyMode:'none'});
 });
 
