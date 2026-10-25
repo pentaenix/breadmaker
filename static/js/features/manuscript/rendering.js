@@ -263,11 +263,11 @@ let fullTextLoading=false;
 function fullTextPreview(){
   const dialog=document.createElement('dialog');dialog.className='full-text-preview';dialog.setAttribute('aria-label',i18nSource('Full Text'));
   const header=document.createElement('header'),title=document.createElement('h2'),status=document.createElement('p'),cancel=document.createElement('button'),body=document.createElement('div');
-  title.textContent=i18nSource('Full Text');status.textContent=i18nSource('Loading Full Text…');status.setAttribute('role','status');
+  title.textContent=i18nSource('Full Text');status.textContent=i18nSource('Loading…');status.setAttribute('role','status');
   cancel.textContent=i18nSource('Cancel');cancel.type='button';body.className='full-text-preview-body';header.append(title,status,cancel);dialog.append(header,body);
   const slots=[],preview={cancelled:false,
     initialize(chapters){for(const chapter of chapters){const section=document.createElement('section'),heading=document.createElement('h3'),text=document.createElement('div');heading.textContent=chapter.title;section.append(heading,text);body.append(section);slots.push(text)}},
-    chapter(index,blocks,completed){const fragment=document.createDocumentFragment();for(const block of blocks){const p=document.createElement('p');p.textContent=block.block_type==='image'?i18nSource('Image'):block.text_content||'';fragment.append(p)}slots[index].replaceChildren(fragment);status.textContent=`${completed}/${slots.length} · ${i18nSource('Loading Full Text…')}`},
+    chapter(index,blocks,completed){const fragment=document.createDocumentFragment();for(const block of blocks){const p=document.createElement('p');p.textContent=block.block_type==='image'?i18nSource('Images'):block.text_content||'';fragment.append(p)}slots[index].replaceChildren(fragment);status.textContent=`${completed}/${slots.length} · ${i18nSource('Loading…')}`},
     close(){dialog.close();dialog.remove()}};
   const stop=()=>{preview.cancelled=true;preview.close()};cancel.onclick=stop;dialog.addEventListener('cancel',e=>{e.preventDefault();stop()});
   // Modal, text-only preview: no partial editor DOM/state or manuscript actions.
