@@ -1,10 +1,8 @@
 """Fully bundled large imports must never turn on unsolicited full-book reads."""
 from tests.test_v10548_browser import hosted_browser
-import pytest
 
 
-@pytest.mark.parametrize('count',[2,513])
-def test_hosted_bundled_project_boot_never_prefetches_whole_book(tmp_path,count):
+def _assert_hosted_boot_does_not_prefetch(tmp_path,count):
     with hosted_browser(tmp_path) as (base,page):
         headers={'Origin':base}
         raw='\n'.join(f'Synthetic55 paragraph {i}' for i in range(count)).encode()
@@ -27,3 +25,11 @@ def test_hosted_bundled_project_boot_never_prefetches_whole_book(tmp_path,count)
         # Let startup idle callbacks run; no hidden book hydration is permitted.
         page.wait_for_timeout(2000)
         assert len(book)==initial and not errors,(book,errors)
+
+
+def test_small_hosted_book_opens_full_text_without_extra_prefetch(tmp_path):
+    _assert_hosted_boot_does_not_prefetch(tmp_path,2)
+
+
+def test_large_bundled_hosted_book_stays_chapter_first_without_prefetch(tmp_path):
+    _assert_hosted_boot_does_not_prefetch(tmp_path,513)
