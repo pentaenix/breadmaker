@@ -52,14 +52,15 @@ const assert=require('node:assert/strict'),vm=require('node:vm');
 const source=JSON.parse(require('node:fs').readFileSync(0,'utf8'));
 function scenario(hosted=true){
   const old={read_tag:'old',revision:4},fresh={read_tag:'new',revision:5},other={revision:99};
-  const state={activeDocumentId:'tab_main',viewMode:'book',bookData:old,
+  const state={activeDocumentId:'tab_main',viewMode:'book',bookData:old,hostedChapterFirst:false,
     bookCache:new Map([['tab_main',old],['tab_other',other]])};
   const calls=[],opens=[],restores=[],viewport={position:123};
   let reply=fresh,context;
   context=vm.createContext({state,entityId:String,runtimeSupports:()=>hosted,
+    fullTextLoading:false,fullTextSettled:Promise.resolve(),
     captureManuscriptViewport:()=>viewport,restoreManuscriptViewport:value=>restores.push(value),
     api:async(url,options)=>{calls.push({url,options});if(reply instanceof Error)throw reply;return reply},
-    openWholeBook:async(...args)=>{opens.push(args);state.bookData=await context.loadBookData(state.activeDocumentId)}});
+    openWholeBook:async(...args)=>{opens.push(args);state.bookData=await context.loadBookData(state.activeDocumentId,args[2])}});
   vm.runInContext(source.load+'\n'+source.reload,context);
   return {context,state,old,fresh,other,calls,opens,restores,viewport,setReply:value=>{reply=value}};
 }
@@ -68,11 +69,12 @@ function unaffected(s){
   assert.deepEqual(s.restores,[s.viewport],'viewport was not restored');
 }
 (async()=>{
-  // Local structural reload must invalidate ONLY the active Tab and fetch it.
+  // Local structural reload must refresh ONLY the active Tab, not reuse old text.
   let s=scenario(false);
   await s.context.reloadManuscriptView();
   assert.equal(s.state.bookData,s.fresh);assert.equal(s.calls.length,1);
-  assert.deepEqual(s.opens,[[false,false]]);unaffected(s);
+  assert.equal(s.opens.length,1);assert.equal(s.opens[0][0],false);assert.equal(s.opens[0][1],false);
+  assert.equal(s.opens[0][2].force,true);unaffected(s);
 
   // Ordinary navigation explicitly opting out of fresh reload still uses cache.
   s=scenario(false);await s.context.reloadManuscriptView({fresh:false});
@@ -88,17 +90,35 @@ function unaffected(s){
   // A changed revision replaces active content; rendering must not fetch twice.
   s=scenario();await s.context.reloadManuscriptView();
   assert.equal(s.state.bookData,s.fresh);assert.equal(s.calls.length,1);
-  assert.deepEqual(s.opens,[[false,false]]);unaffected(s);
+  assert.equal(s.opens.length,1);assert.equal(s.opens[0][2].force,false);unaffected(s);
 
-  // Known structural invalidation bypasses conditional reuse altogether.
+  // An evicted Map entry still has an exact body tag: authorize it, never rebase it.
   s=scenario();s.state.bookCache.delete('tab_main');await s.context.reloadManuscriptView();
   assert.equal(s.state.bookData,s.fresh);assert.equal(s.calls.length,1);
-  assert.equal(s.calls[0].options,undefined);unaffected(s);
+  assert.equal(s.calls[0].options.headers['If-None-Match'],'old');unaffected(s);
+  s=scenario();s.state.bookCache.delete('tab_main');s.setReply(null);
+  await s.context.reloadManuscriptView();
+  assert.equal(s.state.bookData,s.old);assert.equal(s.state.bookCache.get('tab_main'),s.old);
+  assert.equal(s.state.bookData.revision,4);assert.equal(s.opens.length,0);unaffected(s);
+
+  // A failed forced refresh retains the last verified snapshot, not a partial book.
+  s=scenario(false);s.setReply(new Error('unavailable'));
+  await assert.rejects(s.context.reloadManuscriptView(),/unavailable/);
+  assert.equal(s.state.bookData,s.old);assert.equal(s.state.bookCache.get('tab_main'),s.old);
+  assert.equal(s.state.bookCache.get('tab_other'),s.other);
+
+  // Tab return waits for a cancelled Full Text read to settle before validating.
+  s=scenario();let settle;
+  s.context.fullTextLoading=true;s.context.fullTextSettled=new Promise(resolve=>{settle=resolve});
+  const pending=s.context.reloadManuscriptView();
+  assert.equal(s.calls.length,0);settle();await pending;
+  assert.equal(s.calls.length,1);assert.equal(s.state.bookData,s.fresh);unaffected(s);
 
   // A denied revalidation must propagate; it cannot authorize cached rendering.
   s=scenario();s.setReply(new Error('denied'));
   await assert.rejects(s.context.reloadManuscriptView(),/denied/);
   assert.equal(s.state.bookData,s.old);assert.equal(s.opens.length,0);
+  assert.equal(s.state.bookCache.get('tab_main'),s.old);
   assert.equal(s.state.bookCache.get('tab_other'),s.other);
 })().catch(error=>{console.error(error);process.exitCode=1});
 '''
