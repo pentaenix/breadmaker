@@ -1,3 +1,8 @@
+/* Read-only progressive Full Text; the canonical editor is untouched until complete. */
+.full-text-preview[open]{display:flex;flex-direction:column;width:min(1000px,94vw);height:88vh;max-height:88vh;padding:20px;border:1px solid var(--line2);border-radius:12px;background:var(--surface);color:var(--text)}
+.full-text-preview::backdrop{background:rgba(0,0,0,.25)}
+.full-text-preview header{display:flex;align-items:center;gap:16px;flex:none}.full-text-preview h2{margin:0}.full-text-preview header p{flex:1}
+.full-text-preview-body{overflow:auto;flex:1;min-height:0;line-height:1.65;white-space:pre-wrap}.full-text-preview-body section{padding:12px 8px}
 /* 4.12.10 Manuscript View menu + persistent accessibility text size */
 .manuscript-view-control{position:relative;display:flex;align-items:center}
 .view-menu-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}

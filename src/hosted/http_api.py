@@ -568,7 +568,7 @@ def hosted_chapter_get(cid:str,request:Request):
             offset=int(request.query_params['block_offset'])
             if offset<0:raise ValueError()
         except ValueError:raise HTTPException(400,detail='HOSTED_MANUSCRIPT_PAGE_INVALID')
-        page={'page_offset':offset,'page_size':128}
+        page={'page_offset':offset,'page_size':128,'adaptive_page':request.query_params.get('adaptive')=='true'}
     generation=_domain().project_generation(pid,_uid())
     tag='"bm-chapter-'+hashlib.sha256(json.dumps([pid,cid,generation],separators=(',',':')).encode()).hexdigest()+'"'
     if request.headers.get('if-none-match')==tag:
@@ -577,15 +577,17 @@ def hosted_chapter_get(cid:str,request:Request):
         return Response(status_code=304,headers={'Cache-Control':'private, no-store','ETag':tag})
     chapter=_get('chapter',{'project_id':pid,'chapter_id':cid})
     cache_refresh=set()
+    page_info={}
     blocks=_list('manuscript_block',{'project_id':pid},field='chapter_id',value=cid,
-        cache_refresh_chapters=cache_refresh,**page)
+        cache_refresh_chapters=cache_refresh,page_info=page_info,**page)
     if _domain().project_generation(pid,_uid())!=generation:
         raise HTTPException(409,detail='HOSTED_SNAPSHOT_GENERATION_CHANGED')
     revision=str(generation)
     return {'chapter':{**chapter,'revision':revision},'blocks':blocks,'revision':revision,
         'read_tag':tag,
         'cache_refresh_needed':bool(cache_refresh),
-        'next_block_offset':page['page_offset']+len(blocks) if page and len(blocks)==128 else None}
+        'next_block_offset':page_info.get('next_block_offset'),
+        'block_count':page_info.get('block_count',len(blocks))}
 
 @product_router.post('/api/chapters/{cid}/read-cache')
 async def hosted_chapter_read_cache(cid:str,request:Request):
@@ -673,14 +675,14 @@ def hosted_bookmark_delete(request:Request):
     pid=_pid(request);runtime.projects.delete_member_state(pid,user_id=_uid());return {'ok':True}
 @product_router.get('/api/ui-state')
 def hosted_ui_state_batch(request:Request,keys:str=''):
-    pid=_pid(request);uid=_uid();values={}
+    pid=_pid(request);uid=_uid();selected=[]
     for raw in str(keys or '').split(','):
         key=raw.strip()
         if not key:continue
         try:key=require_opaque_id(key,label='key')
         except Exception:continue
-        row=runtime.projects.member_state(pid,key=key,user_id=uid);values[key]=None if row is None else row.get('value',row)
-    return {'values':values}
+        selected.append(key)
+    return {'values':runtime.projects.member_states(pid,selected,user_id=uid)}
 
 @product_router.get('/api/ui-state/{key}')
 def hosted_ui_state_get(key:str,request:Request):

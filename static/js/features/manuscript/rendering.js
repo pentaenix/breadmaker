@@ -201,29 +201,31 @@ async function selectScene(id,save=true,refreshSearch=true){
   if(save)await flushSave();const data=await api(`/api/scenes/${id}/manuscript`);for(const [cid,rev] of Object.entries(data.chapter_revisions||{}))state.chapterRevisions.set(entityId(cid),rev);state.viewMode='scene';state.scene=data.scene;state.sceneData=data;state.sceneGap=null;state.chapter=null;state.chapterData=null;state.bookData=null;
   const meta=sceneById(id);if(meta?.tab_id||meta?.first_tab_id)state.activeDocumentId=entityId(meta.tab_id||meta.first_tab_id);normalizeManuscriptNavMode();syncManuscriptViewControls();resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();renderSceneEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
 }
-async function loadBookData(tabId){
+async function loadBookData(tabId,{preview=null}={}){
   const id=entityId(tabId);if(state.bookCache.has(id))return state.bookCache.get(id);
   if(!state.hostedChapterFirst){const data=await api(`/api/book?tab_id=${id}`);state.bookCache.set(id,data);for(const cid of data.cache_refresh_chapters||[])queueHostedReadCache(cid,data.project?.generation);return data}
   const project=currentProjectIdentity(),editGeneration=state.editGeneration,data=await api(`/api/book?tab_id=${encodeURIComponent(id)}&manifest=true`);
+  function active(){if(preview?.cancelled)throw Object.assign(new Error('Full Text loading cancelled'),{cancelled:true})}
+  active();preview?.initialize(data.chapters);
   const results=new Array(data.chapters.length);let next=0,completed=0,failure=null;
   async function worker(){
     while(!failure){
       const index=next++;if(index>=data.chapters.length)return;
       try{
-        const cached=state.chapterData;
+        active();const cached=state.chapterCache?.get(`${project}:${data.chapters[index].id}`)||state.chapterData;
         const row=cached?.next_block_offset===null&&String(cached.chapter?.id)===String(data.chapters[index].id)&&String(cached.revision)===String(data.project.generation)
           ?cached:await loadChapterData(data.chapters[index].id);
         if(String(row.revision)!==String(data.project.generation))throw new Error('The manuscript changed while loading. Please reopen Full Text.');
-        results[index]=row.blocks;completed++;setSaveState(`Loading Full Text ${completed}/${data.chapters.length}…`);
+        active();results[index]=row.blocks;completed++;preview?.chapter(index,row.blocks,completed);setSaveState(`Loading Full Text ${completed}/${data.chapters.length}…`);
       }catch(error){failure=error;return}
     }
   }
   try{
     // Bounded chapter reads keep every request below the gateway deadline.
     // Do not publish/cache/render ANY partial book or rebase stale revisions.
-    await Promise.all([worker(),worker()]);if(failure)throw failure;
+    await Promise.all([worker(),worker()]);if(failure)throw failure;active();
     const changed=await api(`/api/book?tab_id=${encodeURIComponent(id)}&manifest=true`,{headers:{'If-None-Match':data.read_tag},acceptNotModified:true});
-    if(changed!==null||String(currentProjectIdentity())!==String(project)||state.editGeneration!==editGeneration||state.dirty||state.saveInFlight)throw new Error('The manuscript changed while loading. Please reopen Full Text.');
+    active();if(changed!==null||String(currentProjectIdentity())!==String(project)||state.editGeneration!==editGeneration||state.dirty||state.saveInFlight)throw new Error('The manuscript changed while loading. Please reopen Full Text.');
     data.blocks=results.flat();state.bookCache.set(id,data);return data;
   }finally{setSaveState(state.dirty?'Not saved':'Saved')}
 }
@@ -242,10 +244,10 @@ async function loadChapterData(id){
   const project=currentProjectIdentity(),editGeneration=state.editGeneration,path=`/api/chapters/${encodeURIComponent(id)}`;
   const cache=state.chapterCache||(state.chapterCache=new Map()),key=`${project}:${id}`,cached=cache.get(key);
   const options=cached?.read_tag?{headers:{'If-None-Match':cached.read_tag},acceptNotModified:true}:undefined;
-  const reply=await api(state.hostedChapterFirst?`${path}?block_offset=0`:path,options);
+  const reply=await api(state.hostedChapterFirst?`${path}?block_offset=0&adaptive=true`:path,options);
   const data=reply===null?cached:reply;let offset=reply===null?null:data.next_block_offset;
   while(offset!==null&&offset!==undefined){
-    const page=await api(`${path}?block_offset=${offset}`);
+    const page=await api(`${path}?block_offset=${offset}&adaptive=true`);
     if(String(page.revision)!==String(data.revision))throw new Error('The manuscript changed while loading. Please reopen the chapter.');
     data.cache_refresh_needed=!!(data.cache_refresh_needed||page.cache_refresh_needed);
     data.blocks.push(...page.blocks);offset=page.next_block_offset;
@@ -257,8 +259,25 @@ async function loadChapterData(id){
   while(cache.size>16)cache.delete(cache.keys().next().value);
   return data;
 }
+let fullTextLoading=false;
+function fullTextPreview(){
+  const dialog=document.createElement('dialog');dialog.className='full-text-preview';dialog.setAttribute('aria-label',i18nSource('Full Text'));
+  const header=document.createElement('header'),title=document.createElement('h2'),status=document.createElement('p'),cancel=document.createElement('button'),body=document.createElement('div');
+  title.textContent=i18nSource('Full Text');status.textContent=i18nSource('Loading Full Text…');status.setAttribute('role','status');
+  cancel.textContent=i18nSource('Cancel');cancel.type='button';body.className='full-text-preview-body';header.append(title,status,cancel);dialog.append(header,body);
+  const slots=[],preview={cancelled:false,
+    initialize(chapters){for(const chapter of chapters){const section=document.createElement('section'),heading=document.createElement('h3'),text=document.createElement('div');heading.textContent=chapter.title;section.append(heading,text);body.append(section);slots.push(text)}},
+    chapter(index,blocks,completed){const fragment=document.createDocumentFragment();for(const block of blocks){const p=document.createElement('p');p.textContent=block.block_type==='image'?i18nSource('Image'):block.text_content||'';fragment.append(p)}slots[index].replaceChildren(fragment);status.textContent=`${completed}/${slots.length} · ${i18nSource('Loading Full Text…')}`},
+    close(){dialog.close();dialog.remove()}};
+  const stop=()=>{preview.cancelled=true;preview.close()};cancel.onclick=stop;dialog.addEventListener('cancel',e=>{e.preventDefault();stop()});
+  // Modal, text-only preview: no partial editor DOM/state or manuscript actions.
+  dialog.addEventListener('keydown',e=>e.stopPropagation());document.body.append(dialog);dialog.showModal();cancel.focus();return preview;
+}
 async function openWholeBook(save=true,refreshSearch=true){
-  if(save)await flushSave();if(!state.activeDocumentId)return;const data=await loadBookData(state.activeDocumentId);normalizeManuscriptNavMode();syncManuscriptViewControls();state.viewMode='book';state.bookData=data;for(const ch of data.chapters||[])state.chapterRevisions.set(entityId(ch.id),ch.revision||state.chapterRevisions.get(entityId(ch.id))||'');state.scene=null;state.sceneData=null;state.sceneGap=null;state.chapter=null;state.chapterData=null;resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();renderBookEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
+  if(fullTextLoading)return;if(save)await flushSave();if(!state.activeDocumentId)return;
+  fullTextLoading=true;const preview=runtimeSupports('hosted_persistence')&&state.hostedChapterFirst?fullTextPreview():null;
+  try{const data=await loadBookData(state.activeDocumentId,{preview});if(preview?.cancelled)return;normalizeManuscriptNavMode();syncManuscriptViewControls();state.viewMode='book';state.bookData=data;for(const ch of data.chapters||[])state.chapterRevisions.set(entityId(ch.id),ch.revision||state.chapterRevisions.get(entityId(ch.id))||'');state.scene=null;state.sceneData=null;state.sceneGap=null;state.chapter=null;state.chapterData=null;resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();renderBookEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
+  }catch(error){if(!error.cancelled)throw error}finally{preview?.close();fullTextLoading=false}
 }
 function captureManuscriptViewport(){
   const scroller=$('#documentScroller');if(!scroller)return null;

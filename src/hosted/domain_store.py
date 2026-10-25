@@ -758,6 +758,8 @@ class HostedDomainStore:
         page_offset: int = 0,
         page_size: int | None = None,
         cache_refresh_chapters: set[str] | None = None,
+        adaptive_page: bool = False,
+        page_info: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
         if page_size is not None and (logical_entity!='manuscript_block' or
                 not 1<=page_size<=128 or page_offset<0):
@@ -772,6 +774,19 @@ class HostedDomainStore:
                 else:cell=str(cell or '')
                 out.append(cell)
             return tuple(out)
+        def window(rows):
+            ordered=sorted(rows,key=key);size=page_size
+            if adaptive_page and self.encrypted_objects is None and self.encrypted_fields is None:
+                candidate=ordered[page_offset:page_offset+512]
+                pointers=[self._read_pointer(row) for row in candidate]
+                unique={self._payload_key(p):p for p in pointers if isinstance(p,dict)}
+                if (all(isinstance(p,dict) and 'bundle_entry' in p for p in pointers)
+                        and sum(int(p.get('object_size') or 0) for p in unique.values())<=1024*1024):size=512
+            selected=ordered[page_offset:page_offset+size]
+            if page_info is not None:
+                end=page_offset+len(selected)
+                page_info.update(block_count=len(ordered),next_block_offset=end if end<len(ordered) else None)
+            return selected
         if self.encrypted_objects is not None and self.encrypted_fields is not None:
             require_private_entity_supported(logical_entity)
         uid = require_user_id(user_id)
@@ -799,11 +814,11 @@ class HostedDomainStore:
             if field is not None:
                 public = [row for row in public if row.get(field) == value]
             if page_size is not None:
-                public=sorted(public,key=key)[page_offset:page_offset+page_size]
+                public=window(public)
         else:
             rows = self.documents.run_transaction(read)
             if page_size is not None:
-                rows=sorted(rows,key=key)[page_offset:page_offset+page_size]
+                rows=window(rows)
             if self.encrypted_objects is not None and logical_entity == "manuscript_block":
                 public = [self._hydrate(
                     logical_entity, row,

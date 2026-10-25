@@ -666,6 +666,29 @@ class HostedCloudProjectRepository:
             return _clean_public(data)
         return _clean_public(row.data)
 
+    def member_states(self, project_id: str, keys: list[str], *, user_id: str | None = None) -> dict[str, Any]:
+        """One authorized snapshot/BatchGet, never one authority read per key."""
+        uid=self._uid(user_id);pid=require_project_id(project_id)
+        if self._private_mode and uid!=self._uid():
+            raise HostedAuthorizationError('HOSTED_PRIVATE_MEMBER_STATE_OTHER_USER_DENIED')
+        unique=list(dict.fromkeys(require_opaque_id(key,label='key') for key in keys))
+        if len(unique)>64:raise HostedValidationError('HOSTED_MEMBER_STATE_BATCH_TOO_LARGE')
+        def read(tx):
+            self.domain.entities._authorize(tx,self.domain._model('member_ui_state'),
+                {'project_id':pid,'user_id':uid,'key':unique[0] if unique else 'empty'},uid,mutation=False)
+            paths=[self._member_state_path(pid,uid,key=key) for key in unique]
+            if not paths:return []
+            getter=getattr(tx,'get_many',None)
+            return getter(paths) if getter is not None else [tx.get(path) for path in paths]
+        rows=self.documents.run_transaction(read)
+        values={}
+        for key,row in zip(unique,rows):
+            if row is None:values[key]=None;continue
+            data=(self._member_state_codec.open(self._member_state_model(key),self._member_state_ids(pid,uid,key),row.data)
+                if self._private_mode else row.data)
+            public=_clean_public(data);values[key]=public.get('value',public)
+        return values
+
     def put_member_state(self, project_id: str, payload: Mapping[str, Any], *, key: str | None = None, user_id: str | None = None) -> dict[str, Any]:
         uid = self._uid(user_id); pid = require_project_id(project_id)
         # A supplied user_id is not a privilege escalation: private member
