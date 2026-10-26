@@ -183,7 +183,8 @@ async function scenario(mode){
     assert.equal(state.bookCache.get('tab'),data);assert.ok(peak<=2);assert.ok(peak>1);
     assert.equal(calls.filter(url=>url.includes('/api/book?')).length,2);
     assert.equal(calls.filter(url=>url.includes('/api/chapters/one?')).length,mode==='cached'?0:2);
-    const before=calls.length;assert.equal(await context.loadBookData('tab'),data);assert.equal(calls.length,before);
+    const before=calls.length;assert.equal(await context.loadBookData('tab'),data);assert.equal(calls.length,before+1);
+    assert.ok(calls.at(-1).includes('manifest=true'),'Cached Full Text must recheck current authority');
   }else{
     await assert.rejects(context.loadBookData('tab'));
     assert.equal(state.bookCache.size,0,'Partial or unauthorized book escaped into the cache');

@@ -14226,7 +14226,7 @@
     },
     {
       "file": "static/js/core/runtime.js",
-      "lines": 87,
+      "lines": 89,
       "symbols": [
         {
           "name": "$",
@@ -14291,7 +14291,7 @@
         {
           "name": "apiList",
           "kind": "function",
-          "line": 82
+          "line": 84
         }
       ]
     },
@@ -18626,7 +18626,7 @@
     },
     {
       "file": "static/js/features/manuscript/rendering.js",
-      "lines": 394,
+      "lines": 405,
       "symbols": [
         {
           "name": "newTempId",
@@ -18841,7 +18841,12 @@
         {
           "name": "loadBookData",
           "kind": "function",
-          "line": 204
+          "line": 205
+        },
+        {
+          "name": "remember",
+          "kind": "function",
+          "line": 207
         },
         {
           "name": "active",
@@ -18851,147 +18856,157 @@
         {
           "name": "worker",
           "kind": "function",
-          "line": 211
+          "line": 220
         },
         {
           "name": "selectSceneGap",
           "kind": "function",
-          "line": 232
+          "line": 239
         },
         {
           "name": "findIsOpen",
           "kind": "function",
-          "line": 235
+          "line": 243
         },
         {
           "name": "syncFindScopeLabel",
           "kind": "function",
-          "line": 237
+          "line": 245
         },
         {
           "name": "refreshFindForContext",
           "kind": "function",
-          "line": 238
+          "line": 246
         },
         {
           "name": "selectChapter",
           "kind": "function",
-          "line": 239
+          "line": 247
         },
         {
           "name": "loadChapterData",
           "kind": "function",
-          "line": 242
+          "line": 251
+        },
+        {
+          "name": "clearManuscriptReadCache",
+          "kind": "function",
+          "line": 273
         },
         {
           "name": "cancelFullTextPreview",
           "kind": "function",
-          "line": 264
+          "line": 276
+        },
+        {
+          "name": "fullTextLoadingIndicator",
+          "kind": "function",
+          "line": 277
         },
         {
           "name": "fullTextPreview",
           "kind": "function",
-          "line": 265
+          "line": 278
         },
         {
           "name": "openWholeBook",
           "kind": "function",
-          "line": 283
+          "line": 293
         },
         {
           "name": "captureManuscriptViewport",
           "kind": "function",
-          "line": 290
+          "line": 301
         },
         {
           "name": "restoreManuscriptViewport",
           "kind": "function",
-          "line": 298
+          "line": 309
         },
         {
           "name": "manuscriptLocationPayload",
           "kind": "function",
-          "line": 304
+          "line": 315
         },
         {
           "name": "schedulePersistManuscriptLocation",
           "kind": "function",
-          "line": 311
+          "line": 322
         },
         {
           "name": "restoreManuscriptLocation",
           "kind": "function",
-          "line": 314
+          "line": 325
         },
         {
           "name": "restoreLastManuscriptLocation",
           "kind": "function",
-          "line": 326
+          "line": 337
         },
         {
           "name": "pulseBookmarkTarget",
           "kind": "function",
-          "line": 329
+          "line": 340
         },
         {
           "name": "bookmarkStartWrap",
           "kind": "function",
-          "line": 330
+          "line": 341
         },
         {
           "name": "revealBookmarkWrap",
           "kind": "function",
-          "line": 331
+          "line": 342
         },
         {
           "name": "goToBookmark",
           "kind": "function",
-          "line": 332
+          "line": 343
         },
         {
           "name": "preserveManuscriptViewport",
           "kind": "function",
-          "line": 361
+          "line": 372
         },
         {
           "name": "reloadManuscriptView",
           "kind": "function",
-          "line": 363
+          "line": 374
         },
         {
           "name": "scheduleCommentsWorkspaceSync",
           "kind": "function",
-          "line": 382
+          "line": 393
         },
         {
           "name": "manuscriptProseForStorage",
           "kind": "function",
-          "line": 383
+          "line": 394
         },
         {
           "name": "serializeWrap",
           "kind": "function",
-          "line": 387
+          "line": 398
         },
         {
           "name": "serializeSceneWrap",
           "kind": "function",
-          "line": 391
+          "line": 402
         },
         {
           "name": "wrapsForChapter",
           "kind": "function",
-          "line": 392
+          "line": 403
         },
         {
           "name": "localChapterSnapshot",
           "kind": "function",
-          "line": 393
+          "line": 404
         },
         {
           "name": "localSceneSnapshot",
           "kind": "function",
-          "line": 394
+          "line": 405
         }
       ]
     },

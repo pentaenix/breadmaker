@@ -56,7 +56,7 @@ function scenario(hosted=true){
     bookCache:new Map([['tab_main',old],['tab_other',other]])};
   const calls=[],opens=[],restores=[],viewport={position:123};
   let reply=fresh,context;
-  context=vm.createContext({state,entityId:String,runtimeSupports:()=>hosted,
+  context=vm.createContext({state,entityId:String,runtimeSupports:()=>hosted,currentProjectIdentity:()=> 'project',
     fullTextLoading:false,fullTextSettled:Promise.resolve(),
     captureManuscriptViewport:()=>viewport,restoreManuscriptViewport:value=>restores.push(value),
     api:async(url,options)=>{calls.push({url,options});if(reply instanceof Error)throw reply;return reply},

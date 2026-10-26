@@ -80,7 +80,7 @@ def test_canvas_revision_change_retains_loaded_book_until_complete_validated_rep
         assert page.evaluate('()=>state.bookData!==window.keptBook&&!state.dirty&&state.bookData.project.generation>window.keptBook.project.generation')
 
 
-def test_leaving_inline_full_text_cancels_without_modal_or_late_navigation_takeover(tmp_path):
+def test_leaving_full_text_finishes_verified_cache_without_modal_or_late_navigation_takeover(tmp_path):
     with hosted_browser(tmp_path) as (base,page):
         _project(base,page);held=[]
         def hold_final(route):
@@ -93,8 +93,8 @@ def test_leaving_inline_full_text_cancels_without_modal_or_late_navigation_takeo
         page.locator('.main-tab[data-view="canvas"]').click()
         expect(page.locator('#canvasView')).to_be_visible()
         expect(page.locator('.full-text-preview')).to_have_count(0)
-        # Re-entry waits for the cancelled load to settle, without freezing
-        # other navigation or accepting the cancelled snapshot as validation.
+        # Re-entry waits for the detached load to settle, without freezing
+        # other navigation or accepting an unvalidated snapshot as editable.
         page.locator('.main-tab[data-view="manuscript"]').click()
         expect(page.locator('#manuscriptView')).to_be_visible()
         page.locator('.main-tab[data-view="tasks"]').click()
@@ -102,4 +102,5 @@ def test_leaving_inline_full_text_cancels_without_modal_or_late_navigation_takeo
         held[0].continue_();page.wait_for_function('()=>!fullTextLoading')
         page.wait_for_function('()=>document.querySelector("#manuscriptPrimaryPane").getAttribute("aria-busy")==="false"')
         expect(page.locator('#tasksView')).to_be_visible()
-        assert page.evaluate('()=>state.bookCache.size')==0
+        assert page.evaluate('()=>state.bookCache.get(String(state.activeDocumentId)).blocks.length')==520
+        assert page.evaluate('()=>state.viewMode')=='chapter'

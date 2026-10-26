@@ -1,7 +1,11 @@
-/* Read-only progressive Full Text; the canonical editor is untouched until complete. */
-.full-text-preview{display:flex;flex-direction:column;flex:1;min-height:0;margin:12px;padding:16px;border:1px solid var(--line2);border-radius:8px;background:var(--surface);color:var(--text)}
-.full-text-preview header{display:flex;align-items:center;gap:16px;flex:none}.full-text-preview h2{margin:0}.full-text-preview header p{flex:1}
-.full-text-preview-body{overflow:auto;flex:1;min-height:0;line-height:1.65;white-space:pre-wrap}.full-text-preview-body section{padding:12px 8px}
+/* The normal manuscript paper, read-only until the complete snapshot is verified. */
+#manuscriptPrimaryPane{position:relative}
+.full-text-preview{color:var(--text)}
+.full-text-preview-body section{content-visibility:auto;contain-intrinsic-size:auto 800px}
+.full-text-paragraph{min-height:1.72em;white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 .48em}
+.manuscript-loading-indicator{position:absolute;right:16px;bottom:40px;width:18px;height:18px;border:2px solid var(--line2);border-top-color:var(--accent);border-radius:50%;animation:manuscript-loading-spin .9s linear infinite;pointer-events:none}
+@keyframes manuscript-loading-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.manuscript-loading-indicator{animation:none}}
 /* 4.12.10 Manuscript View menu + persistent accessibility text size */
 .manuscript-view-control{position:relative;display:flex;align-items:center}
 .view-menu-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}

@@ -12,10 +12,11 @@ const assert=require('node:assert/strict'),vm=require('node:vm');
 const source=JSON.parse(require('node:fs').readFileSync(0,'utf8'));
 (async()=>{
   const state={hostedChapterFirst:true,chapterCache:new Map(),editGeneration:0,dirty:false,saveInFlight:null};
-  let project='one',revision=1,denied=false,pageFailure=false,dirty=false;const calls=[];
+  let project='one',revision=1,denied=false,pageFailure=false,dirty=false,expired=false;const calls=[];
   const context=vm.createContext({state,runtimeSupports:()=>true,currentProjectIdentity:()=>project,
     api:async(url,options)=>{
       calls.push([url,options]);if(denied)throw new Error('denied');
+      if(expired)state.manuscriptReadEpoch=(state.manuscriptReadEpoch||0)+1;
       if(options?.headers?.['If-None-Match']==='tag'+revision)return null;
       const last=url.includes('block_offset=128');
       if(last&&pageFailure)throw new Error('page failed');
@@ -39,6 +40,8 @@ const source=JSON.parse(require('node:fs').readFileSync(0,'utf8'));
   dirty=true;await assert.rejects(context.loadChapterData('dirty'),/changed while loading/);
   assert.equal(state.chapterCache.has('two:dirty'),false);assert.equal(state.dirty,true);
   dirty=false;state.dirty=false;
+  expired=true;await assert.rejects(context.loadChapterData('logout'),/changed while loading/);
+  assert.equal(state.chapterCache.has('two:logout'),false,'A pre-logout request repopulated memory');expired=false;
   for(let i=0;i<20;i++)await context.loadChapterData('bounded'+i);
   assert.equal(state.chapterCache.size,16);
 })().catch(error=>{console.error(error);process.exitCode=1});

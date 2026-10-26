@@ -72,10 +72,12 @@ async function api(url, options={}) {
   const response = await fetch(url, {...fetchOptions, headers:{...headers, ...contextHeaders, ...nonceHeaders, 'X-Breadmaker-Client':CLIENT_ID, 'X-Breadmaker-Locale':i18nLocale(), ...(options.headers||{})}});
   if(response.status===304&&acceptNotModified&&method==='GET')return null;
   if (!response.ok) {
+    if(hosted&&(response.status===401||response.status===403)&&typeof clearManuscriptReadCache==='function')clearManuscriptReadCache();
     const raw=await response.text().catch(()=> '');let payload;
     try{payload=raw?JSON.parse(raw):{}}catch{payload={detail:raw||`Request failed (${response.status})`}}
     throw breadmakerErrorFromPayload(payload,response.status);
   }
+  if(hosted&&method==='POST'&&url==='/api/auth/logout'&&typeof clearManuscriptReadCache==='function')clearManuscriptReadCache();
   const type = response.headers.get('content-type') || '';
   return type.includes('application/json') ? response.json() : response;
 }
