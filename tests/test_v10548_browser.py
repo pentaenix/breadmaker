@@ -56,6 +56,9 @@ def test_hosted_first_write_and_all_workspaces_persist_with_opaque_ids(tmp_path)
         page.on('pageerror',lambda error:errors.append(str(error)))
         # Collect caught boot/render failures as well as uncaught exceptions.
         page.on('console',lambda msg:errors.append(msg.text) if msg.type=='error' else None)
+        page.on('response',lambda response:errors.append(
+            f'HTTP {response.status} {response.request.method} {response.url}')
+            if response.status>=400 else None)
         first=[True]
         def empty_workspace(route):
             response=route.fetch();body=response.json()
@@ -108,14 +111,19 @@ def test_hosted_first_write_and_all_workspaces_persist_with_opaque_ids(tmp_path)
                 expect(page.locator('#reviewsView')).to_contain_text('Synthetic opaque review')
         page.locator('.main-tab[data-view="manuscript"]').click()
         expect(page.locator('#manuscriptView')).to_have_class(re.compile('active'))
+        # The retained manuscript is visible before authorized revalidation
+        # finishes. Visible is not editable: wait for the actual editing gate.
+        expect(page.locator('#manuscriptPrimaryPane')).to_have_js_property('inert',False)
         marker+=' after workspace edits'
         page.locator('.manuscript-block').first.fill(marker)
+        expect(page.locator('.manuscript-block').first).to_have_text(marker)
         try:page.wait_for_function('()=>!state.dirty && !state.saveInFlight',timeout=5000)
         except Exception as exc:
             diagnostic=page.evaluate('()=>({dirty:state.dirty,inFlight:!!state.saveInFlight,chapters:[...state.dirtyChapters],view:state.viewMode,chapter:state.chapter?.id,revision:[...state.chapterRevisions],generation:[...state.chapterDirtyGeneration],saved:[...state.chapterSavedGeneration],notice:document.querySelector("#saveState")?.textContent})')
             raise AssertionError((errors,diagnostic)) from exc
         page.reload(wait_until='domcontentloaded',timeout=8000)
         expect(page.locator('#manuscriptView')).to_have_class(re.compile('active'))
+        expect(page.locator('.manuscript-block').first).to_have_text(marker)
         headers={'X-Breadmaker-Project':pid}
         snapshot=requests.get(base+'/api/bootstrap',headers=headers,timeout=2).json()
         assert any(b.get('text_content')==marker for b in snapshot['blocks'])

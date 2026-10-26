@@ -26,6 +26,13 @@ def test_canvas_return_keeps_book_dom_scroll_and_cache_during_validation_and_net
         assert page.locator('.full-text-preview').count()==0 and page.locator('dialog[open]').count()==0
         assert page.evaluate('()=>document.querySelector("#manuscriptPrimaryPane").inert')
         assert page.evaluate('()=>document.querySelector("#documentScroller").scrollTop===window.keptScroll')
+        # Real input must not edit retained text before current authority is
+        # checked, even though the workspace is already visible.
+        before=page.locator('.manuscript-block').first.text_content()
+        page.locator('.manuscript-block').first.evaluate('(el)=>el.focus()')
+        page.keyboard.insert_text('SYNTHETIC blocked while validating')
+        expect(page.locator('.manuscript-block').first).to_have_text(before)
+        assert page.evaluate('()=>!state.dirty')
         held[0].continue_();page.wait_for_function('()=>!document.querySelector("#manuscriptPrimaryPane").inert')
         assert page.evaluate('()=>state.bookCache.get(String(state.activeDocumentId))===window.keptBook&&document.querySelector("#editor .manuscript-block")===window.keptNode')
         # A failed check keeps the retained text, but cannot enable stale edits.
