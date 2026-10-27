@@ -17,7 +17,7 @@ EXPECTED_SECURITY_PINS={
     'reportlab':'5.0.1',
     'Pillow':'13.0.0',
     'cryptography':'50.0.1',
-    'Authlib':'1.8.0',
+    'Authlib':'1.9.1',
     'joserfc':'1.7.5',
 }
 

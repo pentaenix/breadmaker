@@ -37,7 +37,9 @@ def test_v10313_checkpoint_three_release_contract_is_documented():
     assert 'hosted login remains disabled' in architecture
     requirements = (ROOT / 'requirements.txt').read_text(encoding='utf-8')
     assert 'class OidcClient' in oidc and "'code_challenge_method': 'S256'" in oidc
-    assert 'Authlib==1.8.0' in requirements
+    # Library ownership belongs here; patched exact pins are checked by v10314
+    # and the live advisory audit, not a second stale release-version literal.
+    assert any(line.startswith('Authlib==') for line in requirements.splitlines())
     assert 'from authlib.oidc.core import CodeIDToken' in oidc
     assert 'from joserfc import jwt' in oidc
     assert 'cryptography.hazmat' not in oidc
@@ -92,6 +94,8 @@ def test_v10313_oidc_rejects_wrong_state_nonce_issuer_audience_and_expiry():
 
     cases = [
         ({'nonce': 'attacker-nonce'}, 'OIDC_ID_TOKEN_NONCE_MISMATCH'),
+        ({'nonce': 'attacker-nonce', 'nonce_supported': False}, 'OIDC_ID_TOKEN_NONCE_MISMATCH'),
+        ({'nonce': None, 'nonce_supported': False}, 'OIDC_ID_TOKEN_NONCE_MISMATCH'),
         ({'iss': 'https://wrong-issuer.example'}, 'OIDC_ID_TOKEN_ISSUER_MISMATCH'),
         ({'aud': 'some-other-client'}, 'OIDC_ID_TOKEN_AUDIENCE_MISMATCH'),
         ({'exp': int(time.time()) - 30}, 'OIDC_ID_TOKEN_EXPIRED'),
