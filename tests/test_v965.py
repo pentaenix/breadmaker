@@ -4,6 +4,7 @@ from source_contracts import frontend_source_from_app_path,frontend_styles_sourc
 from storage import undo as storage_undo
 
 from pathlib import Path
+import subprocess
 
 from conftest import assert_ok
 
@@ -15,7 +16,31 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_v965_boot_batches_lightweight_state_and_only_hydrates_routed_heavy_workspace():
     frontend = frontend_source_from_app_path(ROOT.joinpath('static', 'app.js'))
     boot = frontend[frontend.index('async function boot()'):frontend.index('async function openRecoveryBoot')]
-    assert "api(`/api/ui-state?keys=${encodeURIComponent(BOOT_UI_STATE_KEYS.join(','))}`)" in frontend
+    # Exercise batching and routed-project options, not the spelling of api(...).
+    source = ROOT.joinpath('static/js/core/boot.js').read_text(encoding='utf-8')
+    loader = source[source.index('const BOOT_UI_STATE_KEYS='):source.index('const LOCAL_RUNTIME_FALLBACK=')]
+    behavior = r"""
+const assert=require('node:assert/strict');
+(async()=>{
+  const calls=[],values={'tabs-expanded':false,'map-active':42};
+  let reply={values};
+  global.api=async(url,options)=>{calls.push({url,options});return reply};
+  const scoped={headers:{'X-Breadmaker-Project':'synthetic-project'}};
+  assert.deepEqual(await loadBootUIState(scoped),values);
+  assert.equal(calls.length,1);
+  const url=new URL(calls[0].url,'https://example.invalid');
+  assert.equal(url.pathname,'/api/ui-state');
+  assert.deepEqual(url.searchParams.get('keys').split(','),BOOT_UI_STATE_KEYS);
+  assert.equal(calls[0].options,scoped);
+  assert.deepEqual(await loadBootUIState(),values);
+  assert.deepEqual(calls[1].options,{});
+  reply={};assert.deepEqual(await loadBootUIState(scoped),{});
+  global.api=async()=>{throw new Error('synthetic unavailable')};
+  assert.deepEqual(await loadBootUIState(scoped),{});
+})().catch(error=>{console.error(error);process.exitCode=1});
+"""
+    result = subprocess.run(['node','-e',loader+behavior],capture_output=True,text=True,timeout=5)
+    assert result.returncode == 0, result.stdout + result.stderr
     assert "const bootView=viewFromRoute();" in boot
     assert "loadBootUIState()" in boot
     assert "restoreCanvasUIState(bootUI,{render:false})" in boot
