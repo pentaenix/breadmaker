@@ -14,7 +14,7 @@ def test_canvas_return_keeps_book_dom_scroll_and_cache_during_validation_and_net
     with hosted_browser(tmp_path) as (base,page):
         _project(base,page);_book(page);held=[]
         def hold(route):
-            if route.request.headers.get('if-none-match'):held.append(route)
+            if route.request.headers.get('if-none-match') and not held:held.append(route)
             else:route.continue_()
         page.route('**/api/book?**',hold)
         page.locator('.main-tab[data-view="canvas"]').click()
@@ -84,7 +84,7 @@ def test_leaving_full_text_finishes_verified_cache_without_modal_or_late_navigat
     with hosted_browser(tmp_path) as (base,page):
         _project(base,page);held=[]
         def hold_final(route):
-            if route.request.headers.get('if-none-match'):held.append(route)
+            if route.request.headers.get('if-none-match') and not held:held.append(route)
             else:route.continue_()
         page.route('**/api/book?**',hold_final)
         page.locator('#bookViewBtn').click()

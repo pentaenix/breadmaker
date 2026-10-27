@@ -10,9 +10,11 @@ def test_cached_full_text_checks_current_authority_and_denial_clears_memory(tmp_
         _project(base,page);_book(page)
         page.get_by_text('Synthetic56 chapter 0',exact=True).first.dblclick()
         page.wait_for_function('()=>state.viewMode==="chapter"')
-        held=[];chapter_reads=[]
+        held=[];chapter_reads=[];gate=[True]
         page.on('request',lambda request:chapter_reads.append(request.url) if '/api/chapters/' in request.url else None)
-        def hold(route):held.append(route)
+        def hold(route):
+            if gate[0]:gate[0]=False;held.append(route)
+            else:route.continue_()  # Chapter projection independently checks current authority.
         page.route('**/api/book?**',hold)
         with page.expect_request(lambda request:'/api/book?' in request.url):
             page.locator('#bookViewBtn').click()
@@ -25,6 +27,7 @@ def test_cached_full_text_checks_current_authority_and_denial_clears_memory(tmp_
         assert not chapter_reads,'Warm Full Text unnecessarily downloaded chapter bodies'
         page.get_by_text('Synthetic56 chapter 0',exact=True).first.dblclick()
         page.wait_for_function('()=>state.viewMode==="chapter"')
+        gate[0]=True
         with page.expect_request(lambda request:'/api/book?' in request.url):
             page.locator('#bookViewBtn').click()
         page.get_by_text('Synthetic56 chapter 1',exact=True).first.dblclick()
@@ -32,11 +35,13 @@ def test_cached_full_text_checks_current_authority_and_denial_clears_memory(tmp_
         held.pop().fulfill(status=304)
         page.wait_for_function('()=>!fullTextLoading')
         assert page.evaluate('()=>state.viewMode==="chapter"&&state.chapter.title==="Synthetic56 chapter 1"')
+        gate[0]=True
         with page.expect_request(lambda request:'/api/book?' in request.url):
             page.locator('#bookViewBtn').click()
         held.pop().fulfill(status=403,json={'detail':'Synthetic revoked membership'})
         page.wait_for_function('()=>!fullTextLoading')
         assert page.evaluate('()=>state.viewMode==="chapter"&&state.bookCache.size===0&&state.chapterCache.size===0')
+        assert page.evaluate('()=>document.querySelector("#manuscriptPrimaryPane").inert&&state.manuscriptNeedsValidation&&!state.bookDOMCache&&!state.bookDOMActive')
         expect(page.locator('.manuscript-loading-indicator')).to_have_count(0)
 
 

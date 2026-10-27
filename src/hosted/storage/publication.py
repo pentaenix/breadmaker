@@ -43,6 +43,15 @@ _REVISION_MANAGED_FIELDS = {
 }
 _SECRET_FIELD_FRAGMENTS = {"password", "client_secret", "refresh_token", "access_token", "private_key", "credential"}
 
+def history_capture_token(generation, bookmark, context):
+    value = None if bookmark is None else {
+        k: v for k, v in bookmark.items()
+        if not k.startswith('_bm_') and k not in {'generation', 'created_at', 'updated_at'}
+    }
+    material = json.dumps([int(generation), value, context],
+                          sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+    return hashlib.sha256(material.encode()).hexdigest()
+
 
 def _canonical_revision_metadata(payload: Mapping[str, object]) -> dict[str, object]:
     public = dict(payload)
@@ -280,6 +289,25 @@ class HostedHybridObjectPublisher:
             operation_id=op,
         )
 
+    def _capture_state(self, tx, pid, uid, context):
+        project, _ = self.projects._require_member(tx, pid, uid)
+        bookmark = tx.get(("projects", pid, "members", uid, "state", "bookmark"))
+        # Every canonical workspace mutation advances this generation, not just
+        # prose. Bookmark/config state captured outside that clock is included.
+        return project, history_capture_token(project['generation'], None if bookmark is None else bookmark.data, context)
+
+    def history_capture_state(self, project_id, user_id, context):
+        pid, uid = require_project_id(project_id), require_user_id(user_id)
+        def read(tx):
+            project, token = self._capture_state(tx, pid, uid, context)
+            head = tx.get(self.projects._member_path(pid, uid))
+            revision = None
+            if head is not None and head.data.get('_bm_history_capture_token') == token:
+                row = tx.get(('projects', pid, 'revisions', head.data['_bm_history_revision_id']))
+                if row is not None: revision = dict(row.data)
+            return {'generation': int(project['generation']), 'token': token, 'revision': revision}
+        return self.documents.run_transaction(read)
+
     def publish_revision(
         self,
         *,
@@ -291,6 +319,9 @@ class HostedHybridObjectPublisher:
         revision_metadata: Mapping[str, object],
         operation_id: str,
         max_bytes: int,
+        bookkeeping_only: bool = False,
+        capture_token: str | None = None,
+        capture_context: Mapping[str, object] | None = None,
     ) -> dict[str, object]:
         pid = require_project_id(project_id)
         uid = require_user_id(user_id)
@@ -304,7 +335,7 @@ class HostedHybridObjectPublisher:
         # repeated inside the publication transaction so membership revocation
         # cannot race the authoritative pointer commit.
         self.projects.get_for_user(pid, uid)
-        committed_generation = expected + 1
+        committed_generation = expected if bookkeeping_only else expected + 1
         object_name = revision_key(pid, committed_generation, rid)
         publication = self.immutable.publish_bytes(
             object_name,
@@ -336,6 +367,18 @@ class HostedHybridObjectPublisher:
         def commit(tx: Transaction) -> dict[str, object]:
             project, _ = self.projects._require_member(tx, pid, uid)
             existing = tx.get(revision_path)
+            # Internal metadata on the existing membership record stays inside
+            # established project/account deletion and privacy ownership paths.
+            head_path = self.projects._member_path(pid, uid)
+            if capture_token is not None:
+                _, current_token = self._capture_state(tx, pid, uid, capture_context)
+                if current_token != capture_token:
+                    raise DocumentConflict('HOSTED_HISTORY_CAPTURE_CHANGED')
+                head = tx.get(head_path)
+                if head is not None and head.data.get('_bm_history_capture_token') == capture_token:
+                    prior = tx.get(('projects', pid, 'revisions', head.data['_bm_history_revision_id']))
+                    if prior is not None:
+                        return {**dict(prior.data), 'unchanged': True}
             if existing is not None:
                 row = dict(existing.data)
                 same_pointer = all(row.get(key) == value for key, value in pointer.items())
@@ -360,11 +403,14 @@ class HostedHybridObjectPublisher:
             row["_bm_create_operation"] = op
             row["_bm_create_fingerprint"] = fingerprint
             tx.create(revision_path, row)
-            project["generation"] = committed_generation
-            project["updated_at"] = stamp
+            if not bookkeeping_only:
+                project["generation"] = committed_generation
+                project["updated_at"] = stamp
             project["current_revision_id"] = rid
             project["current_revision"] = dict(pointer)
             tx.set(project_path, project)
+            if capture_token is not None:
+                tx.set(head_path, {**dict(head.data), '_bm_history_capture_token': capture_token, '_bm_history_revision_id': rid})
             return row
 
         # No object rollback here. A failed CAS intentionally leaves only the

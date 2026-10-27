@@ -788,12 +788,23 @@ async def hosted_autocommit(request:Request):
     return await run_in_threadpool(_commit_history_snapshot,_pid(request),reason)
 
 def _commit_history_snapshot(pid:str,reason:str):
-    try:snapshot=_project_snapshot(pid)
+    from hosted.storage.publication import history_capture_token
+    try:
+        context={'features':_feature_flags_raw()['features'], 'metro_view_config':_metro_view_config_raw(), 'canvas_config':_canvas_config_raw()}
+        capture=runtime.history.capture_state(context) if hasattr(runtime.history,'capture_state') else None
+        if capture and capture['revision'] is not None:
+            return {**capture['revision'], 'unchanged':True}
+        snapshot=_project_snapshot(pid)
     except Exception as exc:raise _error(exc)
+    actual_context={key:snapshot.get(key) for key in context}
+    if capture and history_capture_token(snapshot['project']['generation'],snapshot.get('bookmark'),actual_context)!=capture['token']:
+        raise HTTPException(409,detail='HOSTED_HISTORY_CAPTURE_CHANGED')
     envelope=json.dumps({'snapshot':snapshot},sort_keys=True,separators=(',',':')).encode('utf-8')
     import gzip
     if not hasattr(runtime.history,'create_revision'):raise HTTPException(501,detail='HOSTED_HISTORY_WRITE_UNAVAILABLE')
-    return runtime.history.create_revision(gzip.compress(envelope,mtime=0),{'reason':reason})
+    try:
+        return runtime.history.create_revision(gzip.compress(envelope,mtime=0),{'reason':reason},expected_project_generation=int(snapshot['project']['generation']),capture_state=capture,capture_context=context)
+    except Exception as exc:raise _error(exc)
 
 # Local-destination backup surfaces are intentionally capability-disabled in M5.
 @product_router.api_route('/api/backup-destinations{rest:path}',methods=['GET','POST','PUT','PATCH','DELETE'])

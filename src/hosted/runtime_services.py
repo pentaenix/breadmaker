@@ -980,10 +980,23 @@ class HostedHistoryStore:
                                   order_by=('project_generation','created_at','id'))
             return [self._private_view(row) for row in sorted(rows,
                     key=lambda r:int(r.get('project_generation') or 0),reverse=True)]
-        rows=self.documents.query_collection(("projects",pid,"revisions"));return [_clean_public(row.data) for row in sorted(rows,key=lambda r:int(r.data.get("project_generation") or 0),reverse=True)]
+        rows=self.documents.query_collection(("projects",pid,"revisions"));return [_clean_public(row.data) for row in sorted(rows,key=lambda r:(int(r.data.get("project_generation") or 0),str(r.data.get('published_at') or ''),str(r.data.get('revision_id') or '')),reverse=True)]
 
-    def create_revision(self, envelope: bytes, metadata: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    def capture_state(self, context):
+        if self.private: return None  # No plaintext inspection of opt-in private member records.
+        state=self.publisher.history_capture_state(self.project_id_provider(), self.user_id_provider(), context)
+        if state['revision'] is not None:
+            row=state['revision'];stat=self.objects.stat(row['object_name'])
+            if stat is None or stat.generation!=row['object_generation'] or stat.size!=row['object_size'] or stat.sha256!=row['object_sha256']:
+                raise RuntimeError('HOSTED_REVISION_POINTER_INVALID')
+            state['revision']=_clean_public(row)
+        return state
+
+    def create_revision(self, envelope: bytes, metadata: Mapping[str, Any] | None = None, *, expected_project_generation=None, capture_state=None, capture_context=None) -> dict[str, Any]:
         uid=require_user_id(self.user_id_provider());pid=require_project_id(self.project_id_provider());project=self.projects.get_for_user(pid,uid);rid="revision_"+secrets.token_hex(12)
+        expected=int(project['generation']) if expected_project_generation is None else int(expected_project_generation)
+        if int(project['generation']) != expected:
+            raise DocumentConflict('HOSTED_HISTORY_CAPTURE_CHANGED')
         if self.private:
             body=bytes(envelope)
             if len(body)>_REVISION_LIMIT:
@@ -993,7 +1006,7 @@ class HostedHistoryStore:
                  'envelope_b64':base64.b64encode(body).decode('ascii')},
                 user_id=uid,entity_id=rid,operation=operation_id('revision'))
             return self._private_view(stored)
-        return _clean_public(self.publisher.publish_revision(project_id=pid,user_id=uid,revision_id=rid,expected_project_generation=int(project.get("generation") or 0),envelope=bytes(envelope),revision_metadata=dict(metadata or {}),operation_id=operation_id("revision"),max_bytes=_REVISION_LIMIT))
+        return _clean_public(self.publisher.publish_revision(project_id=pid,user_id=uid,revision_id=rid,expected_project_generation=expected,envelope=bytes(envelope),revision_metadata=dict(metadata or {}),operation_id=operation_id("revision"),max_bytes=_REVISION_LIMIT,bookkeeping_only=True,capture_token=capture_state['token'] if capture_state else None,capture_context=capture_context))
 
     def read_revision(self, revision_id: str) -> tuple[dict[str, Any], bytes]:
         uid=require_user_id(self.user_id_provider());pid=require_project_id(self.project_id_provider());self.projects.get_for_user(pid,uid)
