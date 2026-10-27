@@ -10,6 +10,7 @@ transaction.  Local Breadmaker continues to use Schema-42 SQLite unchanged.
 
 import gzip
 import hashlib
+import io
 import json
 import re
 import secrets
@@ -161,9 +162,18 @@ def _json_gzip(payload: Mapping[str, Any]) -> bytes:
     return gzip.compress(raw, compresslevel=6, mtime=0)
 
 
-def _json_gunzip(payload: bytes) -> dict[str, Any]:
+def _json_gunzip(payload: bytes, *, max_decoded_bytes: int | None = None) -> dict[str, Any]:
     try:
-        value = json.loads(gzip.decompress(payload).decode("utf-8"))
+        if max_decoded_bytes is None:
+            raw = gzip.decompress(payload)
+        else:
+            with gzip.GzipFile(fileobj=io.BytesIO(payload)) as stream:
+                raw = stream.read(max_decoded_bytes + 1)
+            if len(raw) > max_decoded_bytes:
+                raise HostedValidationError('HOSTED_BUNDLED_BOOK_LIMIT')
+        value = json.loads(raw.decode("utf-8"))
+    except HostedValidationError:
+        raise
     except Exception as exc:
         raise ValueError("HOSTED_OBJECT_PAYLOAD_INVALID") from exc
     if not isinstance(value, dict):
@@ -369,7 +379,7 @@ class HostedDomainStore:
             return bundle
         return pointer
 
-    def _read_hybrid_body(self,pointer):
+    def _read_hybrid_body(self,pointer, *, max_decoded_bytes=None):
         try:
             encoded=b''.join(self.objects.read_chunks(str(pointer['object_name']),
                 max_bytes=_MAX_HYBRID_BYTES,if_generation_match=int(pointer['object_generation'])))
@@ -379,7 +389,7 @@ class HostedDomainStore:
             raise RuntimeError('HOSTED_POINTER_OBJECT_HASH_MISMATCH')
         if int(pointer.get('object_size') or -1)!=len(encoded):
             raise RuntimeError('HOSTED_POINTER_OBJECT_SIZE_MISMATCH')
-        return _json_gunzip(encoded)
+        return _json_gunzip(encoded,max_decoded_bytes=max_decoded_bytes)
 
     def _hydrate(self, logical_entity: str, row: Mapping[str, Any], *,
                  ids: Mapping[str, str] | None = None, user_id: str | None = None,
@@ -704,6 +714,48 @@ class HostedDomainStore:
             user_id=require_user_id(user_id),
         )
         return self._hydrate(logical_entity, row, ids=ids, user_id=require_user_id(user_id))
+
+    def bundled_manuscript(self, project_id: str, chapter_ids, *, user_id: str):
+        """One request-local, authorized read of already verified accelerators.
+
+        Never builds bundles, changes pointers, or falls back to thousands of
+        canonical object reads. Missing/stale/oversized bundles use normal paging.
+        Corruption is an error, not permission to bypass integrity checks.
+        """
+        pid,uid=require_project_id(project_id),require_user_id(user_id)
+        if self.encrypted_objects is not None or self.encrypted_fields is not None:
+            self.project_generation(pid,uid)
+            return None
+        chapters=set(chapter_ids)
+        def read(tx):
+            self.projects._require_member(tx,pid,uid)
+            path=('projects',pid,'blocks');counter=getattr(tx,'count_collection',None)
+            if counter is None or counter(path)>10000:return None
+            return [dict(row.data) for row in tx.query_collection(path)
+                    if row.data.get('chapter_id') in chapters]
+        rows=self.documents.run_transaction(read)
+        if rows is None or len(rows)>10000:return None
+        pointers={}
+        for row in rows:
+            pointer=self._read_pointer(row)
+            if not isinstance(pointer,dict) or not pointer.get('bundle_entry'):return None
+            pointers[self._payload_key(pointer)]=pointer
+        if len(pointers)>256 or sum(int(p.get('object_size') or 0) for p in pointers.values())>2*1024*1024:
+            return None
+        verified={};decoded=0;items=list(pointers.items())
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            for offset in range(0,len(items),8):
+                batch=items[offset:offset+8]
+                try:
+                    bodies=pool.map(lambda item:self._read_hybrid_body(item[1],max_decoded_bytes=512*1024),batch)
+                    for (key,_),body in zip(batch,bodies):
+                        decoded+=len(json.dumps(body,ensure_ascii=False).encode('utf-8'))
+                        if decoded>8*1024*1024:return None
+                        verified[key]=body
+                except HostedValidationError as exc:
+                    if str(exc)=='HOSTED_BUNDLED_BOOK_LIMIT':return None
+                    raise
+            return list(pool.map(lambda row:self._hydrate('manuscript_block',row,payload_cache=verified),rows))
 
     def manuscript_navigation(self, project_id: str, *, user_id: str) -> dict[str, Any]:
         """Read navigation metadata without downloading ordinary paragraph bodies.

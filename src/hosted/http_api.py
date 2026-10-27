@@ -14,6 +14,7 @@ import re
 from contextlib import nullcontext
 from contextvars import copy_context
 from concurrent.futures import ThreadPoolExecutor
+from threading import BoundedSemaphore
 from typing import Any, Mapping
 from urllib.parse import urlparse
 
@@ -36,6 +37,7 @@ from security.http_request import canonical_request_path
 platform_router=APIRouter()
 product_router=APIRouter()
 _read_cache_capacity=CapacityLimiter(1)
+_bundled_book_capacity=BoundedSemaphore(2)
 
 _PROJECT_PATH_RE=re.compile(r'^/api/projects/([0-9a-f]{32})(?:/|$)')
 _SHELL_PROJECT_RE=re.compile(r'^/p/([0-9a-f]{32})(?:/|$)')
@@ -539,13 +541,30 @@ def hosted_book(request:Request):
             if conditional==tag(pid,tab,generation):
                 return Response(status_code=304,headers={'Cache-Control':'private, no-store','ETag':conditional})
         manifest=request.query_params.get('manifest')=='true'
-        data=_project_snapshot(pid,manuscript_only=True,manifest_only=manifest)
-        if manifest:
+        bundled=request.query_params.get('bundled')=='true'
+        data=_project_snapshot(pid,manuscript_only=True,manifest_only=manifest or bundled)
+        if manifest or bundled:
             if tab and not any(str(row['id'])==tab for row in data['tabs']):
                 raise DocumentNotFound('DOCUMENT_NOT_FOUND')
             data['chapters']=[row for row in data['chapters'] if not tab or str(row.get('tab_id'))==tab]
+        if bundled:
+            blocks=None
+            if _bundled_book_capacity.acquire(blocking=False):
+                try:blocks=_domain().bundled_manuscript(pid,[row['id'] for row in data['chapters']],user_id=_uid())
+                finally:_bundled_book_capacity.release()
+            # Authorize AGAIN after object reads, including revocation/deletion.
+            if _domain().project_generation(pid,_uid())!=int(data['project']['generation']):
+                raise DocumentConflict('HOSTED_SNAPSHOT_GENERATION_CHANGED')
+            data['bundled']=blocks is not None
+            if blocks is not None:
+                order={row['id']:index for index,row in enumerate(data['chapters'])}
+                data['blocks']=sorted(blocks,key=lambda row:(order[row['chapter_id']],int(row.get('position') or 0),str(row.get('created_at') or ''),str(row.get('id') or '')))
         data['read_tag']=tag(pid,tab,data['project']['generation'])
-        return JSONResponse(data,headers={'Cache-Control':'private, no-store','ETag':data['read_tag']})
+        response=JSONResponse(data,headers={'Cache-Control':'private, no-store','ETag':data['read_tag']})
+        if bundled and len(response.body)>8*1024*1024:
+            data.update(blocks=[],bundled=False)
+            response=JSONResponse(data,headers={'Cache-Control':'private, no-store','ETag':data['read_tag']})
+        return response
     except Exception as exc:raise _error(exc)
 
 # Tabs/documents

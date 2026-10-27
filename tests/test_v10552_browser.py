@@ -28,7 +28,8 @@ def test_hosted_navigation_opens_complete_chapter_and_full_text_without_whole_bo
             route.fulfill(response=response,json=body)
         page.route('**/api/bootstrap?navigation_only=true',large_navigation)
         reads=[]
-        page.on('request',lambda request:reads.append(request.url) if '/api/book?' in request.url or '/api/chapters/' in request.url else None)
+        # Count body/metadata READS, not asynchronous read-cache maintenance POSTs.
+        page.on('request',lambda request:reads.append(request.url) if request.method=='GET' and ('/api/book?' in request.url or '/api/chapters/' in request.url) else None)
         page.goto(base+'/p/'+pid+'/canvas',wait_until='domcontentloaded')
         page.wait_for_function('()=>document.documentElement.dataset.breadmakerBootReady==="true"')
         assert reads==[] # Inactive Manuscript does not hydrate on Canvas startup.

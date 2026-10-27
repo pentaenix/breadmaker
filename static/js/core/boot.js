@@ -73,8 +73,8 @@ window.addEventListener('pagehide', e => {
 });
 
 const BOOT_UI_STATE_KEYS=['tabs-expanded','book-nav-collapsed','manuscript-outline-collapse','manuscript-tab-presentation','canvas-tree','canvas-rail','canvas-active','map-tree','map-rail','experimental-features','map-active','task-filter','review-rail','review-active','manuscript-reviews','manuscript-last-location'];
-async function loadBootUIState(){
-  try{return (await api(`/api/ui-state?keys=${encodeURIComponent(BOOT_UI_STATE_KEYS.join(','))}`)).values||{}}
+async function loadBootUIState(options={}){
+  try{return (await api(`/api/ui-state?keys=${encodeURIComponent(BOOT_UI_STATE_KEYS.join(','))}`,options)).values||{}}
   catch(error){console.warn('Could not batch-load UI state',error);return{}}
 }
 
@@ -98,7 +98,7 @@ async function loadRuntimeBootstrap(){
     const health=await api('/api/health');
     if(health?.app!=='Breadmaker Editor'||health?.runtime!=='local')throw error;
     const backendVersion=String(health?.version||'');
-    console.warn('Breadmaker runtime bootstrap endpoint was unavailable; continuing with attested local capabilities.',{frontend:'10.5.59',backend:backendVersion||'unknown'});
+    console.warn('Breadmaker runtime bootstrap endpoint was unavailable; continuing with attested local capabilities.',{frontend:'10.5.60',backend:backendVersion||'unknown'});
     return {...LOCAL_RUNTIME_FALLBACK,fallback:true,backend_version:backendVersion};
   }
 }
@@ -119,6 +119,14 @@ async function boot() {
   // Profile, detached Review status, and workspace selection are mutually independent
   // bootstrap reads. The server resolves the active local/account identity when these
   // requests do not yet carry an explicit browser-side actor header.
+  const routedProject=projectRouteIdentity();
+  // Explicit routed IDs are server-authorized, not browser authority. Start
+  // metadata-only reads while workspace discovery runs; never install them or
+  // enable editing until membership, workspace and lease checks below pass.
+  const earlyBoot=runtimeSupports('hosted_projects')&&routedProject?{
+    bootstrap:api('/api/bootstrap?navigation_only=true',{headers:{'X-Breadmaker-Project':routedProject}}).then(value=>({value}),error=>({error})),
+    ui:loadBootUIState({headers:{'X-Breadmaker-Project':routedProject}}),
+  }:null;
   const profilePromise=loadUserProfile();
   const portablePromise=api('/api/portable-review/status').catch(()=>({active:false}));
   const workspacePromise=api('/api/workspace');
@@ -126,11 +134,10 @@ async function boot() {
   window.breadmakerStartupProgress?.(45);
   if(portable?.active){if(portable.locked){const unlocked=await unlockPortableBreadReview(portable);if(!unlocked)return;await openPortableReviewerMode(unlocked.payload,{temporary:!!unlocked.temporary,filename:unlocked.filename||''});return}await openPortableReviewerMode(portable.payload,{temporary:!!portable.temporary,filename:portable.filename||''});return}
 
-  // Resolve the profile's actual project before any project-scoped request. Startup
-  // then hydrates bootstrap + collaborator UI preferences concurrently instead of
-  // serially opening a transaction/request for every workspace preference.
+  // Validate workspace membership/selection before installing any speculative
+  // metadata. Unrouted/local startup still resolves its actual project before
+  // starting project reads; neither path trusts a URL as authorization.
   state.workspace=workspace;
-  const routedProject=projectRouteIdentity();
   if(runtimeSupports('hosted_projects')&&routedProject){
     const allowed=(state.workspace?.projects||[]).some(project=>String(project.id)===routedProject);
     if(!allowed)throw new Error('Project not found or you do not have access.');
@@ -145,13 +152,13 @@ async function boot() {
 
   const bootView=viewFromRoute();
   // Lease acquisition is required before editing, but it does not have to serialize
-  // read-only bootstrap/UI-state hydration. Start all of them together, then refuse to
+  // read-only bootstrap/UI-state hydration. Join all of them here, then refuse to
   // expose an editable workspace if the lease was lost.
   const leasePromise=api('/api/lease',{method:'POST'}).then(()=>true).catch(error=>{if(error.status===409)return false;throw error});
   const [leaseGranted,bootstrap,bootUI,bootCrashDrafts]=await Promise.all([
     leasePromise,
-    api(runtimeSupports('hosted_projects')?'/api/bootstrap?navigation_only=true':'/api/bootstrap'),
-    loadBootUIState(),
+    earlyBoot?earlyBoot.bootstrap.then(result=>{if(result.error)throw result.error;return result.value}):api(runtimeSupports('hosted_projects')?'/api/bootstrap?navigation_only=true':'/api/bootstrap'),
+    earlyBoot?earlyBoot.ui:loadBootUIState(),
     crashJournalForProject(currentProjectIdentity()),
   ]);
   if(!leaseGranted){showLeaseLost(true);return}

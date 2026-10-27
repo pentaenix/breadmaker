@@ -7651,42 +7651,42 @@
     },
     {
       "file": "src/hosted/domain_store.py",
-      "lines": 1064,
+      "lines": 1116,
       "symbols": [
         {
           "name": "_check_encrypted_block_metadata",
           "kind": "function",
-          "line": 120
+          "line": 121
         },
         {
           "name": "new_entity_id",
           "kind": "function",
-          "line": 146
+          "line": 147
         },
         {
           "name": "operation_id",
           "kind": "function",
-          "line": 154
+          "line": 155
         },
         {
           "name": "_json_gzip",
           "kind": "function",
-          "line": 159
+          "line": 160
         },
         {
           "name": "_json_gunzip",
           "kind": "function",
-          "line": 164
+          "line": 165
         },
         {
           "name": "_public",
           "kind": "function",
-          "line": 174
+          "line": 184
         },
         {
           "name": "HostedDomainStore",
           "kind": "class",
-          "line": 178
+          "line": 188
         }
       ]
     },
@@ -7985,582 +7985,582 @@
     },
     {
       "file": "src/hosted/http_api.py",
-      "lines": 824,
+      "lines": 843,
       "symbols": [
         {
           "name": "_projects",
           "kind": "function",
-          "line": 45
+          "line": 47
         },
         {
           "name": "_domain",
           "kind": "function",
-          "line": 49
+          "line": 51
         },
         {
           "name": "_documents",
           "kind": "function",
-          "line": 55
+          "line": 57
         },
         {
           "name": "_uid",
           "kind": "function",
-          "line": 61
+          "line": 63
         },
         {
           "name": "_pid",
           "kind": "function",
-          "line": 65
+          "line": 67
         },
         {
           "name": "_json_public",
           "kind": "function",
-          "line": 76
+          "line": 78
         },
         {
           "name": "_error",
           "kind": "function",
-          "line": 82
+          "line": 84
         },
         {
           "name": "hosted_request_boundary",
           "kind": "async_function",
-          "line": 92
+          "line": 94
         },
         {
           "name": "install_request_boundary",
           "kind": "function",
-          "line": 171
+          "line": 173
         },
         {
           "name": "hosted_shell",
           "kind": "function",
-          "line": 189
+          "line": 191
         },
         {
           "name": "hosted_health",
           "kind": "function",
-          "line": 201
+          "line": 203
         },
         {
           "name": "hosted_locales",
           "kind": "function",
-          "line": 206
+          "line": 208
         },
         {
           "name": "hosted_locale_file",
           "kind": "function",
-          "line": 222
+          "line": 224
         },
         {
           "name": "hosted_auth_session",
           "kind": "function",
-          "line": 230
+          "line": 232
         },
         {
           "name": "hosted_auth_logout",
           "kind": "function",
-          "line": 241
+          "line": 243
         },
         {
           "name": "hosted_editor_lease",
           "kind": "function",
-          "line": 250
+          "line": 252
         },
         {
           "name": "hosted_editor_lease_release",
           "kind": "function",
-          "line": 257
+          "line": 259
         },
         {
           "name": "hosted_workspace",
           "kind": "function",
-          "line": 262
+          "line": 264
         },
         {
           "name": "hosted_identity_current",
           "kind": "function",
-          "line": 272
+          "line": 274
         },
         {
           "name": "hosted_profile",
           "kind": "function",
-          "line": 275
+          "line": 277
         },
         {
           "name": "hosted_profiles",
           "kind": "function",
-          "line": 278
+          "line": 280
         },
         {
           "name": "hosted_profile_update",
           "kind": "async_function",
-          "line": 281
+          "line": 283
         },
         {
           "name": "hosted_avatar",
           "kind": "function",
-          "line": 285
+          "line": 287
         },
         {
           "name": "hosted_avatar_save",
           "kind": "async_function",
-          "line": 292
+          "line": 294
         },
         {
           "name": "hosted_avatar_delete",
           "kind": "function",
-          "line": 296
+          "line": 298
         },
         {
           "name": "hosted_project_create",
           "kind": "async_function",
-          "line": 300
+          "line": 302
         },
         {
           "name": "hosted_project_activate",
           "kind": "function",
-          "line": 308
+          "line": 310
         },
         {
           "name": "hosted_project_rename",
           "kind": "async_function",
-          "line": 313
+          "line": 315
         },
         {
           "name": "hosted_project_delete",
           "kind": "function",
-          "line": 319
+          "line": 321
         },
         {
           "name": "hosted_project_members",
           "kind": "function",
-          "line": 324
+          "line": 326
         },
         {
           "name": "hosted_project_add_member",
           "kind": "async_function",
-          "line": 329
+          "line": 331
         },
         {
           "name": "hosted_project_remove_member",
           "kind": "function",
-          "line": 335
+          "line": 337
         },
         {
           "name": "hosted_restore_project",
           "kind": "function",
-          "line": 340
+          "line": 342
         },
         {
           "name": "hosted_project_export",
           "kind": "function",
-          "line": 345
+          "line": 347
         },
         {
           "name": "hosted_project_import",
           "kind": "async_function",
-          "line": 352
+          "line": 354
         },
         {
           "name": "hosted_data_export",
           "kind": "function",
-          "line": 363
+          "line": 365
         },
         {
           "name": "hosted_project_metadata",
           "kind": "function",
-          "line": 370
+          "line": 372
         },
         {
           "name": "hosted_project_health",
           "kind": "function",
-          "line": 374
+          "line": 376
         },
         {
           "name": "hosted_asset_upload",
           "kind": "async_function",
-          "line": 379
+          "line": 381
         },
         {
           "name": "hosted_asset_read",
           "kind": "function",
-          "line": 385
+          "line": 387
         },
         {
           "name": "hosted_integrity_deep",
           "kind": "function",
-          "line": 393
+          "line": 395
         },
         {
           "name": "_body",
           "kind": "async_function",
-          "line": 407
+          "line": 409
         },
         {
           "name": "_bounded_upload",
           "kind": "async_function",
-          "line": 414
+          "line": 416
         },
         {
           "name": "_create",
           "kind": "function",
-          "line": 431
+          "line": 433
         },
         {
           "name": "_list",
           "kind": "function",
-          "line": 446
+          "line": 448
         },
         {
           "name": "_get",
           "kind": "function",
-          "line": 450
+          "line": 452
         },
         {
           "name": "_update",
           "kind": "function",
-          "line": 454
+          "line": 456
         },
         {
           "name": "_delete",
           "kind": "function",
-          "line": 460
+          "line": 462
         },
         {
           "name": "_project_snapshot",
           "kind": "function",
-          "line": 467
+          "line": 469
         },
         {
           "name": "hosted_bootstrap",
           "kind": "function",
-          "line": 523
+          "line": 525
         },
         {
           "name": "hosted_book",
           "kind": "function",
-          "line": 528
+          "line": 530
         },
         {
           "name": "hosted_document_create",
           "kind": "async_function",
-          "line": 553
+          "line": 572
         },
         {
           "name": "hosted_document_update",
           "kind": "async_function",
-          "line": 555
+          "line": 574
         },
         {
           "name": "hosted_document_delete",
           "kind": "function",
-          "line": 557
+          "line": 576
         },
         {
           "name": "hosted_chapter_create",
           "kind": "async_function",
-          "line": 561
+          "line": 580
         },
         {
           "name": "hosted_chapter_get",
           "kind": "function",
-          "line": 563
+          "line": 582
         },
         {
           "name": "hosted_chapter_read_cache",
           "kind": "async_function",
-          "line": 593
+          "line": 612
         },
         {
           "name": "hosted_chapter_update",
           "kind": "async_function",
-          "line": 602
+          "line": 621
         },
         {
           "name": "hosted_chapter_delete",
           "kind": "function",
-          "line": 613
+          "line": 632
         },
         {
           "name": "hosted_chapter_blocks",
           "kind": "async_function",
-          "line": 615
+          "line": 634
         },
         {
           "name": "hosted_scene_create",
           "kind": "async_function",
-          "line": 627
+          "line": 646
         },
         {
           "name": "hosted_scene_update",
           "kind": "async_function",
-          "line": 629
+          "line": 648
         },
         {
           "name": "hosted_scene_delete",
           "kind": "function",
-          "line": 631
+          "line": 650
         },
         {
           "name": "hosted_scene_manuscript",
           "kind": "function",
-          "line": 633
+          "line": 652
         },
         {
           "name": "hosted_annotations",
           "kind": "function",
-          "line": 638
+          "line": 657
         },
         {
           "name": "hosted_annotations_batch",
           "kind": "async_function",
-          "line": 640
+          "line": 659
         },
         {
           "name": "hosted_annotation_update",
           "kind": "async_function",
-          "line": 649
+          "line": 668
         },
         {
           "name": "hosted_label_create",
           "kind": "async_function",
-          "line": 651
+          "line": 670
         },
         {
           "name": "hosted_comments",
           "kind": "function",
-          "line": 655
+          "line": 674
         },
         {
           "name": "hosted_comment_create",
           "kind": "async_function",
-          "line": 657
+          "line": 676
         },
         {
           "name": "hosted_comment_update",
           "kind": "async_function",
-          "line": 659
+          "line": 678
         },
         {
           "name": "hosted_comment_delete",
           "kind": "function",
-          "line": 661
+          "line": 680
         },
         {
           "name": "hosted_comment_message",
           "kind": "async_function",
-          "line": 663
+          "line": 682
         },
         {
           "name": "hosted_bookmark_get",
           "kind": "function",
-          "line": 668
+          "line": 687
         },
         {
           "name": "hosted_bookmark_put",
           "kind": "async_function",
-          "line": 671
+          "line": 690
         },
         {
           "name": "hosted_bookmark_delete",
           "kind": "function",
-          "line": 674
+          "line": 693
         },
         {
           "name": "hosted_ui_state_batch",
           "kind": "function",
-          "line": 677
+          "line": 696
         },
         {
           "name": "hosted_ui_state_get",
           "kind": "function",
-          "line": 688
+          "line": 707
         },
         {
           "name": "hosted_ui_state_put",
           "kind": "async_function",
-          "line": 691
+          "line": 710
         },
         {
           "name": "hosted_tasks",
           "kind": "function",
-          "line": 696
+          "line": 715
         },
         {
           "name": "hosted_task_create",
           "kind": "async_function",
-          "line": 698
+          "line": 717
         },
         {
           "name": "hosted_task_update",
           "kind": "async_function",
-          "line": 700
+          "line": 719
         },
         {
           "name": "hosted_task_delete",
           "kind": "function",
-          "line": 702
+          "line": 721
         },
         {
           "name": "hosted_milestones",
           "kind": "function",
-          "line": 704
+          "line": 723
         },
         {
           "name": "hosted_milestone_create",
           "kind": "async_function",
-          "line": 706
+          "line": 725
         },
         {
           "name": "hosted_canvas_create",
           "kind": "async_function",
-          "line": 710
+          "line": 729
         },
         {
           "name": "hosted_canvas_get",
           "kind": "function",
-          "line": 712
+          "line": 731
         },
         {
           "name": "hosted_canvas_update",
           "kind": "async_function",
-          "line": 715
+          "line": 734
         },
         {
           "name": "hosted_canvas_delete",
           "kind": "function",
-          "line": 717
+          "line": 736
         },
         {
           "name": "hosted_canvas_node",
           "kind": "async_function",
-          "line": 719
+          "line": 738
         },
         {
           "name": "hosted_canvas_edge",
           "kind": "async_function",
-          "line": 721
+          "line": 740
         },
         {
           "name": "hosted_maps",
           "kind": "function",
-          "line": 728
+          "line": 747
         },
         {
           "name": "hosted_map_create",
           "kind": "async_function",
-          "line": 730
+          "line": 749
         },
         {
           "name": "hosted_map_get",
           "kind": "function",
-          "line": 732
+          "line": 751
         },
         {
           "name": "hosted_map_update",
           "kind": "async_function",
-          "line": 740
+          "line": 759
         },
         {
           "name": "hosted_map_delete",
           "kind": "function",
-          "line": 742
+          "line": 761
         },
         {
           "name": "hosted_map_line",
           "kind": "async_function",
-          "line": 744
+          "line": 763
         },
         {
           "name": "hosted_map_item",
           "kind": "async_function",
-          "line": 746
+          "line": 765
         },
         {
           "name": "hosted_map_junction",
           "kind": "async_function",
-          "line": 749
+          "line": 768
         },
         {
           "name": "hosted_reviews",
           "kind": "function",
-          "line": 753
+          "line": 772
         },
         {
           "name": "hosted_review_create",
           "kind": "async_function",
-          "line": 755
+          "line": 774
         },
         {
           "name": "hosted_review_get",
           "kind": "function",
-          "line": 757
+          "line": 776
         },
         {
           "name": "hosted_review_update",
           "kind": "async_function",
-          "line": 760
+          "line": 779
         },
         {
           "name": "hosted_review_delete",
           "kind": "function",
-          "line": 762
+          "line": 781
         },
         {
           "name": "hosted_review_participant",
           "kind": "async_function",
-          "line": 764
+          "line": 783
         },
         {
           "name": "hosted_questionnaires",
           "kind": "function",
-          "line": 766
+          "line": 785
         },
         {
           "name": "hosted_questionnaire_create",
           "kind": "async_function",
-          "line": 768
+          "line": 787
         },
         {
           "name": "hosted_checkpoints",
           "kind": "function",
-          "line": 772
+          "line": 791
         },
         {
           "name": "hosted_checkpoint_create",
           "kind": "async_function",
-          "line": 774
+          "line": 793
         },
         {
           "name": "hosted_checkpoint_get",
           "kind": "function",
-          "line": 781
+          "line": 800
         },
         {
           "name": "hosted_history_list",
           "kind": "function",
-          "line": 783
+          "line": 802
         },
         {
           "name": "hosted_autocommit",
           "kind": "async_function",
-          "line": 785
+          "line": 804
         },
         {
           "name": "_commit_history_snapshot",
           "kind": "function",
-          "line": 790
+          "line": 809
         },
         {
           "name": "hosted_local_backup_unavailable",
           "kind": "function",
-          "line": 812
+          "line": 831
         },
         {
           "name": "hosted_unported_bulk_mutation",
           "kind": "function",
-          "line": 823
+          "line": 842
         }
       ]
     },
@@ -13749,7 +13749,7 @@
     },
     {
       "file": "static/js/core/boot.js",
-      "lines": 252,
+      "lines": 259,
       "symbols": [
         {
           "name": "applyRuntimeImageInputPolicy",
@@ -13804,22 +13804,22 @@
         {
           "name": "openRecoveryBoot",
           "kind": "function",
-          "line": 202
+          "line": 209
         },
         {
           "name": "applyCanvasConfig",
           "kind": "function",
-          "line": 213
+          "line": 220
         },
         {
           "name": "applyBootstrapData",
           "kind": "function",
-          "line": 219
+          "line": 226
         },
         {
           "name": "refresh",
           "kind": "function",
-          "line": 228
+          "line": 235
         }
       ]
     },
@@ -18631,7 +18631,7 @@
     },
     {
       "file": "static/js/features/manuscript/rendering.js",
-      "lines": 467,
+      "lines": 481,
       "symbols": [
         {
           "name": "newTempId",
@@ -18876,162 +18876,162 @@
         {
           "name": "worker",
           "kind": "function",
-          "line": 251
+          "line": 265
         },
         {
           "name": "selectSceneGap",
           "kind": "function",
-          "line": 270
+          "line": 284
         },
         {
           "name": "findIsOpen",
           "kind": "function",
-          "line": 276
+          "line": 290
         },
         {
           "name": "syncFindScopeLabel",
           "kind": "function",
-          "line": 278
+          "line": 292
         },
         {
           "name": "refreshFindForContext",
           "kind": "function",
-          "line": 279
+          "line": 293
         },
         {
           "name": "selectChapter",
           "kind": "function",
-          "line": 280
+          "line": 294
         },
         {
           "name": "loadChapterData",
           "kind": "function",
-          "line": 288
+          "line": 302
         },
         {
           "name": "task",
           "kind": "function",
-          "line": 296
+          "line": 310
         },
         {
           "name": "clearManuscriptReadCache",
           "kind": "function",
-          "line": 328
+          "line": 342
         },
         {
           "name": "cancelFullTextPreview",
           "kind": "function",
-          "line": 337
+          "line": 351
         },
         {
           "name": "fullTextLoadingIndicator",
           "kind": "function",
-          "line": 338
+          "line": 352
         },
         {
           "name": "fullTextPreview",
           "kind": "function",
-          "line": 339
+          "line": 353
         },
         {
           "name": "openWholeBook",
           "kind": "function",
-          "line": 354
+          "line": 368
         },
         {
           "name": "captureManuscriptViewport",
           "kind": "function",
-          "line": 363
+          "line": 377
         },
         {
           "name": "restoreManuscriptViewport",
           "kind": "function",
-          "line": 371
+          "line": 385
         },
         {
           "name": "manuscriptLocationPayload",
           "kind": "function",
-          "line": 377
+          "line": 391
         },
         {
           "name": "schedulePersistManuscriptLocation",
           "kind": "function",
-          "line": 384
+          "line": 398
         },
         {
           "name": "restoreManuscriptLocation",
           "kind": "function",
-          "line": 387
+          "line": 401
         },
         {
           "name": "restoreLastManuscriptLocation",
           "kind": "function",
-          "line": 399
+          "line": 413
         },
         {
           "name": "pulseBookmarkTarget",
           "kind": "function",
-          "line": 402
+          "line": 416
         },
         {
           "name": "bookmarkStartWrap",
           "kind": "function",
-          "line": 403
+          "line": 417
         },
         {
           "name": "revealBookmarkWrap",
           "kind": "function",
-          "line": 404
+          "line": 418
         },
         {
           "name": "goToBookmark",
           "kind": "function",
-          "line": 405
+          "line": 419
         },
         {
           "name": "preserveManuscriptViewport",
           "kind": "function",
-          "line": 434
+          "line": 448
         },
         {
           "name": "reloadManuscriptView",
           "kind": "function",
-          "line": 436
+          "line": 450
         },
         {
           "name": "scheduleCommentsWorkspaceSync",
           "kind": "function",
-          "line": 455
+          "line": 469
         },
         {
           "name": "manuscriptProseForStorage",
           "kind": "function",
-          "line": 456
+          "line": 470
         },
         {
           "name": "serializeWrap",
           "kind": "function",
-          "line": 460
+          "line": 474
         },
         {
           "name": "serializeSceneWrap",
           "kind": "function",
-          "line": 464
+          "line": 478
         },
         {
           "name": "wrapsForChapter",
           "kind": "function",
-          "line": 465
+          "line": 479
         },
         {
           "name": "localChapterSnapshot",
           "kind": "function",
-          "line": 466
+          "line": 480
         },
         {
           "name": "localSceneSnapshot",
           "kind": "function",
-          "line": 467
+          "line": 481
         }
       ]
     },

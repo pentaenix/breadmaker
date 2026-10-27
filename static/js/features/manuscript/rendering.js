@@ -245,8 +245,22 @@ async function loadBookData(tabId,{preview=null,force=false,validated=false}={})
     if(!state.hostedChapterFirst)return remember(updated);
   }
   if(!state.hostedChapterFirst){const data=await api(`/api/book?tab_id=${id}`);if(runtimeSupports('hosted_persistence'))active();for(const cid of data.cache_refresh_chapters||[])queueHostedReadCache(cid,data.project?.generation);return remember(data)}
-  const data=await api(`/api/book?tab_id=${encodeURIComponent(id)}&manifest=true`);
-  active();preview?.initialize(data.chapters);
+  const bundled=(state.chapters||[]).filter(ch=>String(ch.tab_id)===String(id)).length>4;
+  if(bundled&&preview){
+    // Existing text can be shown immediately, but is NEVER an editable result
+    // of this read. Current authority/revision fences still gate publication.
+    const chapters=(state.chapters||[]).filter(ch=>String(ch.tab_id)===String(id));
+    const chapter=chapters.find(ch=>String(ch.id)===String(state.chapterData?.chapter?.id));
+    if(chapter&&state.chapterData?.next_block_offset===null){preview.initialize([chapter]);preview.chapter(0,state.chapterData.blocks)}
+  }
+  const data=await api(`/api/book?tab_id=${encodeURIComponent(id)}&manifest=true${bundled?'&bundled=true':''}`);
+  active();
+  if(data.bundled){
+    const changed=await api(`/api/book?tab_id=${encodeURIComponent(id)}&manifest=true`,{headers:{'If-None-Match':data.read_tag},acceptNotModified:true});
+    active();if(changed!==null)throw new Error('The manuscript changed while loading. Please reopen Full Text.');
+    return remember(data);
+  }
+  preview?.initialize(data.chapters);
   const results=new Array(data.chapters.length);let next=0,completed=0,failure=null;
   async function worker(){
     while(!failure){
@@ -344,7 +358,7 @@ function fullTextPreview(){
   for(const [element] of siblings)element.inert=true;
   canonical.inert=true;canonical.style.display='none';scroller.append(paper);scroller.scrollTop=0;const spinner=fullTextLoadingIndicator();
   const slots=[],preview={cancelled:false,detached:false,
-    initialize(chapters){if(preview.detached)return;for(const chapter of chapters){const section=document.createElement('section'),heading=document.createElement('h3'),text=document.createElement('div');heading.className='book-chapter-heading';heading.textContent=chapter.title;section.append(heading,text);body.append(section);slots.push(text)}},
+    initialize(chapters){if(preview.detached)return;slots.length=0;body.replaceChildren();for(const chapter of chapters){const section=document.createElement('section'),heading=document.createElement('h3'),text=document.createElement('div');heading.className='book-chapter-heading';heading.textContent=chapter.title;section.append(heading,text);body.append(section);slots.push(text)}},
     chapter(index,blocks){if(preview.detached)return;const fragment=document.createDocumentFragment();for(const block of blocks){const p=document.createElement('p');p.className='full-text-paragraph';p.textContent=block.block_type==='image'?i18nSource('Images'):block.text_content||'';fragment.append(p)}slots[index].replaceChildren(fragment)},
     close(){if(!paper.isConnected)return;paper.remove();spinner.remove();canonical.style.display=display;canonical.inert=wasInert;scroller.scrollTop=scroll;for(const [element,inert] of siblings)element.inert=inert;if(activeFullTextPreview===preview)activeFullTextPreview=null},
     detach(){preview.detached=true;preview.close()},
