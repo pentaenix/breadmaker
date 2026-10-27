@@ -564,10 +564,23 @@ def test_browser_v41_canvas_connector_is_a_real_selectable_object(live_server,br
 
         # Empty-canvas context menu creates directly at the pointer.
         before=page.locator('.canvas-node').count()
+        # A real asynchronous write may outlive a fixed 220ms sleep. Exercise
+        # that ordering deliberately rather than relying on a fast local server.
+        page.evaluate("""canvasId=>{
+          const nativeFetch=window.fetch;
+          window.fetch=async(url,options={})=>{
+            if(url===`/api/canvases/${canvasId}/nodes`&&options.method==='POST')
+              await new Promise(resolve=>setTimeout(resolve,500));
+            return nativeFetch(url,options);
+          };
+        }""",created['canvas'])
         stage=page.locator('#canvasStage').bounding_box()
         page.mouse.click(stage['x']+900,stage['y']+560,button='right'); page.wait_for_timeout(80)
-        page.get_by_text('Add card here',exact=True).click(); page.wait_for_timeout(220)
-        assert page.locator('.canvas-node').count()==before+1
+        page.get_by_text('Add card here',exact=True).click()
+        expect(page.locator('.canvas-node')).to_have_count(before+1)
+        saved_nodes=requests.get(live_server+f"/api/canvases/{created['canvas']}",timeout=5).json()['nodes']
+        assert len(saved_nodes)==before+1
+        assert {str(node['id']) for node in saved_nodes}==set(page.locator('.canvas-node').evaluate_all("nodes=>nodes.map(node=>node.dataset.id)"))
 
         assert not errors, errors
         unexpected=[text for typ,text in console if typ=='error' and 'favicon' not in text.lower()]
