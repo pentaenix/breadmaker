@@ -71,12 +71,7 @@ export async function sendVerification(user){
     await authMod.sendEmailVerification(user);
     return;
   }
-  // With automatic email linking disabled, a Google UID can have a provider
-  // email but no primary email. Firebase must verify that address before it
-  // becomes an admission claim; providerData alone never grants access.
-  const email=String((user.providerData||[]).find(item=>item.providerId==='google.com')?.email||'').trim();
-  if(!email)throw new Error('Your sign-in provider did not supply an email address.');
-  await authMod.verifyBeforeUpdateEmail(user,email);
+  throw new Error('An email/password account requires a primary email address.');
 }
 export async function reloadUser(user){
   const {authMod}=await identityClient();

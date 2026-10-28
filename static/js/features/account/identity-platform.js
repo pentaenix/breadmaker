@@ -1,10 +1,59 @@
 import {
   identityClient,signInProvider,signInEmail,createEmailAccount,sendVerification,reloadUser,
   sendPasswordReset,enrolledTotp,beginTotpEnrollment,exchangeServerSession,signOutClient
-} from './identity-platform-client.js?v=10.5.61';
+} from './identity-platform-client.js?v=10.5.62';
 
 const $=selector=>document.querySelector(selector);
 const message=$('#identityMessage'),totp=$('#identityTotp'),social=$('#identitySocial');
+let signup=false,localeSequence=0;
+const languages=[['en','English'],['es','Español'],['fr','Français'],['it','Italiano'],['ja','日本語'],['pt-BR','Português'],['zh-CN','简体中文']];
+const themes=['light','dusk','dark'];
+function authText(key,fallback){return i18nReady?i18nText(key):fallback}
+function label(selector,key,fallback){const el=$(selector);el.dataset.authKey=key;el.textContent=authText(key,fallback)}
+function refreshLabels(){
+  if(i18nReady)document.querySelectorAll('[data-auth-key]').forEach(el=>{el.textContent=i18nText(el.dataset.authKey)});
+  const theme=document.documentElement.dataset.theme||'light';
+  $('#identityTheme').title=`${authText('global.theme_title','Theme')}: ${authText(`global.theme_${theme}`,theme)}`;
+  $('#identityTheme').setAttribute('aria-label',$('#identityTheme').title);
+  const language=$('#identityLanguage summary');
+  language.title=authText('settings.language.modal_title','Language');language.setAttribute('aria-label',language.title);
+  document.querySelectorAll('[data-locale]').forEach(el=>el.setAttribute('aria-current',String(el.dataset.locale===document.documentElement.lang)));
+}
+function setMode(value){
+  signup=!!value;hideMessage();
+  label('#identityHeading',signup?'auth.signup.title':'auth.login.title',signup?'Create your account':'Login');
+  label('#identityEmailSignIn',signup?'auth.signup.submit':'auth.login.submit',signup?'Create account':'Sign in');
+  label('#identityModePrompt',signup?'auth.signup.have_account':'auth.login.no_account',signup?'Already have an account?':'Don’t have an account?');
+  for(const selector of ['#identityHeaderMode','#identityEmailSignUp'])label(selector,signup?'auth.login.action':'auth.signup.action',signup?'Log in':'Sign up');
+  $('#identityPassword').autocomplete=signup?'new-password':'current-password';
+  $('#identityForgotPassword').hidden=signup;
+}
+async function chooseLanguage(code){
+  const sequence=++localeSequence,payload=await fetchLocalePayload(code);
+  if(sequence!==localeSequence)return;
+  installLocalePayload(payload,{persist:true});refreshLabels();$('#identityLanguage').open=false;
+}
+function setupPresentation(){
+  let theme='light',language='en';
+  try{theme=localStorage.getItem('breadmaker-theme')||theme;language=localStorage.getItem('breadmaker-language')||language}catch{}
+  document.documentElement.dataset.theme=themes.includes(theme)?theme:'light';
+  $('#identityTheme').onclick=()=>{
+    const next=themes[(themes.indexOf(document.documentElement.dataset.theme)+1)%themes.length];
+    document.documentElement.dataset.theme=next;try{localStorage.setItem('breadmaker-theme',next)}catch{};refreshLabels();
+  };
+  for(const [code,name] of languages){
+    const button=document.createElement('button');button.type='button';button.textContent=name;button.dataset.locale=code;
+    button.onclick=()=>chooseLanguage(code).catch(error=>showMessage(error.message,'error'));$('#identityLanguages').append(button);
+  }
+  $('#identityHeaderMode').onclick=$('#identityEmailSignUp').onclick=()=>setMode(!signup);
+  $('#identityShowPassword').onclick=()=>{
+    const shown=$('#identityPassword').type==='password';$('#identityPassword').type=shown?'text':'password';
+    $('#identityShowPassword').setAttribute('aria-pressed',String(shown));
+    label('#identityShowPassword',shown?'auth.login.hide':'auth.login.show',shown?'Hide':'Show');
+  };
+  setMode(false);refreshLabels();
+  chooseLanguage(languages.some(([code])=>code===language)?language:'en').catch(()=>{/* Keep usable English labels when offline. */});
+}
 function showMessage(text,kind='info'){message.hidden=false;message.className=`identity-message ${kind}`;message.textContent=String(text||'')}
 function hideMessage(){message.hidden=true;message.textContent=''}
 function safeReturn(){
@@ -48,12 +97,8 @@ async function requirePasswordTotp(user){
 }
 async function finish(user,{passwordAccount=false}={}){
   if(passwordAccount){await requireVerifiedEmail(user);await requirePasswordTotp(user)}
-  else if(!user.emailVerified){
-    await sendVerification(user);
-    // Applying the email action can invalidate the original Firebase session.
-    // Start a fresh Google sign-in rather than retaining/retrying that proof.
-    throw new Error('Check your inbox and verify your email, then sign in with Google again.');
-  }
+  // Social admission is verified server-side. Never send a second email merely
+  // because Firebase omitted a Google user's primary email.
   await exchangeServerSession(user);
   await signOutClient();location.assign(safeReturn());
 }
@@ -65,7 +110,12 @@ async function renderSocial(){
   social.innerHTML=buttons.join('');
   social.querySelectorAll('[data-provider]').forEach(button=>button.onclick=()=>withBusy(async()=>{const result=await signInProvider(button.dataset.provider,askTotp);await finish(result.user)}));
 }
-$('#identityEmailForm').addEventListener('submit',event=>{event.preventDefault();withBusy(async()=>{const result=await signInEmail($('#identityEmail').value,$('#identityPassword').value,askTotp);await finish(result.user,{passwordAccount:true})})});
-$('#identityEmailSignUp').onclick=()=>withBusy(async()=>{let result;try{result=await createEmailAccount($('#identityEmail').value,$('#identityPassword').value)}catch{throw new Error('Could not create an account with those credentials.')}await finish(result.user,{passwordAccount:true})});
+$('#identityEmailForm').addEventListener('submit',event=>{event.preventDefault();withBusy(async()=>{
+  let result;
+  if(signup){try{result=await createEmailAccount($('#identityEmail').value,$('#identityPassword').value)}catch{throw new Error('Could not create an account with those credentials.')}}
+  else result=await signInEmail($('#identityEmail').value,$('#identityPassword').value,askTotp);
+  await finish(result.user,{passwordAccount:true});
+})});
 $('#identityForgotPassword').onclick=()=>withBusy(async()=>{const email=$('#identityEmail').value;if(!email)throw new Error('Enter your email first.');await sendPasswordReset(email);showMessage('If this address has a password account, Identity Platform has sent the reset email.')});
+setupPresentation();
 renderSocial().catch(error=>showMessage(error.message,'error'));

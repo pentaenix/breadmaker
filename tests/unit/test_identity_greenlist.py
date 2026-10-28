@@ -3,6 +3,7 @@ import ast
 import json
 from pathlib import Path
 import subprocess
+from types import SimpleNamespace
 
 import pytest
 from fastapi.responses import HTMLResponse
@@ -128,7 +129,7 @@ def run_client_function(relative, name, next_name, setup, invocation):
 @pytest.mark.parametrize('user,expected', [
     ({'email': 'writer@example.invalid'}, ['verify', 'writer@example.invalid']),
     ({'email': None, 'providerData': [{'providerId': 'google.com', 'email': 'writer@example.invalid'}]},
-     ['verifyBeforeUpdate', 'writer@example.invalid']),
+     ['error']),
     ({'providerData': [{'providerId': 'apple.com', 'email': 'writer@example.invalid'}]}, ['error']),
     ({'providerData': [{'providerId': 'google.com', 'email': ''}]}, ['error']),
     ({}, ['error']),
@@ -147,7 +148,7 @@ def test_client_verification_uses_firebase_email_action_not_profile_authority(us
 
 
 @pytest.mark.parametrize('verified,password', [(False, False), (True, False), (False, True)])
-def test_login_waits_for_verified_social_email_before_exchange_without_weakening_password_totp(verified, password):
+def test_social_login_never_sends_email_without_weakening_password_totp(verified, password):
     actual = run_client_function(
         'static/js/features/account/identity-platform.js', 'finish', 'withBusy',
         'const calls=[]; const sendVerification=async()=>calls.push("email-action");'
@@ -162,10 +163,8 @@ def test_login_waits_for_verified_social_email_before_exchange_without_weakening
     )
     if password:
         assert actual == ['password-email', 'totp', 'exchange', 'signout', 'navigate']
-    elif verified:
-        assert actual == ['exchange', 'signout', 'navigate']
     else:
-        assert actual == ['email-action', 'retry-signin']
+        assert actual == ['exchange', 'signout', 'navigate']
 
 
 def test_missing_primary_email_cannot_consume_grant_until_fresh_provider_verified_claim():
@@ -188,7 +187,8 @@ def test_login_shell_removes_requested_copy_and_preserves_auth_controls():
     node = next(n for n in ast.walk(ast.parse(source))
                 if isinstance(n, ast.FunctionDef) and n.name == 'identity_platform_login_shell')
     node.decorator_list = []
-    namespace = {'HTMLResponse': HTMLResponse, '_ip_no_store_headers': lambda: {'Cache-Control': 'no-store'}}
+    namespace = {'HTMLResponse': HTMLResponse, 'APP_VERSION': (root / 'VERSION').read_text().strip(),
+                 '_ip_no_store_headers': lambda: {'Cache-Control': 'no-store'}}
     exec(compile(ast.Module(body=[node], type_ignores=[]), '<login-shell>', 'exec'), namespace)
     response = namespace['identity_platform_login_shell']()
     html = response.body.decode()
@@ -202,3 +202,78 @@ def test_login_shell_removes_requested_copy_and_preserves_auth_controls():
     assert 'Continue with Google' in js
     assert 'Social sign-in is not enabled in this environment yet.' not in js
     assert 'identityInvite' not in js
+
+
+def google_provider_service(monkeypatch, **record):
+    docs, accounts, admin, service = _service()
+    admin.claims.pop('email');admin.claims.pop('email_verified')
+    admin.claims['firebase']['identities'] = {'google.com': ['google-subject']}
+    provider = SimpleNamespace(provider_id='google.com', uid='google-subject', email='writer@gmail.com')
+    user = SimpleNamespace(uid='external-uid-1', disabled=False, provider_data=[provider])
+    for key, value in record.items():
+        if key in ('uid', 'disabled', 'provider_data'):
+            setattr(user, key, value)
+        else:
+            setattr(provider, key.removeprefix('provider_'), value)
+    monkeypatch.setattr(admin, 'get_user', lambda uid: user, raising=False)
+    return docs, accounts, admin, service
+
+
+def test_google_missing_primary_uses_same_uid_signed_subject_not_browser_email(monkeypatch):
+    docs, accounts, admin, service = google_provider_service(monkeypatch)
+    path = grant(docs, email='writer@gmail.com')
+    prior = accounts.resolve_or_create_external_identity(service.issuer, 'other-uid', provider='google',
+        display_name='Another identity', email='writer@gmail.com', email_verified=True)
+    exchange = service.exchange_id_token('verified-google-firebase-token')
+    assert exchange.principal.user_id != prior.user_id
+    assert docs.get(path).data['bound_uid'] == 'external-uid-1'
+    assert accounts.resolve_external_identity(service.issuer, 'external-uid-1').email == 'writer@gmail.com'
+    with service.bind(exchange.cookie) as principal:
+        assert principal.user_id == exchange.principal.user_id
+    # Revocation still applies even when the token has no primary-email claim.
+    docs.run_transaction(lambda tx: tx.set(path, {**docs.get(path).data, 'status': 'disabled'}))
+    with pytest.raises(IdentityPlatformError):
+        with service.bind(exchange.cookie):
+            pytest.fail('disabled grant admitted')
+
+
+@pytest.mark.parametrize('record,claims', [
+    ({'uid': 'wrong-uid'}, {}),
+    ({'disabled': True}, {}),
+    ({'provider_uid': 'wrong-google-subject'}, {}),
+    ({'provider_data': []}, {}),
+    ({'email': 'writer@external.invalid'}, {}),
+    ({'email': 'other@gmail.com'}, {}),
+    ({}, {'email': 'different@gmail.com', 'email_verified': False}),
+    ({}, {'firebase': {'sign_in_provider': 'google.com'}}),
+    ({}, {'firebase': {'sign_in_provider': 'google.com', 'identities': {'google.com': ['a', 'b']}}}),
+    ({}, {'firebase': {'sign_in_provider': 'google.com', 'identities': []}}),
+    ({}, {'auth_time': 1}),
+    ({}, {'firebase': {'sign_in_provider': 'password', 'identities': {'google.com': ['google-subject']}}}),
+])
+def test_google_provider_evidence_cannot_bypass_identity_or_grant_checks(monkeypatch, record, claims):
+    docs, accounts, admin, service = google_provider_service(monkeypatch, **record)
+    path = grant(docs, email='writer@gmail.com')
+    admin.claims.update(claims)
+    with pytest.raises(IdentityPlatformError):
+        service.exchange_id_token('token')
+    assert not docs.get(path).data.get('bound_uid')
+    assert accounts.resolve_external_identity(service.issuer, 'external-uid-1') is None
+    assert not any(call[0] == 'create' for call in admin.calls)
+
+
+def test_google_unverified_primary_can_use_matching_provider_but_lookup_failure_cannot(monkeypatch):
+    docs, _, admin, service = google_provider_service(monkeypatch)
+    path = grant(docs, email='writer@gmail.com')
+    admin.claims.update(email='writer@gmail.com', email_verified=False)
+    def unavailable(uid):
+        raise RuntimeError('synthetic provider outage')
+    get_user = admin.get_user
+    monkeypatch.setattr(admin, 'get_user', unavailable)
+    with pytest.raises(IdentityPlatformError, match='IDENTITY_PLATFORM_USER_LOOKUP_FAILED'):
+        service.exchange_id_token('verified-token')
+    assert not docs.get(path).data.get('bound_uid')
+    monkeypatch.setattr(admin, 'get_user', get_user)
+    service.exchange_id_token('verified-token')
+    assert docs.get(path).data['bound_uid'] == 'external-uid-1'
+    assert ('id', 'verified-token', True) in admin.calls

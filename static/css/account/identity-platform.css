@@ -1,2 +1,42 @@
-:root{color-scheme:light dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f4f1e8;color:#171714}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(150deg,#f9f7f0,#e9e4d8);color:#171714}.identity-login{min-height:100vh;display:grid;place-items:center;padding:28px}.identity-card{width:min(100%,430px);background:#fff;border:1px solid #d8d2c4;border-radius:20px;padding:30px;box-shadow:0 20px 60px rgba(32,27,18,.12)}.identity-brand{display:flex;justify-content:space-between;align-items:baseline;font-size:14px}.identity-brand strong{font-size:20px}.identity-brand span,.identity-help,.identity-foot,.identity-copy{color:#6f695d}.identity-card h1{font-size:34px;margin:28px 0 8px}.identity-copy{line-height:1.5;margin:0 0 22px}.identity-social{display:grid;gap:10px}.identity-card button{min-height:44px;border:1px solid #24231f;background:#24231f;color:#fff;border-radius:10px;padding:10px 14px;font:inherit;font-weight:700;cursor:pointer}.identity-card button.provider{background:#fff;color:#171714;border-color:#bdb7aa;text-align:left}.identity-card button.provider span{display:inline-grid;width:28px}.identity-card button.quiet,.identity-card button.linkish{background:#fff;color:#171714;border-color:#d7d1c4}.identity-card button.linkish{border:0;min-height:34px;font-weight:600;text-decoration:underline}.identity-card button:disabled{opacity:.45;cursor:wait}.identity-divider{display:flex;align-items:center;gap:12px;color:#8d877b;margin:18px 0}.identity-divider:before,.identity-divider:after{content:"";height:1px;background:#ded8cc;flex:1}.identity-card form{display:grid;gap:12px}.identity-card label{display:grid;gap:6px;font-size:13px;font-weight:700}.identity-card input{width:100%;min-height:44px;border:1px solid #c9c3b7;background:#fff;color:#171714;border-radius:9px;padding:10px 12px;font:inherit}.identity-invite{margin-top:18px}.identity-message{padding:11px 13px;border-radius:9px;background:#eeece6;margin:0 0 16px;line-height:1.45}.identity-message.error{background:#fff0ef;color:#8a1f18}.identity-totp{margin-top:18px;padding:16px;border:1px solid #d8d2c4;border-radius:12px;background:#faf8f3}.identity-totp h2{font-size:18px;margin:0 0 8px}.identity-code-row{display:flex;gap:8px}.identity-code-row input{font-size:22px;letter-spacing:.18em;text-align:center}.identity-secret{display:block;overflow-wrap:anywhere;padding:10px;background:#efede7;border-radius:8px;font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace;user-select:all}.identity-foot{font-size:12px;line-height:1.5;margin:20px 0 0}@media(max-width:520px){.identity-login{padding:0}.identity-card{min-height:100vh;border:0;border-radius:0;padding:24px}.identity-code-row{display:grid}}
-.identity-social:not(:empty){margin:16px 0}
+/* Editor-native auth shell; the Identity Platform credential flow is unchanged. */
+:root{color-scheme:light;--bg:#f3f3f1;--surface:#fff;--surface2:#f8f8f7;--text:#202020;--muted:#777;--line:#dededb;--line2:#c9c9c5;--accent:#5d685e}
+:root[data-theme=dusk]{color-scheme:light;--bg:#b6b1a8;--surface:#dfdbd2;--surface2:#cbc6bc;--text:#292a27;--muted:#68655f;--line:#aaa59c;--line2:#918c83;--accent:#5f6d60}
+:root[data-theme=dark]{color-scheme:dark;--bg:#191a19;--surface:#222322;--surface2:#292a29;--text:#ececea;--muted:#aaa;--line:#393a38;--line2:#4c4d4a;--accent:#aab6aa}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+body{min-height:100vh}button,input{font:inherit}button,a,input,summary{-webkit-tap-highlight-color:transparent}
+button{cursor:pointer}button:disabled,input:disabled{opacity:.5;cursor:wait}
+button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.identity-login{min-height:100vh;display:grid;grid-template-rows:auto 1fr;padding:22px 28px 26px}
+.identity-header{display:flex;align-items:center;justify-content:space-between;min-height:34px;gap:20px}
+.identity-brand{display:flex;align-items:center;gap:7px;font-size:15px;letter-spacing:-.02em;color:var(--text);text-decoration:none}
+.identity-logo{width:28px;height:28px;display:block;flex:none;background:currentColor;mask:url('/static/breadmaker_logo.svg') center/contain no-repeat}
+.identity-header-actions{display:flex;align-items:center;gap:12px;font-size:13px}
+.identity-icon,.identity-language summary{width:28px;height:28px;display:grid;place-items:center;border:0;border-radius:4px;background:transparent;color:var(--text);padding:0}
+.identity-icon svg,.identity-language svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.2}
+.identity-icon:hover,.identity-language summary:hover,.identity-language[open] summary{background:var(--surface2)}
+.identity-language{position:relative}.identity-language summary{list-style:none;cursor:pointer}.identity-language summary::-webkit-details-marker{display:none}
+.identity-language-menu{position:absolute;right:0;top:32px;z-index:20;min-width:168px;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+.identity-language-menu button{display:block;width:100%;padding:7px 9px;border:0;border-radius:4px;text-align:left;background:transparent;color:var(--text);font-size:12px;white-space:nowrap}
+.identity-language-menu button:hover,.identity-language-menu button[aria-current=true]{background:var(--surface2)}
+.identity-link{border:0;background:transparent;color:var(--text);padding:0;font:inherit;text-decoration:none}
+.identity-link:hover{text-decoration:underline;text-underline-offset:2px}
+.identity-center{display:grid;place-items:center;padding:28px 0 10px}.identity-stack{width:min(100%,400px)}
+.identity-card{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:30px;box-shadow:none}
+.identity-card h1{text-align:center;font-size:20px;margin:0 0 26px;font-weight:700;line-height:1.4}
+.identity-card form{display:grid;gap:16px}.identity-card label{display:grid;gap:7px;font-size:12px;color:var(--muted)}
+.identity-card input{width:100%;min-height:44px;border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:5px;padding:11px 12px;font-size:14px}
+.identity-password{position:relative;display:block}.identity-password input{padding-right:62px}.identity-password button{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px}
+#identityForgotPassword{font-size:12px;text-align:left;justify-self:start}
+.identity-primary,.identity-totp button{min-height:44px;border:1px solid var(--text);border-radius:5px;padding:11px 14px;background:var(--text);color:var(--surface);font-size:12px;line-height:1.4}
+.identity-social{display:grid;gap:10px}.identity-social:not(:empty){margin-top:20px}
+.identity-social button{display:flex;align-items:center;gap:12px;min-height:44px;border:1px solid var(--line2);border-radius:5px;background:var(--surface);color:var(--text);padding:10px 14px;font-size:12px;text-align:left}
+.identity-social button span{display:grid;place-items:center;min-width:20px;font-size:17px;font-weight:700}.identity-social button:hover{background:var(--surface2)}
+.identity-switch{margin:20px 0 0;font-size:12px;text-align:center;line-height:1.6}.identity-switch .identity-link{text-decoration:underline;text-underline-offset:2px}
+.identity-footer{margin-top:18px;text-align:center;font-size:10.5px;line-height:1.4}.identity-footer a{color:var(--text);text-underline-offset:2px}
+.identity-message{padding:11px 13px;border:1px solid var(--line);border-radius:5px;background:var(--surface2);margin:0 0 16px;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.identity-message.error{border-color:#a12622;color:var(--text)}
+.identity-totp{margin-top:20px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;line-height:1.5}.identity-totp h2{font-size:18px;margin:0 0 10px}.identity-totp label{gap:8px}
+.identity-secret{display:block;overflow-wrap:anywhere;padding:10px;background:var(--surface2);border-radius:5px;font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace;user-select:all}
+.identity-code-row{display:flex;gap:8px;margin-top:14px}.identity-code-row input{font-size:20px;letter-spacing:.15em;text-align:center}
+@media(max-width:600px){.identity-login{padding:16px 14px 20px}.identity-brand{font-size:14px}.identity-header-actions{font-size:12px;gap:9px}.identity-center{padding:18px 0 8px}.identity-stack{width:min(100%,390px)}.identity-card{padding:26px 22px}.identity-code-row{display:grid}}

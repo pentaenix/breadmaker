@@ -344,6 +344,34 @@ class IdentityPlatformSessionService:
         if not has_totp:
             raise IdentityPlatformError("TOTP_ENROLLMENT_REQUIRED")
 
+    def _admission_email(self, claims: Mapping[str, Any], provider: str) -> tuple[str, bool]:
+        email = self.admission.normalize_greenlist_email(claims.get("email"))
+        if email and claims.get("email_verified") is True:
+            return email, True
+        # With duplicate-email accounts enabled, Firebase may omit the primary
+        # email. Google is authoritative for Gmail, but not arbitrary third-party
+        # addresses. Bind Admin SDK provider evidence to the SAME freshly verified
+        # Firebase UID and signed Google subject; never trust browser profile data.
+        firebase = claims.get("firebase")
+        identities = firebase.get("identities") if isinstance(firebase, Mapping) else None
+        subjects = identities.get("google.com") if isinstance(identities, Mapping) else None
+        if (provider != "google" or not isinstance(subjects, list) or len(subjects) != 1
+                or not isinstance(subjects[0], str) or not subjects[0]):
+            return email, False
+        try:
+            user = self.admin_auth.get_user(self._claims_uid(claims))
+        except Exception as exc:
+            raise IdentityPlatformError("IDENTITY_PLATFORM_USER_LOOKUP_FAILED") from exc
+        records = [row for row in (getattr(user, "provider_data", None) or [])
+                   if getattr(row, "provider_id", "") == "google.com"]
+        if (getattr(user, "uid", None) != self._claims_uid(claims) or getattr(user, "disabled", False)
+                or len(records) != 1 or getattr(records[0], "uid", None) != subjects[0]):
+            raise IdentityPlatformError("IDENTITY_PLATFORM_GOOGLE_IDENTITY_MISMATCH")
+        verified = self.admission.normalize_greenlist_email(getattr(records[0], "email", ""))
+        if not verified.endswith("@gmail.com") or (email and email != verified):
+            return email, False
+        return verified, True
+
     def current(self):
         return self._current.get()
 
@@ -392,12 +420,12 @@ class IdentityPlatformSessionService:
         if auth_time <= 0 or auth_time > now + 60 or now - auth_time > self.max_auth_age_seconds:
             raise IdentityPlatformError("RECENT_AUTH_REQUIRED")
         provider = _provider(claims)
-        verified = claims.get("email_verified") is True
+        email, verified = self._admission_email(claims, provider)
         if provider == "email_password" and not verified:
             raise IdentityPlatformError("VERIFIED_EMAIL_REQUIRED")
         self._enforce_provider_policy(claims, provider=provider)
         self.admission.require_or_consume(
-            external_uid, invitation_token, email=claims.get("email"),
+            external_uid, invitation_token, email=email,
             email_verified=verified, provider=provider,
         )
         try:
@@ -406,7 +434,7 @@ class IdentityPlatformSessionService:
                 external_uid,
                 provider=provider,
                 display_name=_display_name(claims),
-                email=str(claims.get("email") or "")[:320],
+                email=email,
                 email_verified=verified,
             )
         except AccountIdentityError as exc:

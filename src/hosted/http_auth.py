@@ -13,7 +13,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 
-from backend.environment import runtime
+from backend.environment import APP_VERSION, runtime
 from backend.runtime_contracts import SecuritySessionIn
 
 router=APIRouter()
@@ -79,22 +79,36 @@ if _IDENTITY_PLATFORM:
             '<!doctype html><html><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             '<title>Sign in · Breadmaker</title>'
-            '<link rel="stylesheet" href="/static/css/account/identity-platform.css?v=10.5.48">'
-            '</head><body><main id="identityLogin" class="identity-login" aria-live="polite">'
-            '<div class="identity-card"><div class="identity-brand"><strong>Breadmaker</strong></div>'
-            '<h1>Sign in</h1>'
-            '<div id="identityMessage" class="identity-message" hidden></div>'
-            '<div id="identitySocial" class="identity-social"></div>'
+            f'<link rel="stylesheet" href="/static/css/account/identity-platform.css?v={APP_VERSION}">'
+            f'<link rel="icon" type="image/svg+xml" href="/static/breadmaker_logo.svg?v={APP_VERSION}">'
+            '</head><body><div id="identityLogin" class="identity-login">'
+            '<header class="identity-header"><a class="identity-brand" href="https://breadmaker.studio" aria-label="Breadmaker">'
+            '<span class="identity-logo" aria-hidden="true"></span><strong>Breadmaker</strong></a>'
+            '<div class="identity-header-actions"><details id="identityLanguage" class="identity-language">'
+            '<summary aria-label="Language" title="Language"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 7h14M5 17h14"/></svg></summary>'
+            '<div id="identityLanguages" class="identity-language-menu"></div></details>'
+            '<button id="identityTheme" type="button" class="identity-icon" aria-label="Theme" title="Theme">'
+            '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 5a7 7 0 0 0 0 14z" fill="currentColor" stroke="none" opacity=".3"/></svg></button>'
+            '<button id="identityHeaderMode" type="button" class="identity-link" data-auth-key="auth.signup.action">Sign up</button>'
+            '</div></header><main class="identity-center"><div class="identity-stack">'
+            '<section class="identity-card" aria-labelledby="identityHeading">'
+            '<h1 id="identityHeading" data-auth-key="auth.login.title">Login</h1>'
+            '<div id="identityMessage" class="identity-message" role="status" aria-live="polite" hidden></div>'
             '<form id="identityEmailForm" autocomplete="on">'
-            '<label>Email<input id="identityEmail" type="email" autocomplete="email" required></label>'
-            '<label>Password<input id="identityPassword" type="password" autocomplete="current-password" minlength="8" required></label>'
-            '<button id="identityEmailSignIn" type="submit">Sign in with email</button>'
-            '<button id="identityEmailSignUp" type="button" class="quiet">Create account</button>'
-            '<button id="identityForgotPassword" type="button" class="linkish">Forgot password?</button>'
-            '</form>'
+            '<label><span data-auth-key="auth.login.email_placeholder">Enter Email</span><input id="identityEmail" type="email" autocomplete="email" required></label>'
+            '<label><span data-auth-key="auth.login.password_placeholder">Password</span><span class="identity-password">'
+            '<input id="identityPassword" type="password" autocomplete="current-password" minlength="8" required>'
+            '<button id="identityShowPassword" type="button" class="identity-link" aria-pressed="false" data-auth-key="auth.login.show">Show</button></span></label>'
+            '<button id="identityForgotPassword" type="button" class="identity-link" data-auth-key="auth.login.trouble">Having trouble signing in?</button>'
+            '<button id="identityEmailSignIn" type="submit" class="identity-primary" data-auth-key="auth.login.submit">Sign in</button>'
+            '</form><div id="identitySocial" class="identity-social"></div>'
+            '<p class="identity-switch"><span id="identityModePrompt" data-auth-key="auth.login.no_account">Don’t have an account?</span> '
+            '<button id="identityEmailSignUp" type="button" class="identity-link" data-auth-key="auth.signup.action">Sign up</button></p>'
             '<div id="identityTotp" class="identity-totp" hidden></div>'
-            '</div></main>'
-            '<script type="module" src="/static/js/features/account/identity-platform.js?v=10.5.48"></script>'
+            '</section><footer class="identity-footer"><a href="https://breadmaker.studio/privacy" data-auth-key="auth.privacy_policy">Privacy Policy</a></footer>'
+            '</div></main></div>'
+            f'<script src="/static/js/core/i18n.js?v={APP_VERSION}"></script>'
+            f'<script type="module" src="/static/js/features/account/identity-platform.js?v={APP_VERSION}"></script>'
             '</body></html>',
             headers=_ip_no_store_headers(),
         )
