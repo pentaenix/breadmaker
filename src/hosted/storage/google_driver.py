@@ -150,6 +150,31 @@ class GoogleCloudObjectStore(ObjectStore):
                 raise ObjectAlreadyExists("HOSTED_OBJECT_ALREADY_EXISTS") from exc
             raise translated from exc
 
+    def read_verified_bytes(self, name: str, *, if_generation_match: int,
+                            expected_size: int, expected_sha256: str) -> bytes:
+        """One bounded media GET for a small, hash-pinned manuscript bundle.
+
+        Range reads have no provider-wide checksum; verify the mandatory SHA-256
+        from the authorized Firestore pointer ourselves. Other streaming readers
+        retain their existing metadata/size/streaming contract unchanged.
+        """
+        key=require_object_name(name)
+        size,generation=int(expected_size),int(if_generation_match)
+        if (not 0<size<=2*1024*1024 or generation<1 or len(expected_sha256)!=64
+                or any(c not in '0123456789abcdef' for c in expected_sha256)):
+            raise ValueError('HOSTED_VERIFIED_READ_ARGUMENT_INVALID')
+        try:
+            # Inclusive end requests ONE excess byte, detecting a truncated
+            # pointer size without ever downloading an unbounded whole object.
+            data=self._bucket.blob(key).download_as_bytes(start=0,end=size,
+                if_generation_match=generation,raw_download=True,checksum=None,
+                timeout=20,single_shot_download=True)
+        except Exception as exc:
+            raise self._translate(exc) from exc
+        if len(data)!=size or hashlib.sha256(data).hexdigest()!=expected_sha256:
+            raise ObjectIntegrityError('HOSTED_VERIFIED_READ_MISMATCH')
+        return data
+
     def read_chunks(
         self,
         name: str,

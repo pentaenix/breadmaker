@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from backend import diagnostics
 from security.http_request import canonical_request_path
 from backend.configuration import _feature_flags_raw, _metro_view_config_raw
-from backend.environment import STATIC, runtime
+from backend.environment import APP_VERSION, STATIC, runtime
 
 router=APIRouter()
 
@@ -65,9 +65,20 @@ async def prevent_stale_local_ui_assets(request: Request, call_next):
     response = await call_next(request)
     path=canonical_request_path(request)
     if path in APP_SHELL_PATHS or _PROJECT_SHELL_RE.fullmatch(path) or path.startswith("/static/") or path.startswith("/locales/"):
-        response.headers["Cache-Control"] = "no-store, max-age=0"
-        response.headers["Pragma"] = "no-cache"
-        response.headers["Expires"] = "0"
+        # Only public, release-stamped code/styles may persist in the hosted
+        # browser cache. Never cache shells, account data, locales or manuscripts.
+        stamped=(runtime.mode in {'hosted','hosted_dev'}
+            and request.method.upper() in {'GET','HEAD'} and response.status_code==200
+            and path.startswith('/static/') and path.endswith(('.css','.js'))
+            and list(request.query_params.multi_items())==[('v',APP_VERSION)])
+        if stamped:
+            response.headers['Cache-Control']='public, max-age=31536000, immutable'
+            for header in ('Pragma','Expires'):
+                if header in response.headers:del response.headers[header]
+        else:
+            response.headers["Cache-Control"] = "no-store, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
     for name,value in _security_headers(request).items():response.headers[name]=value
     return response
 

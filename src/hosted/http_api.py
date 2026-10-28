@@ -11,10 +11,11 @@ writes through ``HostedDomainStore`` or the specialized hosted project/asset por
 import json
 import hashlib
 import re
-from contextlib import nullcontext
+from contextlib import asynccontextmanager, nullcontext
 from contextvars import copy_context
 from concurrent.futures import ThreadPoolExecutor
 from threading import BoundedSemaphore
+from time import perf_counter
 from typing import Any, Mapping
 from urllib.parse import urlparse
 
@@ -91,6 +92,17 @@ def _error(exc: Exception) -> HTTPException:
     return HTTPException(500,detail='HOSTED_OPERATION_FAILED')
 
 
+@asynccontextmanager
+async def _provider_binding(provider,*args,**kwargs):
+    # Cloud providers resolve blocking authority in bounded workers, then bind
+    # task-local state. In-memory developer providers keep their existing path.
+    asynchronous=getattr(provider,'bind_async',None)
+    if asynchronous is not None:
+        async with asynchronous(*args,**kwargs) as value:yield value
+    else:
+        with provider.bind(*args,**kwargs) as value:yield value
+
+
 async def hosted_request_boundary(request: Request, call_next):
     path=canonical_request_path(request)
     # These installed application files are already anonymously readable. Do
@@ -118,7 +130,7 @@ async def hosted_request_boundary(request: Request, call_next):
                 return JSONResponse({'detail':'Breadmaker hosted requests must come from the same origin.'},status_code=403)
     token=request.cookies.get(runtime.sessions.cookie_name)
     try:
-        with runtime.sessions.bind(token):
+        async with _provider_binding(runtime.sessions,token):
             if path.startswith('/api/') and path not in _PUBLIC_API and runtime.sessions.requires_authentication and runtime.sessions.current() is None:
                 return JSONResponse({'detail':'AUTHENTICATION_REQUIRED'},status_code=401,headers={'Cache-Control':'private, no-store'})
             project_id=''
@@ -127,11 +139,11 @@ async def hosted_request_boundary(request: Request, call_next):
             if not project_id and path.startswith('/api/') and path not in _PUBLIC_API and path not in {'/api/workspace','/api/profile','/api/profiles','/api/projects','/api/projects/import','/api/data/export','/api/identity/current'}:
                 project_id=str(request.headers.get('x-breadmaker-project') or request.query_params.get('project_id') or '')
                 if not project_id:
-                    try:project_id=str(runtime.projects.profile_project_target(runtime.identity.active_profile_id()) or '')
+                    try:project_id=str(await run_in_threadpool(lambda:runtime.projects.profile_project_target(runtime.identity.active_profile_id())) or '')
                     except Exception:project_id=''
             user_id=''
             if not runtime.sessions.requires_authentication or runtime.sessions.current() is not None:
-                user_id=runtime.identity.request_user_id(None)
+                user_id=await run_in_threadpool(runtime.identity.request_user_id,None)
             request.state.breadmaker_project_id=project_id or None
             request.state.breadmaker_user_id=user_id or None
             # A retry key is scoped to this authenticated actor + target URL. It
@@ -148,16 +160,17 @@ async def hosted_request_boundary(request: Request, call_next):
                     scope_key=request_scope_key(raw_key,actor=user_id,method=request.method,path=path+("?"+request.url.query if request.url.query else ""))
                 except (UnicodeError,ValueError):
                     return JSONResponse({'detail':'HOSTED_IDEMPOTENCY_KEY_INVALID'},status_code=400)
-            cm=runtime.context.bind(project_id,user_id=user_id or None) if project_id else nullcontext(None)
+            cm=_provider_binding(runtime.context,project_id,user_id=user_id or None) if project_id else nullcontext(None)
             action_headers=request.headers.getlist('x-breadmaker-action')
             if len(action_headers)>1:
                 return JSONResponse({'detail':'HOSTED_ACTION_HEADER_INVALID'},status_code=400)
             action_token=action_headers[0] if action_headers and mutating and not path.startswith('/api/undo/') else None
-            with cm, bind_operations(scope_key), bind_action(action_token,project_id,user_id):
-                response=await call_next(request)
-                if runtime.sessions.requires_authentication and path.startswith('/api/'):
-                    response.headers['Cache-Control']='private, no-store'
-                return response
+            async with cm:
+                with bind_operations(scope_key), bind_action(action_token,project_id,user_id):
+                    response=await call_next(request)
+                    if runtime.sessions.requires_authentication and path.startswith('/api/'):
+                        response.headers['Cache-Control']='private, no-store'
+                    return response
     except AuthenticationError:
         return JSONResponse({'detail':'AUTHENTICATION_REQUIRED'},status_code=401)
     except (AuthorizationError,ProjectUnavailable,HostedAuthorizationError):
@@ -532,6 +545,7 @@ def hosted_book(request:Request):
         material=json.dumps([pid,tab,int(generation)],separators=(',',':')).encode()
         return '"bm-'+hashlib.sha256(material).hexdigest()+'"'
     try:
+        started=perf_counter();timings={}
         pid=_pid(request);tab=str(request.query_params.get('tab_id') or '')
         conditional=request.headers.get('if-none-match')
         if conditional:
@@ -543,27 +557,35 @@ def hosted_book(request:Request):
         manifest=request.query_params.get('manifest')=='true'
         bundled=request.query_params.get('bundled')=='true'
         data=_project_snapshot(pid,manuscript_only=True,manifest_only=manifest or bundled)
+        timings['manifest']=perf_counter()-started
         if manifest or bundled:
             if tab and not any(str(row['id'])==tab for row in data['tabs']):
                 raise DocumentNotFound('DOCUMENT_NOT_FOUND')
             data['chapters']=[row for row in data['chapters'] if not tab or str(row.get('tab_id'))==tab]
         if bundled:
+            phase=perf_counter()
             blocks=None
             if _bundled_book_capacity.acquire(blocking=False):
                 try:blocks=_domain().bundled_manuscript(pid,[row['id'] for row in data['chapters']],user_id=_uid())
                 finally:_bundled_book_capacity.release()
+            timings['bundles']=perf_counter()-phase;phase=perf_counter()
             # Authorize AGAIN after object reads, including revocation/deletion.
             if _domain().project_generation(pid,_uid())!=int(data['project']['generation']):
                 raise DocumentConflict('HOSTED_SNAPSHOT_GENERATION_CHANGED')
+            timings['authority']=perf_counter()-phase
             data['bundled']=blocks is not None
             if blocks is not None:
                 order={row['id']:index for index,row in enumerate(data['chapters'])}
                 data['blocks']=sorted(blocks,key=lambda row:(order[row['chapter_id']],int(row.get('position') or 0),str(row.get('created_at') or ''),str(row.get('id') or '')))
         data['read_tag']=tag(pid,tab,data['project']['generation'])
+        phase=perf_counter()
         response=JSONResponse(data,headers={'Cache-Control':'private, no-store','ETag':data['read_tag']})
         if bundled and len(response.body)>8*1024*1024:
             data.update(blocks=[],bundled=False)
             response=JSONResponse(data,headers={'Cache-Control':'private, no-store','ETag':data['read_tag']})
+        if bundled:
+            timings['encode']=perf_counter()-phase
+            response.headers['Server-Timing']=', '.join(f'{name};dur={seconds*1000:.1f}' for name,seconds in timings.items())
         return response
     except Exception as exc:raise _error(exc)
 

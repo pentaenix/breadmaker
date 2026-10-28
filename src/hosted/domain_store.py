@@ -381,8 +381,15 @@ class HostedDomainStore:
 
     def _read_hybrid_body(self,pointer, *, max_decoded_bytes=None):
         try:
-            encoded=b''.join(self.objects.read_chunks(str(pointer['object_name']),
-                max_bytes=_MAX_HYBRID_BYTES,if_generation_match=int(pointer['object_generation'])))
+            reader=getattr(self.objects,'read_verified_bytes',None)
+            if (reader is not None and max_decoded_bytes is not None and pointer.get('bundle_entry')
+                    and pointer.get('object_sha256') and 0<int(pointer.get('object_size') or 0)<=2*1024*1024):
+                encoded=reader(str(pointer['object_name']),
+                    if_generation_match=int(pointer['object_generation']),
+                    expected_size=int(pointer['object_size']),expected_sha256=str(pointer['object_sha256']))
+            else:
+                encoded=b''.join(self.objects.read_chunks(str(pointer['object_name']),
+                    max_bytes=_MAX_HYBRID_BYTES,if_generation_match=int(pointer['object_generation'])))
         except ObjectNotFound as exc:
             raise RuntimeError('HOSTED_POINTER_OBJECT_MISSING') from exc
         if pointer.get('object_sha256') and hashlib.sha256(encoded).hexdigest()!=str(pointer['object_sha256']):
