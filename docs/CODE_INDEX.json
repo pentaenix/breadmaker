@@ -7743,6 +7743,78 @@
       ]
     },
     {
+      "file": "src/hosted/erasure_census.py",
+      "lines": 192,
+      "symbols": [
+        {
+          "name": "exact_timestamp",
+          "kind": "function",
+          "line": 21
+        },
+        {
+          "name": "CensusDocument",
+          "kind": "class",
+          "line": 34
+        },
+        {
+          "name": "SnapshotCensus",
+          "kind": "class",
+          "line": 40
+        },
+        {
+          "name": "GoogleSnapshotCensus",
+          "kind": "class",
+          "line": 55
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/erasure_manifest.py",
+      "lines": 353,
+      "symbols": [
+        {
+          "name": "_json",
+          "kind": "function",
+          "line": 29
+        },
+        {
+          "name": "_utc",
+          "kind": "function",
+          "line": 33
+        },
+        {
+          "name": "_positive",
+          "kind": "function",
+          "line": 43
+        },
+        {
+          "name": "object_record",
+          "kind": "function",
+          "line": 50
+        },
+        {
+          "name": "retention_status",
+          "kind": "function",
+          "line": 92
+        },
+        {
+          "name": "project_entries",
+          "kind": "function",
+          "line": 116
+        },
+        {
+          "name": "PreparedManifest",
+          "kind": "class",
+          "line": 163
+        },
+        {
+          "name": "SealedErasureManifestStore",
+          "kind": "class",
+          "line": 171
+        }
+      ]
+    },
+    {
       "file": "src/hosted/firestore/__init__.py",
       "lines": 38,
       "symbols": []
