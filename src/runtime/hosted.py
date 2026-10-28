@@ -32,6 +32,7 @@ from hosted.runtime_services import (
 from hosted.storage import MemoryObjectStore
 from hosted.storage.google_driver import GoogleCloudObjectStore
 from hosted.action_journal import ActionDocumentStore
+from hosted.account_lifecycle import AccountLifecycleDocumentStore, AccountLifecycleObjectStore
 from runtime.contracts import RuntimeServices
 
 def _validate_worker_configuration() -> None:
@@ -111,6 +112,16 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
     _validate_worker_configuration()
 
     documents,objects=_stores(runtime_mode, documents, objects)
+    lifecycle = None
+    if isinstance(documents, GoogleFirestoreDocumentStore):
+        lifecycle = AccountLifecycleDocumentStore(documents)
+        documents = lifecycle
+    elif isinstance(documents, AccountLifecycleDocumentStore):
+        # Explicit deterministic integration injection; ordinary local runtime
+        # and the historical memory-only purge rehearsals stay unchanged.
+        lifecycle = documents
+    if lifecycle is not None:
+        objects = AccountLifecycleObjectStore(objects, lifecycle)
     documents=ActionDocumentStore(documents)
     project_authority=FirestoreProjectRepository(documents)
     users=HostedUserRepository(HostedStructuredRepository(documents))
@@ -142,6 +153,10 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
     else:
         raise RuntimeError(f'AUTH_MODE_UNSUPPORTED:{auth_mode}')
 
+    if lifecycle is not None:
+        lifecycle.actor = (lambda: dev_uid) if auth_mode == 'developer' else (
+            lambda: sessions.current().user_id if sessions.current() is not None else None)
+
     context=HostedProjectContextProvider(project_authority,users,user_id_provider,kind=identity_kind)
     identity=HostedIdentityProvider(documents,objects,project_authority,context,user_id_provider,kind=identity_kind)
     projects=HostedCloudProjectRepository(documents,objects,project_authority,users,user_id_provider)
@@ -159,6 +174,7 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
     backups=HostedBackupStore()
     usage=HostedProjectUsageService(documents,objects)
     capabilities=dict(_HOSTED_CAPABILITIES)
+    capabilities['account_erasure_fence'] = lifecycle is not None
     capabilities['developer_identity']=auth_mode=='developer'
     capabilities['account_sessions']=auth_mode in {'test','session','identity_platform'}
     capabilities['account_authentication']=auth_mode=='identity_platform'

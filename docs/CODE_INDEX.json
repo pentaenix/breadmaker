@@ -7437,6 +7437,88 @@
       "symbols": []
     },
     {
+      "file": "src/hosted/account_closure.py",
+      "lines": 376,
+      "symbols": [
+        {
+          "name": "_packed",
+          "kind": "function",
+          "line": 27
+        },
+        {
+          "name": "_hash",
+          "kind": "function",
+          "line": 31
+        },
+        {
+          "name": "_entry",
+          "kind": "function",
+          "line": 35
+        },
+        {
+          "name": "ClosurePlan",
+          "kind": "class",
+          "line": 40
+        },
+        {
+          "name": "StagedAccountClosure",
+          "kind": "class",
+          "line": 56
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/account_closure_cli.py",
+      "lines": 158,
+      "symbols": [
+        {
+          "name": "_NoRedirect",
+          "kind": "class",
+          "line": 23
+        },
+        {
+          "name": "_read_json",
+          "kind": "function",
+          "line": 28
+        },
+        {
+          "name": "required_environment",
+          "kind": "function",
+          "line": 37
+        },
+        {
+          "name": "require_deployed_fence",
+          "kind": "function",
+          "line": 54
+        },
+        {
+          "name": "FirebaseClosureIdentity",
+          "kind": "class",
+          "line": 66
+        },
+        {
+          "name": "_rows",
+          "kind": "function",
+          "line": 88
+        },
+        {
+          "name": "_BoundedTransaction",
+          "kind": "class",
+          "line": 97
+        },
+        {
+          "name": "_BoundedClosureStore",
+          "kind": "class",
+          "line": 108
+        },
+        {
+          "name": "main",
+          "kind": "function",
+          "line": 124
+        }
+      ]
+    },
+    {
       "file": "src/hosted/account_deletion.py",
       "lines": 193,
       "symbols": [
@@ -7449,6 +7531,27 @@
           "name": "HostedAccountDeletionPlanner",
           "kind": "class",
           "line": 56
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/account_lifecycle.py",
+      "lines": 198,
+      "symbols": [
+        {
+          "name": "_LifecycleTransaction",
+          "kind": "class",
+          "line": 22
+        },
+        {
+          "name": "AccountLifecycleDocumentStore",
+          "kind": "class",
+          "line": 147
+        },
+        {
+          "name": "AccountLifecycleObjectStore",
+          "kind": "class",
+          "line": 164
         }
       ]
     },
@@ -12448,37 +12551,37 @@
     },
     {
       "file": "src/runtime/hosted.py",
-      "lines": 207,
+      "lines": 223,
       "symbols": [
         {
           "name": "_validate_worker_configuration",
           "kind": "function",
-          "line": 37
+          "line": 38
         },
         {
           "name": "_validate_mode",
           "kind": "function",
-          "line": 79
+          "line": 80
         },
         {
           "name": "_stores",
           "kind": "function",
-          "line": 93
+          "line": 94
         },
         {
           "name": "_build_hosted_runtime",
           "kind": "function",
-          "line": 107
+          "line": 108
         },
         {
           "name": "build_hosted_dev_runtime",
           "kind": "function",
-          "line": 202
+          "line": 218
         },
         {
           "name": "build_hosted_runtime",
           "kind": "function",
-          "line": 206
+          "line": 222
         }
       ]
     },

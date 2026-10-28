@@ -12,7 +12,7 @@ function accountSecurityTime(value){const seconds=Number(value||0);if(!seconds)r
 
 let accountSecurityIdentityModulePromise=null;
 function accountSecurityIdentityModule(){
-  if(!accountSecurityIdentityModulePromise)accountSecurityIdentityModulePromise=import('/static/js/features/account/identity-platform-client.js?v=10.5.62');
+  if(!accountSecurityIdentityModulePromise)accountSecurityIdentityModulePromise=import('/static/js/features/account/identity-platform-client.js?v=10.5.63');
   return accountSecurityIdentityModulePromise;
 }
 function accountSecurityTotpCodeDialog(title='Two-step verification'){
