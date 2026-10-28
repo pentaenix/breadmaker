@@ -8,21 +8,22 @@ from types import SimpleNamespace as NS
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'src'))
-from auth.identity_platform import IdentityPlatformAdmissionStore
+from auth.identity_platform import IdentityPlatformAdmissionStore, IdentityPlatformSessionService
 from hosted.account_closure import StagedAccountClosure
 from hosted.account_closure_cli import FirebaseClosureIdentity, required_environment, require_deployed_fence
 from hosted.account_lifecycle import AccountLifecycleDocumentStore, AccountLifecycleObjectStore
 from hosted.firestore.contracts import DocumentConflict, ProjectUnavailable
+from hosted.firestore.ids import identity_binding_id
 from hosted.firestore.memory import MemoryDocumentStore
 from hosted.firestore.repositories import HostedProjectRepository
 from hosted.runtime_services import HostedCloudAccountIdentityService
 from hosted.storage.memory import MemoryObjectStore
+from tests.test_v10359 import _Admin
 
 PROJECT = 'synthetic-project'
 OPERATOR = f'bm-production-erasure@{PROJECT}.iam.gserviceaccount.com'
 EMAIL = 'synthetic-writer@gmail.com'
 EXTERNAL = 'firebase-disposable-old'
-ISSUER = 'https://securetoken.google.com/'+PROJECT
 OPERATION = 'synthetic-delete-1'
 
 
@@ -51,14 +52,16 @@ class Identities:
 def fixture(*, projects=2, checkpoint=None):
     docs, live, audit, identities = MemoryDocumentStore(), MemoryObjectStore(), MemoryObjectStore(), Identities()
     accounts = HostedCloudAccountIdentityService(docs)
-    identity = accounts.resolve_or_create_external_identity(ISSUER, EXTERNAL, provider='google',
-        display_name='Synthetic writer', email=EMAIL, email_verified=True)
-    uid = identity.user_id
     grant_path = IdentityPlatformAdmissionStore.greenlist_path(EMAIL)
     docs.run_transaction(lambda tx: tx.create(grant_path, {
         'email':EMAIL, 'status':'active', 'allowed_providers':['google'], 'operator_setting':'preserve-me'}))
     admission = IdentityPlatformAdmissionStore(docs)
-    admission.require_or_consume(EXTERNAL, None, email=EMAIL, email_verified=True, provider='google')
+    claims = {'uid':EXTERNAL, 'sub':EXTERNAL, 'auth_time':995.0,
+              'iss':'https://securetoken.google.com/'+PROJECT,
+              'email':EMAIL, 'email_verified':True, 'firebase':{'sign_in_provider':'google.com'}}
+    sessions = IdentityPlatformSessionService(_Admin(claims, identities.get(EXTERNAL)), accounts, admission,
+        project_id=PROJECT, environment='test', now=lambda:1000.0)
+    uid = sessions.exchange_id_token('synthetic-verified-token').principal.user_id
     authority = HostedProjectRepository(docs)
     pids = []
     for index in range(projects):
@@ -70,12 +73,25 @@ def fixture(*, projects=2, checkpoint=None):
     engine = StagedAccountClosure(docs, identities, audit, project=PROJECT,
         now=lambda:datetime(2026,10,28,12,tzinfo=timezone.utc), checkpoint=checkpoint)
     return NS(docs=docs, live=live, audit=audit, identities=identities, accounts=accounts,
-              uid=uid, pids=pids, engine=engine, admission=admission, grant_path=grant_path)
+              uid=uid, pids=pids, engine=engine, admission=admission, grant_path=grant_path, sessions=sessions)
 
 
 def close(world, confirmation=None):
     confirmation = confirmation or world.engine.plan(EMAIL, operation=OPERATION).confirmation
     return world.engine.close(EMAIL, operation=OPERATION, confirmation=confirmation)
+
+
+def test_v10564_closure_uses_real_session_binding_namespace_not_token_issuer():
+    w = fixture()
+    assert w.engine.issuer == w.sessions.issuer
+    assert w.engine.plan(EMAIL, operation=OPERATION).user_id == w.uid
+    correct = ('identity_bindings', identity_binding_id(w.sessions.issuer+'\n'+EXTERNAL))
+    w.docs.run_transaction(lambda tx:tx.delete(correct))
+    w.accounts.resolve_or_create_external_identity('https://securetoken.google.com/'+PROJECT, EXTERNAL,
+        provider='google', display_name='Wrong binding namespace', email=EMAIL, email_verified=True)
+    with pytest.raises(DocumentConflict, match='BINDING_MISMATCH'):
+        w.engine.plan(EMAIL, operation=OPERATION)
+    assert not w.identities.events
 
 
 def test_v10563_close_deletes_only_exact_identity_keeps_allowlist_and_retained_data():
@@ -107,7 +123,7 @@ def test_v10563_same_email_fresh_signup_has_new_account_without_old_projects():
     new_external = 'firebase-new-signup'
     w.identities.users[new_external] = NS(uid=new_external, disabled=False)
     w.admission.require_or_consume(new_external, None, email=EMAIL, email_verified=True, provider='google')
-    identity = w.accounts.resolve_or_create_external_identity(ISSUER,new_external,provider='google',
+    identity = w.accounts.resolve_or_create_external_identity(w.sessions.issuer,new_external,provider='google',
         display_name='Fresh signup',email=EMAIL,email_verified=True)
     assert identity.user_id != w.uid and w.admission.is_admitted(new_external)
     for pid in w.pids:

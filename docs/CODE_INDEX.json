@@ -7438,7 +7438,7 @@
     },
     {
       "file": "src/hosted/account_closure.py",
-      "lines": 376,
+      "lines": 377,
       "symbols": [
         {
           "name": "_packed",

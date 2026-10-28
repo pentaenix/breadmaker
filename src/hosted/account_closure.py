@@ -63,7 +63,8 @@ class StagedAccountClosure:
     def __init__(self, documents, identities, audit_objects, *, project, now=None, checkpoint=None):
         self.documents, self.identities, self.audit = documents, identities, audit_objects
         self.project = project
-        self.issuer = f'https://securetoken.google.com/{project}'
+        # This is Breadmaker's account-binding namespace, not the Google JWT iss.
+        self.issuer = f'identity-platform://{project}'
         self.now = now or (lambda: datetime.now(timezone.utc))
         self.checkpoint = checkpoint or (lambda _state: None)
 
@@ -323,7 +324,7 @@ class StagedAccountClosure:
                 or admission.get('external_uid') != data['external_uid'] or admission.get('status') != 'erasure_pending'
                 or admission.get('greenlist_digest') != data['greenlist_digest']
                 or binding.get('user_id') != data['user_id'] or binding.get('subject') != data['external_uid']
-                or binding.get('issuer') != f"https://securetoken.google.com/{data['project']}"
+                or binding.get('issuer') != f"identity-platform://{data['project']}"
                 or binding.get('status') != 'erasure_pending'):
             raise DocumentConflict('ACCOUNT_ERASURE_FENCE_CHANGED')
 
