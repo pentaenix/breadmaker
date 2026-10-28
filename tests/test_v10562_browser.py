@@ -84,6 +84,13 @@ def test_auth_original_presentation_theme_language_and_signup_are_functional(tmp
     with auth_browser(tmp_path) as (page, exchanges, errors):
         expect(page.locator('#identityHeading')).to_have_text('Login')
         expect(page.locator('.identity-brand')).to_have_text('Breadmaker')
+        apple = page.locator('[data-provider=apple]')
+        expect(apple).to_be_visible()
+        expect(apple).to_be_disabled()
+        expect(apple).to_have_attribute('aria-disabled', 'true')
+        assert apple.evaluate('(el)=>getComputedStyle(el).opacity') == '0.5'
+        apple.evaluate('(el)=>el.click()')
+        assert not exchanges and 'google' not in page.evaluate('window.authCalls')
         assert page.locator('.identity-card').evaluate('(el)=>getComputedStyle(el).boxShadow') == 'none'
         assert page.locator('body').evaluate('(el)=>getComputedStyle(el).backgroundImage') == 'none'
         page.locator('#identityHeaderMode').click()
@@ -110,6 +117,8 @@ def test_auth_original_presentation_theme_language_and_signup_are_functional(tmp
         page.set_viewport_size({'width': 360, 'height': 740})
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
         expect(page.locator('[data-provider=google]')).to_be_visible()
+        expect(apple).to_be_visible()
+        expect(apple).to_be_disabled()
         assert not errors
 
 
@@ -131,6 +140,10 @@ def test_google_denied_admission_stays_denied_without_automatic_email(tmp_path):
         calls = page.evaluate('window.authCalls')
         assert 'google' in calls and 'memory-only' in calls and 'scope:email' in calls
         assert 'verification-mail' not in calls and 'signout' in calls
+        expect(page.locator('[data-provider=google]')).to_be_enabled()
+        expect(page.locator('[data-provider=apple]')).to_be_visible()
+        expect(page.locator('[data-provider=apple]')).to_be_disabled()
+        assert page.locator('[data-provider=apple]').evaluate('(el)=>el.onclick') is None
         assert not errors
 
 

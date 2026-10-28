@@ -1,7 +1,7 @@
 import {
   identityClient,signInProvider,signInEmail,createEmailAccount,sendVerification,reloadUser,
   sendPasswordReset,enrolledTotp,beginTotpEnrollment,exchangeServerSession,signOutClient
-} from './identity-platform-client.js?v=10.5.63';
+} from './identity-platform-client.js?v=10.5.64';
 
 const $=selector=>document.querySelector(selector);
 const message=$('#identityMessage'),totp=$('#identityTotp'),social=$('#identitySocial');
@@ -67,7 +67,7 @@ function safeReturn(){
     return target.pathname+target.search+target.hash;
   }catch{return '/'}
 }
-function busy(on){document.querySelectorAll('button,input').forEach(el=>{el.disabled=!!on})}
+function busy(on){document.querySelectorAll('button,input').forEach(el=>{el.disabled=!!on||el.dataset.providerUnavailable==='true'})}
 async function askTotp({displayName}){
   return new Promise(resolve=>{
     totp.hidden=false;totp.innerHTML='<h2>Two-step verification</h2><p>Enter the current code from <span id="identityTotpDisplayName"></span>.</p><div class="identity-code-row"><input id="identityTotpCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8" autofocus><button id="identityTotpContinue" type="button">Continue</button></div>';
@@ -106,9 +106,9 @@ async function withBusy(fn){hideMessage();busy(true);try{await fn()}catch(error)
 async function renderSocial(){
   const {config}=await identityClient();const buttons=[];
   if(config.providers.google)buttons.push('<button type="button" data-provider="google" class="provider"><span>G</span>Continue with Google</button>');
-  if(config.providers.apple)buttons.push('<button type="button" data-provider="apple" class="provider"><span></span>Continue with Apple</button>');
+  buttons.push(`<button type="button" data-provider="apple" class="provider"${config.providers.apple?'':' disabled aria-disabled="true" data-provider-unavailable="true"'}><span></span>Continue with Apple</button>`);
   social.innerHTML=buttons.join('');
-  social.querySelectorAll('[data-provider]').forEach(button=>button.onclick=()=>withBusy(async()=>{const result=await signInProvider(button.dataset.provider,askTotp);await finish(result.user)}));
+  social.querySelectorAll('[data-provider]:not(:disabled)').forEach(button=>button.onclick=()=>withBusy(async()=>{const result=await signInProvider(button.dataset.provider,askTotp);await finish(result.user)}));
 }
 $('#identityEmailForm').addEventListener('submit',event=>{event.preventDefault();withBusy(async()=>{
   let result;

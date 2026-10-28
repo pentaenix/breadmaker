@@ -6,6 +6,7 @@
 html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
 body{min-height:100vh}button,input{font:inherit}button,a,input,summary{-webkit-tap-highlight-color:transparent}
 button{cursor:pointer}button:disabled,input:disabled{opacity:.5;cursor:wait}
+button[data-provider-unavailable=true]{cursor:not-allowed}
 button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .identity-login{min-height:100vh;display:grid;grid-template-rows:auto 1fr;padding:22px 28px 26px}
 .identity-header{display:flex;align-items:center;justify-content:space-between;min-height:34px;gap:20px}
