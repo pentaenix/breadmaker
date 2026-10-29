@@ -127,12 +127,12 @@ async function openTaskDetails(taskId,{manuscriptLink=null,entityLink=null,onSav
     $$('#modalBody input,#modalBody textarea,#modalBody select,#modalBody button').forEach(el=>{el.disabled=true});
     $('#unarchiveTask').onclick=()=>unarchiveTask(task);return;
   }
-  // Never let a delayed auto-focus steal the next milestone being typed (including Enter).
-  // Only move focus if the add input is still active AND empty when the frame runs.
-  const focusMilestoneDescriptionIfIdle=(id,input)=>requestAnimationFrame(()=>{
+  // The description already exists after renderMilestones. Focus it in this
+  // interaction, never in a later frame that could steal the next title's focus.
+  const focusMilestoneDescriptionIfIdle=(id,input)=>{
     if(!input.isConnected||document.activeElement!==input||input.value.trim())return;
     $(`[data-milestone-id="${CSS.escape(String(id))}"] [data-milestone-description]`)?.focus();
-  });
+  };
   const addMilestone=async()=>{const input=$('#taskMilestoneNew'),title=input.value.trim();if(!title)return;if(task){let created;await withStructuralUndo(i18nText('tasks.undo.add_milestone',{title}),async()=>{created=await api(`/api/tasks/${task.id}/milestones`,{method:'POST',body:JSON.stringify({title})})},{view:'tasks'});created.link_count=0;milestones.push(created);expandedMilestones.add(String(created.id));input.value='';renderMilestones();if($('#tasksView').classList.contains('active'))loadTasks();focusMilestoneDescriptionIfIdle(created.id,input)}else{const milestone={id:`draft_${++draftCounter}`,title,description:'',completed:false,link_count:0};milestones.push(milestone);expandedMilestones.add(String(milestone.id));input.value='';renderMilestones();focusMilestoneDescriptionIfIdle(milestone.id,input)}};
   $('#taskMilestoneAdd').onclick=addMilestone;$('#taskMilestoneNew').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addMilestone()}};
   $('#taskCreateMarker').onclick=()=>newMarkerDialog(marker=>{const select=$('#taskMarker');if(select){select.add(new Option(marker.name,marker.id));select.value=String(marker.id)}});

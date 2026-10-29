@@ -74,13 +74,38 @@ def test_first_task_saves_and_survives_reload_without_manuscript_input(tmp_path)
     with first_workspace(tmp_path,'tasks') as (base,page,pid,errors):
         page.locator('#newTaskBtn').click()
         page.locator('#taskName').fill('First task')
+        # Hold animation frames to reproduce a delayed focus callback arriving
+        # after the user explicitly returns to the next (still empty) title.
+        page.evaluate('''()=>{
+          const original=window.requestAnimationFrame;
+          const pending=[];
+          window.requestAnimationFrame=callback=>{pending.push(callback);return 0};
+          window.__releaseMilestoneFrames=()=>{
+            window.requestAnimationFrame=original;
+            for(const callback of pending)callback(performance.now());
+            delete window.__releaseMilestoneFrames;
+          };
+        }''')
+        add=page.locator('#taskMilestoneNew')
+        try:
+            add.fill('Opening');add.press('Enter')
+            page.locator('[data-milestone-id="draft_1"] [data-milestone-description]').fill('Keep this description')
+            add.focus()
+        finally:
+            page.evaluate('()=>window.__releaseMilestoneFrames()')
+        expect(add).to_be_focused(timeout=1000)
+        add.fill('Continuity');add.press('Enter')
+        expect(page.locator('[data-milestone-id="draft_2"]')).to_be_visible()
         page.locator('#saveTask').click()
         expect(page.locator('#tasksView')).to_contain_text('First task')
         page.reload(wait_until='domcontentloaded')
         expect(page.locator('#tasksView')).to_have_class(re.compile('active'))
         expect(page.locator('#tasksView')).to_contain_text('First task')
         rows=requests.get(base+'/api/tasks',headers={'X-Breadmaker-Project':pid},timeout=2).json()['tasks']
-        assert any(row['title']=='First task' for row in rows)
+        task=next(row for row in rows if row['title']=='First task')
+        milestones=requests.get(base+f'/api/tasks/{task["id"]}/milestones',headers={'X-Breadmaker-Project':pid},timeout=2).json()['milestones']
+        assert [row['title'] for row in milestones]==['Opening','Continuity']
+        assert milestones[0]['description']=='Keep this description'
 
 
 def test_first_review_saves_and_survives_reload_without_manuscript_input(tmp_path):
