@@ -32,7 +32,7 @@ def test_v940_request_context_contract_is_project_and_actor_scoped():
     # Compare startup ordering inside boot(), not against the earlier heartbeatLease
     # helper definition which naturally contains the same lease call string.
     boot=frontend[frontend.index('async function boot()'):]
-    assert "const workspacePromise=api('/api/workspace')" in boot
+    assert "const workspacePromise=api('/api/workspace',routedProject?{headers:{'X-Breadmaker-Project':routedProject}}:{})" in boot
     assert 'state.workspace=workspace' in boot
     assert "const leasePromise=api('/api/lease',{method:'POST'})" in boot
     assert boot.index('state.workspace=workspace') < boot.index("const leasePromise=api('/api/lease',{method:'POST'})")

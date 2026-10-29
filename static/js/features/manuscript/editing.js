@@ -22,6 +22,24 @@ function adjacentManuscriptWrap(wrap,direction){
 }
 function rangeTouchesManuscriptSurface(range){if(!range)return false;const editor=$('#editor'),title=$('#chapterTitle'),paper=$('#manuscriptPaper');if(editor?.contains(range.commonAncestorContainer))return true;if(state.viewMode==='chapter'&&paper?.contains(range.commonAncestorContainer)){try{return !!title&&range.intersectsNode(title)}catch{return false}}return false}
 function placeCaret(element,offset){element.focus();const walker=document.createTreeWalker(element,NodeFilter.SHOW_TEXT);let node,remain=offset;while((node=walker.nextNode())){if(remain<=node.nodeValue.length){const range=document.createRange();range.setStart(node,remain);range.collapse(true);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);return}remain-=node.nodeValue.length}const range=document.createRange();range.selectNodeContents(element);range.collapse(false);const selection=getSelection();selection.removeAllRanges();selection.addRange(range)}
+function caretAtManuscriptVerticalEdge(prose,range,direction){
+  if(!range?.collapsed||!prose.contains(range.startContainer))return false;
+  const box=prose.getBoundingClientRect(),rect=range.getClientRects()[0]||range.getBoundingClientRect(),style=getComputedStyle(prose),fontSize=parseFloat(style.fontSize)||16,lineHeight=parseFloat(style.lineHeight)||fontSize*1.72;
+  if(rect&&(rect.height||rect.width))return direction<0?rect.top<=box.top+lineHeight*.75:rect.bottom>=box.bottom-lineHeight*.75;
+  const offset=offsetIn(prose,range.startContainer,range.startOffset),length=prose.innerText.length;return direction<0?offset===0:offset>=length
+}
+function moveCaretIntoAdjacentEmptyParagraph(event,prose){
+  if(!['ArrowUp','ArrowDown'].includes(event.key)||event.shiftKey||event.metaKey||event.ctrlKey||event.altKey)return false;
+  const selection=getSelection();if(!selection?.rangeCount||!selection.isCollapsed)return false;const range=selection.getRangeAt(0),direction=event.key==='ArrowUp'?-1:1;if(!caretAtManuscriptVerticalEdge(prose,range,direction))return false;
+  const wrap=prose.closest('.manuscript-block-wrap'),adjacent=adjacentManuscriptWrap(wrap,direction),target=adjacent?.querySelector('.manuscript-block');if(!target||adjacent.classList.contains('scene-gap-hidden')||entityId(adjacent.dataset.chapterId)!==entityId(wrap.dataset.chapterId)||target.textContent.length)return false;
+  event.preventDefault();event.stopPropagation();placeCaret(target,0);target.scrollIntoView({block:'nearest'});return true
+}
+function stopCaretAtManuscriptBoundary(event,prose){
+  if(!['ArrowUp','ArrowDown'].includes(event.key)||event.shiftKey||event.metaKey||event.ctrlKey||event.altKey)return false;
+  const selection=getSelection();if(!selection?.rangeCount||!selection.isCollapsed)return false;const range=selection.getRangeAt(0),direction=event.key==='ArrowUp'?-1:1;if(!caretAtManuscriptVerticalEdge(prose,range,direction))return false;
+  const visible=$$('.manuscript-block').filter(candidate=>{const wrap=candidate.closest('.manuscript-block-wrap');return !wrap?.classList.contains('scene-gap-hidden')&&candidate.getClientRects().length});const boundary=direction<0?visible[0]:visible[visible.length-1];if(prose!==boundary)return false;
+  event.preventDefault();event.stopPropagation();return true
+}
 
 function selectionItems(rangeOverride=null){
   const selection=getSelection(),editor=$('#editor');const range=rangeOverride||((selection?.rangeCount&&!selection.isCollapsed)?selection.getRangeAt(0):null);if(!range||range.collapsed)return[];if(!rangeTouchesManuscriptSurface(range))return[];const out=[];
@@ -109,6 +127,8 @@ $('#manuscriptPaper').addEventListener('beforeinput',event=>{
 
 $('#manuscriptPaper').addEventListener('keydown',event=>{
   const prose=event.target.closest?.('.manuscript-block')||activeManuscriptProse();if(!prose)return;
+  if(moveCaretIntoAdjacentEmptyParagraph(event,prose))return;
+  if(stopCaretAtManuscriptBoundary(event,prose))return;
   const selected=selectionItems(),crossChapter=new Set(selected.map(x=>x.chapter_id)).size>1;
   if(crossChapter&&['Enter','Backspace','Delete','Tab'].includes(event.key)){event.preventDefault();toast('The chapter boundary is structural. Use selection actions across chapters, but edit prose within one chapter.');return}
   if(event.key==='Tab'){event.preventDefault();document.execCommand('insertText',false,'\t');markDirty(event);return}

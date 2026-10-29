@@ -15,7 +15,10 @@ router=APIRouter()
 def workspace_state(request:Request):
     user_id=_profile_request_user_id(request) or runtime.identity.active_profile_id()
     projects=runtime.projects.list(user_id=user_id)
-    target=runtime.projects.profile_project_target(user_id)
+    # An explicit request binding belongs to this browser tab. The registry/profile
+    # target remains only the default for an unrouted tab or a fresh launch.
+    routed=str(getattr(request.state,'breadmaker_project_id',None) or '')
+    target=routed or runtime.projects.profile_project_target(user_id)
     if target and not any(str(item.get('id'))==str(target) for item in projects):target=None
     if not target and projects:target=str(projects[0]['id'])
     recovery_candidates=[] if runtime.sessions.requires_authentication else runtime.projects.recovery_candidates()

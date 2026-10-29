@@ -58,6 +58,7 @@ data_home=str(pathlib.Path(os.environ.get('BREADMAKER_HOME') or (pathlib.Path.ho
 print(hashlib.sha256((root+'|'+portable+'|'+runtime+'|'+auth_mode+'|'+data_home).encode()).hexdigest()[:16])
 PYINSTANCE
 )
+EXPECTED_VERSION=$(tr -d '[:space:]' < VERSION)
 
 open_url(){
   local url="$1"
@@ -67,13 +68,13 @@ open_url(){
 }
 
 probe_port(){
-  "$PYTHON_RUNTIME" - "$1" "$INSTANCE" <<'PYPROBE'
+  "$PYTHON_RUNTIME" - "$1" "$INSTANCE" "$EXPECTED_VERSION" <<'PYPROBE'
 import json, socket, sys, urllib.request
-p=int(sys.argv[1]); expected=sys.argv[2]
+p=int(sys.argv[1]); expected=sys.argv[2]; expected_version=sys.argv[3]
 try:
     with urllib.request.urlopen(f'http://127.0.0.1:{p}/api/health',timeout=.25) as r: d=json.load(r)
     if d.get('app')=='Breadmaker Editor' and d.get('ok') is True and d.get('instance')==expected:
-        print('existing'); raise SystemExit
+        print('existing' if str(d.get('version') or '')==expected_version else 'version-mismatch'); raise SystemExit
 except SystemExit: raise
 except Exception: pass
 s=socket.socket(); s.settimeout(.2)
@@ -85,13 +86,15 @@ PYPROBE
 
 if [ -n "${PORT:-}" ]; then
   MODE=$(probe_port "$PORT")
-  [ "$MODE" != "existing" ] || { URL="http://127.0.0.1:${PORT}"; echo "Breadmaker Editor is already running: $URL"; open_url "$URL"; exit 0; }
+  [ "$MODE" != "existing" ] || { URL="http://127.0.0.1:${PORT}"; echo "Breadmaker Editor is already running: $URL"; exit 0; }
+  [ "$MODE" != "version-mismatch" ] || { echo "A different Breadmaker Editor version is already using this local workspace on port $PORT. Stop it before starting Breadmaker Editor ${EXPECTED_VERSION}." >&2; exit 1; }
   [ "$MODE" != "occupied" ] || { echo "Port $PORT is already in use." >&2; exit 1; }
 else
   PORT=""
   for candidate in $(seq 8765 8785); do
     MODE=$(probe_port "$candidate")
-    if [ "$MODE" = "existing" ]; then URL="http://127.0.0.1:${candidate}"; echo "Breadmaker Editor is already running: $URL"; open_url "$URL"; exit 0; fi
+    if [ "$MODE" = "existing" ]; then URL="http://127.0.0.1:${candidate}"; echo "Breadmaker Editor is already running: $URL"; exit 0; fi
+    if [ "$MODE" = "version-mismatch" ]; then echo "A different Breadmaker Editor version is already using this local workspace on port $candidate. Stop it before starting Breadmaker Editor ${EXPECTED_VERSION}." >&2; exit 1; fi
     if [ "$MODE" = "free" ]; then PORT="$candidate"; break; fi
   done
   [ -n "$PORT" ] || { echo "Could not find a free local port." >&2; exit 1; }

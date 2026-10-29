@@ -6,7 +6,7 @@
 
 .review-sidebar.collapsed #toggleReviewRail{padding:0;}
 .review-sidebar.collapsed .review-nav-list{padding-inline:0}
-.review-nav-list{overflow:auto;min-height:0;padding:2px 0 6px}
+.review-nav-list{overflow:auto;min-height:0;padding:5px 0 6px}
 /* Review rows deliberately reuse the Manuscript chapter-row component geometry. */
 .review-item{user-select:none}
 .review-item.dragging{opacity:.45}

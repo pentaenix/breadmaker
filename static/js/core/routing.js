@@ -17,18 +17,15 @@ function hostedProjectRoute(projectId,view='manuscript'){
   return `/p/${pid}${VIEW_ROUTES[view]||''}`;
 }
 function openWorkspaceProject(projectId,{replace=false,view='manuscript'}={}){
-  let path='/';
-  if(runtimeSupports('hosted_projects')){
-    const pid=String(projectId||'').toLowerCase();
-    if(!/^[0-9a-f]{32}$/.test(pid))throw new Error('PROJECT_ROUTE_ID_INVALID');
-    path=hostedProjectRoute(pid,view);
-  }
+  const pid=String(projectId||'').toLowerCase();
+  if(!/^[0-9a-f]{32}$/.test(pid))throw new Error('PROJECT_ROUTE_ID_INVALID');
+  const path=hostedProjectRoute(pid,view);
   location[replace?'replace':'assign'](path);
 }
 function syncViewRoute(view,{replace=false}={}){
   if(!['http:','https:'].includes(location.protocol))return;
   const projectId=currentProjectIdentity();
-  const path=runtimeSupports('hosted_projects')&&projectId?hostedProjectRoute(projectId,view):(VIEW_ROUTES[view]||'/');
+  const path=projectId?hostedProjectRoute(projectId,view):(VIEW_ROUTES[view]||'/');
   if(location.pathname===path)return;
   const method=replace?'replaceState':'pushState';
   try{history[method]({breadmakerView:view},'',`${path}${location.search}${location.hash}`)}catch(error){console.warn('Could not update Breadmaker route',error)}

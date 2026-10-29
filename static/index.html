@@ -7,6 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="/static/breadmaker_logo.svg?v=10.5.66">
 <style>
 html{background:#f4ebdf}html:not([data-breadmaker-boot-ready]) #app{visibility:hidden}#startupScreen{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#f4ebdf;color:#47392d}html[data-breadmaker-boot-ready] #startupScreen{display:none}
+html[data-breadmaker-local]:not([data-breadmaker-boot-failed]) #startupScreen{display:none}
 </style>
 <script>
 window.breadmakerStartupProgress=value=>{const bar=document.getElementById('startupProgress');if(bar)bar.value=value};

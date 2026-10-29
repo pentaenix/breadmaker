@@ -42,11 +42,11 @@ const flushSave=async()=>{if(failSave)throw Error('synthetic save failure');save
 
 
 @pytest.mark.parametrize('hosted,replace', [(True, False), (True, True), (False, False), (False, True)])
-def test_open_project_uses_validated_hosted_route_or_local_root(hosted, replace):
+def test_open_project_uses_validated_project_route_in_hosted_and_local_modes(hosted, replace):
     result = run_js(f'hosted={json.dumps(hosted)};openWorkspaceProject(pid,{{replace:{json.dumps(replace)}}});'
                     'console.log(JSON.stringify(navigation));')
     assert result == [['replace' if replace else 'assign',
-                       '/p/1234567890abcdef1234567890abcdef' if hosted else '/']]
+                       '/p/1234567890abcdef1234567890abcdef']]
 
 
 @pytest.mark.parametrize('invalid', ['', '../other', '//attacker.invalid', 'bad-id'])
