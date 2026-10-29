@@ -9,17 +9,21 @@ function applyRuntimeImageInputPolicy(){
 
 const HOSTED_FIRST_DRAFT_KEY='breadmaker-hosted-first-draft';
 let hostedFirstProjectCreating=false;
+let hostedFirstProjectView='manuscript';
 function hostedBlankDraftSnapshot(){
   return {title:String($('#chapterTitle')?.innerText||'Chapter 1').replace(/\n+/g,' ').trim()||'Chapter 1',text:String($('#editor')?.innerText||'')};
 }
-async function createHostedProjectFromBlankEditor(){
+async function createHostedProjectFromBlankEditor({view}={}){
+  if(Object.hasOwn(VIEW_ROUTES,view))hostedFirstProjectView=view;
   if(hostedFirstProjectCreating)return;hostedFirstProjectCreating=true;
   const draft=hostedBlankDraftSnapshot();$('#manuscriptPaper').contentEditable='false';setSaveState('Creating…');
   try{
     const result=await api('/api/projects',{method:'POST',body:JSON.stringify({name:'Untitled Book'})});
     const projectId=String(result?.project?.id||'');if(!projectId)throw new Error('PROJECT_CREATE_ID_MISSING');
-    try{sessionStorage.setItem(HOSTED_FIRST_DRAFT_KEY,JSON.stringify({project_id:projectId,...draft}))}catch{}
-    openWorkspaceProject(projectId,{replace:true});
+    if(draft.text.trim()||draft.title!=='Chapter 1'){
+      try{sessionStorage.setItem(HOSTED_FIRST_DRAFT_KEY,JSON.stringify({project_id:projectId,...draft}))}catch{}
+    }
+    openWorkspaceProject(projectId,{replace:true,view:hostedFirstProjectView});
   }catch(error){hostedFirstProjectCreating=false;$('#manuscriptPaper').contentEditable='true';setSaveState('Not saved');toast(error.message||'Could not create project',5000)}
 }
 function bootHostedBlankProject(){
@@ -98,7 +102,7 @@ async function loadRuntimeBootstrap(){
     const health=await api('/api/health');
     if(health?.app!=='Breadmaker Editor'||health?.runtime!=='local')throw error;
     const backendVersion=String(health?.version||'');
-    console.warn('Breadmaker runtime bootstrap endpoint was unavailable; continuing with attested local capabilities.',{frontend:'10.5.64',backend:backendVersion||'unknown'});
+    console.warn('Breadmaker runtime bootstrap endpoint was unavailable; continuing with attested local capabilities.',{frontend:'10.5.65',backend:backendVersion||'unknown'});
     return {...LOCAL_RUNTIME_FALLBACK,fallback:true,backend_version:backendVersion};
   }
 }

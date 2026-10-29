@@ -16,12 +16,12 @@ function hostedProjectRoute(projectId,view='manuscript'){
   const pid=String(projectId||'').toLowerCase();if(!/^[0-9a-f]{32}$/.test(pid))return '/';
   return `/p/${pid}${VIEW_ROUTES[view]||''}`;
 }
-function openWorkspaceProject(projectId,{replace=false}={}){
+function openWorkspaceProject(projectId,{replace=false,view='manuscript'}={}){
   let path='/';
   if(runtimeSupports('hosted_projects')){
     const pid=String(projectId||'').toLowerCase();
     if(!/^[0-9a-f]{32}$/.test(pid))throw new Error('PROJECT_ROUTE_ID_INVALID');
-    path=hostedProjectRoute(pid,'manuscript');
+    path=hostedProjectRoute(pid,view);
   }
   location[replace?'replace':'assign'](path);
 }
@@ -84,6 +84,10 @@ async function hydratePrimaryWorkspace(view){
 
 $$('.main-tab').forEach(tab => tab.addEventListener('click', async () => {
   const view=tab.dataset.view,navigation=++workspaceNavigation;
+  if(state.hostedZeroProject){
+    if(view!=='manuscript'||hostedFirstProjectCreating)await createHostedProjectFromBlankEditor({view});
+    return;
+  }
   if(view!=='manuscript')cancelFullTextPreview();
   if(view!=='manuscript')await flushSave();
   await hydratePrimaryWorkspace(view);
@@ -91,6 +95,10 @@ $$('.main-tab').forEach(tab => tab.addEventListener('click', async () => {
 }));
 window.addEventListener('popstate',async()=>{
   const view=viewFromRoute(),navigation=++workspaceNavigation;
+  if(state.hostedZeroProject){
+    if(view!=='manuscript'||hostedFirstProjectCreating)await createHostedProjectFromBlankEditor({view});
+    return;
+  }
   if(view!=='manuscript')cancelFullTextPreview();
   if(view!=='manuscript')await flushSave();
   await hydratePrimaryWorkspace(view);

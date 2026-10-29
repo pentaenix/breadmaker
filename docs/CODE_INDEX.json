@@ -13929,7 +13929,7 @@
     },
     {
       "file": "static/js/core/boot.js",
-      "lines": 259,
+      "lines": 263,
       "symbols": [
         {
           "name": "applyRuntimeImageInputPolicy",
@@ -13939,67 +13939,67 @@
         {
           "name": "hostedBlankDraftSnapshot",
           "kind": "function",
-          "line": 12
+          "line": 13
         },
         {
           "name": "createHostedProjectFromBlankEditor",
           "kind": "function",
-          "line": 15
+          "line": 16
         },
         {
           "name": "bootHostedBlankProject",
           "kind": "function",
-          "line": 25
+          "line": 29
         },
         {
           "name": "restoreHostedFirstDraft",
           "kind": "function",
-          "line": 35
+          "line": 39
         },
         {
           "name": "showLeaseLost",
           "kind": "function",
-          "line": 53
+          "line": 57
         },
         {
           "name": "heartbeatLease",
           "kind": "function",
-          "line": 66
+          "line": 70
         },
         {
           "name": "loadBootUIState",
           "kind": "function",
-          "line": 76
+          "line": 80
         },
         {
           "name": "loadRuntimeBootstrap",
           "kind": "function",
-          "line": 89
+          "line": 93
         },
         {
           "name": "boot",
           "kind": "function",
-          "line": 105
+          "line": 109
         },
         {
           "name": "openRecoveryBoot",
           "kind": "function",
-          "line": 209
+          "line": 213
         },
         {
           "name": "applyCanvasConfig",
           "kind": "function",
-          "line": 220
+          "line": 224
         },
         {
           "name": "applyBootstrapData",
           "kind": "function",
-          "line": 226
+          "line": 230
         },
         {
           "name": "refresh",
           "kind": "function",
-          "line": 235
+          "line": 239
         }
       ]
     },
@@ -14355,7 +14355,7 @@
     },
     {
       "file": "static/js/core/routing.js",
-      "lines": 99,
+      "lines": 107,
       "symbols": [
         {
           "name": "reportViewRenderError",

@@ -33,7 +33,7 @@ const runtimeSupports=()=>hosted;const currentProjectIdentity=()=>state.project?
 const navigation=[];const location={assign:path=>navigation.push(['assign',path]),replace:path=>navigation.push(['replace',path])};
 const memory=new Map();const sessionStorage={getItem:key=>memory.get(key)||null,setItem:(key,value)=>memory.set(key,value),removeItem:key=>memory.delete(key)};
 const setSaveState=()=>{};const toast=()=>{};
-const api=async(path,options)=>{assert.equal(path,'/api/projects');assert.equal(options.method,'POST');creates++;return {project:{id:pid}}};
+let api=async(path,options)=>{assert.equal(path,'/api/projects');assert.equal(options.method,'POST');creates++;return {project:{id:pid}}};
 const selectChapter=async(id,save,search)=>{assert.equal(save,false);assert.equal(search,false);state.viewMode='chapter';state.chapter=state.chapters.find(c=>c.id===id)};
 const markDirty=id=>assert.equal(id,state.chapter.id);
 let durable=null;
@@ -53,6 +53,48 @@ def test_open_project_uses_validated_hosted_route_or_local_root(hosted, replace)
 def test_invalid_hosted_project_cannot_navigate(invalid):
     assert run_js(f'assert.throws(()=>openWorkspaceProject({json.dumps(invalid)}),/PROJECT_ROUTE_ID_INVALID/);'
                   'console.log(JSON.stringify(navigation));') == []
+
+
+@pytest.mark.parametrize('view', ['canvas','maps','tasks','reviews'])
+def test_first_workspace_creates_project_and_routes_without_a_manuscript_draft(view):
+    result = run_js('''
+    (async()=>{
+      elements['#chapterTitle'].innerText='Chapter 1';elements['#editor'].innerText='';
+      await createHostedProjectFromBlankEditor({view:VIEW});
+      assert.equal(creates,1);assert.equal(memory.size,0);
+      console.log(JSON.stringify(navigation));
+    })().catch(e=>{console.error(e);process.exitCode=1});
+    '''.replace('VIEW',json.dumps(view)))
+    assert result == [['replace','/p/1234567890abcdef1234567890abcdef/'+view]]
+
+
+def test_first_workspace_navigation_coalesces_creation_and_honors_latest_intent():
+    result = run_js('''
+    (async()=>{
+      let release;api=async()=>{creates++;return await new Promise(resolve=>{release=resolve})};
+      const first=createHostedProjectFromBlankEditor({view:'canvas'});
+      const next=createHostedProjectFromBlankEditor({view:'tasks'});
+      assert.equal(creates,1);release({project:{id:pid}});await Promise.all([first,next]);
+      assert.equal(JSON.parse(memory.get(HOSTED_FIRST_DRAFT_KEY)).text,'Synthetic first manuscript');
+      console.log(JSON.stringify(navigation));
+    })().catch(e=>{console.error(e);process.exitCode=1});
+    ''')
+    assert result == [['replace','/p/1234567890abcdef1234567890abcdef/tasks']]
+
+
+def test_failed_first_workspace_creation_keeps_draft_and_allows_retry():
+    result = run_js('''
+    (async()=>{
+      api=async()=>{creates++;if(creates===1)throw Error('synthetic rejection');return {project:{id:pid}}};
+      await createHostedProjectFromBlankEditor({view:'maps'});
+      assert.equal(elements['#manuscriptPaper'].contentEditable,'true');
+      assert.equal(hostedFirstProjectCreating,false);assert.equal(navigation.length,0);
+      assert.equal(elements['#editor'].innerText,'Synthetic first manuscript');
+      await createHostedProjectFromBlankEditor({view:'reviews'});assert.equal(creates,2);
+      console.log(JSON.stringify(navigation));
+    })().catch(e=>{console.error(e);process.exitCode=1});
+    ''')
+    assert result == [['replace','/p/1234567890abcdef1234567890abcdef/reviews']]
 
 
 @pytest.mark.parametrize('opaque', [False,True])
