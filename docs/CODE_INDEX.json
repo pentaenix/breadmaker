@@ -8751,7 +8751,7 @@
     },
     {
       "file": "src/hosted/http_auth.py",
-      "lines": 209,
+      "lines": 211,
       "symbols": []
     },
     {
@@ -14740,7 +14740,7 @@
     },
     {
       "file": "static/js/features/account/identity-platform.js",
-      "lines": 121,
+      "lines": 123,
       "symbols": [
         {
           "name": "authText",
@@ -14765,62 +14765,62 @@
         {
           "name": "chooseLanguage",
           "kind": "function",
-          "line": 31
+          "line": 32
         },
         {
           "name": "setupPresentation",
           "kind": "function",
-          "line": 36
+          "line": 37
         },
         {
           "name": "showMessage",
           "kind": "function",
-          "line": 57
+          "line": 58
         },
         {
           "name": "hideMessage",
           "kind": "function",
-          "line": 58
+          "line": 59
         },
         {
           "name": "safeReturn",
           "kind": "function",
-          "line": 59
+          "line": 60
         },
         {
           "name": "busy",
           "kind": "function",
-          "line": 70
+          "line": 71
         },
         {
           "name": "askTotp",
           "kind": "function",
-          "line": 71
+          "line": 72
         },
         {
           "name": "requireVerifiedEmail",
           "kind": "function",
-          "line": 78
+          "line": 79
         },
         {
           "name": "requirePasswordTotp",
           "kind": "function",
-          "line": 88
+          "line": 89
         },
         {
           "name": "finish",
           "kind": "function",
-          "line": 98
+          "line": 99
         },
         {
           "name": "withBusy",
           "kind": "function",
-          "line": 105
+          "line": 106
         },
         {
           "name": "renderSocial",
           "kind": "function",
-          "line": 106
+          "line": 107
         }
       ]
     },
@@ -25049,63 +25049,63 @@
       "method": "GET",
       "function": "identity_platform_client_config",
       "file": "src/hosted/http_auth.py",
-      "line": 117,
+      "line": 119,
       "path": "/api/auth/client-config"
     },
     {
       "method": "GET",
       "function": "identity_platform_csrf",
       "file": "src/hosted/http_auth.py",
-      "line": 121,
+      "line": 123,
       "path": "/api/auth/csrf"
     },
     {
       "method": "POST",
       "function": "identity_platform_exchange",
       "file": "src/hosted/http_auth.py",
-      "line": 131,
+      "line": 133,
       "path": "/api/auth/session/exchange"
     },
     {
       "method": "GET",
       "function": "identity_platform_security_snapshot",
       "file": "src/hosted/http_auth.py",
-      "line": 156,
+      "line": 158,
       "path": "/api/auth/security"
     },
     {
       "method": "POST",
       "function": "identity_platform_security_proof",
       "file": "src/hosted/http_auth.py",
-      "line": 166,
+      "line": 168,
       "path": "/api/auth/security/proof"
     },
     {
       "method": "POST",
       "function": "identity_platform_security_sync",
       "file": "src/hosted/http_auth.py",
-      "line": 175,
+      "line": 177,
       "path": "/api/auth/security/sync"
     },
     {
       "method": "POST",
       "function": "identity_platform_logout_everywhere",
       "file": "src/hosted/http_auth.py",
-      "line": 192,
+      "line": 194,
       "path": "/api/auth/logout-everywhere"
     },
     {
       "method": "POST",
       "function": "identity_platform_logout_everywhere",
       "file": "src/hosted/http_auth.py",
-      "line": 192,
+      "line": 194,
       "path": "/api/auth/security/sign-out-everywhere"
     },
     {
       "method": "POST",
       "function": "identity_platform_selective_session_revoke",
       "file": "src/hosted/http_auth.py",
-      "line": 205,
+      "line": 207,
       "path": "/api/auth/security/session/revoke"
     },
     {

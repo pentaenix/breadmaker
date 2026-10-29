@@ -1,7 +1,7 @@
 import {
   identityClient,signInProvider,signInEmail,createEmailAccount,sendVerification,reloadUser,
   sendPasswordReset,enrolledTotp,beginTotpEnrollment,exchangeServerSession,signOutClient
-} from './identity-platform-client.js?v=10.5.66';
+} from './identity-platform-client.js?v=10.5.67';
 
 const $=selector=>document.querySelector(selector);
 const message=$('#identityMessage'),totp=$('#identityTotp'),social=$('#identitySocial');
@@ -23,6 +23,7 @@ function setMode(value){
   signup=!!value;hideMessage();
   label('#identityHeading',signup?'auth.signup.title':'auth.login.title',signup?'Create your account':'Login');
   label('#identityEmailSignIn',signup?'auth.signup.submit':'auth.login.submit',signup?'Create account':'Sign in');
+  label('#identitySocialDivider span',signup?'auth.signup.or_social':'auth.login.or_social',signup?'Or sign up with':'Or sign in with');
   label('#identityModePrompt',signup?'auth.signup.have_account':'auth.login.no_account',signup?'Already have an account?':'Don’t have an account?');
   for(const selector of ['#identityHeaderMode','#identityEmailSignUp'])label(selector,signup?'auth.login.action':'auth.signup.action',signup?'Log in':'Sign up');
   $('#identityPassword').autocomplete=signup?'new-password':'current-password';
@@ -105,8 +106,9 @@ async function finish(user,{passwordAccount=false}={}){
 async function withBusy(fn){hideMessage();busy(true);try{await fn()}catch(error){try{await signOutClient()}catch{};const text=error?.message||'Sign-in failed.';showMessage(text.includes('PRIVATE_ALPHA_')?'This account is not approved for Breadmaker access.':text,'error')}finally{busy(false)}}
 async function renderSocial(){
   const {config}=await identityClient();const buttons=[];
-  if(config.providers.google)buttons.push('<button type="button" data-provider="google" class="provider"><span>G</span>Continue with Google</button>');
-  buttons.push(`<button type="button" data-provider="apple" class="provider"${config.providers.apple?'':' disabled aria-disabled="true" data-provider-unavailable="true"'}><span></span>Continue with Apple</button>`);
+  // Official artwork served locally: https://developers.google.com/identity/branding-guidelines
+  if(config.providers.google)buttons.push('<button type="button" data-provider="google" class="provider"><img class="identity-provider-icon" src="/static/google_signin_logo.png" width="20" height="20" alt="" aria-hidden="true"><span>Continue with Google</span></button>');
+  buttons.push(`<button type="button" data-provider="apple" class="provider"${config.providers.apple?'':' disabled aria-disabled="true" data-provider-unavailable="true"'}><span class="identity-provider-icon identity-apple-icon" aria-hidden="true"></span><span>Continue with Apple</span></button>`);
   social.innerHTML=buttons.join('');
   social.querySelectorAll('[data-provider]:not(:disabled)').forEach(button=>button.onclick=()=>withBusy(async()=>{const result=await signInProvider(button.dataset.provider,askTotp);await finish(result.user)}));
 }

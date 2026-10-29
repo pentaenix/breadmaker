@@ -80,10 +80,31 @@ def auth_browser(home, *, admitted=True):
             page.close()
 
 
+def assert_social_row(page):
+    google=page.locator('[data-provider=google]');apple=page.locator('[data-provider=apple]')
+    one,two=google.bounding_box(),apple.bounding_box()
+    assert one and two and abs(one['y']-two['y'])<1
+    assert one['x']+one['width']<=two['x'] and abs(one['width']-two['width'])<1
+    assert one['height']>=44 and two['height']>=44
+    for button in (google,apple):
+        assert button.evaluate('(el)=>el.scrollWidth<=el.clientWidth')
+    expect(apple).to_be_disabled()
+
+
 def test_auth_original_presentation_theme_language_and_signup_are_functional(tmp_path):
     with auth_browser(tmp_path) as (page, exchanges, errors):
         expect(page.locator('#identityHeading')).to_have_text('Login')
         expect(page.locator('.identity-brand')).to_have_text('Breadmaker')
+        expect(page.locator('#identitySocialDivider')).to_have_text('Or sign in with')
+        assert_social_row(page)
+        logo=page.locator('[data-provider=google] img')
+        expect(logo).to_be_visible()
+        page.wait_for_function('()=>{const img=document.querySelector("[data-provider=google] img");return img.complete&&img.naturalWidth>0}')
+        assert logo.evaluate('(el)=>new URL(el.src).origin===location.origin')
+        assert logo.evaluate('(el)=>getComputedStyle(el).objectFit')=='contain'
+        assert logo.get_attribute('alt')==''
+        expect(page.locator('[data-provider=google]')).to_have_accessible_name('Continue with Google')
+        expect(page.locator('[data-provider=apple]')).to_have_accessible_name('Continue with Apple')
         apple = page.locator('[data-provider=apple]')
         expect(apple).to_be_visible()
         expect(apple).to_be_disabled()
@@ -96,6 +117,7 @@ def test_auth_original_presentation_theme_language_and_signup_are_functional(tmp
         page.locator('#identityHeaderMode').click()
         expect(page.locator('#identityHeading')).to_have_text('Create your account')
         expect(page.locator('#identityEmailSignIn')).to_have_text('Create account')
+        expect(page.locator('#identitySocialDivider')).to_have_text('Or sign up with')
         expect(page.locator('#identityForgotPassword')).to_be_hidden()
         expect(page.locator('#identityPassword')).to_have_attribute('autocomplete', 'new-password')
         assert not exchanges  # Signup link changes view, never creates an account.
@@ -108,10 +130,13 @@ def test_auth_original_presentation_theme_language_and_signup_are_functional(tmp
         for theme in ('dusk', 'dark', 'light'):
             page.locator('#identityTheme').click()
             expect(page.locator('html')).to_have_attribute('data-theme', theme)
+            assert page.locator('[data-provider=google]').evaluate('(el)=>getComputedStyle(el).backgroundColor')=='rgb(255, 255, 255)'
+            assert_social_row(page)
         page.locator('#identityLanguage summary').click()
         page.locator('[data-locale=es]').click()
         expect(page.locator('html')).to_have_attribute('lang', 'es')
         assert page.locator('#identityHeading').inner_text() != 'Login'
+        assert page.locator('#identitySocialDivider').inner_text() != 'Or sign in with'
         assert '{{i18n:' not in page.locator('body').inner_text()
         assert page.evaluate('localStorage.getItem("breadmaker-language")') == 'es'
         page.set_viewport_size({'width': 360, 'height': 740})
@@ -119,6 +144,7 @@ def test_auth_original_presentation_theme_language_and_signup_are_functional(tmp
         expect(page.locator('[data-provider=google]')).to_be_visible()
         expect(apple).to_be_visible()
         expect(apple).to_be_disabled()
+        assert_social_row(page)
         assert not errors
 
 

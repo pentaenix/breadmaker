@@ -30,9 +30,15 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible{o
 .identity-password{position:relative;display:block}.identity-password input{padding-right:62px}.identity-password button{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px}
 #identityForgotPassword{font-size:12px;text-align:left;justify-self:start}
 .identity-primary,.identity-totp button{min-height:44px;border:1px solid var(--text);border-radius:5px;padding:11px 14px;background:var(--text);color:var(--surface);font-size:12px;line-height:1.4}
-.identity-social{display:grid;gap:10px}.identity-social:not(:empty){margin-top:20px}
-.identity-social button{display:flex;align-items:center;gap:12px;min-height:44px;border:1px solid var(--line2);border-radius:5px;background:var(--surface);color:var(--text);padding:10px 14px;font-size:12px;text-align:left}
-.identity-social button span{display:grid;place-items:center;min-width:20px;font-size:17px;font-weight:700}.identity-social button:hover{background:var(--surface2)}
+.identity-social-divider{display:flex;align-items:center;gap:12px;margin:20px 0 14px;color:var(--muted);font-size:11px}
+.identity-social-divider::before,.identity-social-divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.identity-social{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.identity-social button{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:44px;border:1px solid var(--line2);border-radius:5px;background:var(--surface);color:var(--text);padding:10px 8px;font-size:12px;line-height:16px;text-align:center}
+.identity-social button:hover{background:var(--surface2)}
+.identity-social button[data-provider=google]{background:#fff;color:#1f1f1f;border-color:#747775}
+.identity-social button[data-provider=google]:hover{background:#f8f8f8}
+.identity-provider-icon{display:block;width:20px;height:20px;flex:none;object-fit:contain}
+.identity-apple-icon{background:currentColor;mask:url('/static/apple_signin_logo.svg') center/contain no-repeat}
 .identity-switch{margin:20px 0 0;font-size:12px;text-align:center;line-height:1.6}.identity-switch .identity-link{text-decoration:underline;text-underline-offset:2px}
 .identity-footer{margin-top:18px;text-align:center;font-size:10.5px;line-height:1.4}.identity-footer a{color:var(--text);text-underline-offset:2px}
 .identity-message{padding:11px 13px;border:1px solid var(--line);border-radius:5px;background:var(--surface2);margin:0 0 16px;font-size:13px;line-height:1.5;overflow-wrap:anywhere}

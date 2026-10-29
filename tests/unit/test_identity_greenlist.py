@@ -192,10 +192,11 @@ def test_login_shell_removes_requested_copy_and_preserves_auth_controls():
     exec(compile(ast.Module(body=[node], type_ignores=[]), '<login-shell>', 'exec'), namespace)
     response = namespace['identity_platform_login_shell']()
     html = response.body.decode()
-    for absent in ('Private Alpha', 'Private-alpha', 'identityInvite', 'identity-divider',
+    for absent in ('Private Alpha', 'Private-alpha', 'identityInvite',
                    'Your provider proves', 'Provider credentials and authenticator secrets'):
         assert absent not in html
-    for present in ('identitySocial', 'identityEmail', 'identityPassword', 'identityTotp', 'identityForgotPassword'):
+    for present in ('identitySocial', 'identitySocialDivider', 'auth.login.or_social',
+                    'identityEmail', 'identityPassword', 'identityTotp', 'identityForgotPassword'):
         assert present in html
     assert response.headers['cache-control'] == 'no-store'
     js = (root / 'static/js/features/account/identity-platform.js').read_text()
