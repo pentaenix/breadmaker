@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import BoundedSemaphore
 from time import perf_counter
 from typing import Any, Mapping
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 from fastapi import APIRouter, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
@@ -41,7 +41,8 @@ _read_cache_capacity=CapacityLimiter(1)
 _bundled_book_capacity=BoundedSemaphore(2)
 
 _PROJECT_PATH_RE=re.compile(r'^/api/projects/([0-9a-f]{32})(?:/|$)')
-_SHELL_PROJECT_RE=re.compile(r'^/p/([0-9a-f]{32})(?:/|$)')
+_SHELL_PROJECT_RE=re.compile(r'^/p/[0-9a-f]{32}(?:/(?:canvas|maps|tasks|reviews))?/?$')
+_SHELL_PATHS={'/','/canvas','/maps','/tasks','/reviews'}
 _PUBLIC_API={'/api/runtime','/api/health','/api/auth/session','/api/auth/logout','/api/auth/csrf','/api/auth/client-config','/api/auth/session/exchange','/api/features','/api/metro-view-config','/api/locales'}
 
 
@@ -80,6 +81,14 @@ def _json_public(value: Any) -> Any:
     if isinstance(value,dict):return {str(k):_json_public(v) for k,v in value.items() if not str(k).startswith('_bm_')}
     if isinstance(value,list):return [_json_public(v) for v in value]
     return value
+
+
+def _login_redirect(request: Request) -> RedirectResponse:
+    path=canonical_request_path(request)
+    target=path if path in _SHELL_PATHS or _SHELL_PROJECT_RE.fullmatch(path) else '/'
+    if request.url.query:target+='?'+request.url.query
+    return RedirectResponse(f'/auth/login?return_to={quote(target,safe="/")}',status_code=303,
+                            headers={'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'})
 
 
 def _error(exc: Exception) -> HTTPException:
@@ -172,7 +181,21 @@ async def hosted_request_boundary(request: Request, call_next):
                         response.headers['Cache-Control']='private, no-store'
                     return response
     except AuthenticationError:
-        return JSONResponse({'detail':'AUTHENTICATION_REQUIRED'},status_code=401)
+        if request.method.upper() in {'GET','HEAD'} and (path in _SHELL_PATHS or _SHELL_PROJECT_RE.fullmatch(path)):
+            response=_login_redirect(request)
+        elif request.method.upper() in {'GET','HEAD'} and path=='/auth/login':
+            # An invalid cookie must not trap the public login page behind a 401.
+            # Clear it before retrying the same local login URL (not return_to).
+            target='/auth/login'+('?' + request.url.query if request.url.query else '')
+            response=RedirectResponse(target,status_code=303,
+                                      headers={'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'})
+        else:
+            response=JSONResponse({'detail':'AUTHENTICATION_REQUIRED'},status_code=401,
+                                  headers={'Cache-Control':'private, no-store'})
+        if token:
+            response.delete_cookie(runtime.sessions.cookie_name,path='/',
+                                   secure=getattr(runtime.sessions,'cookie_secure',False),httponly=True,samesite='lax')
+        return response
     except (AuthorizationError,ProjectUnavailable,HostedAuthorizationError):
         return JSONResponse({'detail':'PROJECT_NOT_FOUND'},status_code=404,headers={'Cache-Control':'private, no-store'})
     except HostedValidationError as exc:
@@ -201,11 +224,9 @@ def install_request_boundary(app: FastAPI) -> None:
 @platform_router.get('/p/{project_id}/maps',response_class=HTMLResponse)
 @platform_router.get('/p/{project_id}/tasks',response_class=HTMLResponse)
 @platform_router.get('/p/{project_id}/reviews',response_class=HTMLResponse)
-def hosted_shell(project_id: str=''):
+def hosted_shell(request: Request, project_id: str=''):
     if runtime.sessions.requires_authentication and runtime.sessions.current() is None:
-        from urllib.parse import quote
-        target='/' if not project_id else f'/p/{project_id}'
-        return RedirectResponse(f'/auth/login?return_to={quote(target,safe="/")}',status_code=303,headers={'Cache-Control':'no-store','Referrer-Policy':'no-referrer'})
+        return _login_redirect(request)
     if project_id:
         try:runtime.identity.current_actor(require_project_id(project_id),require_membership=True)
         except Exception as exc:raise HTTPException(404,detail='PROJECT_NOT_FOUND') from exc
