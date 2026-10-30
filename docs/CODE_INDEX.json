@@ -11002,6 +11002,47 @@
       ]
     },
     {
+      "file": "src/hosted/narration/__init__.py",
+      "lines": 1,
+      "symbols": []
+    },
+    {
+      "file": "src/hosted/narration/transfers.py",
+      "lines": 225,
+      "symbols": [
+        {
+          "name": "TransferDenied",
+          "kind": "class",
+          "line": 23
+        },
+        {
+          "name": "TransferPolicy",
+          "kind": "class",
+          "line": 32
+        },
+        {
+          "name": "TransferPermit",
+          "kind": "class",
+          "line": 51
+        },
+        {
+          "name": "_integer",
+          "kind": "function",
+          "line": 62
+        },
+        {
+          "name": "_paths",
+          "kind": "function",
+          "line": 68
+        },
+        {
+          "name": "NarrationTransferBudget",
+          "kind": "class",
+          "line": 73
+        }
+      ]
+    },
+    {
       "file": "src/hosted/operator_identity_review.py",
       "lines": 69,
       "symbols": [
