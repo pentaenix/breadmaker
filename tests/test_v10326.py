@@ -41,6 +41,8 @@ def test_v10326_schema_42_is_current_only_with_no_pre_alpha_migration_path():
 
 
 def test_v10326_hosted_project_routes_are_stable_and_project_explorer_is_not_added():
+    from tests.unit.test_hosted_first_draft import run_js
+
     routes=(ROOT/'static/js/core/routing.js').read_text(encoding='utf-8')
     boot=(ROOT/'static/js/core/boot.js').read_text(encoding='utf-8')
     runtime_routes=(ROOT/'src/backend/runtime_routes.py').read_text(encoding='utf-8')
@@ -50,7 +52,22 @@ def test_v10326_hosted_project_routes_are_stable_and_project_explorer_is_not_add
     for suffix in ('canvas','maps','tasks','reviews'):
         assert f'/p/{{project_id}}/{suffix}' in runtime_routes
     assert '/p/{project_id}' in runtime_routes
-    assert "bootHostedBlankProject()" in boot
+    # Exercise the blank-project handoff instead of freezing its call arguments.
+    # The real browser contracts also verify the durable POST and canonical reload.
+    navigation=run_js('''
+    globalThis.document={body:{classList:{add(){}}},documentElement:{removeAttribute(){}}};
+    elements['#manuscriptView']={classList:{add(){}}};
+    elements['#manuscriptPaper'].addEventListener=()=>{};
+    elements['#editor'].focus=()=>{};
+    elements['#chapterTitle'].innerText='Chapter 1';elements['#editor'].innerText='';
+    (async()=>{
+      await bootHostedBlankProject({persist:true});
+      assert.equal(creates,1);assert.equal(memory.size,0);
+      assert.equal(elements['#manuscriptPaper'].contentEditable,'false');
+      console.log(JSON.stringify(navigation));
+    })().catch(e=>{console.error(e);process.exitCode=1});
+    ''')
+    assert navigation==[['replace','/p/1234567890abcdef1234567890abcdef']]
     assert "createHostedProjectFromBlankEditor" in boot
     assert "sessionStorage.setItem(HOSTED_FIRST_DRAFT_KEY" in boot
     assert "openWorkspaceProject" in lifecycle
