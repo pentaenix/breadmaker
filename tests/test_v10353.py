@@ -241,7 +241,23 @@ def test_v10353_hosted_route_boundary_covers_every_current_local_product_route()
                 path = decorator.args[0]
                 if isinstance(path, ast.Constant) and isinstance(path.value, str):
                     actual.add((method, path.value))
-    assert expected <= actual, sorted(expected - actual)
+    # Narration is explicitly local-only until the Cloud agent supplies its
+    # authorized adapter. Keep every existing hosted coverage requirement, and
+    # enumerate (never prefix-ignore) the eight deliberately disabled routes.
+    # test_v10566_narration proves all eight reject hosted/hosted_dev requests
+    # before parsing bodies or accessing the local cache.
+    local_only={
+        ('GET','/api/narrations'),('POST','/api/narrations'),
+        ('DELETE','/api/narrations/{record_id}'),
+        ('POST','/api/narrations/{record_id}/restore'),
+        ('GET','/api/narrations/{record_id}/audio'),
+        ('GET','/api/narration-voices'),
+        ('POST','/api/narration-voices/{voice_id}/download'),
+        ('POST','/api/narration-pronunciation'),
+    }
+    assert local_only <= expected
+    assert not local_only & actual, 'Hosted narration activation requires an explicit adapter/security review'
+    assert expected-local_only <= actual, sorted(expected-local_only-actual)
 
 
 def test_v10353_hosted_identity_platform_surface_is_cloud_only_and_preserves_security_routes():

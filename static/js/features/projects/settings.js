@@ -19,6 +19,52 @@ async function openLocalHistoryRetention(onDismiss=null){
   $('#localHistoryRetentionSave').onclick=async()=>{try{await api('/api/history/retention',{method:'PUT',body:JSON.stringify({value:$('#localHistoryRetention').value})});toast(i18nText('history.retention_saved'));closeModal();onDismiss?.()}catch(error){toast(error?.message||i18nText('history.retention_save_failed'),4200)}};
 }
 
+async function openNarrationSettings(onDismiss=null){
+  try{
+    const value=await loadNarrationPreferences(),pid=currentProjectIdentity();
+    const toggle=(key,title,help)=>`<div class="project-settings-switch-row"><span class="project-settings-switch-copy"><b>${escapeHtml(i18nText(title))}</b><small>${escapeHtml(i18nText(help))}</small></span><button class="structure-switch ${value[key]?'active':''}" data-narration-setting="${key}" type="button" role="switch" aria-checked="${value[key]}" aria-label="${escapeHtml(i18nText(title))}"><span aria-hidden="true"></span></button></div>`;
+    const section=(title,body)=>`<section class="project-settings-section"><h3 class="project-settings-section-title">${escapeHtml(i18nText(title))}</h3>${body}</section>`;
+    showModal(i18nText('narration.title'),`<div class="narration-settings-form">
+      ${section('narration.voices',`<div class="narration-settings-voice"><div class="field"><label for="narrationSettingsVoice">${escapeHtml(i18nText('narration.voice'))}</label><span class="narration-select"><select id="narrationSettingsVoice">${$('#narrationVoice').innerHTML}</select><svg class="view-menu-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg></span></div><button id="narrationSettingsMoreVoices" class="soft-button" type="button">${escapeHtml(i18nText('narration.more_voices'))}</button></div>${toggle('showAllLanguages','narration.show_all_languages','narration.show_all_languages_help')}`)}
+      ${section('narration.playback_settings',`<div class="narration-settings-grid">
+      <div class="field"><label for="narrationSettingsSpeed">${escapeHtml(i18nText('narration.default_speed'))}</label><span class="narration-select"><select id="narrationSettingsSpeed">${NARRATION_SPEEDS.map(speed=>`<option value="${speed}">${speed}×</option>`).join('')}</select><svg class="view-menu-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg></span><small class="small-muted">${escapeHtml(i18nText('narration.pacing_help'))}</small></div>
+      <div class="field"><label for="narrationSettingsPitch">${escapeHtml(i18nText('narration.pitch'))}</label><span class="narration-select"><select id="narrationSettingsPitch">${NARRATION_PITCHES.map(pitch=>`<option value="${pitch}">${pitch>0?'+':''}${pitch}</option>`).join('')}</select><svg class="view-menu-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg></span><small class="small-muted">${escapeHtml(i18nText('narration.pitch_help'))}</small></div></div>
+      ${toggle('autoplay','narration.autoplay','narration.autoplay_help')}${toggle('continueChapters','narration.continue_chapters','narration.continue_help')}
+      <button id="narrationSettingsExport" class="soft-button" type="button">${escapeHtml(i18nText('narration.export_audio'))}</button>`)}
+      ${section('narration.generation_settings',`
+      <div class="field"><label for="narrationSettingsPace">${escapeHtml(i18nText('narration.generation_pace'))}</label><span class="narration-select"><select id="narrationSettingsPace">${NARRATION_PACES.map(pace=>`<option value="${pace}">${pace}×</option>`).join('')}</select><svg class="view-menu-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg></span><small class="small-muted">${escapeHtml(i18nText('narration.generation_pace_help'))}</small></div>
+      ${toggle('punctuationPauses','narration.punctuation_pauses','narration.punctuation_pauses_help')}`)}
+      ${section('narration.highlight_settings',toggle('passage','narration.highlight_passage','narration.highlight_passage_help')+toggle('word','narration.highlight_word','narration.highlight_word_help'))}
+      ${section('narration.performance_settings',toggle('gpu','narration.gpu','narration.gpu_help')+'<small id="narrationSettingsBackend" class="small-muted" role="status"></small>'+toggle('earlyPlayback','narration.early','narration.early_help'))}
+      <p class="small-muted">${escapeHtml(i18nText('narration.settings_help'))}</p><p id="narrationSettingsBusy" class="small-muted ${narration.busy?'':'hidden'}">${escapeHtml(i18nText('narration.settings_busy'))}</p></div>`,
+      `<button id="narrationSettingsCancel" class="soft-button">${escapeHtml(i18nSource('Cancel'))}</button><button id="narrationSettingsSave" class="soft-button" ${narration.busy?'disabled':''}>${escapeHtml(i18nSource('Save'))}</button>`,onDismiss);
+    $('#narrationSettingsVoice').value=narrationEffectiveVoice();$('#narrationSettingsSpeed').value=String(value.speed);$('#narrationSettingsPace').value=String(value.generationPace);$('#narrationSettingsPitch').value=String(value.pitch);syncNarrationBackend();
+    const exportContext={chapterId:String(state.chapter?.id||narrationChapterSources()[0]?.chapter_id||''),documentId:state.activeDocumentId},selection=narration.selection.map(source=>({...source}));
+    $('#narrationSettingsExport').onclick=()=>openNarrationExportSettings(exportContext,selection);
+    $('#narrationSettingsMoreVoices').onclick=openNarrationVoiceSettings;
+    $('#narrationSettingsCancel').onclick=()=>closeModal();
+    for(const button of $$('[data-narration-setting]'))button.onclick=()=>{const next=button.getAttribute('aria-checked')!=='true';button.setAttribute('aria-checked',String(next));button.classList.toggle('active',next);if(button.dataset.narrationSetting==='showAllLanguages'){const select=$('#narrationSettingsVoice'),current=select.value;select.innerHTML=narrationVoiceOptions(narrationLanguageVoices(narrationVoiceCatalog.value.voices.filter(voice=>value.visibleVoices.includes(voice.id)),next));applyI18n(select);select.value=[...select.options].some(option=>option.value===current&&!option.disabled)?current:narrationEffectiveVoice({...value,showAllLanguages:next})}};
+    $('#narrationSettingsSave').onclick=async()=>{
+      if(narration.busy||pid!==currentProjectIdentity())return;const button=$('#narrationSettingsSave');button.disabled=true;button.dataset.saving='1';
+      const patch={voice:$('#narrationSettingsVoice').value,speed:Number($('#narrationSettingsSpeed').value),generationPace:Number($('#narrationSettingsPace').value),pitch:Number($('#narrationSettingsPitch').value)};for(const toggle of $$('[data-narration-setting]'))patch[toggle.dataset.narrationSetting]=toggle.getAttribute('aria-checked')==='true';
+      try{await narration.audio.setPitch(patch.pitch);await saveNarrationPreferences(patch);if(pid!==currentProjectIdentity())return;closeModal(false);onDismiss?.()}catch(error){if(pid===currentProjectIdentity())await narration.audio.setPitch(narrationPreferences.value.pitch).catch(()=>{});delete button.dataset.saving;button.disabled=false;toast(error?.message||i18nText('narration.failed'),5000)}
+    };
+  }catch(error){toast(error?.message||i18nText('narration.failed'),5000);onDismiss?.()}
+}
+
+function openNarrationExportSettings(context,selection){
+  const pid=currentProjectIdentity(),option=(scope,key,disabled=false)=>`<option value="${scope}" ${disabled?'disabled':''}>${escapeHtml(i18nText(key))}</option>`;
+  showNestedModal(i18nText('narration.export_audio'),`<p class="small-muted">${escapeHtml(i18nText('narration.export_help'))}</p><div class="field"><label for="narrationExportScope">${escapeHtml(i18nText('narration.export_scope'))}</label><span class="narration-select"><select id="narrationExportScope">${option('selection','narration.export_selection',!selection.length)}${option('chapter','narration.export_chapter',!context.chapterId)}${option('book','narration.export_book')}</select><svg class="view-menu-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg></span></div><p id="narrationExportStatus" class="small-muted" role="status"></p>`,`<button id="narrationExportDownload" class="soft-button">${escapeHtml(i18nText('narration.export_download'))}</button>`);
+  $('#narrationExportScope').value=state.viewMode==='book'?'book':context.chapterId?'chapter':'book';
+  const button=$('#narrationExportDownload'),status=$('#narrationExportStatus');
+  button.onclick=async()=>{
+    if(pid!==currentProjectIdentity())return;button.disabled=true;
+    try{await exportNarrationAudio({...context,scope:$('#narrationExportScope').value},selection,(current,total)=>{status.textContent=i18nText('narration.export_progress',{current,total})});status.textContent=i18nText('narration.export_complete')}
+    catch(error){status.textContent=i18nText(error.message==='NARRATION_EXPORT_MISSING'?'narration.export_missing':error.message==='NARRATION_EXPORT_BUSY'?'narration.settings_busy':error.message==='NARRATION_EXPORT_SIZE'?'narration.export_too_large':'narration.failed')}
+    finally{button.disabled=false}
+  };
+}
+
 async function openProjectSettings(){
   try{state.workspace=await api('/api/workspace')}catch{}
   const recovery=state.workspace?.recovery||null,active=activeWorkspaceProject();
@@ -63,6 +109,7 @@ async function openProjectSettings(){
     <section class="project-settings-section"><div class="project-settings-section-title">{{i18n:dynamic.html.text.div.e4013e42}}</div>
       ${projectSettingsRow('settingsExperimental','Experimental Features','Choose optional unfinished tools for this project. They are off by default.')}
     </section>
+    ${state.runtime?.mode==='local'?`<section class="project-settings-section"><div class="project-settings-section-title">${escapeHtml(i18nText('narration.title'))}</div>${projectSettingsRow('settingsNarration',i18nText('narration.settings_title'),i18nText('narration.settings_description'),{translated:true})}</section>`:''}
     <section class="project-settings-section"><div class="project-settings-section-title">{{i18n:dynamic.html.text.div.a9cbf4a5}}</div>
       ${projectSettingsRow('settingsBackups',i18nText('backup.destinations_title'),i18nText('backup.destinations_description'),{translated:true})}
       ${projectSettingsRow('settingsHistoryRetention',i18nText('history.retention_title'),i18nText('history.retention_settings_description'),{translated:true})}
@@ -81,6 +128,7 @@ async function openProjectSettings(){
   $('#settingsHistory').onclick=()=>child(openHistory);
   $('#settingsBrowseProjects').onclick=()=>child(openAllProjects);
   $('#settingsExperimental').onclick=()=>child(openExperimentalFeatures);
+  if($('#settingsNarration'))$('#settingsNarration').onclick=()=>child(openNarrationSettings);
   $('#settingsBackups').onclick=()=>child(openBackups);
   $('#settingsHistoryRetention').onclick=()=>child(openLocalHistoryRetention);
   $('#settingsRecovery').onclick=()=>child(openRecovery);

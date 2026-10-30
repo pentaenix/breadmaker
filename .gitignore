@@ -46,6 +46,7 @@ verification-report*.txt
 *.pfx
 *.key
 node_modules/
+static/vendor/narration/
 playwright-report/
 test-results/
 # Never commit author content or exported review packages.

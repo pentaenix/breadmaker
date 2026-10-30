@@ -1,0 +1,8 @@
+{
+  "config.json": {"size":44,"sha256":"df34b4f930b23447cd4dc410fabfb42eb3f24e803e6c3f97d618fb359380a36f"},
+  "tokenizer.json": {"size":3497,"sha256":"77a02c8e164413299b4b4c403b14f8e0e1c1b727db4d46a09d6327b861060a34"},
+  "tokenizer_config.json": {"size":113,"sha256":"be1cb066d6ef6b074b3f15e6a6dd21ac88ff3cdaedf325f0aaed686c70f75d20"},
+  "README.md": {"size":10627,"sha256":"b8fd888b4782f4d4ae85e2f1587cafd727037f4f138f72429ef1bd5908c0e9d8"},
+  "onnx/model_quantized.onnx": {"size":92361055,"sha256":"c0c02b3299fd97c34ea92a98e6d41eaa1a739c8f77bf685aac34bd7b34c1132c"},
+  "onnx/model.onnx": {"size":325532171,"sha256":"651ea8291843a92276a4a003581a215cb07d15e47dde6fcfb1b768f9a1682054"}
+}

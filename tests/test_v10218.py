@@ -34,13 +34,17 @@ def test_v10218_route_map_records_manuscript_subdomain_owners():
     manifest=json.loads((ROOT/'src/api/route_manifest.json').read_text(encoding='utf-8'))
     manuscript=next(domain for domain in manifest['domains'] if domain['module']=='api.manuscript')
     assert manuscript['file']=='src/api/manuscript/__init__.py'
-    assert len(manuscript['routes'])==24
+    narration=[route for route in manuscript['routes'] if '/narration' in route['file']]
+    assert len(narration)==8
+    assert len(manuscript['routes'])-len(narration)==24
     files={route['file'] for route in manuscript['routes']}
     assert 'src/api/manuscript/document.py' in files
     assert 'src/api/manuscript/images.py' in files
     assert 'src/api/manuscript/chapter_structure.py' in files
     assert 'src/api/manuscript/chapters.py' in files
     assert 'src/api/manuscript/scenes.py' in files
+    for owner in ('narration.py','narration_voices.py','narration_pronunciation.py'):
+        assert 'src/api/manuscript/'+owner in files
     assert all(path.startswith('src/api/manuscript/') for path in files)
 
 

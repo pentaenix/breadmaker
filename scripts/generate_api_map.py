@@ -17,7 +17,7 @@ MODULE_ORDER=(
     'maps','workspace_tools','find_replace','checkpoints','durability','import_export',
 )
 PACKAGE_ROUTE_ORDER={
-    'manuscript':('document','images','chapter_structure','chapters','scenes'),
+    'manuscript':('document','images','chapter_structure','chapters','scenes','narration','narration_voices','narration_pronunciation'),
     'reviews':('presets','portable','reader','questionnaires','feedback','participants','markers','lifecycle'),
     'canvas':('populate','registry','versions','lifecycle','nodes','edges','structure'),
     'tasks':('lifecycle','milestones','duplication'),

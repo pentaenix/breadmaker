@@ -1,0 +1,36 @@
+name: verify-narration
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  narration-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - name: Install test and optional language dependencies
+        run: python -m pip install -r requirements-test.txt -r tools/narration/requirements-languages.txt
+      - name: Audit all installed Python packages
+        run: python -m pip_audit --strict --progress-spinner=off --desc=off
+      - name: Install pinned narration packages
+        run: |
+          node -e 'if(Number(process.versions.node.split(".")[0])<22)process.exit(1)'
+          npm install --global pnpm@11.25.0
+          pnpm --dir tools/narration install --frozen-lockfile
+          pnpm --dir tools/narration audit
+      - name: Build and verify offline CPU model assets
+        run: node tools/narration/install.mjs
+      - name: Install pinned browser test runtimes
+        run: python -m playwright install --with-deps chromium firefox webkit
+      - name: Narration behavior, dictionaries and three-browser UI checks
+        run: python tools/narration/check.py --runtime --browser chromium --browser firefox --browser webkit
+      - name: Short real-model samples, never a full-book endurance test
+        run: python tools/narration/smoke-languages.py --editor

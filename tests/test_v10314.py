@@ -18,7 +18,7 @@ EXPECTED_SECURITY_PINS={
     'Pillow':'13.0.0',
     'cryptography':'50.0.1',
     'Authlib':'1.9.1',
-    'joserfc':'1.7.5',
+    'joserfc':'1.7.6',
 }
 
 

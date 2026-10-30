@@ -38,6 +38,7 @@ def _security_headers(request:Request) -> dict[str,str]:
     # Firebase popup auth loads gapi.iframes through Google's loader. Allow only
     # its SDK paths, not arbitrary Google hosts or unsafe-inline/unsafe-eval.
     script_policy="'self'"+(f" '{_INDEX_INLINE_SCRIPT_CSP_HASH}'" if _INDEX_INLINE_SCRIPT_CSP_HASH else '')+(" https://www.gstatic.com https://apis.google.com/js/ https://apis.google.com/_/scs/" if identity_web else '')
+    if runtime.mode=='local':script_policy+=" 'wasm-unsafe-eval'"
     connect_policy="'self'"+(" https://identitytoolkit.googleapis.com https://securetoken.googleapis.com" if identity_web else '')
     frame_policy="'self'"+(" https://accounts.google.com https://appleid.apple.com https://*.firebaseapp.com https://auth.breadmaker.studio" if identity_web else '')
     headers={
@@ -49,6 +50,11 @@ def _security_headers(request:Request) -> dict[str,str]:
         'Referrer-Policy':'strict-origin' if identity_web else 'no-referrer',
         'Permissions-Policy':'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=()',
     }
+    if runtime.mode=='local':
+        # Local WASM inference may use shared-memory CPU workers. Hosted identity
+        # and cross-origin integrations keep their existing isolation policy.
+        headers['Cross-Origin-Opener-Policy']='same-origin'
+        headers['Cross-Origin-Embedder-Policy']='require-corp'
     proto=str(request.headers.get('x-forwarded-proto') or request.url.scheme or '').split(',')[0].strip().lower()
     configured_origin=str(os.environ.get('BREADMAKER_PUBLIC_ORIGIN') or '').strip().lower()
     configured_hosted_https=runtime.mode=='hosted' and configured_origin.startswith('https://')

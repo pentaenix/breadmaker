@@ -17,7 +17,7 @@ def test_v8192_manuscript_toolbar_order_bookmark_navigation_and_marker_name_cont
     direct_ids = [node.get('id') for node in toolbar.find_all(recursive=False) if node.get('id')]
     assert direct_ids == [
         'commentsBtn', 'markupBtn', 'manuscriptImageBtn', 'checkpointBtn',
-        'manuscriptReviewsBtn', 'cutsBtn', 'editorsEyeBtn',
+        'manuscriptReviewsBtn', 'cutsBtn', 'narrationBtn', 'editorsEyeBtn',
     ]
 
     assert 'viewport-bookmark-button{position:sticky;top:1px;left:1px' in css
