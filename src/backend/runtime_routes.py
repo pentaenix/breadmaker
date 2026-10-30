@@ -46,7 +46,10 @@ def index(request:Request,project_id:str=''):
             runtime.identity.current_actor(project_id,require_membership=True)
         except (identity_service.AuthorizationError,WorkspaceError) as exc:
             raise HTTPException(404,detail='PROJECT_NOT_FOUND',headers={'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}) from exc
-    return (STATIC/"index.html").read_text(encoding="utf-8")
+    source=(STATIC/"index.html").read_text(encoding="utf-8")
+    if runtime.mode=='local':
+        source=source.replace('<html lang="en">','<html lang="en" data-breadmaker-local>',1)
+    return source
 
 @router.get("/api/locales")
 def list_locales():

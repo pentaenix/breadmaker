@@ -137,7 +137,7 @@ async function boot() {
   }:null;
   const profilePromise=loadUserProfile();
   const portablePromise=api('/api/portable-review/status').catch(()=>({active:false}));
-  const workspacePromise=api('/api/workspace');
+  const workspacePromise=api('/api/workspace',routedProject?{headers:{'X-Breadmaker-Project':routedProject}}:{});
   const [,portable,workspace]=await Promise.all([profilePromise,portablePromise,workspacePromise]);
   window.breadmakerStartupProgress?.(45);
   if(portable?.active){if(portable.locked){const unlocked=await unlockPortableBreadReview(portable);if(!unlocked)return;await openPortableReviewerMode(unlocked.payload,{temporary:!!unlocked.temporary,filename:unlocked.filename||''});return}await openPortableReviewerMode(portable.payload,{temporary:!!portable.temporary,filename:portable.filename||''});return}
@@ -146,10 +146,14 @@ async function boot() {
   // metadata. Unrouted/local startup still resolves its actual project before
   // starting project reads; neither path trusts a URL as authorization.
   state.workspace=workspace;
-  if(runtimeSupports('hosted_projects')&&routedProject){
+  if(routedProject){
     const allowed=(state.workspace?.projects||[]).some(project=>String(project.id)===routedProject);
-    if(!allowed){location.replace('/?new_project=1');return}
+    if(!allowed){
+      if(runtimeSupports('hosted_projects')){location.replace('/?new_project=1');return}
+      throw new Error('Project not found or you do not have access.');
+    }
     if(String(state.workspace?.active_project_id||'')!==routedProject){
+      if(!runtimeSupports('hosted_projects'))throw new Error('Project route did not bind the requested workspace.');
       try{await api(`/api/projects/${routedProject}/activate`,{method:'POST'});state.workspace=await api('/api/workspace')}
       catch(error){if(error.status===404){location.replace('/?new_project=1');return}throw error}
     }
@@ -163,7 +167,10 @@ async function boot() {
     const fresh=!routedProject&&new URLSearchParams(location.search).get('new_project')==='1';
     if(empty||fresh){await bootHostedBlankProject({persist:true});return}
   }
-  if(runtimeSupports('hosted_projects')&&!routedProject&&state.workspace?.active_project_id){history.replaceState({breadmakerView:'manuscript'},'',hostedProjectRoute(state.workspace.active_project_id,'manuscript'))}
+  if(!routedProject&&state.workspace?.active_project_id&&['http:','https:'].includes(location.protocol)){
+    try{history.replaceState({breadmakerView:'manuscript'},'',hostedProjectRoute(state.workspace.active_project_id,'manuscript'))}
+    catch(error){console.warn('Could not canonicalize Breadmaker project route',error)}
+  }
 
   const bootView=viewFromRoute();
   // Lease acquisition is required before editing, but it does not have to serialize

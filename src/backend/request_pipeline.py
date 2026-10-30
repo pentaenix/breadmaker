@@ -83,6 +83,13 @@ def _request_project_identity(request:Request) -> str:
     not require a readable project so Project Settings and Delete All remain reachable.
     """
     path=canonical_request_path(request)
+    # Workspace discovery is normally project-free so recovery and zero-project
+    # account shells stay reachable. A routed browser tab may nevertheless bind its
+    # explicit project here; that makes the tab's selection independent from the
+    # installation-wide default without turning an omitted header into authority.
+    if path=='/api/workspace':
+        explicit=(request.headers.get('x-breadmaker-project') or request.query_params.get('project_id') or '').strip()
+        return explicit[:128] if explicit else ''
     if path in _PROJECT_CONTEXT_FREE_EXACT or any(path.startswith(prefix) for prefix in _PROJECT_CONTEXT_FREE_PREFIXES):
         return ''
     match=re.match(r'^/api/projects/([0-9a-f]{32})(?:/|$)',path)
@@ -302,6 +309,12 @@ def startup():
         _activate_project(startup_project_id); recovery_runtime.set_recovery_mode(None)
     except Exception as exc:
         storage_database.release_instance_lock()
+        # Lock contention means another healthy Breadmaker server owns this local
+        # workspace. It is not project damage and must not expose a misleading
+        # Recovery screen from a second, unusable process.
+        if isinstance(exc,RuntimeError) and str(exc)=='Another Breadmaker Editor process is already using this project folder.':
+            diagnostics.log_event("LOCAL_PROCESS_LOCK_001","Breadmaker did not start because another Editor process owns the active project.",level="ERROR",error=exc,data_safe=True)
+            raise
         occurrence=diagnostics.log_event("RECOVERY_BOOT_001","Breadmaker entered recovery mode because the active project could not be opened safely.",level="ERROR",error=exc,data_safe=True)
         active=runtime.projects.active()
         recovery_runtime.set_recovery_mode({"active_project_id":runtime.projects.active_id(),"active_project_name":active.get('name') if active else None,"diagnostic":occurrence,"message":"Breadmaker could not safely open the active project. No project data was changed."})
