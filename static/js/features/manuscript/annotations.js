@@ -8,6 +8,22 @@ function markupSelectionItems(){
   return [];
 }
 function markerCreatedSortValue(marker){const parsed=Date.parse(marker?.created_at||'');return Number.isFinite(parsed)?parsed:0}
+let markerVisibilityKey=null,hiddenMarkerIds=new Set();
+function markerIsHidden(id){
+  const key=`breadmaker-hidden-markers:${currentUserIdentity()||'user'}:${currentProjectIdentity()||'project'}`;
+  if(key!==markerVisibilityKey){
+    markerVisibilityKey=key;hiddenMarkerIds=new Set();
+    try{const ids=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(ids))hiddenMarkerIds=new Set(ids.filter(id=>typeof id==='string'))}catch{}
+  }
+  return hiddenMarkerIds.has(String(id));
+}
+function toggleMarkerVisibility(id){
+  const hidden=markerIsHidden(id);if(hidden)hiddenMarkerIds.delete(String(id));else hiddenMarkerIds.add(String(id));
+  try{localStorage.setItem(markerVisibilityKey,JSON.stringify([...hiddenMarkerIds]))}catch{}
+  hideMarkupHover();
+  $$('.markup-gutter-swatch[data-marker-id]').forEach(swatch=>swatch.classList.toggle('hidden',markerIsHidden(swatch.dataset.markerId)));
+  renderMarkers();paintMarkerHighlights();paintFindHighlights();
+}
 let markerPanelHoverTimer=null,markerPanelHoverSourceId=null;
 const MARKER_PANEL_HOVER_DELAY_MS=300;
 function hideMarkerPanelHover(){
@@ -54,6 +70,7 @@ function renderMarkers(){
   $$('[data-marker-edit]').forEach(button=>button.onclick=e=>{e.stopPropagation();openMarkerMenu(e,entityId(button.dataset.markerEdit))});
   $$('[data-marker-row]').forEach(row=>{
     const marker=state.markers.find(item=>entityId(item.id)===entityId(row.dataset.markerRow));
+    row.classList.toggle('highlights-hidden',markerIsHidden(marker.id));
     row.onmouseenter=()=>queueMarkerPanelHover(marker,row);
     row.onmouseleave=hideMarkerPanelHover;
     row.oncontextmenu=e=>{e.preventDefault();openMarkerMenu(e,entityId(row.dataset.markerRow))};
@@ -392,6 +409,7 @@ function markerColorDistance(a,b){const x=hexRgb(a),y=hexRgb(b);if(!x||!y)return
 function markerTextColor(color){return contrastRatio(color,'#202020')>=contrastRatio(color,'#ececea')?'#202020':'#ececea'}
 function suggestMarkerColor(){
   const used=state.markers.map(marker=>String(marker.color||'').toLowerCase()).filter(Boolean),usedSet=new Set(used);
+  let best=null,bestDistance=-1;
   // Golden-angle hue stepping gives an effectively unbounded sequence instead of a palette.
   // Candidates must remain visible against both manuscript surfaces and sufficiently distinct
   // from colors already used by this project.
@@ -400,10 +418,13 @@ function suggestMarkerColor(){
     if(usedSet.has(candidate))continue;
     if(contrastRatio(candidate,'#ffffff')<1.32||contrastRatio(candidate,'#222322')<1.32)continue;
     if(contrastRatio(candidate,markerTextColor(candidate))<4.5)continue;
-    if(used.length&&Math.min(...used.map(color=>markerColorDistance(candidate,color)))<48)continue;
+    const distance=used.length?Math.min(...used.map(color=>markerColorDistance(candidate,color))):Infinity;
+    if(distance>bestDistance){best=candidate;bestDistance=distance}
+    if(distance<48)continue;
     return candidate;
   }
-  return hslToHex((31+used.length*137.507764)%360,68,53);
+  if(best)return best;
+  for(let value=0;value<=usedSet.size;value++){const candidate='#'+value.toString(16).padStart(6,'0');if(!usedSet.has(candidate))return candidate}
 }
 function markerValidation(name,color,excludeId=null){
   if(!name)return i18nSource('Marker needs a name.');
@@ -420,7 +441,7 @@ function newMarkerDialog(arg=null){
   showNestedModal('New Marker',markerForm(),`<button id="createMarkerConfirm">${confirm}</button>`);wireMarkerColor();
   $('#createMarkerConfirm').onclick=async()=>{const name=$('#markerName').value.trim(),description=$('#markerDescription').value.trim(),color=$('#markerColorText').value.trim().toLowerCase(),problem=markerValidation(name,color);if(problem){toast(problem);return}let marker;try{await withStructuralUndo(`Create marker: ${name}`,async()=>{marker=await api('/api/labels',{method:'POST',body:JSON.stringify({name,description,color})})},{view:currentView(),chapterId:state.chapter?.id,canvasId:state.currentCanvas?.id})}catch(error){toast(error.message||'Marker could not be created.');return}closeModal();await refresh(false);renderMarkers();callback?.(marker);if(selected?.length){rememberMarkupMarkerUse(marker.id);await applyAnnotation('highlight',selected,marker.id,'');toast(i18nText('markup.highlighted_with',{name:marker.name}))}};
 }
-function markerMenuItems(id){return[{label:'Navigate',action:()=>navigateMarker(id)},{label:'Details',action:()=>editMarker(id)},{label:'Delete',danger:true,action:()=>editMarker(id,true)}]}
+function markerMenuItems(id){return[{label:'Navigate',action:()=>navigateMarker(id)},{label:i18nText(markerIsHidden(id)?'marker.show_highlights':'marker.hide_highlights'),action:()=>toggleMarkerVisibility(id)},{label:'Details',action:()=>editMarker(id)},{label:'Delete',danger:true,action:()=>editMarker(id,true)}]}
 function openMarkerMenu(event,id){
   hideMarkerPanelHover();const marker=state.markers.find(m=>entityId(m.id)===entityId(id));if(!marker)return;
   if(event.type==='contextmenu')openContextMenu(event.clientX,event.clientY,markerMenuItems(id));
@@ -449,17 +470,33 @@ async function applyActiveMarkupSelection(){
 }
 async function navigateMarker(id){
   const marker=state.markers.find(m=>entityId(m.id)===entityId(id));if(!marker)return;const params=new URLSearchParams({status:'open',label_id:String(id)});const annotations=(await api(`/api/annotations?${params}`)).filter(a=>a.annotation_type==='highlight');
-  if(!annotations.length)return toast(i18nText('markup.no_highlights',{name:marker.name}));state.find={hits:annotations.map(a=>({block_id:a.block_id,chapter_id:a.chapter_id,chapter_title_anchor:!a.block_id&&!!a.chapter_id,start:a.start_offset,end:a.end_offset,match:a.selected_text,chapter_title:a.chapter_title})),index:-1,query:'',navigatingMarkup:true};closeMarkupPanel();showFindNavigatorForExistingHits();navigateFind(1);
+  if(!annotations.length)return toast(i18nText('markup.no_highlights',{name:marker.name}));state.find={hits:annotations.map(a=>({block_id:a.block_id,chapter_id:a.chapter_id,chapter_title_anchor:!a.block_id&&!!a.chapter_id,start:a.start_offset,end:a.end_offset,match:a.selected_text,chapter_title:a.chapter_title,marker_body:a.body,marker_id:a.label_id})),index:-1,query:'',navigatingMarkup:true};closeMarkupPanel();showFindNavigatorForExistingHits();return navigateFind(1);
 }
 async function commentSelection(items){await beginCommentComposer(items)}
 function paintMarkerHighlights(){
-  const annotations=visibleAnnotations().filter(a=>a.annotation_type==='highlight'&&!a.stale&&a.label_color);
+  const annotations=visibleAnnotations().filter(a=>a.annotation_type==='highlight'&&!a.stale&&a.label_color&&!markerIsHidden(a.label_id));
   // CSS Custom Highlight API keeps markup semantic and leaves manuscript DOM untouched.
   if(!globalThis.CSS?.highlights)return;
   for(const name of [...CSS.highlights.keys()])if(String(name).startsWith('marker-'))CSS.highlights.delete(name);
   $$('style[id^="style-marker-"]').forEach(x=>x.remove());
   const groups=new Map();for(const annotation of annotations){if(!groups.has(annotation.label_color))groups.set(annotation.label_color,[]);groups.get(annotation.label_color).push(annotation)}
-  let index=0;for(const [color,items] of groups){const ranges=[];for(const a of items){const prose=a.block_id?$(`.manuscript-block-wrap[data-block-id="${CSS.escape(a.block_id)}"] .manuscript-block`):chapterTitleTextElement(entityId(a.chapter_id));if(!prose)continue;const r=rangeFromOffsets(prose,a.start_offset,a.end_offset);if(r)ranges.push(r)}if(!ranges.length)continue;const name=`marker-${index++}`;CSS.highlights.set(name,new Highlight(...ranges));let style=$(`#style-${name}`);if(!style){style=document.createElement('style');style.id=`style-${name}`;document.head.appendChild(style)}style.textContent=`::highlight(${name}){background:${color};color:${markerTextColor(color)}}`;}
+  let index=0;for(const [color,items] of groups){const ranges=[];for(const a of items){const prose=a.block_id?$(`.manuscript-block-wrap[data-block-id="${CSS.escape(a.block_id)}"] .manuscript-block`):chapterTitleTextElement(entityId(a.chapter_id));if(!prose)continue;const r=markerRangeFromOffsets(prose,a.start_offset,a.end_offset,a.body);if(r)ranges.push(r)}if(!ranges.length)continue;const name=`marker-${index++}`;CSS.highlights.set(name,new Highlight(...ranges));let style=$(`#style-${name}`);if(!style){style=document.createElement('style');style.id=`style-${name}`;document.head.appendChild(style)}style.textContent=`::highlight(${name}){background:${color};color:${markerTextColor(color)}}`;}
+}
+const editingMarkerOffsetCache=new WeakMap();
+function markerRangeFromOffsets(root,start,end,body=''){
+  // New automated ranges use canonical Python/code-point anchors so existing
+  // reanchoring remains correct. Translate only those to DOM UTF-16 offsets.
+  // Manual/legacy annotations keep their existing interpretation unchanged.
+  if(String(body).startsWith('editing-search/v1:')){
+    const text=root.textContent;let cached=editingMarkerOffsetCache.get(root);
+    if(!cached||cached.text!==text){
+      const offsets=new Uint32Array(text.length+1);let point=0,unit=0;
+      for(const character of text){offsets[point++]=unit;unit+=character.length}
+      offsets[point]=unit;cached={text,offsets,points:point};editingMarkerOffsetCache.set(root,cached);
+    }
+    start=cached.offsets[Math.min(cached.points,Math.max(0,start))];end=cached.offsets[Math.min(cached.points,Math.max(0,end))];
+  }
+  return rangeFromOffsets(root,start,end);
 }
 function rangeFromOffsets(root,start,end){const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let node,at=0,startNode=null,startOff=0,endNode=null,endOff=0;while((node=walker.nextNode())){const next=at+node.nodeValue.length;if(startNode===null&&start>=at&&start<=next){startNode=node;startOff=start-at}if(end>=at&&end<=next){endNode=node;endOff=end-at;break}at=next}if(!startNode||!endNode)return null;const r=document.createRange();r.setStart(startNode,startOff);r.setEnd(endNode,endOff);return r;}
 

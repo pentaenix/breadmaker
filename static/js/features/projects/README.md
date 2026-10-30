@@ -12,6 +12,8 @@ Project administration is package-owned in 10.3.5. The package keeps destructive
   Native settings/language/export selectors reuse the Manuscript View chevron with a 12px logical-end inset and reserved text padding; the wrapper does not replace native select keyboard behavior. Forced-colors mode restores the native arrow. Section padding and the audio-download action keep controls clear of divider lines; regression checks measure desktop/mobile arrow and action spacing.
 - `backups.js` — Backup Destination configuration, provider setup, retention, and backup-management UI.
 - `lifecycle.js` — experimental flags, project create/rename, package/JSON/Cuts import, metadata, destructive actions, project list, and trash.
+- `editing_search.js` — local-only experimental editing actions, existing marker
+  navigation and structural Undo orchestration; no continuous/background scan.
 - `export_recovery.js` — PDF export, project verification, and Recovery-backup UI.
 
 Do not recreate `features/projects.js` as a compatibility facade. Destructive controls remain reachable from Project Settings even when project state is unhealthy, matching Breadmaker's pre-alpha recovery rules.

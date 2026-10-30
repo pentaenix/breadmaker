@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional
-from pydantic import Field
+from typing import Optional, Literal
+from pydantic import Field, StrictInt
 from api.shared_contracts import BaseModel, Reorder
 
 class LabelCreate(BaseModel): name:str; color:str; description:str=""
@@ -13,3 +13,8 @@ class AnnotationBatch(BaseModel): annotation_type:str="highlight"; label_id:Opti
 class AnnotationClear(BaseModel): items:list[AnnotationItem]
 
 class AnnotationUpdate(BaseModel): status:Optional[str]=None; body:Optional[str]=None; label_id:Optional[int]=None
+
+class EditingSearchRequest(BaseModel):
+    scan:Literal['telling','filter','adverbs','qualifiers','wordy','redundancies','emotions']
+    tab_id:StrictInt
+    action:Literal['scan','clear','remove','recheck']='scan'

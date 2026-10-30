@@ -26,7 +26,7 @@
     },
     {
       "file": "src/api/annotations/contracts.py",
-      "lines": 15,
+      "lines": 20,
       "symbols": [
         {
           "name": "LabelCreate",
@@ -52,17 +52,112 @@
           "name": "AnnotationUpdate",
           "kind": "class",
           "line": 15
+        },
+        {
+          "name": "EditingSearchRequest",
+          "kind": "class",
+          "line": 17
+        }
+      ]
+    },
+    {
+      "file": "src/api/annotations/editing_descriptions.py",
+      "lines": 41,
+      "symbols": []
+    },
+    {
+      "file": "src/api/annotations/editing_lexicon.py",
+      "lines": 147,
+      "symbols": [
+        {
+          "name": "forms",
+          "kind": "function",
+          "line": 8
+        }
+      ]
+    },
+    {
+      "file": "src/api/annotations/editing_search.py",
+      "lines": 58,
+      "symbols": [
+        {
+          "name": "phrase_pattern",
+          "kind": "function",
+          "line": 9
+        },
+        {
+          "name": "find_matches",
+          "kind": "function",
+          "line": 20
+        }
+      ]
+    },
+    {
+      "file": "src/api/annotations/marker_colors.py",
+      "lines": 38,
+      "symbols": [
+        {
+          "name": "rgb",
+          "kind": "function",
+          "line": 6
+        },
+        {
+          "name": "contrast",
+          "kind": "function",
+          "line": 10
+        },
+        {
+          "name": "recommend_marker_color",
+          "kind": "function",
+          "line": 19
         }
       ]
     },
     {
       "file": "src/api/annotations/routes.py",
-      "lines": 233,
+      "lines": 336,
       "symbols": [
+        {
+          "name": "_editing_registry",
+          "kind": "function",
+          "line": 46
+        },
+        {
+          "name": "_editing_marker",
+          "kind": "function",
+          "line": 53
+        },
+        {
+          "name": "_remember_editing_marker",
+          "kind": "function",
+          "line": 62
+        },
+        {
+          "name": "editing_search_status",
+          "kind": "function",
+          "line": 68,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/api/annotations/editing-search"
+            }
+          ]
+        },
+        {
+          "name": "editing_search",
+          "kind": "function",
+          "line": 81,
+          "routes": [
+            {
+              "method": "POST",
+              "path": "/api/annotations/editing-search"
+            }
+          ]
+        },
         {
           "name": "create_label",
           "kind": "function",
-          "line": 37,
+          "line": 140,
           "routes": [
             {
               "method": "POST",
@@ -73,12 +168,12 @@
         {
           "name": "LabelUpdate",
           "kind": "class",
-          "line": 51
+          "line": 154
         },
         {
           "name": "update_label",
           "kind": "function",
-          "line": 53,
+          "line": 156,
           "routes": [
             {
               "method": "PATCH",
@@ -89,7 +184,7 @@
         {
           "name": "label_usage",
           "kind": "function",
-          "line": 79,
+          "line": 182,
           "routes": [
             {
               "method": "GET",
@@ -100,7 +195,7 @@
         {
           "name": "delete_label",
           "kind": "function",
-          "line": 90,
+          "line": 193,
           "routes": [
             {
               "method": "DELETE",
@@ -111,32 +206,32 @@
         {
           "name": "_validate_annotation_items",
           "kind": "function",
-          "line": 97
+          "line": 200
         },
         {
           "name": "_validate_comment_items",
           "kind": "function",
-          "line": 115
+          "line": 218
         },
         {
           "name": "_clean_comment_body",
           "kind": "function",
-          "line": 118
+          "line": 221
         },
         {
           "name": "_create_comment_thread",
           "kind": "function",
-          "line": 121
+          "line": 224
         },
         {
           "name": "_comment_payload",
           "kind": "function",
-          "line": 134
+          "line": 237
         },
         {
           "name": "create_annotations",
           "kind": "function",
-          "line": 152,
+          "line": 255,
           "routes": [
             {
               "method": "POST",
@@ -147,7 +242,7 @@
         {
           "name": "clear_highlights",
           "kind": "function",
-          "line": 166,
+          "line": 269,
           "routes": [
             {
               "method": "POST",
@@ -158,7 +253,7 @@
         {
           "name": "update_annotation",
           "kind": "function",
-          "line": 212,
+          "line": 315,
           "routes": [
             {
               "method": "PATCH",
@@ -169,7 +264,7 @@
         {
           "name": "list_annotations",
           "kind": "function",
-          "line": 224,
+          "line": 327,
           "routes": [
             {
               "method": "GET",
@@ -17351,7 +17446,7 @@
     },
     {
       "file": "static/js/features/manuscript/annotations.js",
-      "lines": 466,
+      "lines": 503,
       "symbols": [
         {
           "name": "markupSelectionItems",
@@ -17364,779 +17459,794 @@
           "line": 10
         },
         {
+          "name": "markerIsHidden",
+          "kind": "function",
+          "line": 12
+        },
+        {
+          "name": "toggleMarkerVisibility",
+          "kind": "function",
+          "line": 20
+        },
+        {
           "name": "hideMarkerPanelHover",
           "kind": "function",
-          "line": 13
+          "line": 29
         },
         {
           "name": "positionMarkerPanelHover",
           "kind": "function",
-          "line": 17
+          "line": 33
         },
         {
           "name": "queueMarkerPanelHover",
           "kind": "function",
-          "line": 26
+          "line": 42
         },
         {
           "name": "renderMarkers",
           "kind": "function",
-          "line": 37
+          "line": 53
         },
         {
           "name": "manuscriptImageWrapById",
           "kind": "function",
-          "line": 64
+          "line": 81
         },
         {
           "name": "manuscriptImageRowById",
           "kind": "function",
-          "line": 65
+          "line": 82
         },
         {
           "name": "selectedManuscriptImageRow",
           "kind": "function",
-          "line": 66
+          "line": 83
         },
         {
           "name": "imageRowWraps",
           "kind": "function",
-          "line": 67
+          "line": 84
         },
         {
           "name": "imageRowForWrap",
           "kind": "function",
-          "line": 68
+          "line": 85
         },
         {
           "name": "syncManuscriptImageRowWidth",
           "kind": "function",
-          "line": 69
+          "line": 86
         },
         {
           "name": "selectManuscriptImageRow",
           "kind": "function",
-          "line": 70
+          "line": 87
         },
         {
           "name": "bindManuscriptImageRow",
           "kind": "function",
-          "line": 71
+          "line": 88
         },
         {
           "name": "layoutManuscriptImageRows",
           "kind": "function",
-          "line": 72
+          "line": 89
         },
         {
           "name": "selectedManuscriptImageWrap",
           "kind": "function",
-          "line": 78
+          "line": 95
         },
         {
           "name": "hideManuscriptImageDescription",
           "kind": "function",
-          "line": 79
+          "line": 96
         },
         {
           "name": "imageDescriptionText",
           "kind": "function",
-          "line": 80
+          "line": 97
         },
         {
           "name": "showImageDescriptionFor",
           "kind": "function",
-          "line": 81
+          "line": 98
         },
         {
           "name": "queueImageDescriptionFor",
           "kind": "function",
-          "line": 82
+          "line": 99
         },
         {
           "name": "showManuscriptImageDescription",
           "kind": "function",
-          "line": 83
+          "line": 100
         },
         {
           "name": "queueManuscriptImageDescription",
           "kind": "function",
-          "line": 84
+          "line": 101
         },
         {
           "name": "layoutReadOnlyImageRows",
           "kind": "function",
-          "line": 85
+          "line": 102
         },
         {
           "name": "bindReadOnlyImageDescriptions",
           "kind": "function",
-          "line": 98
+          "line": 115
         },
         {
           "name": "manuscriptImageClipboardPayload",
           "kind": "function",
-          "line": 99
+          "line": 116
         },
         {
           "name": "writeManuscriptImageClipboard",
           "kind": "function",
-          "line": 100
+          "line": 117
         },
         {
           "name": "manuscriptImageBlockFromClipboard",
           "kind": "function",
-          "line": 101
+          "line": 118
         },
         {
           "name": "manuscriptImageClipboardEditingTarget",
           "kind": "function",
-          "line": 102
+          "line": 119
         },
         {
           "name": "renderManuscriptImageInspector",
           "kind": "function",
-          "line": 103
+          "line": 120
         },
         {
           "name": "clearManuscriptImageSelection",
           "kind": "function",
-          "line": 104
+          "line": 121
         },
         {
           "name": "selectManuscriptImage",
           "kind": "function",
-          "line": 105
+          "line": 122
         },
         {
           "name": "bindManuscriptImageWrap",
           "kind": "function",
-          "line": 106
+          "line": 123
         },
         {
           "name": "manuscriptImageFileAllowed",
           "kind": "function",
-          "line": 107
+          "line": 124
         },
         {
           "name": "manuscriptImageFileFromTransfer",
           "kind": "function",
-          "line": 108
+          "line": 125
         },
         {
           "name": "manuscriptTransferHasImage",
           "kind": "function",
-          "line": 109
+          "line": 126
         },
         {
           "name": "imageDropPlacement",
           "kind": "function",
-          "line": 110
+          "line": 127
         },
         {
           "name": "manuscriptImageRowBoundaryAnchor",
           "kind": "function",
-          "line": 111
+          "line": 128
         },
         {
           "name": "manuscriptImageDropAnchor",
           "kind": "function",
-          "line": 112
+          "line": 129
         },
         {
           "name": "hideManuscriptImageDropIndicator",
           "kind": "function",
-          "line": 125
+          "line": 142
         },
         {
           "name": "showManuscriptImageDropIndicator",
           "kind": "function",
-          "line": 126
+          "line": 143
         },
         {
           "name": "applyManuscriptImageDrop",
           "kind": "function",
-          "line": 127
+          "line": 144
         },
         {
           "name": "bindManuscriptImageDropTarget",
           "kind": "function",
-          "line": 139
+          "line": 156
         },
         {
           "name": "manuscriptImageEndAnchor",
           "kind": "function",
-          "line": 140
+          "line": 157
         },
         {
           "name": "showManuscriptImageEndDropIndicator",
           "kind": "function",
-          "line": 141
+          "line": 158
         },
         {
           "name": "wireManuscriptImageEndDropTarget",
           "kind": "function",
-          "line": 142
+          "line": 159
         },
         {
           "name": "manuscriptImageAnchorFromRange",
           "kind": "function",
-          "line": 144
+          "line": 161
         },
         {
           "name": "manuscriptImageInsertAnchor",
           "kind": "function",
-          "line": 145
+          "line": 162
         },
         {
           "name": "uploadManuscriptImageAsset",
           "kind": "function",
-          "line": 151
+          "line": 168
         },
         {
           "name": "insertManuscriptImageReference",
           "kind": "function",
-          "line": 152
+          "line": 169
         },
         {
           "name": "addManuscriptImageFile",
           "kind": "function",
-          "line": 153
+          "line": 170
         },
         {
           "name": "chooseManuscriptImage",
           "kind": "function",
-          "line": 154
+          "line": 171
         },
         {
           "name": "updateSelectedManuscriptImage",
           "kind": "function",
-          "line": 155
+          "line": 172
         },
         {
           "name": "closeManuscriptImagePanel",
           "kind": "function",
-          "line": 156
+          "line": 173
         },
         {
           "name": "manuscriptReviewsPanelOpen",
           "kind": "function",
-          "line": 164
+          "line": 181
         },
         {
           "name": "manuscriptReviewRoundRows",
           "kind": "function",
-          "line": 165
+          "line": 182
         },
         {
           "name": "manuscriptReviewFilteredRows",
           "kind": "function",
-          "line": 171
+          "line": 188
         },
         {
           "name": "manuscriptReviewStatusLabel",
           "kind": "function",
-          "line": 172
+          "line": 189
         },
         {
           "name": "manuscriptReviewCountText",
           "kind": "function",
-          "line": 173
+          "line": 190
         },
         {
           "name": "manuscriptReviewParticipantSummary",
           "kind": "function",
-          "line": 174
+          "line": 191
         },
         {
           "name": "manuscriptReviewsLocalStateKey",
           "kind": "function",
-          "line": 175
+          "line": 192
         },
         {
           "name": "manuscriptReviewsUIValue",
           "kind": "function",
-          "line": 176
+          "line": 193
         },
         {
           "name": "persistManuscriptReviewsUI",
           "kind": "function",
-          "line": 177
+          "line": 194
         },
         {
           "name": "restoreManuscriptReviewsUI",
           "kind": "function",
-          "line": 178
+          "line": 195
         },
         {
           "name": "clearManuscriptReviewHover",
           "kind": "function",
-          "line": 179
+          "line": 196
         },
         {
           "name": "clearManuscriptReviewAnnotations",
           "kind": "function",
-          "line": 180
+          "line": 197
         },
         {
           "name": "closeManuscriptReviewsPanel",
           "kind": "function",
-          "line": 185
+          "line": 202
         },
         {
           "name": "renderManuscriptReviewsList",
           "kind": "function",
-          "line": 186
+          "line": 203
         },
         {
           "name": "manuscriptReviewRoundFeedback",
           "kind": "function",
-          "line": 196
+          "line": 213
         },
         {
           "name": "manuscriptReviewSnapshotBlockMap",
           "kind": "function",
-          "line": 197
+          "line": 214
         },
         {
           "name": "manuscriptReviewLocation",
           "kind": "function",
-          "line": 198
+          "line": 215
         },
         {
           "name": "manuscriptReviewEntryKey",
           "kind": "function",
-          "line": 199
+          "line": 216
         },
         {
           "name": "manuscriptReviewEntries",
           "kind": "function",
-          "line": 200
+          "line": 217
         },
         {
           "name": "manuscriptReviewItemLabel",
           "kind": "function",
-          "line": 205
+          "line": 222
         },
         {
           "name": "manuscriptReviewItemBody",
           "kind": "function",
-          "line": 206
+          "line": 223
         },
         {
           "name": "manuscriptReviewFeedbackCardHtml",
           "kind": "function",
-          "line": 207
+          "line": 224
         },
         {
           "name": "openManuscriptReviewWorkspace",
           "kind": "function",
-          "line": 208
+          "line": 225
         },
         {
           "name": "manuscriptReviewDetailMenuItems",
           "kind": "function",
-          "line": 209
+          "line": 226
         },
         {
           "name": "openManuscriptReviewDetailMenu",
           "kind": "function",
-          "line": 210
+          "line": 227
         },
         {
           "name": "renderManuscriptReviewDetailShell",
           "kind": "function",
-          "line": 211
+          "line": 228
         },
         {
           "name": "manuscriptReviewPayloadCacheKey",
           "kind": "function",
-          "line": 216
+          "line": 233
         },
         {
           "name": "renderManuscriptReviewDetail",
           "kind": "function",
-          "line": 217
+          "line": 234
         },
         {
           "name": "openManuscriptReviewRound",
           "kind": "function",
-          "line": 235
+          "line": 252
         },
         {
           "name": "reloadManuscriptReviewDetail",
           "kind": "function",
-          "line": 241
+          "line": 258
         },
         {
           "name": "manuscriptReviewTransitionRound",
           "kind": "function",
-          "line": 242
+          "line": 259
         },
         {
           "name": "manuscriptReviewItemFromKey",
           "kind": "function",
-          "line": 243
+          "line": 260
         },
         {
           "name": "finishManuscriptReviewSuggestion",
           "kind": "function",
-          "line": 244
+          "line": 261
         },
         {
           "name": "manuscriptReviewItemMenuItems",
           "kind": "function",
-          "line": 245
+          "line": 262
         },
         {
           "name": "openManuscriptReviewItemMenu",
           "kind": "function",
-          "line": 246
+          "line": 263
         },
         {
           "name": "selectManuscriptReviewFeedback",
           "kind": "function",
-          "line": 247
+          "line": 264
         },
         {
           "name": "navigateManuscriptReviewFeedback",
           "kind": "function",
-          "line": 248
+          "line": 265
         },
         {
           "name": "navigateToManuscriptReviewItem",
           "kind": "function",
-          "line": 249
+          "line": 266
         },
         {
           "name": "manuscriptReviewTextUnits",
           "kind": "function",
-          "line": 250
+          "line": 267
         },
         {
           "name": "manuscriptReviewBaseText",
           "kind": "function",
-          "line": 254
+          "line": 271
         },
         {
           "name": "manuscriptReviewTextPoint",
           "kind": "function",
-          "line": 255
+          "line": 272
         },
         {
           "name": "manuscriptReviewCommonPrefixLength",
           "kind": "function",
-          "line": 260
+          "line": 277
         },
         {
           "name": "manuscriptReviewCommonSuffixLength",
           "kind": "function",
-          "line": 261
+          "line": 278
         },
         {
           "name": "manuscriptReviewContextMatches",
           "kind": "function",
-          "line": 262
+          "line": 279
         },
         {
           "name": "manuscriptReviewContextBoundary",
           "kind": "function",
-          "line": 263
+          "line": 280
         },
         {
           "name": "manuscriptReviewSegmentsForItem",
           "kind": "function",
-          "line": 285
+          "line": 302
         },
         {
           "name": "manuscriptReviewRangeForItem",
           "kind": "function",
-          "line": 305
+          "line": 322
         },
         {
           "name": "manuscriptReviewEntryTouchesBlock",
           "kind": "function",
-          "line": 307
+          "line": 324
         },
         {
           "name": "manuscriptReviewCachedRange",
           "kind": "function",
-          "line": 308
+          "line": 325
         },
         {
           "name": "manuscriptReviewMarkerGroups",
           "kind": "function",
-          "line": 309
+          "line": 326
         },
         {
           "name": "manuscriptReviewItemSummary",
           "kind": "function",
-          "line": 310
+          "line": 327
         },
         {
           "name": "manuscriptReviewStatusInlineText",
           "kind": "function",
-          "line": 311
+          "line": 328
         },
         {
           "name": "manuscriptReviewHoverHtml",
           "kind": "function",
-          "line": 312
+          "line": 329
         },
         {
           "name": "positionManuscriptReviewHover",
           "kind": "function",
-          "line": 313
+          "line": 330
         },
         {
           "name": "manuscriptReviewPointNear",
           "kind": "function",
-          "line": 314
+          "line": 331
         },
         {
           "name": "manuscriptReviewZoneAt",
           "kind": "function",
-          "line": 315
+          "line": 332
         },
         {
           "name": "manuscriptReviewVirtualSource",
           "kind": "function",
-          "line": 316
+          "line": 333
         },
         {
           "name": "manuscriptReviewHoverPointerMove",
           "kind": "function",
-          "line": 317
+          "line": 334
         },
         {
           "name": "openManuscriptReviewItemMenuAt",
           "kind": "function",
-          "line": 324
+          "line": 341
         },
         {
           "name": "toggleManuscriptReviewCommentStatus",
           "kind": "function",
-          "line": 325
+          "line": 342
         },
         {
           "name": "showManuscriptReviewHover",
           "kind": "function",
-          "line": 326
+          "line": 343
         },
         {
           "name": "queueManuscriptReviewHover",
           "kind": "function",
-          "line": 327
+          "line": 344
         },
         {
           "name": "bindManuscriptReviewHover",
           "kind": "function",
-          "line": 328
+          "line": 345
         },
         {
           "name": "manuscriptReviewRecordHitZones",
           "kind": "function",
-          "line": 329
+          "line": 346
         },
         {
           "name": "manuscriptReviewAddProposalDecoration",
           "kind": "function",
-          "line": 330
+          "line": 347
         },
         {
           "name": "applyManuscriptReviewAnnotations",
           "kind": "function",
-          "line": 331
+          "line": 348
         },
         {
           "name": "scheduleManuscriptReviewAnnotations",
           "kind": "function",
-          "line": 339
+          "line": 356
         },
         {
           "name": "openManuscriptReviewQuestionsModal",
           "kind": "function",
-          "line": 340
+          "line": 357
         },
         {
           "name": "openManuscriptReviewsPanel",
           "kind": "function",
-          "line": 345
+          "line": 362
         },
         {
           "name": "openManuscriptImagePanel",
           "kind": "function",
-          "line": 346
+          "line": 363
         },
         {
           "name": "beginManuscriptImageInspectorEdit",
           "kind": "function",
-          "line": 356
+          "line": 373
         },
         {
           "name": "endManuscriptImageInspectorEdit",
           "kind": "function",
-          "line": 357
+          "line": 374
         },
         {
           "name": "previewManuscriptImageSize",
           "kind": "function",
-          "line": 358
+          "line": 375
         },
         {
           "name": "commitManuscriptImageSize",
           "kind": "function",
-          "line": 359
+          "line": 376
         },
         {
           "name": "removeManuscriptImageWrap",
           "kind": "function",
-          "line": 362
+          "line": 379
         },
         {
           "name": "removeSelectedManuscriptImage",
           "kind": "function",
-          "line": 363
+          "line": 380
         },
         {
           "name": "closeMarkupPanel",
           "kind": "function",
-          "line": 369
+          "line": 386
         },
         {
           "name": "openMarkupPanel",
           "kind": "function",
-          "line": 377
+          "line": 394
         },
         {
           "name": "hexRgb",
           "kind": "function",
-          "line": 387
+          "line": 404
         },
         {
           "name": "relativeLuminance",
           "kind": "function",
-          "line": 388
+          "line": 405
         },
         {
           "name": "contrastRatio",
           "kind": "function",
-          "line": 389
+          "line": 406
         },
         {
           "name": "hslToHex",
           "kind": "function",
-          "line": 390
+          "line": 407
         },
         {
           "name": "markerColorDistance",
           "kind": "function",
-          "line": 391
+          "line": 408
         },
         {
           "name": "markerTextColor",
           "kind": "function",
-          "line": 392
+          "line": 409
         },
         {
           "name": "suggestMarkerColor",
           "kind": "function",
-          "line": 393
+          "line": 410
         },
         {
           "name": "markerValidation",
           "kind": "function",
-          "line": 408
+          "line": 429
         },
         {
           "name": "markerForm",
           "kind": "function",
-          "line": 416
+          "line": 437
         },
         {
           "name": "wireMarkerColor",
           "kind": "function",
-          "line": 417
+          "line": 438
         },
         {
           "name": "newMarkerDialog",
           "kind": "function",
-          "line": 418
+          "line": 439
         },
         {
           "name": "markerMenuItems",
           "kind": "function",
-          "line": 423
+          "line": 444
         },
         {
           "name": "openMarkerMenu",
           "kind": "function",
-          "line": 424
+          "line": 445
         },
         {
           "name": "editMarker",
           "kind": "function",
-          "line": 429
+          "line": 450
         },
         {
           "name": "ensureSavedSelection",
           "kind": "function",
-          "line": 430
+          "line": 451
         },
         {
           "name": "annotationPayloadItem",
           "kind": "function",
-          "line": 431
+          "line": 452
         },
         {
           "name": "applyAnnotation",
           "kind": "function",
-          "line": 432
+          "line": 453
         },
         {
           "name": "clearMarkerHighlights",
           "kind": "function",
-          "line": 433
+          "line": 454
         },
         {
           "name": "useClearMarkers",
           "kind": "function",
-          "line": 434
+          "line": 455
         },
         {
           "name": "useMarker",
           "kind": "function",
-          "line": 439
+          "line": 460
         },
         {
           "name": "markerSelectionKey",
           "kind": "function",
-          "line": 446
+          "line": 467
         },
         {
           "name": "applyActiveMarkupSelection",
           "kind": "function",
-          "line": 447
+          "line": 468
         },
         {
           "name": "navigateMarker",
           "kind": "function",
-          "line": 450
+          "line": 471
         },
         {
           "name": "commentSelection",
           "kind": "function",
-          "line": 454
+          "line": 475
         },
         {
           "name": "paintMarkerHighlights",
           "kind": "function",
-          "line": 455
+          "line": 476
+        },
+        {
+          "name": "markerRangeFromOffsets",
+          "kind": "function",
+          "line": 486
         },
         {
           "name": "rangeFromOffsets",
           "kind": "function",
-          "line": 464
+          "line": 501
         }
       ]
     },
@@ -19476,7 +19586,7 @@
     },
     {
       "file": "static/js/features/manuscript/rendering.js",
-      "lines": 481,
+      "lines": 482,
       "symbols": [
         {
           "name": "newTempId",
@@ -19606,277 +19716,277 @@
         {
           "name": "visibleNoteThreadGroups",
           "kind": "function",
-          "line": 108
+          "line": 109
         },
         {
           "name": "scheduleCommentRailLayout",
           "kind": "function",
-          "line": 113
+          "line": 114
         },
         {
           "name": "cancelCommentRailHoverHide",
           "kind": "function",
-          "line": 114
+          "line": 115
         },
         {
           "name": "scheduleCommentRailHoverHide",
           "kind": "function",
-          "line": 115
+          "line": 116
         },
         {
           "name": "noteThreadFromMarker",
           "kind": "function",
-          "line": 116
+          "line": 117
         },
         {
           "name": "positionCommentHoverCard",
           "kind": "function",
-          "line": 117
+          "line": 118
         },
         {
           "name": "commentMarkerHoverKey",
           "kind": "function",
-          "line": 136
+          "line": 137
         },
         {
           "name": "queueCommentMarkerHover",
           "kind": "function",
-          "line": 137
+          "line": 138
         },
         {
           "name": "showCommentMarkerHover",
           "kind": "function",
-          "line": 142
+          "line": 143
         },
         {
           "name": "noteMarkerItemsForBlock",
           "kind": "function",
-          "line": 153
+          "line": 154
         },
         {
           "name": "renderNoteGutterMarker",
           "kind": "function",
-          "line": 157
+          "line": 158
         },
         {
           "name": "renderEditor",
           "kind": "function",
-          "line": 163
+          "line": 164
         },
         {
           "name": "bookDOMSelection",
           "kind": "function",
-          "line": 171
+          "line": 172
         },
         {
           "name": "retainBookDOM",
           "kind": "function",
-          "line": 178
+          "line": 179
         },
         {
           "name": "restoreBookDOM",
           "kind": "function",
-          "line": 186
+          "line": 187
         },
         {
           "name": "renderBookEditor",
           "kind": "function",
-          "line": 192
+          "line": 193
         },
         {
           "name": "renderSceneEditor",
           "kind": "function",
-          "line": 209
+          "line": 210
         },
         {
           "name": "orderedBookBlocks",
           "kind": "function",
-          "line": 218
+          "line": 219
         },
         {
           "name": "renderSceneGapEditor",
           "kind": "function",
-          "line": 219
+          "line": 220
         },
         {
           "name": "selectScene",
           "kind": "function",
-          "line": 229
+          "line": 230
         },
         {
           "name": "loadBookData",
           "kind": "function",
-          "line": 236
+          "line": 237
         },
         {
           "name": "remember",
           "kind": "function",
-          "line": 238
+          "line": 239
         },
         {
           "name": "active",
           "kind": "function",
-          "line": 239
+          "line": 240
         },
         {
           "name": "worker",
           "kind": "function",
-          "line": 265
+          "line": 266
         },
         {
           "name": "selectSceneGap",
           "kind": "function",
-          "line": 284
+          "line": 285
         },
         {
           "name": "findIsOpen",
           "kind": "function",
-          "line": 290
+          "line": 291
         },
         {
           "name": "syncFindScopeLabel",
           "kind": "function",
-          "line": 292
+          "line": 293
         },
         {
           "name": "refreshFindForContext",
           "kind": "function",
-          "line": 293
+          "line": 294
         },
         {
           "name": "selectChapter",
           "kind": "function",
-          "line": 294
+          "line": 295
         },
         {
           "name": "loadChapterData",
           "kind": "function",
-          "line": 302
+          "line": 303
         },
         {
           "name": "task",
           "kind": "function",
-          "line": 310
+          "line": 311
         },
         {
           "name": "clearManuscriptReadCache",
           "kind": "function",
-          "line": 342
+          "line": 343
         },
         {
           "name": "cancelFullTextPreview",
           "kind": "function",
-          "line": 351
+          "line": 352
         },
         {
           "name": "fullTextLoadingIndicator",
           "kind": "function",
-          "line": 352
+          "line": 353
         },
         {
           "name": "fullTextPreview",
           "kind": "function",
-          "line": 353
+          "line": 354
         },
         {
           "name": "openWholeBook",
           "kind": "function",
-          "line": 368
+          "line": 369
         },
         {
           "name": "captureManuscriptViewport",
           "kind": "function",
-          "line": 377
+          "line": 378
         },
         {
           "name": "restoreManuscriptViewport",
           "kind": "function",
-          "line": 385
+          "line": 386
         },
         {
           "name": "manuscriptLocationPayload",
           "kind": "function",
-          "line": 391
+          "line": 392
         },
         {
           "name": "schedulePersistManuscriptLocation",
           "kind": "function",
-          "line": 398
+          "line": 399
         },
         {
           "name": "restoreManuscriptLocation",
           "kind": "function",
-          "line": 401
+          "line": 402
         },
         {
           "name": "restoreLastManuscriptLocation",
           "kind": "function",
-          "line": 413
+          "line": 414
         },
         {
           "name": "pulseBookmarkTarget",
           "kind": "function",
-          "line": 416
+          "line": 417
         },
         {
           "name": "bookmarkStartWrap",
           "kind": "function",
-          "line": 417
+          "line": 418
         },
         {
           "name": "revealBookmarkWrap",
           "kind": "function",
-          "line": 418
+          "line": 419
         },
         {
           "name": "goToBookmark",
           "kind": "function",
-          "line": 419
+          "line": 420
         },
         {
           "name": "preserveManuscriptViewport",
           "kind": "function",
-          "line": 448
+          "line": 449
         },
         {
           "name": "reloadManuscriptView",
           "kind": "function",
-          "line": 450
+          "line": 451
         },
         {
           "name": "scheduleCommentsWorkspaceSync",
           "kind": "function",
-          "line": 469
+          "line": 470
         },
         {
           "name": "manuscriptProseForStorage",
           "kind": "function",
-          "line": 470
+          "line": 471
         },
         {
           "name": "serializeWrap",
           "kind": "function",
-          "line": 474
+          "line": 475
         },
         {
           "name": "serializeSceneWrap",
           "kind": "function",
-          "line": 478
+          "line": 479
         },
         {
           "name": "wrapsForChapter",
           "kind": "function",
-          "line": 479
+          "line": 480
         },
         {
           "name": "localChapterSnapshot",
           "kind": "function",
-          "line": 480
+          "line": 481
         },
         {
           "name": "localSceneSnapshot",
           "kind": "function",
-          "line": 481
+          "line": 482
         }
       ]
     },
@@ -21909,6 +22019,42 @@
       ]
     },
     {
+      "file": "static/js/features/projects/editing_search.js",
+      "lines": 68,
+      "symbols": [
+        {
+          "name": "experimentalEditingSearchMarkup",
+          "kind": "function",
+          "line": 3
+        },
+        {
+          "name": "openEditorHighlights",
+          "kind": "function",
+          "line": 7
+        },
+        {
+          "name": "cleanup",
+          "kind": "function",
+          "line": 9
+        },
+        {
+          "name": "wireExperimentalEditingSearches",
+          "kind": "function",
+          "line": 13
+        },
+        {
+          "name": "current",
+          "kind": "function",
+          "line": 17
+        },
+        {
+          "name": "run",
+          "kind": "function",
+          "line": 21
+        }
+      ]
+    },
+    {
       "file": "static/js/features/projects/export_recovery.js",
       "lines": 52,
       "symbols": [
@@ -21946,7 +22092,7 @@
     },
     {
       "file": "static/js/features/projects/lifecycle.js",
-      "lines": 200,
+      "lines": 202,
       "symbols": [
         {
           "name": "openExperimentalFeatures",
@@ -21956,117 +22102,117 @@
         {
           "name": "openProjectCenter",
           "kind": "function",
-          "line": 10
+          "line": 12
         },
         {
           "name": "createProjectDialog",
           "kind": "function",
-          "line": 11
+          "line": 13
         },
         {
           "name": "renameCurrentProject",
           "kind": "function",
-          "line": 20
+          "line": 22
         },
         {
           "name": "importProjectPackage",
           "kind": "function",
-          "line": 31
+          "line": 33
         },
         {
           "name": "currentJsonImportContext",
           "kind": "function",
-          "line": 40
+          "line": 42
         },
         {
           "name": "beginJsonImport",
           "kind": "function",
-          "line": 44
+          "line": 46
         },
         {
           "name": "importJson",
           "kind": "function",
-          "line": 47
+          "line": 49
         },
         {
           "name": "count",
           "kind": "function",
-          "line": 53
+          "line": 55
         },
         {
           "name": "importCutsPackage",
           "kind": "function",
-          "line": 78
+          "line": 80
         },
         {
           "name": "openProjectMetadata",
           "kind": "function",
-          "line": 91
+          "line": 93
         },
         {
           "name": "row",
           "kind": "function",
-          "line": 97
+          "line": 99
         },
         {
           "name": "dangerFirstDialog",
           "kind": "function",
-          "line": 107
+          "line": 109
         },
         {
           "name": "dangerCodeDialog",
           "kind": "function",
-          "line": 111
+          "line": 113
         },
         {
           "name": "sync",
           "kind": "function",
-          "line": 118
+          "line": 120
         },
         {
           "name": "stopDeleteAllProgress",
           "kind": "function",
-          "line": 125
+          "line": 127
         },
         {
           "name": "setDeleteAllProgress",
           "kind": "function",
-          "line": 126
+          "line": 128
         },
         {
           "name": "beginDeleteAllProgress",
           "kind": "function",
-          "line": 131
+          "line": 133
         },
         {
           "name": "completeDeleteAllProgress",
           "kind": "function",
-          "line": 138
+          "line": 140
         },
         {
           "name": "failDeleteAllProgress",
           "kind": "function",
-          "line": 142
+          "line": 144
         },
         {
           "name": "runDangerDelete",
           "kind": "function",
-          "line": 148
+          "line": 150
         },
         {
           "name": "openAllProjects",
           "kind": "function",
-          "line": 186
+          "line": 188
         },
         {
           "name": "render",
           "kind": "function",
-          "line": 190
+          "line": 192
         },
         {
           "name": "openProjectTrash",
           "kind": "function",
-          "line": 198
+          "line": 200
         }
       ]
     },
@@ -23574,59 +23720,73 @@
   ],
   "routes": [
     {
+      "method": "GET",
+      "function": "editing_search_status",
+      "file": "src/api/annotations/routes.py",
+      "line": 68,
+      "path": "/api/annotations/editing-search"
+    },
+    {
+      "method": "POST",
+      "function": "editing_search",
+      "file": "src/api/annotations/routes.py",
+      "line": 81,
+      "path": "/api/annotations/editing-search"
+    },
+    {
       "method": "POST",
       "function": "create_label",
       "file": "src/api/annotations/routes.py",
-      "line": 37,
+      "line": 140,
       "path": "/api/labels"
     },
     {
       "method": "PATCH",
       "function": "update_label",
       "file": "src/api/annotations/routes.py",
-      "line": 53,
+      "line": 156,
       "path": "/api/labels/{lid}"
     },
     {
       "method": "GET",
       "function": "label_usage",
       "file": "src/api/annotations/routes.py",
-      "line": 79,
+      "line": 182,
       "path": "/api/labels/{lid}/usage"
     },
     {
       "method": "DELETE",
       "function": "delete_label",
       "file": "src/api/annotations/routes.py",
-      "line": 90,
+      "line": 193,
       "path": "/api/labels/{lid}"
     },
     {
       "method": "POST",
       "function": "create_annotations",
       "file": "src/api/annotations/routes.py",
-      "line": 152,
+      "line": 255,
       "path": "/api/annotations/batch"
     },
     {
       "method": "POST",
       "function": "clear_highlights",
       "file": "src/api/annotations/routes.py",
-      "line": 166,
+      "line": 269,
       "path": "/api/annotations/clear-highlights"
     },
     {
       "method": "PATCH",
       "function": "update_annotation",
       "file": "src/api/annotations/routes.py",
-      "line": 212,
+      "line": 315,
       "path": "/api/annotations/{aid}"
     },
     {
       "method": "GET",
       "function": "list_annotations",
       "file": "src/api/annotations/routes.py",
-      "line": 224,
+      "line": 327,
       "path": "/api/annotations"
     },
     {
@@ -27277,5 +27437,5 @@
       "path": "/api/backup-destinations/{destination_id}"
     }
   ],
-  "route_decorator_count": 529
+  "route_decorator_count": 531
 }
