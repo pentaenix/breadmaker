@@ -241,7 +241,11 @@ def test_v10353_hosted_route_boundary_covers_every_current_local_product_route()
                 path = decorator.args[0]
                 if isinstance(path, ast.Constant) and isinstance(path.value, str):
                     actual.add((method, path.value))
-    assert expected <= actual, sorted(expected - actual)
+    # This native experimental action is intentionally unavailable in hosted
+    # composition. Its handler also rejects non-local runtimes before storage.
+    local_only = {('POST', '/api/annotations/editing-search'),('GET', '/api/annotations/editing-search')}
+    assert local_only <= expected and not (local_only & actual)
+    assert expected - local_only <= actual, sorted(expected - local_only - actual)
 
 
 def test_v10353_hosted_identity_platform_surface_is_cloud_only_and_preserves_security_routes():

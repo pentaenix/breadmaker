@@ -101,6 +101,7 @@ function renderMarkupGutterSwatches(wrap,blockId,highlights){
   for(const annotation of highlights){const id=entityId(annotation.label_id);if(!id||seen.has(id))continue;seen.add(id);items.push({id,name:annotation.label_name||'Marker',color:annotation.label_color})}
   if(!items.length)return;const gutter=document.createElement('div');gutter.className='markup-gutter';gutter.contentEditable='false';gutter.dataset.blockId=blockId;
   for(const marker of items){const swatch=document.createElement('button');swatch.type='button';swatch.className='markup-gutter-swatch';swatch.style.background=marker.color;swatch.setAttribute('aria-label',i18nText('marker.highlight_aria',{name:marker.name}));swatch.onpointerdown=e=>{e.preventDefault();e.stopPropagation()};swatch.onmouseenter=()=>queueMarkupHover(marker,swatch,blockId);swatch.onmouseleave=()=>{clearTimeout(markupHoverTimer);if(markupHoverSourceKey===`${marker.id}@${blockId}`)hideMarkupHover()};swatch.onclick=e=>{e.stopPropagation();hideMarkupHover();navigateMarker(marker.id)};gutter.appendChild(swatch)}
+  for(const [index,marker] of items.entries()){const swatch=gutter.children[index];swatch.dataset.markerId=String(marker.id);swatch.classList.toggle('hidden',markerIsHidden(marker.id))}
   wrap.appendChild(gutter);
 }
 

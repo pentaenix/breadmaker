@@ -12,6 +12,10 @@ The Manuscript browser domain is split by responsibility while preserving Breadm
 - `editing.js` — block editing, selection handling, and edit interaction wiring.
 - `scenes.js` — selection actions, Scene assignment/splitting/movement, and Scene-focused editor actions.
 - `annotations.js` — Markers, annotations, Notes/comments presentation, selection markup, and related gutter behavior.
+  Stamped experimental editing results convert canonical Unicode code-point
+  anchors to DOM UTF16 ranges without changing legacy annotation interpretation.
+  Marker menu visibility is a browser-local per-user/project display preference,
+  applied to marker paint and marker-navigation paint without deleting annotations.
 - `find_replace.js` — the Manuscript inline Find/Replace navigator entry surface.
 - `imports.js` — document-tab append import, Main Manuscript import, new-project import, import destination selection, and import progress UI.
 

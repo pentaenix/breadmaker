@@ -245,6 +245,8 @@
 .marker-more{width:32px;min-width:32px;padding:0;color:var(--muted);display:grid;place-items:center;font-size:17px;line-height:1;border-radius:0;letter-spacing:0}
 .marker-more:hover{background:color-mix(in srgb,var(--text) 5%,transparent)!important;color:var(--text)}
 .marker-row.active .marker-more,.marker-row.active .marker-name{color:var(--text)}
+.marker-row.highlights-hidden .marker-name{color:var(--muted)}
+.marker-row.highlights-hidden .color-chip{filter:grayscale(1);opacity:.45}
 #newLabelBtn{flex:none}
 
 /* =========================================================

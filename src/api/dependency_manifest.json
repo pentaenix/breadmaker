@@ -892,6 +892,11 @@
           "local": "feature_call"
         },
         {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
           "module": "storage",
           "symbol": "mutations",
           "local": "storage_mutations"

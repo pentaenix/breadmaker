@@ -73,7 +73,7 @@
           "method": "GET",
           "path": "/api/identity/current",
           "function": "current_identity",
-          "line": 28,
+          "line": 31,
           "file": "src/api/project_management/workspace.py"
         },
         {
@@ -399,59 +399,73 @@
       "file": "src/api/annotations/__init__.py",
       "routes": [
         {
+          "method": "GET",
+          "path": "/api/annotations/editing-search",
+          "function": "editing_search_status",
+          "line": 68,
+          "file": "src/api/annotations/routes.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/annotations/editing-search",
+          "function": "editing_search",
+          "line": 81,
+          "file": "src/api/annotations/routes.py"
+        },
+        {
           "method": "POST",
           "path": "/api/labels",
           "function": "create_label",
-          "line": 37,
+          "line": 140,
           "file": "src/api/annotations/routes.py"
         },
         {
           "method": "PATCH",
           "path": "/api/labels/{lid}",
           "function": "update_label",
-          "line": 53,
+          "line": 156,
           "file": "src/api/annotations/routes.py"
         },
         {
           "method": "GET",
           "path": "/api/labels/{lid}/usage",
           "function": "label_usage",
-          "line": 79,
+          "line": 182,
           "file": "src/api/annotations/routes.py"
         },
         {
           "method": "DELETE",
           "path": "/api/labels/{lid}",
           "function": "delete_label",
-          "line": 90,
+          "line": 193,
           "file": "src/api/annotations/routes.py"
         },
         {
           "method": "POST",
           "path": "/api/annotations/batch",
           "function": "create_annotations",
-          "line": 152,
+          "line": 255,
           "file": "src/api/annotations/routes.py"
         },
         {
           "method": "POST",
           "path": "/api/annotations/clear-highlights",
           "function": "clear_highlights",
-          "line": 166,
+          "line": 269,
           "file": "src/api/annotations/routes.py"
         },
         {
           "method": "PATCH",
           "path": "/api/annotations/{aid}",
           "function": "update_annotation",
-          "line": 212,
+          "line": 315,
           "file": "src/api/annotations/routes.py"
         },
         {
           "method": "GET",
           "path": "/api/annotations",
           "function": "list_annotations",
-          "line": 224,
+          "line": 327,
           "file": "src/api/annotations/routes.py"
         }
       ]

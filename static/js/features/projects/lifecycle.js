@@ -3,7 +3,9 @@
 async function openExperimentalFeatures(onDismiss=null){
   let saved={};try{saved=(await api('/api/ui-state/experimental-features')).value||{}}catch{}
   const enabled=saved.map_renderer===true;
-  showModal('Experimental Features',`<p class="small-muted">{{i18n:dynamic.html.text.p.5f0fd4a2}}</p><div class="project-settings-switch-row"><span class="project-settings-switch-copy"><b>{{i18n:dynamic.html.text.b.1a61e715}}</b><small>{{i18n:dynamic.html.text.small.9731353c}}</small></span><button id="experimentalMapRenderer" class="structure-switch ${enabled?'active':''}" type="button" role="switch" aria-checked="${enabled?'true':'false'}" aria-label="{{i18n:dynamic.html.attr.aria.label.187f3524}}"><span aria-hidden="true"></span></button></div>`, '', onDismiss);
+  showModal('Experimental Features',`<p class="small-muted">{{i18n:dynamic.html.text.p.5f0fd4a2}}</p><div class="project-settings-switch-row"><span class="project-settings-switch-copy"><b>{{i18n:dynamic.html.text.b.1a61e715}}</b><small>{{i18n:dynamic.html.text.small.9731353c}}</small></span><button id="experimentalMapRenderer" class="structure-switch ${enabled?'active':''}" type="button" role="switch" aria-checked="${enabled?'true':'false'}" aria-label="{{i18n:dynamic.html.attr.aria.label.187f3524}}"><span aria-hidden="true"></span></button></div>${experimentalEditingSearchMarkup()}`, '', onDismiss);
+  const highlights=$('#experimentalEditorHighlights');
+  if(highlights)highlights.onclick=()=>{closeModal(false);openEditorHighlights(()=>openExperimentalFeatures(onDismiss))};
   const toggle=$('#experimentalMapRenderer');toggle.onclick=async()=>{const next=toggle.getAttribute('aria-checked')!=='true';toggle.setAttribute('aria-checked',String(next));toggle.classList.toggle('active',next);state.mapExperimentalFeatures={...(state.mapExperimentalFeatures||{}),map_renderer:next};await api('/api/ui-state/experimental-features',{method:'PUT',body:JSON.stringify({value:state.mapExperimentalFeatures})});applyFeatureFlags()};
 }
 // Compatibility return target for older import flows; the former Project Center is now Project Settings.

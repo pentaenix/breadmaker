@@ -8,15 +8,21 @@ canonical owner lazily to avoid import cycles.
 """
 
 from typing import Optional
+import json
 
 from fastapi import APIRouter
 
 from backend.dependencies import feature_call
+from backend.environment import runtime
 from fastapi import HTTPException
 from storage import mutations as storage_mutations
 from storage import values as storage_values
 from api.shared_contracts import BaseModel
-from .contracts import AnnotationBatch, AnnotationClear, AnnotationItem, AnnotationUpdate, LabelCreate
+from .contracts import AnnotationBatch, AnnotationClear, AnnotationItem, AnnotationUpdate, LabelCreate, EditingSearchRequest
+from .editing_lexicon import PASSES
+from .editing_search import find_matches
+from .marker_colors import recommend_marker_color
+from .editing_descriptions import DESCRIPTIONS, LEGACY_DESCRIPTION
 from backend.content import (
     VALID_ANNOTATION_TYPES,
     normalize_color,
@@ -31,6 +37,103 @@ from backend.data_access import (
 # Explicit composition-root dependencies.
 
 router = APIRouter()
+
+MAX_EDITING_CHARACTERS=5_000_000
+MAX_EDITING_BLOCK_CHARACTERS=100_000
+MAX_EDITING_MATCHES=20_000
+EDITING_REGISTRY='editing-search-markers/v1'
+
+def _editing_registry(con,pid):
+    row=one(con,'SELECT value_json FROM ui_state WHERE project_id=? AND key=?',(pid,EDITING_REGISTRY))
+    try:
+        value=json.loads(row['value_json']) if row else {}
+        return value if isinstance(value,dict) else {}
+    except (ValueError,TypeError):return {}
+
+def _editing_marker(con,pid,kind,registry):
+    saved=registry.get(kind)
+    if isinstance(saved,dict) and type(saved.get('id')) is int and isinstance(saved.get('created_at'),str):
+        marker=one(con,'SELECT * FROM markup_labels WHERE project_id=? AND id=? AND created_at=?',(pid,saved.get('id'),saved.get('created_at')))
+        if marker:return marker
+    # Ownership survives a renamed marker; names are only a fallback for reuse.
+    marker=one(con,"SELECT l.* FROM markup_labels l JOIN annotations a ON a.label_id=l.id WHERE l.project_id=? AND a.project_id=? AND a.annotation_type='highlight' AND a.body=? ORDER BY a.id LIMIT 1",(pid,pid,'editing-search/v1:'+kind))
+    return marker or one(con,'SELECT * FROM markup_labels WHERE project_id=? AND lower(trim(name))=lower(?)',(pid,PASSES[kind][0]))
+
+def _remember_editing_marker(con,pid,kind,marker,registry):
+    registry={key:value for key,value in registry.items() if key in PASSES}
+    registry[kind]={'id':marker['id'],'created_at':marker['created_at']}
+    con.execute('INSERT INTO ui_state(project_id,key,value_json,updated_at) VALUES(?,?,?,?) ON CONFLICT(project_id,key) DO UPDATE SET value_json=excluded.value_json,updated_at=excluded.updated_at',(pid,EDITING_REGISTRY,json.dumps(registry),storage_values.now()))
+
+@router.get('/api/annotations/editing-search')
+def editing_search_status(tab_id:int):
+    if runtime.mode!='local':raise HTTPException(404)
+    with storage_mutations.tx() as con:
+        pid=project(con)['id']
+        if not one(con,'SELECT id FROM document_tabs WHERE id=? AND project_id=?',(tab_id,pid)):raise HTTPException(404)
+        registry=_editing_registry(con,pid);results={}
+        for kind in PASSES:
+            marker=_editing_marker(con,pid,kind,registry)
+            count=con.execute("SELECT COUNT(*) FROM annotations WHERE project_id=? AND label_id=? AND annotation_type='highlight' AND body=? AND block_id IN (SELECT id FROM manuscript_blocks WHERE project_id=? AND tab_id=?)",(pid,marker['id'] if marker else None,'editing-search/v1:'+kind,pid,tab_id)).fetchone()[0]
+            results[kind]={'marker':marker,'matches':count}
+        return {'searches':results}
+
+@router.post('/api/annotations/editing-search')
+def editing_search(body:EditingSearchRequest):
+    """One native, atomic editing pass; existing markers/Undo own persistence."""
+    if runtime.mode!='local':raise HTTPException(404)
+    name,_=PASSES[body.scan];stamp='editing-search/v1:'+body.scan
+    with storage_mutations.tx() as con:
+        pid=project(con)['id']
+        if not one(con,'SELECT id FROM document_tabs WHERE id=? AND project_id=?',(body.tab_id,pid)):
+            raise HTTPException(404,'EDITING_SEARCH_DOCUMENT_MISSING')
+        registry=_editing_registry(con,pid)
+        marker=_editing_marker(con,pid,body.scan,registry)
+        if body.action in {'clear','remove'}:
+            if marker is None:return {'marker':None,'matches':0,'added':0,'removed':0}
+            _remember_editing_marker(con,pid,body.scan,marker,registry)
+            if body.action=='remove':
+                removed=con.execute("DELETE FROM annotations WHERE project_id=? AND label_id=? AND annotation_type='highlight'",(pid,marker['id'])).rowcount
+                con.execute('DELETE FROM markup_labels WHERE project_id=? AND id=?',(pid,marker['id']))
+                return {'marker':None,'matches':0,'added':0,'removed':removed}
+            removed=con.execute("DELETE FROM annotations WHERE project_id=? AND label_id=? AND annotation_type='highlight' AND body=? AND block_id IN (SELECT id FROM manuscript_blocks WHERE project_id=? AND tab_id=?)",(pid,marker['id'],stamp,pid,body.tab_id)).rowcount
+            return {'marker':marker,'matches':0,'added':0,'removed':removed}
+        size,largest=con.execute("SELECT COALESCE(SUM(length(text_content)),0),COALESCE(MAX(length(text_content)),0) FROM manuscript_blocks WHERE project_id=? AND tab_id=? AND block_type='paragraph'",(pid,body.tab_id)).fetchone()
+        if size>MAX_EDITING_CHARACTERS or largest>MAX_EDITING_BLOCK_CHARACTERS:raise HTTPException(413,'EDITING_SEARCH_TOO_LARGE')
+        rows=allrows(con,"SELECT b.id,b.text_content FROM manuscript_blocks b JOIN chapters c ON c.id=b.chapter_id WHERE b.project_id=? AND b.tab_id=? AND b.block_type='paragraph' ORDER BY c.position,b.position,b.id",(pid,body.tab_id))
+        matches=[]
+        for row in rows:
+            text=row['text_content'] or ''
+            for start,end in find_matches(text,body.scan):
+                matches.append((row['id'],start,end,text[start:end],text[max(0,start-45):start],text[end:end+45]))
+                if len(matches)>MAX_EDITING_MATCHES:raise HTTPException(413,'EDITING_SEARCH_TOO_MANY_MATCHES')
+        if marker is None and not matches:return {'marker':None,'matches':0,'added':0,'removed':0}
+        now=storage_values.now()
+        if marker is None:
+            color=recommend_marker_color([row['color'] for row in allrows(con,'SELECT color FROM markup_labels WHERE project_id=?',(pid,))])
+            lid=con.execute('INSERT INTO markup_labels(project_id,name,description,color,created_at,updated_at) VALUES(?,?,?,?,?,?)',(pid,name,DESCRIPTIONS[body.scan],color,now,now)).lastrowid
+            marker=one(con,'SELECT * FROM markup_labels WHERE id=?',(lid,))
+        elif marker['description']==LEGACY_DESCRIPTION and one(con,'SELECT id FROM annotations WHERE project_id=? AND label_id=? AND body=? LIMIT 1',(pid,marker['id'],stamp)):
+            # Refresh only our exact old boilerplate, never user-written copy.
+            con.execute('UPDATE markup_labels SET description=?,updated_at=? WHERE id=? AND project_id=?',(DESCRIPTIONS[body.scan],now,marker['id'],pid))
+            marker=one(con,'SELECT * FROM markup_labels WHERE id=?',(marker['id'],))
+        lid=marker['id']
+        _remember_editing_marker(con,pid,body.scan,marker,registry)
+        old=allrows(con,"SELECT * FROM annotations WHERE project_id=? AND label_id=? AND annotation_type='highlight' AND block_id IN (SELECT id FROM manuscript_blocks WHERE project_id=? AND tab_id=?)",(pid,lid,pid,body.tab_id))
+        wanted={item[:4] for item in matches}
+        existing={(a['block_id'],a['start_offset'],a['end_offset'],a['selected_text']) for a in old if a['body']!=stamp and not a['stale']}
+        removed=0
+        for annotation in old:
+            key=(annotation['block_id'],annotation['start_offset'],annotation['end_offset'],annotation['selected_text'])
+            owned=annotation['body']==stamp
+            if owned and (body.action=='recheck' or key not in wanted or annotation['stale'] or key in existing):
+                con.execute('DELETE FROM annotations WHERE id=? AND project_id=?',(annotation['id'],pid));removed+=1
+            elif not annotation['stale']:existing.add(key)
+        added=0
+        for block,start,end,selected,prefix,suffix in matches:
+            if (block,start,end,selected) in existing:continue
+            con.execute("INSERT INTO annotations(project_id,block_id,annotation_type,label_id,start_offset,end_offset,selected_text,prefix_context,suffix_context,body,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",(pid,block,'highlight',lid,start,end,selected,prefix,suffix,stamp,'open',now,now))
+            added+=1
+        return {'marker':marker,'matches':len(matches),'added':added,'removed':removed}
 
 # ---------------- Editing markers / annotations ----------------
 @router.post("/api/labels")
