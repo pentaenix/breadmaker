@@ -445,7 +445,7 @@
           "method": "POST",
           "path": "/api/narration-pronunciation",
           "function": "prepare_narration_pronunciation",
-          "line": 106,
+          "line": 25,
           "file": "src/api/manuscript/narration_pronunciation.py"
         }
       ]

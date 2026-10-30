@@ -2916,37 +2916,17 @@
     },
     {
       "file": "src/api/manuscript/narration_pronunciation.py",
-      "lines": 119,
+      "lines": 39,
       "symbols": [
         {
           "name": "PronunciationInput",
           "kind": "class",
-          "line": 24
-        },
-        {
-          "name": "_ipa",
-          "kind": "function",
-          "line": 30
-        },
-        {
-          "name": "_frontend",
-          "kind": "function",
-          "line": 37
-        },
-        {
-          "name": "_italian",
-          "kind": "function",
-          "line": 57
-        },
-        {
-          "name": "_items",
-          "kind": "function",
-          "line": 75
+          "line": 17
         },
         {
           "name": "prepare_narration_pronunciation",
           "kind": "function",
-          "line": 106,
+          "line": 25,
           "routes": [
             {
               "method": "POST",
@@ -11309,6 +11289,160 @@
       "symbols": []
     },
     {
+      "file": "src/hosted/narration/authority.py",
+      "lines": 60,
+      "symbols": [
+        {
+          "name": "NarrationAuthority",
+          "kind": "class",
+          "line": 12
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/narration/http.py",
+      "lines": 211,
+      "symbols": [
+        {
+          "name": "LeasedAudioResponse",
+          "kind": "class",
+          "line": 26
+        },
+        {
+          "name": "build_recording_router",
+          "kind": "function",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/narration/metadata.py",
+      "lines": 93,
+      "symbols": [
+        {
+          "name": "normalize",
+          "kind": "function",
+          "line": 14
+        },
+        {
+          "name": "validate_audio",
+          "kind": "function",
+          "line": 78
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/narration/models.py",
+      "lines": 100,
+      "symbols": [
+        {
+          "name": "chunk_name",
+          "kind": "function",
+          "line": 27
+        },
+        {
+          "name": "encode_manifest",
+          "kind": "function",
+          "line": 33
+        },
+        {
+          "name": "PinnedModelCatalog",
+          "kind": "class",
+          "line": 37
+        },
+        {
+          "name": "NarrationModelReads",
+          "kind": "class",
+          "line": 75
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/narration/pronunciation_helper.py",
+      "lines": 125,
+      "symbols": [
+        {
+          "name": "PronunciationWorker",
+          "kind": "class",
+          "line": 23
+        },
+        {
+          "name": "build_helper",
+          "kind": "function",
+          "line": 72
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/narration/reads.py",
+      "lines": 78,
+      "symbols": [
+        {
+          "name": "NarrationReads",
+          "kind": "class",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/narration/recordings.py",
+      "lines": 390,
+      "symbols": [
+        {
+          "name": "_json",
+          "kind": "function",
+          "line": 33
+        },
+        {
+          "name": "_intent",
+          "kind": "function",
+          "line": 37
+        },
+        {
+          "name": "_head",
+          "kind": "function",
+          "line": 41
+        },
+        {
+          "name": "_required",
+          "kind": "function",
+          "line": 45
+        },
+        {
+          "name": "_ledger",
+          "kind": "function",
+          "line": 54
+        },
+        {
+          "name": "HostedNarrationRecordings",
+          "kind": "class",
+          "line": 65
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/narration/sealed_parts.py",
+      "lines": 60,
+      "symbols": [
+        {
+          "name": "SealedNarrationParts",
+          "kind": "class",
+          "line": 16
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/narration/source.py",
+      "lines": 58,
+      "symbols": [
+        {
+          "name": "NarrationSource",
+          "kind": "class",
+          "line": 6
+        }
+      ]
+    },
+    {
       "file": "src/hosted/narration/transfers.py",
       "lines": 225,
       "symbols": [
@@ -12300,6 +12434,52 @@
           "name": "delete_confirmed_orphan",
           "kind": "function",
           "line": 432
+        }
+      ]
+    },
+    {
+      "file": "src/narration/__init__.py",
+      "lines": 1,
+      "symbols": []
+    },
+    {
+      "file": "src/narration/pronunciation.py",
+      "lines": 111,
+      "symbols": [
+        {
+          "name": "PronunciationError",
+          "kind": "class",
+          "line": 12
+        },
+        {
+          "name": "validate_input",
+          "kind": "function",
+          "line": 16
+        },
+        {
+          "name": "_ipa",
+          "kind": "function",
+          "line": 32
+        },
+        {
+          "name": "_frontend",
+          "kind": "function",
+          "line": 39
+        },
+        {
+          "name": "_italian",
+          "kind": "function",
+          "line": 59
+        },
+        {
+          "name": "_items",
+          "kind": "function",
+          "line": 77
+        },
+        {
+          "name": "convert",
+          "kind": "function",
+          "line": 107
         }
       ]
     },
@@ -24647,7 +24827,7 @@
       "method": "POST",
       "function": "prepare_narration_pronunciation",
       "file": "src/api/manuscript/narration_pronunciation.py",
-      "line": 106,
+      "line": 25,
       "path": "/api/narration-pronunciation"
     },
     {
@@ -27435,7 +27615,91 @@
       "file": "src/hosted/http_compat.py",
       "line": 1397,
       "path": "/api/backup-destinations/{destination_id}"
+    },
+    {
+      "method": "GET",
+      "function": "list_records",
+      "file": "src/hosted/narration/http.py",
+      "line": 135,
+      "path": "/api/narrations"
+    },
+    {
+      "method": "POST",
+      "function": "begin_record",
+      "file": "src/hosted/narration/http.py",
+      "line": 140,
+      "path": "/api/narrations"
+    },
+    {
+      "method": "PUT",
+      "function": "upload_part",
+      "file": "src/hosted/narration/http.py",
+      "line": 149,
+      "path": "/api/narrations/uploads/{publication}/parts/{ordinal}"
+    },
+    {
+      "method": "POST",
+      "function": "finish_record",
+      "file": "src/hosted/narration/http.py",
+      "line": 155,
+      "path": "/api/narrations/uploads/{publication}/finish"
+    },
+    {
+      "method": "DELETE",
+      "function": "delete_record",
+      "file": "src/hosted/narration/http.py",
+      "line": 160,
+      "path": "/api/narrations/{record_id}"
+    },
+    {
+      "method": "POST",
+      "function": "restore_record",
+      "file": "src/hosted/narration/http.py",
+      "line": 171,
+      "path": "/api/narrations/{record_id}/restore"
+    },
+    {
+      "method": "GET",
+      "function": "audio_manifest",
+      "file": "src/hosted/narration/http.py",
+      "line": 179,
+      "path": "/api/narrations/{record_id}/manifest"
+    },
+    {
+      "method": "GET",
+      "function": "audio_part",
+      "file": "src/hosted/narration/http.py",
+      "line": 187,
+      "path": "/api/narrations/{record_id}/audio"
+    },
+    {
+      "method": "GET",
+      "function": "model_manifest",
+      "file": "src/hosted/narration/http.py",
+      "line": 200,
+      "path": "/api/narration-models"
+    },
+    {
+      "method": "GET",
+      "function": "model_part",
+      "file": "src/hosted/narration/http.py",
+      "line": 205,
+      "path": "/api/narration-models/{asset_id}"
+    },
+    {
+      "method": "GET",
+      "function": "health",
+      "file": "src/hosted/narration/pronunciation_helper.py",
+      "line": 77,
+      "path": "/health"
+    },
+    {
+      "method": "POST",
+      "function": "pronounce",
+      "file": "src/hosted/narration/pronunciation_helper.py",
+      "line": 81,
+      "path": "/pronounce"
     }
   ],
-  "route_decorator_count": 531
+  "route_decorator_count": 543
 }

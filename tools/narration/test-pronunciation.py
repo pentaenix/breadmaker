@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'src'))
-from api.manuscript.narration_pronunciation import _frontend,_items,_italian,_vocabulary
+from narration.pronunciation import _frontend,_items,_italian,_vocabulary
 vocab=set(json.loads((ROOT/'static/vendor/narration/models/onnx-community/Kokoro-82M-v1.0-ONNX-timestamped/tokenizer.json').read_text())['model']['vocab'])
 assert _vocabulary<=vocab
 for language,text in [('ja','彼は「パンを12個」と言った。（本当？）'),('zh-CN','他说：“面包有12个。”（真的吗？）'),('zh-CN','一共3.14元，有100个。')]:
