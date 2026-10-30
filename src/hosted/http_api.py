@@ -229,7 +229,11 @@ def hosted_shell(request: Request, project_id: str=''):
         return _login_redirect(request)
     if project_id:
         try:runtime.identity.current_actor(require_project_id(project_id),require_membership=True)
-        except Exception as exc:raise HTTPException(404,detail='PROJECT_NOT_FOUND') from exc
+        except (AuthorizationError,ProjectUnavailable,HostedAuthorizationError,HostedValidationError,ValueError):
+            # Missing, deleted and non-member project pages have the same safe
+            # destination. GET only navigates; creation remains an authenticated POST.
+            return RedirectResponse('/?new_project=1',status_code=303,
+                                    headers={'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'})
     return (STATIC/'index.html').read_text(encoding='utf-8')
 
 

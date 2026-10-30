@@ -1,7 +1,7 @@
 """Hosted first-write and workspace smoke: actual in-memory hosted API, opaque IDs.
 
-Only the initial workspace read simulates an account with no project. Creation,
-saving, navigation, reloads and all subsequent API calls use the real hosted app.
+The first empty project is persisted before typing. Creation, saving, navigation,
+reloads and all API calls use the real hosted app.
 """
 from contextlib import contextmanager
 import os
@@ -59,17 +59,11 @@ def test_hosted_first_write_and_all_workspaces_persist_with_opaque_ids(tmp_path)
         page.on('response',lambda response:errors.append(
             f'HTTP {response.status} {response.request.method} {response.url}')
             if response.status>=400 else None)
-        first=[True]
-        def empty_workspace(route):
-            response=route.fetch();body=response.json()
-            if first[0]:first[0]=False;body.update(projects=[],active_project_id='')
-            route.fulfill(response=response,json=body)
-        page.route('**/api/workspace',empty_workspace)
         page.goto(base,wait_until='domcontentloaded',timeout=8000)
-        expect(page.locator('body')).to_have_class(re.compile('hosted-zero-project'))
-        marker='SYNTHETIC hosted first-write regression'
-        page.locator('#editor').fill(marker)
         page.wait_for_url(re.compile(r'/p/[0-9a-f]{32}$'),timeout=6000)
+        page.wait_for_function('()=>document.documentElement.dataset.breadmakerBootReady==="true"')
+        marker='SYNTHETIC hosted first-write regression'
+        page.locator('.manuscript-block').first.fill(marker)
         expect(page.locator('.manuscript-block').first).to_have_text(marker)
         page.wait_for_function('()=>!state.dirty && !state.saveInFlight',timeout=5000)
         assert page.evaluate('()=>sessionStorage.getItem("breadmaker-hosted-first-draft")') is None

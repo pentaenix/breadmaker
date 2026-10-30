@@ -16,15 +16,10 @@ def first_workspace(home, view):
         page.on('console',lambda message:errors.append(message.text) if message.type=='error' else None)
         page.on('response',lambda response:errors.append(f'HTTP {response.status}') if response.status>=400 else None)
         page.on('request',lambda request:creates.append(request) if request.method=='POST' and request.url==base+'/api/projects' else None)
-        first = [True]
-        def empty_workspace(route):
-            response=route.fetch();body=response.json()
-            if first[0]:
-                first[0]=False;body.update(projects=[],active_project_id='')
-            route.fulfill(response=response,json=body)
-        page.route('**/api/workspace',empty_workspace)
         page.goto(base,wait_until='domcontentloaded',timeout=8000)
-        expect(page.locator('body')).to_have_class(re.compile('hosted-zero-project'))
+        page.wait_for_url(re.compile(r'/p/[0-9a-f]{32}$'),timeout=6000)
+        page.wait_for_function('()=>document.documentElement.dataset.breadmakerBootReady==="true"')
+        expect(page.locator('#saveState')).to_have_text('Saved')
         for name in ('canvas','maps','tasks','reviews'):
             button=page.locator(f'.main-tab[data-view="{name}"]')
             expect(button).to_be_enabled()

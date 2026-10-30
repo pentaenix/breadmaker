@@ -1,5 +1,6 @@
 """Cold book acceleration and speculative metadata never bypass editing gates."""
 import io
+import re
 from docx import Document
 from playwright.sync_api import expect
 from tests.test_v10548_browser import hosted_browser
@@ -87,13 +88,24 @@ def test_routed_metadata_overlaps_workspace_but_never_paints_before_workspace_an
         expect(page.locator('#app')).to_be_visible();assert leases
 
 
-def test_failed_workspace_discards_speculative_metadata_without_editable_ui(tmp_path):
+def test_missing_workspace_membership_redirects_without_installing_speculative_metadata(tmp_path):
     with hosted_browser(tmp_path) as (base,page):
-        project(base,page)
-        page.route('**/api/workspace',lambda r:r.fulfill(status=200,json={'projects':[],'runtime':'hosted_dev','active_project_id':''}))
+        original=project(base,page)
+        first=[True];creates=[]
+        def missing_membership(route):
+            if first[0]:
+                first[0]=False;route.fulfill(status=200,json={'projects':[],'runtime':'hosted_dev','active_project_id':''})
+            else:route.continue_()
+        page.route('**/api/workspace',missing_membership)
+        page.on('request',lambda r:creates.append(r) if r.method=='POST' and r.url==base+'/api/projects' else None)
         page.reload(wait_until='domcontentloaded')
-        expect(page.locator('#startupRetry')).to_be_visible();expect(page.locator('#app')).to_be_hidden()
-        assert page.evaluate('()=>document.documentElement.dataset.breadmakerBootReady!=="true"')
+        page.wait_for_url(re.compile(r'/p/(?!'+original+r'$)[0-9a-f]{32}$'))
+        page.wait_for_function('()=>document.documentElement.dataset.breadmakerBootReady==="true"')
+        expect(page.locator('.manuscript-block')).to_have_count(1)
+        expect(page.locator('.manuscript-block').first).to_have_text('')
+        expect(page.locator('#saveState')).to_have_text('Saved')
+        assert page.evaluate('()=>state.workspace.active_project_id')!=original
+        assert len(creates)==1
 
 
 def test_denied_fast_book_cannot_leave_retained_text_editable_or_cache_reply(tmp_path):

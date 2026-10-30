@@ -22,6 +22,7 @@ def run_js(code):
 
 PRELUDE = '''
 const assert=require('node:assert/strict');
+const uid=()=>`synthetic-first-project-${++nonceCount}`;let nonceCount=0;
 const pid='1234567890abcdef1234567890abcdef';
 let hosted=true,creates=0,saves=0,failSave=false;
 const state={project:null,chapters:[],activeDocumentId:1,viewMode:'book',chapter:null};
@@ -85,16 +86,39 @@ def test_first_workspace_navigation_coalesces_creation_and_honors_latest_intent(
 def test_failed_first_workspace_creation_keeps_draft_and_allows_retry():
     result = run_js('''
     (async()=>{
-      api=async()=>{creates++;if(creates===1)throw Error('synthetic rejection');return {project:{id:pid}}};
+      const keys=[];
+      api=async(path,options)=>{keys.push(options.idempotencyKey);creates++;if(creates===1)throw Error('synthetic rejection');return {project:{id:pid}}};
       await createHostedProjectFromBlankEditor({view:'maps'});
       assert.equal(elements['#manuscriptPaper'].contentEditable,'true');
       assert.equal(hostedFirstProjectCreating,false);assert.equal(navigation.length,0);
       assert.equal(elements['#editor'].innerText,'Synthetic first manuscript');
       await createHostedProjectFromBlankEditor({view:'reviews'});assert.equal(creates,2);
+      assert.deepEqual(keys,['synthetic-first-project-1','synthetic-first-project-1']);
       console.log(JSON.stringify(navigation));
     })().catch(e=>{console.error(e);process.exitCode=1});
     ''')
     assert result == [['replace','/p/1234567890abcdef1234567890abcdef/reviews']]
+
+
+@pytest.mark.parametrize('persist',[True,False])
+def test_empty_boot_persists_first_project_without_input_but_not_an_extra_blank(persist):
+    result=run_js('''
+    globalThis.document={body:{classList:{add(){}}},documentElement:{removeAttribute(){}}};
+    elements['#manuscriptView']={classList:{add(){}}};
+    elements['#manuscriptPaper'].addEventListener=()=>{};
+    elements['#editor'].focus=()=>{};
+    elements['#chapterTitle'].innerText='Chapter 1';elements['#editor'].innerText='';
+    state.workspace={active_project_id:'old-project',projects:[{id:'old-project'}]};
+    (async()=>{
+      await bootHostedBlankProject({persist:PERSIST});
+      assert.equal(creates,PERSIST?1:0);assert.equal(memory.size,0);
+      assert.equal(state.hostedZeroProject,true);
+      assert.equal(state.workspace.active_project_id,'');assert.equal(state.workspace.projects.length,1);
+      assert.equal(elements['#manuscriptPaper'].contentEditable,PERSIST?'false':'true');
+      console.log(JSON.stringify(navigation));
+    })().catch(e=>{console.error(e);process.exitCode=1});
+    '''.replace('PERSIST',json.dumps(persist)))
+    assert result==([['replace','/p/1234567890abcdef1234567890abcdef']] if persist else [])
 
 
 @pytest.mark.parametrize('opaque', [False,True])

@@ -10,6 +10,7 @@ function applyRuntimeImageInputPolicy(){
 const HOSTED_FIRST_DRAFT_KEY='breadmaker-hosted-first-draft';
 let hostedFirstProjectCreating=false;
 let hostedFirstProjectView='manuscript';
+let hostedFirstProjectOperation=null;
 function hostedBlankDraftSnapshot(){
   return {title:String($('#chapterTitle')?.innerText||'Chapter 1').replace(/\n+/g,' ').trim()||'Chapter 1',text:String($('#editor')?.innerText||'')};
 }
@@ -18,7 +19,8 @@ async function createHostedProjectFromBlankEditor({view}={}){
   if(hostedFirstProjectCreating)return;hostedFirstProjectCreating=true;
   const draft=hostedBlankDraftSnapshot();$('#manuscriptPaper').contentEditable='false';setSaveState('Creating…');
   try{
-    const result=await api('/api/projects',{method:'POST',body:JSON.stringify({name:'Untitled Book'})});
+    hostedFirstProjectOperation ||= uid();
+    const result=await api('/api/projects',{method:'POST',idempotencyKey:hostedFirstProjectOperation,body:JSON.stringify({name:'Untitled Book'})});
     const projectId=String(result?.project?.id||'');if(!projectId)throw new Error('PROJECT_CREATE_ID_MISSING');
     if(draft.text.trim()||draft.title!=='Chapter 1'){
       try{sessionStorage.setItem(HOSTED_FIRST_DRAFT_KEY,JSON.stringify({project_id:projectId,...draft}))}catch{}
@@ -26,8 +28,9 @@ async function createHostedProjectFromBlankEditor({view}={}){
     openWorkspaceProject(projectId,{replace:true,view:hostedFirstProjectView});
   }catch(error){hostedFirstProjectCreating=false;$('#manuscriptPaper').contentEditable='true';setSaveState('Not saved');toast(error.message||'Could not create project',5000)}
 }
-function bootHostedBlankProject(){
+async function bootHostedBlankProject({persist=false}={}){
   state.hostedZeroProject=true;state.project=null;state.documents=[];state.chapters=[];state.chapter=null;state.chapterData=null;state.activeDocumentId=null;state.viewMode='chapter';
+  if(state.workspace)state.workspace={...state.workspace,active_project_id:''};
   document.body.classList.add('hosted-zero-project');$('#chapterTitle').textContent='Chapter 1';$('#editor').innerHTML='';$('#manuscriptPaper').contentEditable='true';
   $$('.view').forEach(v=>v.classList.remove('active'));$('#manuscriptView').classList.add('active');$$('.main-tab').forEach(tab=>tab.classList.toggle('active',tab.dataset.view==='manuscript'));
   setSaveState('Not saved');document.documentElement.removeAttribute('data-initial-view');
@@ -35,6 +38,7 @@ function bootHostedBlankProject(){
   paper.addEventListener('beforeinput',event=>{if(state.hostedZeroProject&&!hostedFirstProjectCreating)event.stopImmediatePropagation()},true);
   const capture=event=>{if(!state.hostedZeroProject||hostedFirstProjectCreating)return;event.stopImmediatePropagation();queueMicrotask(()=>{const draft=hostedBlankDraftSnapshot();if(draft.text.trim()||draft.title!=='Chapter 1')createHostedProjectFromBlankEditor()})};
   paper.addEventListener('input',capture,true);queueMicrotask(()=>$('#editor')?.focus());
+  if(persist)await createHostedProjectFromBlankEditor();
 }
 async function restoreHostedFirstDraft(){
   if(!runtimeSupports('hosted_projects')||!state.project)return;let raw=null;try{raw=JSON.parse(sessionStorage.getItem(HOSTED_FIRST_DRAFT_KEY)||'null')}catch{}
@@ -102,7 +106,7 @@ async function loadRuntimeBootstrap(){
     const health=await api('/api/health');
     if(health?.app!=='Breadmaker Editor'||health?.runtime!=='local')throw error;
     const backendVersion=String(health?.version||'');
-    console.warn('Breadmaker runtime bootstrap endpoint was unavailable; continuing with attested local capabilities.',{frontend:'10.5.67',backend:backendVersion||'unknown'});
+    console.warn('Breadmaker runtime bootstrap endpoint was unavailable; continuing with attested local capabilities.',{frontend:'10.5.68',backend:backendVersion||'unknown'});
     return {...LOCAL_RUNTIME_FALLBACK,fallback:true,backend_version:backendVersion};
   }
 }
@@ -144,14 +148,21 @@ async function boot() {
   state.workspace=workspace;
   if(runtimeSupports('hosted_projects')&&routedProject){
     const allowed=(state.workspace?.projects||[]).some(project=>String(project.id)===routedProject);
-    if(!allowed)throw new Error('Project not found or you do not have access.');
-    if(String(state.workspace?.active_project_id||'')!==routedProject){await api(`/api/projects/${routedProject}/activate`,{method:'POST'});state.workspace=await api('/api/workspace')}
+    if(!allowed){location.replace('/?new_project=1');return}
+    if(String(state.workspace?.active_project_id||'')!==routedProject){
+      try{await api(`/api/projects/${routedProject}/activate`,{method:'POST'});state.workspace=await api('/api/workspace')}
+      catch(error){if(error.status===404){location.replace('/?new_project=1');return}throw error}
+    }
   }
   if(state.workspace?.runtime&&state.workspace.runtime!==state.runtime?.mode)throw new Error('Breadmaker runtime mismatch. Reload the application.');
   if(state.workspace?.capabilities)state.runtime={...state.runtime,mode:state.workspace.runtime||state.runtime.mode,capabilities:{...state.workspace.capabilities}};
   applyRuntimeImageInputPolicy();
   if(state.workspace?.recovery){await openRecoveryBoot();return}
-  if(runtimeSupports('hosted_projects')&&!(state.workspace?.projects||[]).length){bootHostedBlankProject();return}
+  if(runtimeSupports('hosted_projects')){
+    const empty=!(state.workspace?.projects||[]).length;
+    const fresh=!routedProject&&new URLSearchParams(location.search).get('new_project')==='1';
+    if(empty||fresh){await bootHostedBlankProject({persist:true});return}
+  }
   if(runtimeSupports('hosted_projects')&&!routedProject&&state.workspace?.active_project_id){history.replaceState({breadmakerView:'manuscript'},'',hostedProjectRoute(state.workspace.active_project_id,'manuscript'))}
 
   const bootView=viewFromRoute();
@@ -159,12 +170,17 @@ async function boot() {
   // read-only bootstrap/UI-state hydration. Join all of them here, then refuse to
   // expose an editable workspace if the lease was lost.
   const leasePromise=api('/api/lease',{method:'POST'}).then(()=>true).catch(error=>{if(error.status===409)return false;throw error});
-  const [leaseGranted,bootstrap,bootUI,bootCrashDrafts]=await Promise.all([
+  const startup=await Promise.all([
     leasePromise,
     earlyBoot?earlyBoot.bootstrap.then(result=>{if(result.error)throw result.error;return result.value}):api(runtimeSupports('hosted_projects')?'/api/bootstrap?navigation_only=true':'/api/bootstrap'),
     earlyBoot?earlyBoot.ui:loadBootUIState(),
     crashJournalForProject(currentProjectIdentity()),
-  ]);
+  ]).catch(error=>{
+    if(runtimeSupports('hosted_projects')&&routedProject&&error.status===404){location.replace('/?new_project=1');return null}
+    throw error;
+  });
+  if(!startup)return;
+  const [leaseGranted,bootstrap,bootUI,bootCrashDrafts]=startup;
   if(!leaseGranted){showLeaseLost(true);return}
   setInterval(heartbeatLease,5000);
   state.bootUIState=bootUI;

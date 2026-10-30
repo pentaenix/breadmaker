@@ -130,8 +130,8 @@ def test_valid_session_still_requires_membership_and_never_loses_cookie(hosted_h
     allowed=client.get(f'/p/{PID}/canvas')
     assert allowed.status_code==200 and 'text/html' in allowed.headers['content-type']
     denied=client.get('/p/'+'c'*32+'/canvas')
-    assert denied.status_code==404 and denied.json()=={'detail':'PROJECT_NOT_FOUND'}
-    assert 'location' not in denied.headers
+    assert denied.status_code==303 and denied.headers['location']=='/?new_project=1'
+    assert 'no-store' in denied.headers['cache-control']
     assert memberships==[PID,'c'*32]
     assert client.cookies.get(COOKIE)=='valid'
 
