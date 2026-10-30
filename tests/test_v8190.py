@@ -19,7 +19,7 @@ def test_v8190_manuscript_toolbar_contract_reserves_room_without_losing_commands
     assert 'findBtn' not in direct_ids and 'bookmarkBtn' not in direct_ids
     assert direct_ids == [
         'commentsBtn', 'markupBtn', 'manuscriptImageBtn', 'checkpointBtn',
-        'manuscriptReviewsBtn', 'cutsBtn', 'editorsEyeBtn',
+        'manuscriptReviewsBtn', 'cutsBtn', 'narrationBtn', 'editorsEyeBtn',
     ]
     assert toolbar.select_one('.toolbar-title-group #activeDocumentTitle') is not None
 

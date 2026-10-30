@@ -2328,7 +2328,7 @@
     },
     {
       "file": "src/api/manuscript/__init__.py",
-      "lines": 15,
+      "lines": 18,
       "symbols": []
     },
     {
@@ -2563,12 +2563,17 @@
     },
     {
       "file": "src/api/manuscript/document.py",
-      "lines": 153,
+      "lines": 160,
       "symbols": [
+        {
+          "name": "manuscript_source_text",
+          "kind": "function",
+          "line": 28
+        },
         {
           "name": "bootstrap",
           "kind": "function",
-          "line": 29,
+          "line": 36,
           "routes": [
             {
               "method": "GET",
@@ -2579,7 +2584,7 @@
         {
           "name": "update_project",
           "kind": "function",
-          "line": 58,
+          "line": 65,
           "routes": [
             {
               "method": "PATCH",
@@ -2590,7 +2595,7 @@
         {
           "name": "get_chapter",
           "kind": "function",
-          "line": 68,
+          "line": 75,
           "routes": [
             {
               "method": "GET",
@@ -2601,7 +2606,7 @@
         {
           "name": "get_book",
           "kind": "function",
-          "line": 79,
+          "line": 86,
           "routes": [
             {
               "method": "GET",
@@ -2612,7 +2617,7 @@
         {
           "name": "create_chapter",
           "kind": "function",
-          "line": 107,
+          "line": 114,
           "routes": [
             {
               "method": "POST",
@@ -2623,7 +2628,7 @@
         {
           "name": "update_chapter_title",
           "kind": "function",
-          "line": 129,
+          "line": 136,
           "routes": [
             {
               "method": "PATCH",
@@ -2634,7 +2639,7 @@
         {
           "name": "update_chapter_metadata",
           "kind": "function",
-          "line": 142,
+          "line": 149,
           "routes": [
             {
               "method": "PATCH",
@@ -2702,6 +2707,208 @@
             {
               "method": "POST",
               "path": "/api/manuscript/images/{block_id}/move"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/api/manuscript/narration.py",
+      "lines": 208,
+      "symbols": [
+        {
+          "name": "_root",
+          "kind": "function",
+          "line": 25
+        },
+        {
+          "name": "_record_path",
+          "kind": "function",
+          "line": 33
+        },
+        {
+          "name": "_atomic",
+          "kind": "function",
+          "line": 37
+        },
+        {
+          "name": "_publish",
+          "kind": "function",
+          "line": 46
+        },
+        {
+          "name": "_read_record",
+          "kind": "function",
+          "line": 65
+        },
+        {
+          "name": "_validate_source",
+          "kind": "function",
+          "line": 81
+        },
+        {
+          "name": "_purge_deleted",
+          "kind": "function",
+          "line": 86
+        },
+        {
+          "name": "list_narrations",
+          "kind": "function",
+          "line": 97,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/api/narrations"
+            }
+          ]
+        },
+        {
+          "name": "save_narration",
+          "kind": "async_function",
+          "line": 109,
+          "routes": [
+            {
+              "method": "POST",
+              "path": "/api/narrations"
+            }
+          ]
+        },
+        {
+          "name": "delete_narration",
+          "kind": "function",
+          "line": 180,
+          "routes": [
+            {
+              "method": "DELETE",
+              "path": "/api/narrations/{record_id}"
+            }
+          ]
+        },
+        {
+          "name": "restore_narration",
+          "kind": "function",
+          "line": 190,
+          "routes": [
+            {
+              "method": "POST",
+              "path": "/api/narrations/{record_id}/restore"
+            }
+          ]
+        },
+        {
+          "name": "narration_audio",
+          "kind": "function",
+          "line": 204,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/api/narrations/{record_id}/audio"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/api/manuscript/narration_boundary.py",
+      "lines": 44,
+      "symbols": [
+        {
+          "name": "NarrationRoute",
+          "kind": "class",
+          "line": 13
+        }
+      ]
+    },
+    {
+      "file": "src/api/manuscript/narration_pronunciation.py",
+      "lines": 119,
+      "symbols": [
+        {
+          "name": "PronunciationInput",
+          "kind": "class",
+          "line": 24
+        },
+        {
+          "name": "_ipa",
+          "kind": "function",
+          "line": 30
+        },
+        {
+          "name": "_frontend",
+          "kind": "function",
+          "line": 37
+        },
+        {
+          "name": "_italian",
+          "kind": "function",
+          "line": 57
+        },
+        {
+          "name": "_items",
+          "kind": "function",
+          "line": 75
+        },
+        {
+          "name": "prepare_narration_pronunciation",
+          "kind": "function",
+          "line": 106,
+          "routes": [
+            {
+              "method": "POST",
+              "path": "/api/narration-pronunciation"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/api/manuscript/narration_voices.py",
+      "lines": 72,
+      "symbols": [
+        {
+          "name": "narration_voice_catalog",
+          "kind": "function",
+          "line": 19
+        },
+        {
+          "name": "_voice_root",
+          "kind": "function",
+          "line": 22
+        },
+        {
+          "name": "_installed",
+          "kind": "function",
+          "line": 32
+        },
+        {
+          "name": "_VoiceRedirect",
+          "kind": "class",
+          "line": 37
+        },
+        {
+          "name": "_download_voice_bytes",
+          "kind": "function",
+          "line": 43
+        },
+        {
+          "name": "list_narration_voices",
+          "kind": "function",
+          "line": 49,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/api/narration-voices"
+            }
+          ]
+        },
+        {
+          "name": "download_narration_voice",
+          "kind": "function",
+          "line": 54,
+          "routes": [
+            {
+              "method": "POST",
+              "path": "/api/narration-voices/{voice_id}/download"
             }
           ]
         }
@@ -3826,7 +4033,7 @@
     },
     {
       "file": "src/api/project_management/workspace.py",
-      "lines": 29,
+      "lines": 32,
       "symbols": [
         {
           "name": "workspace_state",
@@ -3842,7 +4049,7 @@
         {
           "name": "current_identity",
           "kind": "function",
-          "line": 28,
+          "line": 31,
           "routes": [
             {
               "method": "GET",
@@ -6273,7 +6480,7 @@
     },
     {
       "file": "src/backend/http_boundary.py",
-      "lines": 158,
+      "lines": 164,
       "symbols": [
         {
           "name": "_index_inline_script_csp_hash",
@@ -6288,12 +6495,12 @@
         {
           "name": "prevent_stale_local_ui_assets",
           "kind": "async_function",
-          "line": 58
+          "line": 64
         },
         {
           "name": "feature_flags",
           "kind": "function",
-          "line": 89,
+          "line": 95,
           "routes": [
             {
               "method": "GET",
@@ -6304,7 +6511,7 @@
         {
           "name": "metro_view_config",
           "kind": "function",
-          "line": 95,
+          "line": 101,
           "routes": [
             {
               "method": "GET",
@@ -6315,27 +6522,27 @@
         {
           "name": "_validation_json_safe",
           "kind": "function",
-          "line": 98
+          "line": 104
         },
         {
           "name": "request_validation_exception_handler",
           "kind": "async_function",
-          "line": 105
+          "line": 111
         },
         {
           "name": "http_exception_localization_bridge",
           "kind": "async_function",
-          "line": 126
+          "line": 132
         },
         {
           "name": "unhandled_exception_handler",
           "kind": "async_function",
-          "line": 140
+          "line": 146
         },
         {
           "name": "install",
           "kind": "function",
-          "line": 150
+          "line": 156
         }
       ]
     },
@@ -6577,7 +6784,7 @@
     },
     {
       "file": "src/backend/request_pipeline.py",
-      "lines": 310,
+      "lines": 323,
       "symbols": [
         {
           "name": "_rate_limit_client_identity",
@@ -6592,32 +6799,32 @@
         {
           "name": "_request_user_identity",
           "kind": "function",
-          "line": 103
+          "line": 110
         },
         {
           "name": "_request_binding",
           "kind": "async_function",
-          "line": 117
+          "line": 124
         },
         {
           "name": "_runtime_bootstrap_payload",
           "kind": "function",
-          "line": 127
+          "line": 134
         },
         {
           "name": "local_origin_guard",
           "kind": "async_function",
-          "line": 143
+          "line": 150
         },
         {
           "name": "startup",
           "kind": "function",
-          "line": 283
+          "line": 290
         },
         {
           "name": "install",
           "kind": "function",
-          "line": 309
+          "line": 322
         }
       ]
     },
@@ -6659,7 +6866,7 @@
     },
     {
       "file": "src/backend/runtime_routes.py",
-      "lines": 210,
+      "lines": 213,
       "symbols": [
         {
           "name": "index",
@@ -6711,7 +6918,7 @@
         {
           "name": "list_locales",
           "kind": "function",
-          "line": 52,
+          "line": 55,
           "routes": [
             {
               "method": "GET",
@@ -6722,7 +6929,7 @@
         {
           "name": "locale_file",
           "kind": "function",
-          "line": 69,
+          "line": 72,
           "routes": [
             {
               "method": "GET",
@@ -6733,7 +6940,7 @@
         {
           "name": "runtime_state",
           "kind": "function",
-          "line": 76,
+          "line": 79,
           "routes": [
             {
               "method": "GET",
@@ -6744,7 +6951,7 @@
         {
           "name": "auth_session_state",
           "kind": "function",
-          "line": 82,
+          "line": 85,
           "routes": [
             {
               "method": "GET",
@@ -6755,7 +6962,7 @@
         {
           "name": "auth_logout",
           "kind": "function",
-          "line": 89,
+          "line": 92,
           "routes": [
             {
               "method": "POST",
@@ -6766,7 +6973,7 @@
         {
           "name": "health",
           "kind": "function",
-          "line": 103,
+          "line": 106,
           "routes": [
             {
               "method": "GET",
@@ -6777,32 +6984,32 @@
         {
           "name": "_read_test_auth_fixture_index",
           "kind": "function",
-          "line": 118
+          "line": 121
         },
         {
           "name": "_write_test_auth_fixture_index",
           "kind": "function",
-          "line": 126
+          "line": 129
         },
         {
           "name": "_test_auth_profile",
           "kind": "function",
-          "line": 137
+          "line": 140
         },
         {
           "name": "_test_auth_owner_project",
           "kind": "function",
-          "line": 150
+          "line": 153
         },
         {
           "name": "_prepare_test_auth_fixture",
           "kind": "function",
-          "line": 157
+          "line": 160
         },
         {
           "name": "client_lease",
           "kind": "function",
-          "line": 203,
+          "line": 206,
           "routes": [
             {
               "method": "POST",
@@ -6813,7 +7020,7 @@
         {
           "name": "release_client_lease",
           "kind": "function",
-          "line": 206,
+          "line": 209,
           "routes": [
             {
               "method": "POST",
@@ -13881,7 +14088,7 @@
     },
     {
       "file": "src/workspace/projects/packages.py",
-      "lines": 293,
+      "lines": 298,
       "symbols": [
         {
           "name": "ProjectPackageMixin",
@@ -13974,8 +14181,13 @@
       "symbols": []
     },
     {
+      "file": "static/dev/narration-benchmark.js",
+      "lines": 22,
+      "symbols": []
+    },
+    {
       "file": "static/js/core/boot.js",
-      "lines": 279,
+      "lines": 286,
       "symbols": [
         {
           "name": "applyRuntimeImageInputPolicy",
@@ -14030,22 +14242,22 @@
         {
           "name": "openRecoveryBoot",
           "kind": "function",
-          "line": 229
+          "line": 236
         },
         {
           "name": "applyCanvasConfig",
           "kind": "function",
-          "line": 240
+          "line": 247
         },
         {
           "name": "applyBootstrapData",
           "kind": "function",
-          "line": 246
+          "line": 253
         },
         {
           "name": "refresh",
           "kind": "function",
-          "line": 255
+          "line": 262
         }
       ]
     },
@@ -14163,77 +14375,77 @@
     },
     {
       "file": "static/js/core/i18n.js",
-      "lines": 47,
+      "lines": 48,
       "symbols": [
         {
           "name": "validLocalePayload",
           "kind": "function",
-          "line": 10
+          "line": 11
         },
         {
           "name": "fetchLocalePayload",
           "kind": "function",
-          "line": 11
+          "line": 12
         },
         {
           "name": "storeLocalePreference",
           "kind": "function",
-          "line": 12
+          "line": 13
         },
         {
           "name": "i18nText",
           "kind": "function",
-          "line": 13
+          "line": 14
         },
         {
           "name": "resolveI18nMarkers",
           "kind": "function",
-          "line": 23
+          "line": 24
         },
         {
           "name": "i18nSource",
           "kind": "function",
-          "line": 24
+          "line": 25
         },
         {
           "name": "bindI18nTextNode",
           "kind": "function",
-          "line": 25
+          "line": 26
         },
         {
           "name": "bindI18nAttrs",
           "kind": "function",
-          "line": 26
+          "line": 27
         },
         {
           "name": "applyI18n",
           "kind": "function",
-          "line": 27
+          "line": 28
         },
         {
           "name": "applyI18nCssVariables",
           "kind": "function",
-          "line": 32
+          "line": 33
         },
         {
           "name": "refreshI18nBindings",
           "kind": "function",
-          "line": 33
+          "line": 34
         },
         {
           "name": "installLocalePayload",
           "kind": "function",
-          "line": 34
+          "line": 35
         },
         {
           "name": "switchLocale",
           "kind": "function",
-          "line": 40
+          "line": 41
         },
         {
           "name": "ensureI18n",
           "kind": "function",
-          "line": 41
+          "line": 42
         }
       ]
     },
@@ -14401,7 +14613,7 @@
     },
     {
       "file": "static/js/core/routing.js",
-      "lines": 107,
+      "lines": 104,
       "symbols": [
         {
           "name": "reportViewRenderError",
@@ -14441,17 +14653,17 @@
         {
           "name": "syncViewRoute",
           "kind": "function",
-          "line": 28
+          "line": 25
         },
         {
           "name": "setView",
           "kind": "function",
-          "line": 36
+          "line": 33
         },
         {
           "name": "hydratePrimaryWorkspace",
           "kind": "function",
-          "line": 50
+          "line": 47
         }
       ]
     },
@@ -14549,7 +14761,7 @@
     },
     {
       "file": "static/js/core/ui.js",
-      "lines": 276,
+      "lines": 278,
       "symbols": [
         {
           "name": "runtimeSupports",
@@ -18061,7 +18273,7 @@
     },
     {
       "file": "static/js/features/manuscript/editing.js",
-      "lines": 160,
+      "lines": 180,
       "symbols": [
         {
           "name": "offsetIn",
@@ -18119,79 +18331,94 @@
           "line": 24
         },
         {
-          "name": "selectionItems",
+          "name": "caretAtManuscriptVerticalEdge",
           "kind": "function",
           "line": 25
         },
         {
+          "name": "moveCaretIntoAdjacentEmptyParagraph",
+          "kind": "function",
+          "line": 31
+        },
+        {
+          "name": "stopCaretAtManuscriptBoundary",
+          "kind": "function",
+          "line": 37
+        },
+        {
+          "name": "selectionItems",
+          "kind": "function",
+          "line": 43
+        },
+        {
           "name": "selectedChapterHeader",
-          "kind": "function",
-          "line": 33
-        },
-        {
-          "name": "chapterHeaderSelectionItem",
-          "kind": "function",
-          "line": 39
-        },
-        {
-          "name": "syncSelectionToolbarMode",
-          "kind": "function",
-          "line": 46
-        },
-        {
-          "name": "hideSelectionHighlightPicker",
-          "kind": "function",
-          "line": 49
-        },
-        {
-          "name": "hideSelectionToolbar",
           "kind": "function",
           "line": 51
         },
         {
-          "name": "restoreLastManuscriptRange",
+          "name": "chapterHeaderSelectionItem",
           "kind": "function",
-          "line": 52
+          "line": 57
         },
         {
-          "name": "restoreSelectionToolbarRange",
-          "kind": "function",
-          "line": 53
-        },
-        {
-          "name": "positionSelectionToolbar",
-          "kind": "function",
-          "line": 54
-        },
-        {
-          "name": "showSelectionToolbarAfterPointer",
-          "kind": "function",
-          "line": 59
-        },
-        {
-          "name": "currentStyleWraps",
+          "name": "syncSelectionToolbarMode",
           "kind": "function",
           "line": 64
         },
         {
-          "name": "createChapterFromStyle",
+          "name": "hideSelectionHighlightPicker",
           "kind": "function",
           "line": 67
         },
         {
+          "name": "hideSelectionToolbar",
+          "kind": "function",
+          "line": 69
+        },
+        {
+          "name": "restoreLastManuscriptRange",
+          "kind": "function",
+          "line": 70
+        },
+        {
+          "name": "restoreSelectionToolbarRange",
+          "kind": "function",
+          "line": 71
+        },
+        {
+          "name": "positionSelectionToolbar",
+          "kind": "function",
+          "line": 72
+        },
+        {
+          "name": "showSelectionToolbarAfterPointer",
+          "kind": "function",
+          "line": 77
+        },
+        {
+          "name": "currentStyleWraps",
+          "kind": "function",
+          "line": 82
+        },
+        {
+          "name": "createChapterFromStyle",
+          "kind": "function",
+          "line": 85
+        },
+        {
           "name": "applyWritingStyle",
           "kind": "function",
-          "line": 75
+          "line": 93
         },
         {
           "name": "convertChapterHeaderToStyle",
           "kind": "function",
-          "line": 80
+          "line": 98
         },
         {
           "name": "saveNow",
           "kind": "function",
-          "line": 158
+          "line": 178
         }
       ]
     },
@@ -18405,6 +18632,368 @@
           "name": "performHostedProjectImport",
           "kind": "function",
           "line": 130
+        }
+      ]
+    },
+    {
+      "file": "static/js/features/manuscript/narration-engine.js",
+      "lines": 115,
+      "symbols": [
+        {
+          "name": "armWatchdog",
+          "kind": "function",
+          "line": 77
+        },
+        {
+          "name": "run",
+          "kind": "function",
+          "line": 100
+        }
+      ]
+    },
+    {
+      "file": "static/js/features/manuscript/narration-export.js",
+      "lines": 59,
+      "symbols": [
+        {
+          "name": "narrationExportClip",
+          "kind": "function",
+          "line": 4
+        },
+        {
+          "name": "narrationWavPCM",
+          "kind": "function",
+          "line": 14
+        },
+        {
+          "name": "narrationJoinWav",
+          "kind": "function",
+          "line": 31
+        },
+        {
+          "name": "exportNarrationAudio",
+          "kind": "function",
+          "line": 37
+        },
+        {
+          "name": "check",
+          "kind": "function",
+          "line": 40
+        }
+      ]
+    },
+    {
+      "file": "static/js/features/manuscript/narration-pitch-worklet.js",
+      "lines": 19,
+      "symbols": []
+    },
+    {
+      "file": "static/js/features/manuscript/narration-playback.js",
+      "lines": 66,
+      "symbols": [
+        {
+          "name": "findNarrationRecording",
+          "kind": "function",
+          "line": 62
+        }
+      ]
+    },
+    {
+      "file": "static/js/features/manuscript/narration-preferences.js",
+      "lines": 50,
+      "symbols": [
+        {
+          "name": "normalizeNarrationPreferences",
+          "kind": "function",
+          "line": 7
+        },
+        {
+          "name": "loadNarrationPreferences",
+          "kind": "function",
+          "line": 27
+        },
+        {
+          "name": "saveNarrationPreferences",
+          "kind": "function",
+          "line": 41
+        }
+      ]
+    },
+    {
+      "file": "static/js/features/manuscript/narration-progress.js",
+      "lines": 61,
+      "symbols": []
+    },
+    {
+      "file": "static/js/features/manuscript/narration-punctuation.js",
+      "lines": 39,
+      "symbols": [
+        {
+          "name": "narrationPunctuationPause",
+          "kind": "function",
+          "line": 3
+        },
+        {
+          "name": "applyNarrationPunctuation",
+          "kind": "function",
+          "line": 19
+        }
+      ]
+    },
+    {
+      "file": "static/js/features/manuscript/narration-voices.js",
+      "lines": 28,
+      "symbols": [
+        {
+          "name": "narrationInterfaceLanguage",
+          "kind": "function",
+          "line": 4
+        },
+        {
+          "name": "narrationVoiceLanguage",
+          "kind": "function",
+          "line": 5
+        },
+        {
+          "name": "narrationLanguageVoices",
+          "kind": "function",
+          "line": 6
+        },
+        {
+          "name": "narrationEffectiveVoice",
+          "kind": "function",
+          "line": 7
+        },
+        {
+          "name": "loadNarrationVoiceCatalog",
+          "kind": "function",
+          "line": 12
+        },
+        {
+          "name": "narrationVoiceOptionLabel",
+          "kind": "function",
+          "line": 19
+        },
+        {
+          "name": "narrationVoiceOptions",
+          "kind": "function",
+          "line": 20
+        },
+        {
+          "name": "syncNarrationVoiceChoices",
+          "kind": "function",
+          "line": 23
+        }
+      ]
+    },
+    {
+      "file": "static/js/features/manuscript/narration.js",
+      "lines": 190,
+      "symbols": [
+        {
+          "name": "narrationOpen",
+          "kind": "function",
+          "line": 11
+        },
+        {
+          "name": "narrationParagraphs",
+          "kind": "function",
+          "line": 12
+        },
+        {
+          "name": "narrationSourceProse",
+          "kind": "function",
+          "line": 13
+        },
+        {
+          "name": "narrationSourceText",
+          "kind": "function",
+          "line": 14
+        },
+        {
+          "name": "narrationGutterWrap",
+          "kind": "function",
+          "line": 15
+        },
+        {
+          "name": "narrationProse",
+          "kind": "function",
+          "line": 16
+        },
+        {
+          "name": "narrationFresh",
+          "kind": "function",
+          "line": 17
+        },
+        {
+          "name": "narrationGenerationFresh",
+          "kind": "function",
+          "line": 18
+        },
+        {
+          "name": "narrationListContext",
+          "kind": "function",
+          "line": 19
+        },
+        {
+          "name": "narrationVisibleRecords",
+          "kind": "function",
+          "line": 20
+        },
+        {
+          "name": "narrationTitleSource",
+          "kind": "function",
+          "line": 21
+        },
+        {
+          "name": "narrationRecreationSource",
+          "kind": "function",
+          "line": 22
+        },
+        {
+          "name": "clearNarrationPreviewHighlights",
+          "kind": "function",
+          "line": 23
+        },
+        {
+          "name": "narrationRange",
+          "kind": "function",
+          "line": 24
+        },
+        {
+          "name": "paintNarrationPreview",
+          "kind": "function",
+          "line": 25
+        },
+        {
+          "name": "narrationLabel",
+          "kind": "function",
+          "line": 31
+        },
+        {
+          "name": "narrationText",
+          "kind": "function",
+          "line": 32
+        },
+        {
+          "name": "narrationVoiceLabel",
+          "kind": "function",
+          "line": 33
+        },
+        {
+          "name": "syncNarrationPlayControl",
+          "kind": "function",
+          "line": 34
+        },
+        {
+          "name": "narrationTime",
+          "kind": "function",
+          "line": 35
+        },
+        {
+          "name": "cancelNarrationEarly",
+          "kind": "function",
+          "line": 36
+        },
+        {
+          "name": "closeNarrationPanel",
+          "kind": "function",
+          "line": 37
+        },
+        {
+          "name": "syncNarrationBackend",
+          "kind": "function",
+          "line": 38
+        },
+        {
+          "name": "applyNarrationPreferences",
+          "kind": "function",
+          "line": 39
+        },
+        {
+          "name": "narrationEngine",
+          "kind": "function",
+          "line": 46
+        },
+        {
+          "name": "receiveNarrationChunk",
+          "kind": "function",
+          "line": 47
+        },
+        {
+          "name": "narrationSource",
+          "kind": "function",
+          "line": 55
+        },
+        {
+          "name": "narrationChapterSources",
+          "kind": "function",
+          "line": 56
+        },
+        {
+          "name": "captureNarrationSelection",
+          "kind": "function",
+          "line": 57
+        },
+        {
+          "name": "syncNarrationActions",
+          "kind": "function",
+          "line": 62
+        },
+        {
+          "name": "openNarrationActionMenu",
+          "kind": "function",
+          "line": 63
+        },
+        {
+          "name": "narrationReplacementSources",
+          "kind": "function",
+          "line": 73
+        },
+        {
+          "name": "narrateScope",
+          "kind": "function",
+          "line": 74
+        },
+        {
+          "name": "deleteNarrationScope",
+          "kind": "function",
+          "line": 102
+        },
+        {
+          "name": "narrationFail",
+          "kind": "function",
+          "line": 117
+        },
+        {
+          "name": "deleteNarration",
+          "kind": "function",
+          "line": 118
+        },
+        {
+          "name": "playNarration",
+          "kind": "function",
+          "line": 127
+        },
+        {
+          "name": "renderNarrations",
+          "kind": "function",
+          "line": 133
+        },
+        {
+          "name": "generateNarrations",
+          "kind": "function",
+          "line": 145
+        },
+        {
+          "name": "openNarrationPanel",
+          "kind": "function",
+          "line": 163
+        },
+        {
+          "name": "initializeNarrationUI",
+          "kind": "function",
+          "line": 176
         }
       ]
     },
@@ -19424,47 +20013,47 @@
     },
     {
       "file": "static/js/features/manuscript/view.js",
-      "lines": 38,
+      "lines": 44,
       "symbols": [
         {
           "name": "applyManuscriptTextSize",
           "kind": "function",
-          "line": 4
+          "line": 10
         },
         {
           "name": "restoreManuscriptTextSize",
           "kind": "function",
-          "line": 12
+          "line": 18
         },
         {
           "name": "applyManuscriptFont",
           "kind": "function",
-          "line": 14
+          "line": 20
         },
         {
           "name": "restoreManuscriptFont",
           "kind": "function",
-          "line": 21
+          "line": 27
         },
         {
           "name": "positionViewPopover",
           "kind": "function",
-          "line": 22
+          "line": 28
         },
         {
           "name": "closeViewPopover",
           "kind": "function",
-          "line": 29
+          "line": 35
         },
         {
           "name": "toggleViewPopover",
           "kind": "function",
-          "line": 30
+          "line": 36
         },
         {
           "name": "restoreManuscriptUIState",
           "kind": "function",
-          "line": 35
+          "line": 41
         }
       ]
     },
@@ -21543,8 +22132,49 @@
       ]
     },
     {
+      "file": "static/js/features/projects/narration_voices.js",
+      "lines": 86,
+      "symbols": [
+        {
+          "name": "openNarrationVoiceSettings",
+          "kind": "function",
+          "line": 2
+        },
+        {
+          "name": "cleanup",
+          "kind": "function",
+          "line": 10
+        },
+        {
+          "name": "stopPreview",
+          "kind": "function",
+          "line": 21
+        },
+        {
+          "name": "render",
+          "kind": "function",
+          "line": 22
+        },
+        {
+          "name": "download",
+          "kind": "function",
+          "line": 40
+        },
+        {
+          "name": "showInstalled",
+          "kind": "function",
+          "line": 43
+        },
+        {
+          "name": "item",
+          "kind": "function",
+          "line": 79
+        }
+      ]
+    },
+    {
       "file": "static/js/features/projects/settings.js",
-      "lines": 92,
+      "lines": 140,
       "symbols": [
         {
           "name": "projectSettingsRow",
@@ -21582,14 +22212,34 @@
           "line": 17
         },
         {
-          "name": "openProjectSettings",
+          "name": "openNarrationSettings",
           "kind": "function",
           "line": 21
         },
         {
+          "name": "toggle",
+          "kind": "function",
+          "line": 25
+        },
+        {
+          "name": "section",
+          "kind": "function",
+          "line": 26
+        },
+        {
+          "name": "openNarrationExportSettings",
+          "kind": "function",
+          "line": 54
+        },
+        {
+          "name": "openProjectSettings",
+          "kind": "function",
+          "line": 67
+        },
+        {
           "name": "returnToSettings",
           "kind": "function",
-          "line": 43
+          "line": 89
         }
       ]
     },
@@ -23739,49 +24389,49 @@
       "method": "GET",
       "function": "bootstrap",
       "file": "src/api/manuscript/document.py",
-      "line": 29,
+      "line": 36,
       "path": "/api/bootstrap"
     },
     {
       "method": "PATCH",
       "function": "update_project",
       "file": "src/api/manuscript/document.py",
-      "line": 58,
+      "line": 65,
       "path": "/api/project/title"
     },
     {
       "method": "GET",
       "function": "get_chapter",
       "file": "src/api/manuscript/document.py",
-      "line": 68,
+      "line": 75,
       "path": "/api/chapters/{cid}"
     },
     {
       "method": "GET",
       "function": "get_book",
       "file": "src/api/manuscript/document.py",
-      "line": 79,
+      "line": 86,
       "path": "/api/book"
     },
     {
       "method": "POST",
       "function": "create_chapter",
       "file": "src/api/manuscript/document.py",
-      "line": 107,
+      "line": 114,
       "path": "/api/chapters"
     },
     {
       "method": "PATCH",
       "function": "update_chapter_title",
       "file": "src/api/manuscript/document.py",
-      "line": 129,
+      "line": 136,
       "path": "/api/chapters/{cid}/title"
     },
     {
       "method": "PATCH",
       "function": "update_chapter_metadata",
       "file": "src/api/manuscript/document.py",
-      "line": 142,
+      "line": 149,
       "path": "/api/chapters/{cid}"
     },
     {
@@ -23797,6 +24447,62 @@
       "file": "src/api/manuscript/images.py",
       "line": 131,
       "path": "/api/manuscript/images/{block_id}/move"
+    },
+    {
+      "method": "GET",
+      "function": "list_narrations",
+      "file": "src/api/manuscript/narration.py",
+      "line": 97,
+      "path": "/api/narrations"
+    },
+    {
+      "method": "POST",
+      "function": "save_narration",
+      "file": "src/api/manuscript/narration.py",
+      "line": 109,
+      "path": "/api/narrations"
+    },
+    {
+      "method": "DELETE",
+      "function": "delete_narration",
+      "file": "src/api/manuscript/narration.py",
+      "line": 180,
+      "path": "/api/narrations/{record_id}"
+    },
+    {
+      "method": "POST",
+      "function": "restore_narration",
+      "file": "src/api/manuscript/narration.py",
+      "line": 190,
+      "path": "/api/narrations/{record_id}/restore"
+    },
+    {
+      "method": "GET",
+      "function": "narration_audio",
+      "file": "src/api/manuscript/narration.py",
+      "line": 204,
+      "path": "/api/narrations/{record_id}/audio"
+    },
+    {
+      "method": "POST",
+      "function": "prepare_narration_pronunciation",
+      "file": "src/api/manuscript/narration_pronunciation.py",
+      "line": 106,
+      "path": "/api/narration-pronunciation"
+    },
+    {
+      "method": "GET",
+      "function": "list_narration_voices",
+      "file": "src/api/manuscript/narration_voices.py",
+      "line": 49,
+      "path": "/api/narration-voices"
+    },
+    {
+      "method": "POST",
+      "function": "download_narration_voice",
+      "file": "src/api/manuscript/narration_voices.py",
+      "line": 54,
+      "path": "/api/narration-voices/{voice_id}/download"
     },
     {
       "method": "POST",
@@ -24236,7 +24942,7 @@
       "method": "GET",
       "function": "current_identity",
       "file": "src/api/project_management/workspace.py",
-      "line": 28,
+      "line": 31,
       "path": "/api/identity/current"
     },
     {
@@ -24936,14 +25642,14 @@
       "method": "GET",
       "function": "feature_flags",
       "file": "src/backend/http_boundary.py",
-      "line": 89,
+      "line": 95,
       "path": "/api/features"
     },
     {
       "method": "GET",
       "function": "metro_view_config",
       "file": "src/backend/http_boundary.py",
-      "line": 95,
+      "line": 101,
       "path": "/api/metro-view-config"
     },
     {
@@ -25020,63 +25726,63 @@
       "method": "GET",
       "function": "list_locales",
       "file": "src/backend/runtime_routes.py",
-      "line": 52,
+      "line": 55,
       "path": "/api/locales"
     },
     {
       "method": "GET",
       "function": "locale_file",
       "file": "src/backend/runtime_routes.py",
-      "line": 69,
+      "line": 72,
       "path": "/locales/{locale_code}.json"
     },
     {
       "method": "GET",
       "function": "runtime_state",
       "file": "src/backend/runtime_routes.py",
-      "line": 76,
+      "line": 79,
       "path": "/api/runtime"
     },
     {
       "method": "GET",
       "function": "auth_session_state",
       "file": "src/backend/runtime_routes.py",
-      "line": 82,
+      "line": 85,
       "path": "/api/auth/session"
     },
     {
       "method": "POST",
       "function": "auth_logout",
       "file": "src/backend/runtime_routes.py",
-      "line": 89,
+      "line": 92,
       "path": "/api/auth/logout"
     },
     {
       "method": "GET",
       "function": "health",
       "file": "src/backend/runtime_routes.py",
-      "line": 103,
+      "line": 106,
       "path": "/api/health"
     },
     {
       "method": "POST",
       "function": "test_auth_login",
       "file": "src/backend/runtime_routes.py",
-      "line": 182,
+      "line": 185,
       "path": "/__test__/login"
     },
     {
       "method": "POST",
       "function": "client_lease",
       "file": "src/backend/runtime_routes.py",
-      "line": 203,
+      "line": 206,
       "path": "/api/lease"
     },
     {
       "method": "POST",
       "function": "release_client_lease",
       "file": "src/backend/runtime_routes.py",
-      "line": 206,
+      "line": 209,
       "path": "/api/lease/release"
     },
     {
@@ -26571,5 +27277,5 @@
       "path": "/api/backup-destinations/{destination_id}"
     }
   ],
-  "route_decorator_count": 521
+  "route_decorator_count": 529
 }

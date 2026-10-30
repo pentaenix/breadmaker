@@ -1,0 +1,4 @@
+# Optional, explicit install; not a startup/writing dependency. No model inference.
+misaki[ja,zh]==0.7.4
+gruut-lang-it==2.0.1
+python-crfsuite==0.9.12

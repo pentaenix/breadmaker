@@ -73,7 +73,7 @@
           "method": "GET",
           "path": "/api/identity/current",
           "function": "current_identity",
-          "line": 28,
+          "line": 31,
           "file": "src/api/project_management/workspace.py"
         },
         {
@@ -228,49 +228,49 @@
           "method": "GET",
           "path": "/api/bootstrap",
           "function": "bootstrap",
-          "line": 29,
+          "line": 36,
           "file": "src/api/manuscript/document.py"
         },
         {
           "method": "PATCH",
           "path": "/api/project/title",
           "function": "update_project",
-          "line": 58,
+          "line": 65,
           "file": "src/api/manuscript/document.py"
         },
         {
           "method": "GET",
           "path": "/api/chapters/{cid}",
           "function": "get_chapter",
-          "line": 68,
+          "line": 75,
           "file": "src/api/manuscript/document.py"
         },
         {
           "method": "GET",
           "path": "/api/book",
           "function": "get_book",
-          "line": 79,
+          "line": 86,
           "file": "src/api/manuscript/document.py"
         },
         {
           "method": "POST",
           "path": "/api/chapters",
           "function": "create_chapter",
-          "line": 107,
+          "line": 114,
           "file": "src/api/manuscript/document.py"
         },
         {
           "method": "PATCH",
           "path": "/api/chapters/{cid}/title",
           "function": "update_chapter_title",
-          "line": 129,
+          "line": 136,
           "file": "src/api/manuscript/document.py"
         },
         {
           "method": "PATCH",
           "path": "/api/chapters/{cid}",
           "function": "update_chapter_metadata",
-          "line": 142,
+          "line": 149,
           "file": "src/api/manuscript/document.py"
         },
         {
@@ -391,6 +391,62 @@
           "function": "move_scene",
           "line": 371,
           "file": "src/api/manuscript/scenes.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/narrations",
+          "function": "list_narrations",
+          "line": 97,
+          "file": "src/api/manuscript/narration.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/narrations",
+          "function": "save_narration",
+          "line": 109,
+          "file": "src/api/manuscript/narration.py"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/narrations/{record_id}",
+          "function": "delete_narration",
+          "line": 180,
+          "file": "src/api/manuscript/narration.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/narrations/{record_id}/restore",
+          "function": "restore_narration",
+          "line": 190,
+          "file": "src/api/manuscript/narration.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/narrations/{record_id}/audio",
+          "function": "narration_audio",
+          "line": 204,
+          "file": "src/api/manuscript/narration.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/narration-voices",
+          "function": "list_narration_voices",
+          "line": 49,
+          "file": "src/api/manuscript/narration_voices.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/narration-voices/{voice_id}/download",
+          "function": "download_narration_voice",
+          "line": 54,
+          "file": "src/api/manuscript/narration_voices.py"
+        },
+        {
+          "method": "POST",
+          "path": "/api/narration-pronunciation",
+          "function": "prepare_narration_pronunciation",
+          "line": 106,
+          "file": "src/api/manuscript/narration_pronunciation.py"
         }
       ]
     },

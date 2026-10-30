@@ -60,6 +60,46 @@
    ========================================================= */
 .cuts-manuscript-button svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.cuts-manuscript-button.active{background:var(--accent-soft);border-color:var(--accent)}
 .cuts-panel{width:320px;min-width:270px;display:flex;flex-direction:column;overflow:hidden}
+.narration-panel{width:290px;min-width:255px;display:flex;flex-direction:column;overflow:hidden;font-size:14px}
+.narration-panel-tools{padding:9px;border-bottom:1px solid var(--line);display:grid;gap:7px}
+.narration-panel-tools select{width:100%;padding:7px;border:1px solid var(--line);border-radius:5px;background:var(--surface);color:var(--text)}
+.narration-action-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.narration-action-row button{padding:7px 4px;font-size:11px;min-width:0;overflow-wrap:anywhere}
+.narration-voice-label{color:var(--muted);font-size:11px}
+.narration-action{position:relative;display:flex;min-width:0}
+.narration-action>button:first-child{flex:1;padding-inline-end:24px}
+.narration-action .narration-action-more{position:absolute;inset-inline-end:1px;top:1px;bottom:1px;width:23px;font-size:15px;padding:3px}
+.narration-view-submenu{padding-inline-start:12px;border-inline-start:1px solid var(--line);margin-inline-start:9px}
+.narration-progress #narrationStop{margin-top:7px;font-size:11px}
+.narration-action-row:has(>button.hidden){grid-template-columns:1fr}
+.narration-recordings{display:flex;flex-direction:column;flex:1;min-height:0;overflow:auto}
+.narration-empty{margin:auto;padding:28px 22px;text-align:center;font-size:13px;line-height:1.55}
+.narration-empty p{margin:8px 0 0;color:var(--muted);font-size:12px}
+.narration-player-passage{font-size:12px;line-height:1.5;margin-bottom:8px;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.narration-recording{display:flex;align-items:flex-start;border-bottom:1px solid var(--line);padding:7px 9px;gap:5px}
+.narration-recording.active{background:var(--accent-soft)}
+.narration-recording-main{flex:1;min-width:0;border:0;background:transparent;color:var(--text);text-align:left;padding:4px 0}
+.narration-recording-excerpt{font-size:12px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.narration-recording-main small,.narration-progress{display:block;color:var(--muted);font-size:11px;margin-top:5px}
+.narration-progress progress{display:block;width:100%;height:4px;margin:7px 0;accent-color:var(--accent);border:0;border-radius:3px;overflow:hidden}
+.narration-progress progress::-webkit-progress-bar{background:var(--line);border-radius:3px}
+.narration-progress progress::-webkit-progress-value{background:var(--accent);border-radius:3px;transition:width .2s}
+@media(prefers-reduced-motion:reduce){.narration-progress progress::-webkit-progress-value{transition:none}}
+.narration-progress small{font-size:10px}
+.narration-player{padding:9px 11px;border-top:1px solid var(--line)}
+.narration-player-controls{display:flex;justify-content:space-between;align-items:center;gap:4px}
+.narration-player-controls button{min-width:30px;height:30px;padding:3px;font-size:13px}
+.narration-player-controls button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;display:block}
+.narration-player-controls .narration-skip{display:flex;align-items:center;justify-content:center;gap:3px;font-size:11px}
+.narration-skip svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round}
+.narration-player input[type=range]{width:100%;margin:9px 0;accent-color:var(--accent)}
+.narration-player-meta{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:11px}
+.narration-player-meta select{background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:4px;padding:3px}
+.narration-preview-gutter{position:absolute;left:-28px;top:2px;width:23px;height:23px;border:0;background:transparent;color:var(--muted);padding:3px;display:grid;place-items:center;z-index:8}
+.narration-preview-gutter svg{width:11px;height:11px;fill:currentColor;stroke:none;opacity:.65}
+.narration-preview-gutter:hover svg,.narration-preview-gutter:focus-visible svg{opacity:1}
+::highlight(narration-preview-passage){background:color-mix(in srgb,var(--accent) 8%,transparent)}
+::highlight(narration-preview-word){background:color-mix(in srgb,var(--accent) 30%,var(--surface));color:var(--text)}
 .cuts-panel-tools{padding:9px;border-bottom:1px solid var(--line);display:grid;gap:7px}
 .cuts-panel-tools input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:7px;outline:0}.cuts-panel-tools input:focus{border-color:var(--accent)}
 .cuts-panel-action-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}.cuts-panel-action-row button{min-width:0;border-radius:5px;padding:7px 8px;font-weight:650}
@@ -460,7 +500,7 @@
 /* Manuscript tool panels remain part of the desktop flex layout instead of
    covering toolbar controls. Only genuinely phone-sized layouts may overlay. */
 @media (min-width:641px){
-  .comments-panel,.markup-panel,.checkpoint-panel,.cuts-panel{
+  .comments-panel,.markup-panel,.checkpoint-panel,.cuts-panel,.narration-panel{
     position:static!important;
     right:auto!important;
     top:auto!important;
@@ -512,7 +552,7 @@
 .checkpoint-list{flex:1 1 auto;max-height:none;min-height:0}
 
 @media(max-width:640px){
-  .comments-panel,.markup-panel,.checkpoint-panel,.cuts-panel{
+  .comments-panel,.markup-panel,.checkpoint-panel,.cuts-panel,.narration-panel{
     position:absolute;
     right:0;top:0;bottom:0;
     z-index:35;

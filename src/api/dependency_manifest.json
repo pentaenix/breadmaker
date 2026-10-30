@@ -653,6 +653,31 @@
         },
         {
           "module": "backend.environment",
+          "symbol": "STATIC",
+          "local": "STATIC"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
+        },
+        {
+          "module": "backend.environment",
           "symbol": "runtime",
           "local": "runtime"
         },

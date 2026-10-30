@@ -25,6 +25,13 @@ sync_developmental_canvases = feature_call('canvas.developmental', 'sync_develop
 
 router = APIRouter()
 
+def manuscript_source_text(block_id,chapter_id=None):
+    """Read a current narration target through the canonical manuscript owner."""
+    with storage_database.read_tx() as con:
+        if chapter_id is not None:
+            return one(con,'SELECT title AS text_content FROM chapters WHERE id=?',(chapter_id,))
+        return one(con,'SELECT text_content FROM manuscript_blocks WHERE id=?',(block_id,))
+
 @router.get("/api/bootstrap")
 def bootstrap():
     # Bootstrap is navigation metadata, not an eager manuscript hydration endpoint.

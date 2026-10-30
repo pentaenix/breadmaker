@@ -64,7 +64,8 @@ class ProjectPackageMixin:
         pages are included without relying on a raw file copy. WAL/SHM files and the
         live process-lock file are intentionally omitted because the database snapshots
         already contain the durable state they represent. Everything else beneath the
-        configured Breadmaker home is preserved at the same relative path.
+        configured Breadmaker home is preserved at the same relative path, except
+        for regenerable project narration caches.
         """
         destination=Path(destination).resolve();destination.parent.mkdir(parents=True,exist_ok=True)
         root=self.root.resolve()
@@ -94,6 +95,10 @@ class ProjectPackageMixin:
                 with zipfile.ZipFile(tmp,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6,allowZip64=True) as zf:
                     for path in sorted(root.rglob('*')):
                         if not path.is_file():
+                            continue
+                        # Narration is a derived, regenerable project cache, not backup data.
+                        parts=path.relative_to(root).parts
+                        if len(parts)>3 and parts[0] in {'projects','trash'} and parts[2]=='narrations':
                             continue
                         resolved=path.resolve();name=path.name
                         if name in {'project.sqlite3-wal','project.sqlite3-shm','breadmaker_editor.lock','backup_credentials.json','credential_obfuscation.key','credential_encryption.key','google_oauth_client.json'}:

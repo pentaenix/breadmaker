@@ -271,6 +271,8 @@ function refreshRuntimeLocalizedUi(){
   if(state.split?.type==='map')openMapSplit?.(state.split.id).catch?.(console.warn);
   if(!$('#checkpointPanel')?.classList.contains('hidden'))renderCheckpointList?.();
   if(!$('#cutsPanel')?.classList.contains('hidden')){renderCutsList?.();syncCutsPanelContext?.()}
+  syncNarrationVoiceChoices?.();
+  if(!$('#narrationPanel')?.classList.contains('hidden'))renderNarrations?.();
   if(!$('#commentsPanel')?.classList.contains('hidden')){renderCommentsList?.();renderCommentsDetail?.(commentsWorkspace?.items?.find?.(x=>entityId(x.id)===entityId(commentsWorkspace.selectedId))||null)}
 }
 

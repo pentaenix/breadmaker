@@ -114,6 +114,14 @@ window.__breadmakerStartupDeadline=setTimeout(()=>window.breadmakerStartupFailed
             <button id="viewChaptersBtn" class="view-popover-action view-popover-toggle" type="button" role="menuitemcheckbox" aria-checked="true"><span>{{i18n:static.text.text.cce95284}}</span><span class="view-popover-check" aria-hidden="true">✓</span></button>
             <button id="viewScenesBtn" data-testid="manuscript-view-scenes" class="view-popover-action view-popover-toggle" type="button" role="menuitemcheckbox" aria-checked="true"><span>{{i18n:static.text.text.43b40754}}</span><span class="view-popover-check" aria-hidden="true">✓</span></button>
             <button id="viewFindReplaceBtn" class="view-popover-action" type="button" role="menuitem">{{i18n:static.attr.aria.label.8c65233c}}</button>
+            <div id="narrationViewOptions" class="hidden">
+              <div class="view-popover-divider"></div>
+              <button id="viewNarrationBtn" class="view-popover-action view-popover-toggle" type="button" role="menuitem" aria-expanded="false" aria-haspopup="menu" aria-controls="viewNarrationMenu"><span>{{i18n:narration.title}}</span><span aria-hidden="true">›</span></button>
+              <div id="viewNarrationMenu" class="narration-view-submenu hidden" role="menu" aria-label="{{i18n:narration.title}}">
+                <button id="viewNarrationPassage" class="view-popover-action view-popover-toggle" type="button" role="menuitemcheckbox" aria-checked="true"><span>{{i18n:narration.highlight_passage}}</span><span class="view-popover-check" aria-hidden="true">✓</span></button>
+                <button id="viewNarrationWord" class="view-popover-action view-popover-toggle" type="button" role="menuitemcheckbox" aria-checked="true"><span>{{i18n:narration.highlight_word}}</span><span class="view-popover-check" aria-hidden="true">✓</span></button>
+              </div>
+            </div>
             <div class="view-popover-divider"></div>
             <div class="view-text-size" role="group" aria-labelledby="viewTextSizeLabel">
               <div class="view-text-size-head"><span id="viewTextSizeLabel">{{i18n:static.text.text.b811ff3e}}</span><output id="viewTextSizeValue">{{i18n:static.text.text.393678aa}}</output></div>
@@ -136,6 +144,7 @@ window.__breadmakerStartupDeadline=setTimeout(()=>window.breadmakerStartupFailed
         <button id="checkpointBtn" class="toolbar-button icon-only checkpoint-button" type="button" aria-pressed="false" aria-label="{{i18n:static.attr.aria.label.222d805c}}" aria-describedby="checkpointTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4"/><path d="M6 5h11l-2.5 3L17 11H6"/></svg></button>
         <button id="manuscriptReviewsBtn" class="toolbar-button icon-only tool-icon-button manuscript-reviews-tool-button" type="button" aria-pressed="false" aria-label="{{i18n:reviews.title}}" aria-describedby="manuscriptReviewsTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h10l4 4v13H5z"/><path d="M15 3.5v4h4"/><path d="m8.2 13.2 2.1 2.1 4.4-4.4"/></svg></button>
         <button id="cutsBtn" class="toolbar-button icon-only tool-icon-button cuts-manuscript-button" type="button" aria-pressed="false" aria-label="{{i18n:static.attr.aria.label.043e7e92}}" aria-describedby="cutsTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="7" r="2.6"/><circle cx="6" cy="17" r="2.6"/><path d="M8.25 8.35 20 17M8.25 15.65 20 7"/></svg></button>
+        <button id="narrationBtn" class="toolbar-button icon-only tool-icon-button hidden" type="button" aria-pressed="false" aria-label="Narration" aria-describedby="narrationTooltip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V12a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg></button>
         <button id="editorsEyeBtn" class="toolbar-button icon-only editors-eye-button" type="button" aria-pressed="false" aria-label="{{i18n:static.attr.aria.label.18bfeb9b}}" aria-describedby="editorsEyeTooltip"><svg class="editors-eye-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="editors-eye-outline" d="M2.6 12s3.35-5 9.4-5 9.4 5 9.4 5-3.35 5-9.4 5-9.4-5-9.4-5Z"/><circle class="editors-eye-pupil" cx="12" cy="12" r="2.7"/><path class="editors-eye-spark editors-eye-spark-a" d="M18.6 3.1v3.2M17 4.7h3.2"/><path class="editors-eye-spark editors-eye-spark-b" d="M5.3 4.1v2M4.3 5.1h2"/></svg></button>
       </div>
       <div id="checkpointCompareToolbar" class="checkpoint-context-toolbar hidden" role="toolbar" aria-label="{{i18n:static.attr.aria.label.3f86f5d8}}">
@@ -194,6 +203,34 @@ window.__breadmakerStartupDeadline=setTimeout(()=>window.breadmakerStartupFailed
         </div>
       </div>
       <div id="cutsList" class="cuts-list"></div>
+    </aside>
+
+    <aside id="narrationPanel" class="right-panel narration-panel hidden" aria-label="{{i18n:narration.title}}">
+      <div class="panel-head"><b>{{i18n:narration.title}}</b><button id="closeNarrationPanel" class="bare-button ui-close-button" type="button" aria-label="{{i18n:narration.close}}">×</button></div>
+      <div class="narration-panel-tools">
+        <label class="narration-voice-label" for="narrationVoice">{{i18n:narration.voice}}</label>
+        <select id="narrationVoice" aria-label="{{i18n:narration.voice}}"><optgroup label="{{i18n:narration.language_en}}"><option value="af_heart">{{i18n:narration.voice_heart}}</option><option value="am_michael">{{i18n:narration.voice_michael}}</option><option value="bf_emma">{{i18n:narration.voice_emma}}</option><option value="bm_george">{{i18n:narration.voice_george}}</option></optgroup><optgroup label="{{i18n:narration.language_es}}"><option value="ef_dora">{{i18n:narration.voice_dora}}</option><option value="em_alex">{{i18n:narration.voice_alex}}</option><option value="em_santa">{{i18n:narration.voice_santa}}</option></optgroup></select>
+        <div class="narration-action-row">
+          <div class="narration-action" data-narration-action="selection"><button id="narrationSelection" class="soft-button" type="button" disabled>{{i18n:narration.selection}}</button><button id="narrationSelectionOptions" class="bare-button narration-action-more" type="button" aria-label="{{i18n:narration.selection_options}}" aria-haspopup="menu" disabled>⋮</button></div>
+          <div class="narration-action" data-narration-action="scope"><button id="narrationChapter" class="soft-button" type="button" disabled>{{i18n:narration.chapter}}</button><button id="narrationScopeOptions" class="bare-button narration-action-more" type="button" aria-label="{{i18n:narration.scope_options}}" aria-haspopup="menu" disabled>⋮</button></div>
+        </div>
+        <div id="narrationProgress" class="narration-progress hidden" role="status" aria-live="polite"><span id="narrationProgressLabel"></span><progress id="narrationProgressBar" max="1" aria-label="{{i18n:narration.generating_progress}}"></progress><small id="narrationProgressEstimate"></small><button id="narrationStop" class="quiet-button" type="button">{{i18n:narration.stop_generation}}</button></div>
+      </div>
+      <div id="narrationRecordings" class="narration-recordings">
+        <div class="narration-empty"><b>{{i18n:narration.empty_title}}</b><p>{{i18n:narration.empty_hint}}</p></div>
+      </div>
+      <div class="narration-player hidden">
+        <div id="narrationPreviewExcerpt" class="narration-player-passage"></div>
+        <div class="narration-player-controls">
+          <button id="narrationPrevious" class="bare-button" type="button" aria-label="{{i18n:narration.restart}}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M19 5 9 12l10 7V5Z"/></svg></button>
+          <button id="narrationRewind" class="bare-button narration-skip" type="button" aria-label="{{i18n:narration.rewind}}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m11 5-8 7 8 7V5Zm10 0-8 7 8 7V5Z"/></svg><span>5</span></button>
+          <button id="narrationPlay" class="bare-button" type="button" aria-label="{{i18n:narration.play}}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg></button>
+          <button id="narrationForward" class="bare-button narration-skip" type="button" aria-label="{{i18n:narration.forward}}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 5 8 7-8 7V5Zm10 0 8 7-8 7V5Z"/></svg><span>5</span></button>
+          <button id="narrationNext" class="bare-button" type="button" aria-label="{{i18n:narration.next}}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14M5 5l10 7-10 7V5Z"/></svg></button>
+        </div>
+        <input id="narrationSeek" type="range" min="0" max="100" value="0" aria-label="{{i18n:narration.position}}">
+        <div class="narration-player-meta"><span id="narrationTime">0:00 / 0:00</span><select id="narrationSpeed" aria-label="{{i18n:narration.speed}}"><option value="0.8">0.8×</option><option value="0.9">0.9×</option><option value="0.95">0.95×</option><option value="1" selected>1×</option><option value="1.05">1.05×</option><option value="1.1">1.1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="1.75">1.75×</option><option value="2">2×</option></select></div>
+      </div>
     </aside>
 
     <aside id="commentsPanel" class="right-panel comments-panel hidden" aria-label="{{i18n:static.attr.aria.label.294edc0d}}">
@@ -584,6 +621,7 @@ window.__breadmakerStartupDeadline=setTimeout(()=>window.breadmakerStartupFailed
   <span>{{i18n:static.text.text.88c85bf2}}</span>
   <small id="cutsTooltipStatus"></small>
 </div>
+<div id="narrationTooltip" class="editors-eye-tooltip manuscript-tool-tooltip hidden" role="tooltip"><b>{{i18n:narration.title}}</b><span>{{i18n:narration.tooltip}}</span></div>
 <div id="editorsEyeTooltip" class="editors-eye-tooltip hidden" role="tooltip">
   <b>{{i18n:static.text.text.1017eaca}}</b>
   <span>{{i18n:static.text.text.943ac9ff}}</span>
@@ -616,6 +654,7 @@ window.__breadmakerStartupDeadline=setTimeout(()=>window.breadmakerStartupFailed
 <script src="/static/js/core/boot.js?v=10.5.68"></script>
 <script src="/static/js/features/projects/menu.js?v=10.5.68"></script>
 <script src="/static/js/features/projects/settings.js?v=10.5.68"></script>
+<script src="/static/js/features/projects/narration_voices.js?v=10.5.68"></script>
 <script src="/static/js/features/projects/backups.js?v=10.5.68"></script>
 <script src="/static/js/features/projects/lifecycle.js?v=10.5.68"></script>
 <script src="/static/js/features/projects/export_recovery.js?v=10.5.68"></script>
@@ -625,6 +664,14 @@ window.__breadmakerStartupDeadline=setTimeout(()=>window.breadmakerStartupFailed
 <script src="/static/js/features/manuscript/rendering.js?v=10.5.68"></script>
 <script src="/static/js/features/manuscript/history.js?v=10.5.68"></script>
 <script src="/static/js/features/manuscript/workspace.js?v=10.5.68"></script>
+<script src="/static/js/features/manuscript/narration-progress.js?v=10.5.68"></script>
+<script src="/static/js/features/manuscript/narration-playback.js?v=10.5.68"></script>
+<script src="/static/js/features/manuscript/narration-preferences.js?v=10.5.68"></script>
+<script src="/static/js/features/manuscript/narration-voices.js?v=10.5.68"></script>
+<script src="/static/js/features/manuscript/narration.js?v=10.5.68"></script>
+<script src="/static/js/features/manuscript/narration-punctuation.js?v=10.5.68"></script>
+<script src="/static/js/features/manuscript/narration-engine.js?v=10.5.68"></script>
+<script src="/static/js/features/manuscript/narration-export.js?v=10.5.68"></script>
 <script src="/static/js/features/manuscript/persistence.js?v=10.5.68"></script>
 <script src="/static/js/features/manuscript/editing.js?v=10.5.68"></script>
 <script src="/static/js/features/manuscript/scenes.js?v=10.5.68"></script>

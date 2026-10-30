@@ -1,5 +1,11 @@
 // Manuscript view preferences and View popover presentation.
 
+$('#viewNarrationBtn')?.addEventListener('click',async()=>{try{await loadNarrationPreferences();const open=$('#viewNarrationMenu').classList.contains('hidden');$('#viewNarrationMenu').classList.toggle('hidden',!open);$('#viewNarrationBtn').setAttribute('aria-expanded',String(open));positionViewPopover()}catch(error){narrationFail(error)}});
+
+for(const [id,property] of [['viewNarrationPassage','passage'],['viewNarrationWord','word']]){
+  $('#'+id)?.addEventListener('click',()=>{saveNarrationPreferences({[property]:!narrationPreview[property]}).then(positionViewPopover).catch(narrationFail)});
+}
+
 const MANUSCRIPT_TEXT_SIZE_KEY='breadmaker-manuscript-text-size';
 function applyManuscriptTextSize(value,{persist=true}={}){
   const size=normalizeManuscriptTextSize(value);state.manuscriptFontSize=size;
@@ -26,7 +32,7 @@ function positionViewPopover(){
   let top=rect.bottom+6;if(top+(pop.offsetHeight||120)>innerHeight-margin)top=Math.max(margin,rect.top-(pop.offsetHeight||120)-6);
   pop.style.left=`${left}px`;pop.style.top=`${top}px`;
 }
-function closeViewPopover(){const pop=$('#viewPopover'),button=$('#viewBtn');if(!pop||pop.classList.contains('hidden'))return;pop.classList.add('hidden');button?.setAttribute('aria-expanded','false')}
+function closeViewPopover(){const pop=$('#viewPopover'),button=$('#viewBtn');if(!pop||pop.classList.contains('hidden'))return;pop.classList.add('hidden');button?.setAttribute('aria-expanded','false');$('#viewNarrationMenu')?.classList.add('hidden');$('#viewNarrationBtn')?.setAttribute('aria-expanded','false')}
 function toggleViewPopover(){
   const pop=$('#viewPopover'),button=$('#viewBtn');if(!pop||!button)return;
   const opening=pop.classList.contains('hidden');
