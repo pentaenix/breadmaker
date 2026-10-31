@@ -45,6 +45,9 @@ Ambiguous words, intentional telling and useful adverbs can still match. Review
 each suggestion in context; absence of a highlight does not establish good prose.
 Expand vocabulary with positive and negative regression examples, not stemming.
 These original lists are inspired by the course categories, not copied course text.
+Expanded coverage and matching caveats are recorded in
+`docs/EDITOR_HIGHLIGHTS_VOCABULARY.md`. No dictionary downloads or NLP dependencies
+are required. These lists expand existing searches, not the set of categories.
 
 ## Persistence, reruns and Undo
 

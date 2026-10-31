@@ -67,7 +67,7 @@
     },
     {
       "file": "src/api/annotations/editing_lexicon.py",
-      "lines": 147,
+      "lines": 164,
       "symbols": [
         {
           "name": "forms",
@@ -78,17 +78,33 @@
     },
     {
       "file": "src/api/annotations/editing_search.py",
-      "lines": 58,
+      "lines": 91,
       "symbols": [
         {
           "name": "phrase_pattern",
           "kind": "function",
-          "line": 9
+          "line": 10
+        },
+        {
+          "name": "_nominal_use",
+          "kind": "function",
+          "line": 36
         },
         {
           "name": "find_matches",
           "kind": "function",
-          "line": 20
+          "line": 47
+        }
+      ]
+    },
+    {
+      "file": "src/api/annotations/editing_vocabulary.py",
+      "lines": 255,
+      "symbols": [
+        {
+          "name": "_forms",
+          "kind": "function",
+          "line": 7
         }
       ]
     },

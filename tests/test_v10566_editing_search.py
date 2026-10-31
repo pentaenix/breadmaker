@@ -263,3 +263,21 @@ def test_deleted_marker_registry_cannot_bind_an_unrelated_reused_numeric_id(clie
     other=assert_ok(client.post('/api/labels',json={'name':'Unrelated marker','color':'#123abc'}))
     assert other['id']==marker['id']  # SQLite deliberately reuses the numeric ID.
     assert search_status(client,tab)['marker'] is None
+
+
+def test_expanded_vocabulary_persists_correct_unicode_ranges(client,document):
+    tab,chapter=document
+    text='😀 She couldn’t taste the tea. She answered self‑consciously and wasn’t exactly happy.'
+    paragraphs(client,chapter,[text])
+    for kind,expected in [
+        ('filter',['couldn’t taste']),
+        ('adverbs',['self‑consciously','exactly']),
+        ('emotions',['wasn’t exactly happy']),
+    ]:
+        marker=assert_ok(scan(client,tab,kind))['marker']
+        rows=annotations(client,marker)
+        assert [row['selected_text'] for row in rows]==expected
+        for row in rows:
+            assert text[row['start_offset']:row['end_offset']]==row['selected_text']
+        assert_ok(scan(client,tab,kind,action='recheck'))
+        assert [row['selected_text'] for row in annotations(client,marker)]==expected
