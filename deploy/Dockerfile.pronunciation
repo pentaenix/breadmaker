@@ -2,6 +2,9 @@
 ARG PYTHON_BASE_DIGEST
 FROM python:3.14.8-slim-trixie@sha256:${PYTHON_BASE_DIGEST} AS build
 WORKDIR /helper
+# mojimoji's pinned release has no CPython 3.14 Linux wheel. Compile it here;
+# only /usr/local and explicitly selected runtime libraries reach the final image.
+RUN apt-get update && apt-get install -y --no-install-recommends g++ && rm -r /var/lib/apt/lists/*
 COPY deploy/requirements-pronunciation.txt ./requirements.txt
 RUN python -m pip install --no-cache-dir -r requirements.txt setuptools==84.2.0
 COPY src/narration ./src/narration
