@@ -24,8 +24,12 @@ class NarrationSource:
         tab = tx.get(('projects', pid, 'tabs', require_opaque_id(chapter.data.get('tab_id'))))
         if tab is None:
             raise DocumentNotFound('NARRATION_BLOCK_NOT_FOUND')
+        # Canonical block writers bind through chapter_id; tab_id is optional
+        # denormalized metadata, not a required edge. The parent chapter/tab and
+        # captured fence are still checked in this same authority transaction.
         if (type(row.data.get('generation')) is not int or row.data['generation'] < 1
-                or (kind == 'block' and row.data.get('tab_id') != chapter.data.get('tab_id'))):
+                or (kind == 'block' and row.data.get('tab_id', chapter.data.get('tab_id'))
+                    != chapter.data.get('tab_id'))):
             raise DocumentConflict('NARRATION_SOURCE_STRUCTURE_INVALID')
         current = {'kind': kind, 'id': eid, 'generation': row.data.get('generation'),
                    'chapter': chapter_id, 'tab': chapter.data.get('tab_id')}

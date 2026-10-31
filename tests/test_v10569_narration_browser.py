@@ -105,6 +105,26 @@ def test_hosted_narration_publish_thin_reuse_delete_undo_without_manuscript_muta
         assert not errors,errors
 
 
+def test_hosted_new_paragraph_narration_uses_normal_editor_save(tmp_path):
+    with browser(tmp_path) as (base,page,pid):
+        page.evaluate('()=>{const prose=document.querySelector(".manuscript-block");placeCaret(prose,prose.innerText.length)}')
+        page.keyboard.press('Enter')
+        expect(page.locator('.manuscript-block')).to_have_count(2)
+        page.keyboard.insert_text('A new disposable paragraph.')
+        page.wait_for_function('()=>!state.dirty&&!state.saveInFlight')
+        expect(page.locator('.manuscript-block').last).to_have_text('A new disposable paragraph.')
+        before=page.request.get(base+'/api/project/metadata',headers={'X-Breadmaker-Project':pid}).json()['generation']
+        page.locator('#narrationBtn').click()
+        page.wait_for_function('()=>!narration.loading&&narration.project===currentProjectIdentity()')
+        page.evaluate('async()=>await generateNarrations([narrationSource([...document.querySelectorAll(".manuscript-block")].at(-1))],false,{generateOnly:true})')
+        expect(page.locator('.narration-recording')).to_have_count(1)
+        page.locator('.narration-recording-main').click()
+        page.wait_for_function('()=>narration.selected?.source_text&&narration.url')
+        assert page.evaluate('()=>narration.selected.source_text')=='A new disposable paragraph.'
+        assert page.request.get(base+'/api/project/metadata',headers={'X-Breadmaker-Project':pid}).json()['generation']==before
+        expect(page.locator('.manuscript-block').last).to_have_text('A new disposable paragraph.')
+
+
 def test_hosted_narration_denial_clears_private_audio_worker_and_late_resume(tmp_path):
     with browser(tmp_path) as (base,page,pid):
         page.locator('#narrationBtn').click()

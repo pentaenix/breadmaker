@@ -11878,7 +11878,7 @@
     },
     {
       "file": "src/hosted/narration/source.py",
-      "lines": 59,
+      "lines": 63,
       "symbols": [
         {
           "name": "NarrationSource",
