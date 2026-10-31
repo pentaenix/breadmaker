@@ -134,6 +134,20 @@ def test_model_or_private_source_is_not_eagerly_loaded_by_router_creation(env):
     assert app.get('/api/narrations').json() == {'records': [], 'next': None}
 
 
+def test_list_is_thin_and_private_details_require_current_head_generation(env):
+    made, _ = publish(env)
+    http = client(env)
+    value = http.get('/api/narrations').json()['records'][0]
+    assert value['id'] == made['id'] and 'source_text' not in value and 'timings' not in value
+    assert len(value['text']) <= 160
+    assert http.get(f"/api/narrations/{made['id']}").status_code == 422
+    assert http.get(f"/api/narrations/{made['id']}?expected_generation=2").status_code == 409
+    details = http.get(f"/api/narrations/{made['id']}?expected_generation=1")
+    assert details.status_code == 200 and details.json()['source_text'] == env[4]['source_text']
+    assert details.headers['cache-control'] == 'private, no-store'
+    assert client(env, actor=OTHER).get(f"/api/narrations/{made['id']}?expected_generation=1").status_code == 404
+
+
 def test_control_json_send_deadline_also_releases_process_capacity():
     from fastapi.responses import JSONResponse
     released = []

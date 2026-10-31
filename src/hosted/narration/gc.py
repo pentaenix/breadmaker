@@ -5,7 +5,8 @@ deletion. An atomic, exact-generation replacement by a permanent zero-byte
 object at the SAME random attempt name closes that cross-provider race. There
 is no delete/recreate gap. Install/read back every fence BEFORE quota settlement.
 All writers MUST remain create-only. Fences are never expired/deleted by GC.
-Each costs a conservative 2 KiB retained capacity charge; no private payload,
+Each costs a conservative 2 KiB retained capacity charge (minimum one charge per
+publication for its retained idempotency control); no private payload,
 keys, text, voice, user identity or source hashes are retained in these objects.
 """
 from dataclasses import dataclass
@@ -309,7 +310,10 @@ class NarrationGC:
                 raise DocumentConflict('NARRATION_GC_QUEUE_CHANGED')
             if previous is not None or head and (head.data.get('state') != 'collecting' or head.data.get('publication') != publication):
                 raise DocumentConflict('NARRATION_GC_SETTLEMENT_CHANGED')
-            refund = current['reserved_bytes'] - len(current['objects']) * FENCE_BYTES
+            retained = max(1, len(current['objects'])) * FENCE_BYTES
+            refund = current['reserved_bytes'] - retained
+            if refund < 0:
+                raise HostedValidationError('NARRATION_GC_RESERVATION_INVALID')
             if usage['bytes'] < current['reserved_bytes'] or usage['records'] < 1:
                 raise HostedValidationError('NARRATION_GC_RESERVATION_INVALID')
             usage.update(bytes=usage['bytes'] - refund, records=usage['records'] - 1)
@@ -318,7 +322,7 @@ class NarrationGC:
             tx.set((USAGE, current['owner_user_id']), usage)
             tx.create(receipt, dict(v=1, project_id=pid, publication=publication,
                 owner_user_id=current['owner_user_id'], fenced_objects=len(current['objects']),
-                retained_capacity_bytes=len(current['objects']) * FENCE_BYTES,
+                retained_capacity_bytes=retained,
                 completed_at=stamp, expires_at=stamp + timedelta(days=30)))
             tx.delete(_intent(pid, publication))
             tx.delete((QUEUE, publication))

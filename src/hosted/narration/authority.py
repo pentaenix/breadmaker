@@ -9,6 +9,11 @@ from hosted.firestore.contracts import HostedAuthorizationError, ProjectUnavaila
 from hosted.firestore.ids import identity_binding_id, require_project_id, require_user_id
 
 
+def require_authority(authority, tx, uid, pid, kind):
+    if authority(tx, uid, pid, kind) is not True:
+        raise HostedAuthorizationError('NARRATION_ACCESS_DENIED')
+
+
 class NarrationAuthority:
     def __init__(self, domain, *, issuer: str, now, development=False):
         if not development and not str(issuer).startswith('identity-platform://'):

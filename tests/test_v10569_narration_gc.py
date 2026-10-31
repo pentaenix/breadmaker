@@ -72,7 +72,9 @@ def test_unwritten_abandoned_upload_refunds_only_after_grace(env):
     env[5][0] += 3600 + GRACE + 1
     gc = collector(env); lease = gc.acquire()
     assert gc.collect(PID, made['publication'], lease)
-    assert usage(env) == dict(v=1, bytes=0, records=0, uploads={})
+    # Even an upload with no object retains a small operation/idempotency row;
+    # capacity must not silently refund storage that actually remains.
+    assert usage(env) == dict(v=1, bytes=FENCE_BYTES, records=0, uploads={})
     assert not env[3].list_prefix('projects/')
 
 

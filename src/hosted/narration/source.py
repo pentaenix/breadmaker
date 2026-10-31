@@ -1,6 +1,7 @@
 """Canonical hosted narration targets and retryable source fences; no SQLite."""
 from hosted.firestore.contracts import DocumentConflict, DocumentNotFound
 from hosted.firestore.ids import require_opaque_id
+from hosted.narration.authority import require_authority
 
 
 class NarrationSource:
@@ -8,7 +9,7 @@ class NarrationSource:
         self.domain, self.authority = domain, authority
 
     def check(self, tx, uid, pid, fence):
-        self.authority(tx, uid, pid, 'write')
+        require_authority(self.authority, tx, uid, pid, 'write')
         kind, eid = fence['kind'], require_opaque_id(fence['id'])
         if kind not in {'block', 'chapter_title'}:
             raise ValueError('NARRATION_TARGET_INVALID')
@@ -37,7 +38,7 @@ class NarrationSource:
         if kind not in {'block', 'chapter_title'}:
             raise ValueError('NARRATION_TARGET_INVALID')
         def read(tx):
-            self.authority(tx, uid, pid, 'write')
+            require_authority(self.authority, tx, uid, pid, 'write')
             path = ('projects', pid, 'blocks' if kind == 'block' else 'chapters', eid)
             row = tx.get(path)
             if row is None:

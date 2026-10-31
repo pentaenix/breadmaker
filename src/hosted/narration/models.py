@@ -14,6 +14,7 @@ from hosted.firestore.contracts import HostedValidationError
 from hosted.narration.sealed_parts import PART_BYTES
 from hosted.narration.transfers import NarrationTransferBudget
 from hosted.storage.contracts import ObjectIntegrityError
+from hosted.narration.authority import require_authority
 
 PREFIX = 'narration-public/v1/'
 POOL_BYTES = 2 * 1024**3
@@ -78,7 +79,7 @@ class NarrationModelReads:
         self.authority, self.policy, self.now = authority, policy, now
 
     def manifest(self, uid, pid):
-        self.documents.run_transaction(lambda tx: self.authority(tx, uid, pid, 'model'))
+        self.documents.run_transaction(lambda tx: require_authority(self.authority, tx, uid, pid, 'model'))
         return {'digest': self.catalog.digest, **self.catalog.manifest}
 
     def read_part(self, uid, pid, asset_id, ordinal):
@@ -93,7 +94,7 @@ class NarrationModelReads:
             payload = b''.join(self.objects.read_chunks(name, max_bytes=part['size'], if_generation_match=metadata.generation))
             if len(payload) != part['size'] or hashlib.sha256(payload).hexdigest() != part['sha256']:
                 raise ObjectIntegrityError('NARRATION_MODEL_INTEGRITY_FAILED')
-            self.documents.run_transaction(lambda tx: self.authority(tx, uid, pid, 'model'))
+            self.documents.run_transaction(lambda tx: require_authority(self.authority, tx, uid, pid, 'model'))
             return payload, permit, budget
         except BaseException:
             budget.finish(permit)

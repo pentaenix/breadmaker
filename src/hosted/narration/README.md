@@ -28,6 +28,15 @@ GC/lifecycle census, actual-provider acceptance and full release CI are still
 required. Editor Highlights needs its separate canonical atomic adapter too.
 No feature activation or complete recovery/erasure claim follows from these tests.
 
+`index.py` now couples encrypted 128-record thin pages to the SAME head transaction
+for publication/replacement/delete/Undo. Source hashes, excerpts, voice and ranges
+stay inside the existing envelope; timings/full source load lazily through a
+generation-bound detail route. No full 20k-record bodies/timings startup response.
+Index encryption is outside callbacks; stale prepared pages/current membership
+must still pass before any write. A missing/corrupt/foreign-epoch index fails
+closed, never becomes editable manuscript authority. The browser consumer is
+still pending; these inactive factories cannot be enabled as a local-UI fallback.
+
 The inactive pronunciation client now precharges durable monthly character,
 attempt and server-time budgets before private helper I/O. Only a confirmed
 successful call settles to measured server time; uncertain failures stay charged.

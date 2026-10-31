@@ -19,6 +19,7 @@ from hosted.firestore.ids import require_opaque_id, require_project_id, require_
 from hosted.narration.metadata import MAX_AUDIO, MAX_METADATA, MAX_METADATA_CHARACTERS, normalize, validate_audio
 from hosted.narration.sealed_parts import PART_BYTES
 from hosted.narration.source import NarrationSource
+from hosted.narration.authority import require_authority
 
 ROOT = 'narration_projects_v1'
 USAGE = 'narration_storage_usage_v1'
@@ -77,6 +78,8 @@ class HostedNarrationRecordings:
         if not isinstance(epoch, str) or not epoch:
             raise ValueError('NARRATION_AUTHORITY_EPOCH_REQUIRED')
         self.epoch = require_opaque_id(epoch)
+        from hosted.narration.index import PrivateNarrationIndex
+        self.index = PrivateNarrationIndex(self.documents, parts.envelope, authority=authority, epoch=self.epoch)
 
     def _context(self, pid, publication):
         return {'project_id': pid, 'entity': 'narration_metadata', 'record_id': publication}
@@ -93,7 +96,7 @@ class HostedNarrationRecordings:
             raise HostedValidationError('NARRATION_METADATA_INVALID') from None
 
     def _load(self, tx, uid, pid, publication, kind='read'):
-        self.authority(tx, uid, pid, kind)
+        require_authority(self.authority, tx, uid, pid, kind)
         data = _required(tx.get(_intent(pid, publication)))
         if data.get('state') == 'collecting':
             raise DocumentConflict('NARRATION_UPLOAD_UNAVAILABLE')
@@ -123,9 +126,10 @@ class HostedNarrationRecordings:
     def _reserve_growth(data, usage):
         # Count encrypted Firestore metadata too: tiny audio with large timing
         # arrays must not create an unaccounted multi-GiB metadata loophole.
-        # Two KiB also reserves the small head and operation-control records.
+        # Four KiB also reserves the head, encrypted thin index and operation
+        # controls. Per-attempt fences have their separate retained charge.
         while True:
-            required = ((len(_json(data)) + 1023) // 1024) * 1024 + 2048
+            required = ((len(_json(data)) + 1023) // 1024) * 1024 + 4096
             extra = max(0, required - data['metadata_reserved'])
             if not extra:
                 break
@@ -152,7 +156,7 @@ class HostedNarrationRecordings:
         # and record locators are random; no private-content hash in object names.
         op_path = (ROOT, pid, 'operations', hashlib.sha256((uid + '\0' + operation).encode()).hexdigest())
         def previous(tx):
-            self.authority(tx, uid, pid, 'write')
+            require_authority(self.authority, tx, uid, pid, 'write')
             op = tx.get(op_path)
             return None if op is None else self._load(tx, uid, pid, op.data['publication'], 'write')
         prior = self.documents.run_transaction(previous)
@@ -286,7 +290,10 @@ class HostedNarrationRecordings:
                 if head.get('state') != 'active' or head.get('publication') != publication:
                     raise DocumentConflict('NARRATION_REPLAY_SUPERSEDED')
                 return data
-            return self._pending(tx, uid, pid, publication)
+            pending = self._pending(tx, uid, pid, publication)
+            if pending['replaces'] and _required(tx.get(_head(pid, pending['replaces']))) != pending['previous_head']:
+                raise DocumentConflict('NARRATION_REPLACEMENT_CHANGED')
+            return pending
         before = self.documents.run_transaction(read)
         record = self._open(pid, publication, before['sealed_metadata'])
         if before['state'] == 'published':
@@ -303,6 +310,12 @@ class HostedNarrationRecordings:
         duration = validate_audio(payload, record)
         del payload
         stamp = self.now()
+        from hosted.narration.index import summary
+        previous = before['previous_head']
+        removals = [(previous['index_page'], before['replaces'], previous['publication'], previous['generation'])] if previous else []
+        indexed = self.index.prepare(uid, pid, add=[summary(record, before['source'],
+            record_id=before['record_id'], publication=publication, generation=1, duration=duration,
+            audio_bytes=before['audio_bytes'])], remove=removals)
         def commit(tx):
             current = self._pending(tx, uid, pid, publication)
             if current != before:
@@ -322,18 +335,20 @@ class HostedNarrationRecordings:
             # Validate the serialized intent BEFORE any write (also for fakes).
             if len(_json(current)) > 750_000:
                 raise HostedValidationError('NARRATION_METADATA_TOO_LARGE')
+            indexed.commit(tx)  # remaining operations are WRITES ONLY
             if old:
                 tx.set(old_path, {**old, 'state': 'retired', 'retired_at': stamp, 'generation': old['generation'] + 1})
                 tx.set((QUEUE, old['publication']), _queue(pid, old['publication'], owner, stamp + 172800))
             self._put_intent(tx, _intent(pid, publication), current)
-            tx.create(head_path, dict(v=1, state='active', publication=publication, epoch=self.epoch, generation=1))
+            tx.create(head_path, dict(v=1, state='active', publication=publication, epoch=self.epoch,
+                                     generation=1, index_page=indexed.locations[before['record_id']]))
             tx.delete((QUEUE, publication))
             tx.set((USAGE, owner), usage)
         self.documents.run_transaction(commit)
         return {**record, 'id': before['record_id'], 'duration': duration, 'generation': 1}
 
     def record(self, tx, uid, pid, rid):
-        self.authority(tx, uid, pid, 'read')
+        require_authority(self.authority, tx, uid, pid, 'read')
         head = _required(tx.get(_head(pid, rid)))
         if head.get('state') != 'active' or head.get('epoch') != self.epoch:
             raise DocumentNotFound('NARRATION_NOT_FOUND')
@@ -349,7 +364,7 @@ class HostedNarrationRecordings:
         if expected_generation is not None and (type(expected_generation) is not int or expected_generation < 1):
             raise HostedValidationError('NARRATION_GENERATION_INVALID')
         def read(tx):
-            self.authority(tx, uid, pid, 'write')
+            require_authority(self.authority, tx, uid, pid, 'write')
             head = _required(tx.get(_head(pid, rid)))
             if head.get('epoch') != self.epoch:
                 raise DocumentNotFound('NARRATION_NOT_FOUND')
@@ -369,11 +384,13 @@ class HostedNarrationRecordings:
             return {'undo_token': token}
         token, stamp = secrets.token_hex(32), self.now()
         sealed = self.parts.envelope.seal(token.encode('ascii'), context=context)
+        indexed = self.index.prepare(uid, pid, remove=[(before['index_page'], rid, before['publication'], before['generation'])])
         def commit(tx):
-            self.authority(tx, uid, pid, 'write')
+            require_authority(self.authority, tx, uid, pid, 'write')
             head, data = self.record(tx, uid, pid, rid)
             if head != before:
                 raise DocumentConflict('NARRATION_RECORD_CHANGED')
+            indexed.commit(tx)  # remaining operations are WRITES ONLY
             tx.set(_head(pid, rid), {**head, 'state': 'deleted', 'deleted_at': stamp,
                 'generation': head['generation'] + 1, 'delete_operation': operation, 'sealed_undo_token': sealed,
                 'undo_until': stamp + UNDO_SECONDS, 'undo_digest': hashlib.sha256(token.encode()).hexdigest()})
@@ -385,8 +402,8 @@ class HostedNarrationRecordings:
     def restore(self, uid, pid, rid, token):
         require_opaque_id(token)
         stamp = self.now()
-        def commit(tx):
-            self.authority(tx, uid, pid, 'write')
+        def read(tx):
+            require_authority(self.authority, tx, uid, pid, 'write')
             head = _required(tx.get(_head(pid, rid)))
             if (head.get('state') not in {'deleted', 'active'} or head.get('epoch') != self.epoch
                     or head.get('undo_until', 0) <= stamp
@@ -395,13 +412,26 @@ class HostedNarrationRecordings:
             data = self._load(tx, uid, pid, head['publication'])
             if data.get('state') != 'published' or data.get('record_id') != rid:
                 raise DocumentConflict('NARRATION_UNDO_UNAVAILABLE')
-            if head['state'] == 'deleted':
-                head.update(state='active', generation=head['generation'] + 1)
+            return data, head
+        before, previous = self.documents.run_transaction(read)
+        record = self._open(pid, before['publication'], before['sealed_metadata'])
+        if previous['state'] == 'deleted':
+            from hosted.narration.index import summary
+            indexed = self.index.prepare(uid, pid, add=[summary(record, before['source'], record_id=rid,
+                publication=before['publication'], generation=previous['generation'] + 1,
+                duration=before['duration'], audio_bytes=before['audio_bytes'])])
+            def commit(tx):
+                data, head = read(tx)
+                if data != before or head != previous:
+                    raise DocumentConflict('NARRATION_RECORD_CHANGED')
+                indexed.commit(tx)  # remaining operations are WRITES ONLY
+                head.update(state='active', generation=head['generation'] + 1, index_page=indexed.locations[rid])
                 tx.set(_head(pid, rid), head)
                 tx.delete((QUEUE, head['publication']))
-            return data, head
-        data, head = self.documents.run_transaction(commit)
-        record = self._open(pid, data['publication'], data['sealed_metadata'])
+                return data, head
+            data, head = self.documents.run_transaction(commit)
+        else:
+            data, head = before, previous
         current_head, current_data = self.documents.run_transaction(lambda tx: self.record(tx, uid, pid, rid))
         if current_head != head or current_data != data:
             raise DocumentConflict('NARRATION_RECORD_CHANGED')

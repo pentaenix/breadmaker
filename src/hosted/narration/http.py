@@ -160,6 +160,8 @@ def build_recording_router(*, provider, identity, project, model_provider=None, 
                     code = str(exc)
                     status = 400 if code.endswith('_INVALID') else 429 if code.endswith('_BUSY') else 503
                     raise HTTPException(status, code, headers={'Retry-After': '2'}) from None
+                except ValueError:
+                    raise HTTPException(400, 'NARRATION_REQUEST_INVALID') from None
                 except TimeoutError:
                     raise HTTPException(504, 'NARRATION_RESPONSE_DEADLINE') from None
             return bounded
@@ -231,6 +233,11 @@ def build_recording_router(*, provider, identity, project, model_provider=None, 
             _, data = service.documents.run_transaction(lambda tx: service.record(tx, uid, pid, record_id))
             return {'audio_bytes': data['audio_bytes'], 'parts': data['part_count'], 'part_bytes': PART_BYTES}
         return await call(read)
+
+    @router.get('/api/narrations/{record_id}')
+    async def recording_metadata(record_id: str, request: Request, expected_generation: int):
+        service, uid, pid = context(request)
+        return await call(NarrationReads(service).metadata, uid, pid, record_id, expected_generation)
 
     @router.get('/api/narrations/{record_id}/audio')
     async def audio_part(record_id: str, request: Request, part: int):
