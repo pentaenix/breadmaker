@@ -1,7 +1,7 @@
 fastapi==0.141.1
 starlette==1.7.0
 uvicorn==0.54.0
-pydantic==2.13.5
+pydantic==2.14.1
 anyio==4.15.1
 python-docx==1.2.0
 python-multipart==0.0.32
