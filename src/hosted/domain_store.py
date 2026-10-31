@@ -713,6 +713,14 @@ class HostedDomainStore:
         self.documents.run_transaction(mutate)
 
     def get(self, logical_entity: str, ids: Mapping[str, str], *, user_id: str) -> dict[str, Any]:
+        if logical_entity=='annotation':
+            from hosted.editing_packs import PackedAnnotations, child, HEAD
+            aid=str(ids.get('annotation_id') or '')
+            if child(aid):
+                try:physical=self.entities.get(logical_entity,dict(ids),user_id=user_id)
+                except DocumentNotFound:return PackedAnnotations(self).get(str(ids['project_id']),user_id,aid)[2]
+                return self._hydrate(logical_entity,physical,ids=ids,user_id=user_id)
+            if HEAD.fullmatch(aid):raise DocumentNotFound('HOSTED_DOCUMENT_NOT_FOUND')
         if self.encrypted_objects is not None and self.encrypted_fields is not None:
             require_private_entity_supported(logical_entity)
         row = self.entities.get(
@@ -820,6 +828,9 @@ class HostedDomainStore:
         adaptive_page: bool = False,
         page_info: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
+        if logical_entity=='annotation' and self.encrypted_fields is None and self.encrypted_objects is None:
+            from hosted.editing_packs import PackedAnnotations
+            return PackedAnnotations(self).list(str(parent_ids['project_id']),user_id,field=field,value=value,order_by=order_by)
         if page_size is not None and (logical_entity!='manuscript_block' or
                 not 1<=page_size<=128 or page_offset<0):
             raise HostedValidationError('HOSTED_MANUSCRIPT_PAGE_INVALID')
@@ -925,6 +936,15 @@ class HostedDomainStore:
         operation: str | None = None,
         expected_project_revision: int | None = None,
     ) -> dict[str, Any]:
+        if logical_entity=='annotation':
+            from hosted.editing_packs import PackedAnnotations, child, HEAD
+            aid=str(ids.get('annotation_id') or '')
+            if child(aid):
+                try:self.entities.get(logical_entity,dict(ids),user_id=user_id)
+                except DocumentNotFound:
+                    return PackedAnnotations(self).mutate(str(ids['project_id']),user_id,aid,dict(patch),
+                        expected_generation=expected_generation,expected_project_revision=expected_project_revision)
+            if HEAD.fullmatch(aid):raise DocumentNotFound('HOSTED_DOCUMENT_NOT_FOUND')
         uid = require_user_id(user_id)
         ids = {str(k): str(v) for k, v in dict(ids).items()}
         model = self._model(logical_entity)
@@ -1038,6 +1058,25 @@ class HostedDomainStore:
         user_id: str,
         expected_generation: int | None = None,
     ) -> None:
+        if logical_entity=='markup_label' and self.encrypted_fields is None and self.encrypted_objects is None:
+            from hosted.editing_packs import PackedAnnotations, FIELD
+            generation,physical=PackedAnnotations(self).snapshot(str(ids['project_id']),user_id)
+            if any(FIELD in row and row.get('label_id')==ids.get('label_id') for row in physical):
+                from hosted.editing_search import HostedEditingSearch
+                marker=self.entities.get('markup_label',dict(ids),user_id=user_id)
+                if expected_generation is not None and marker.get('generation')!=expected_generation:
+                    raise DocumentConflict('HOSTED_GENERATION_CONFLICT')
+                HostedEditingSearch(self).remove_marker(str(ids['project_id']),user_id,generation,physical,marker)
+                return
+        if logical_entity=='annotation':
+            from hosted.editing_packs import PackedAnnotations, child, HEAD
+            aid=str(ids.get('annotation_id') or '')
+            if child(aid):
+                try:self.entities.get(logical_entity,dict(ids),user_id=user_id)
+                except DocumentNotFound:
+                    PackedAnnotations(self).mutate(str(ids['project_id']),user_id,aid,None,expected_generation=expected_generation)
+                    return
+            if HEAD.fullmatch(aid):raise DocumentNotFound('HOSTED_DOCUMENT_NOT_FOUND')
         if self.encrypted_objects is not None and self.encrypted_fields is not None:
             require_private_entity_supported(logical_entity)
         uid = require_user_id(user_id)

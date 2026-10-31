@@ -227,7 +227,7 @@ def test_v10353_hosted_route_boundary_covers_every_current_local_product_route()
             for route in domain["routes"]:
                 expected.add((str(route["method"]).upper(), str(route["path"])))
     actual = set()
-    for relative in ("src/hosted/http_api.py", "src/hosted/http_compat.py", "src/hosted/http_auth.py", "src/hosted/narration/http.py"):
+    for relative in ("src/hosted/http_api.py", "src/hosted/http_compat.py", "src/hosted/http_auth.py", "src/hosted/narration/http.py", "src/hosted/editing_http.py"):
         tree = ast.parse((ROOT / relative).read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -243,11 +243,9 @@ def test_v10353_hosted_route_boundary_covers_every_current_local_product_route()
                     actual.add((method, path.value))
     # Narration has its explicit default-off hosted adapter, never a native
     # filesystem bridge. Composition/HTTP/browser tests verify that boundary.
-    # Only Highlights and native SERVER-side voice installation stay excluded;
+    # Only native SERVER-side voice installation stays excluded;
     # hosted public voice downloads belong to the authenticated device adapter.
     local_only={
-        ('GET','/api/annotations/editing-search'),
-        ('POST','/api/annotations/editing-search'),
         ('POST','/api/narration-voices/{voice_id}/download'),
     }
     assert local_only <= expected

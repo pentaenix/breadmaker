@@ -317,6 +317,7 @@ class HostedProjectPackageService:
                 key=lambda pair:(len(pair[1].path_template.split('/')),pair[0]),
             )
             for logical,model in ordered:
+                if logical=='annotation':continue
                 final=_fields(model.path_template)[-1]
                 for item in entities.get(logical) or []:
                     if not isinstance(item,Mapping) or not isinstance(item.get('ids'),Mapping) or not isinstance(item.get('data'),Mapping):
@@ -327,6 +328,7 @@ class HostedProjectPackageService:
                     parents={k:v for k,v in ids.items() if k!=final}
                     data={k:_restore_safe(v) for k,v in item['data'].items()};data.pop('project_id',None)
                     self._stage_entity(logical,{**parents,'project_id':pid},data,entity_id=eid)
+            self._stage_annotation_records(pid,entities.get('annotation') or [])
             return self._finish_import(pid,title,user_id)
         except Exception:
             self._fail_import(pid,user_id);raise
@@ -439,6 +441,65 @@ class HostedProjectPackageService:
             tx.create(path,stored)
         self.documents.run_transaction(create)
 
+    def _stage_annotation_records(self,pid,entries):
+        """Rebuild logical ranges under an UNPUBLISHED import prefix only.
+
+        Public packages carry no trusted object pointers. Preserve opaque IDs,
+        verify fresh immutable bodies, and create project membership LAST.
+        """
+        from hosted.editing_packs import PackedAnnotations, ITEM, MAX_PACKS, MAX_ROWS, MAX_TOTAL_DECODED, FIELD
+        from api.annotations.editing_lexicon import PASSES
+        if not entries:return
+        if self.documents.get(('projects',pid)) is not None:raise ValueError('HOSTED_IMPORT_PROJECT_ALREADY_PUBLISHED')
+        blocks={row.path[-1]:dict(row.data) for row in self.documents.query_collection(('projects',pid,'blocks'))}
+        labels={row.path[-1] for row in self.documents.query_collection(('projects',pid,'markup_labels'))}
+        groups={};seen=set();texts={}
+        for item in entries:
+            if not isinstance(item,dict) or not isinstance(item.get('ids'),dict) or not isinstance(item.get('data'),dict):
+                raise ValueError('HOSTED_PACKAGE_INVALID')
+            iid=require_opaque_id(item['ids'].get('annotation_id'),label='annotation_id')
+            if iid in seen:raise ValueError('HOSTED_PACKAGE_ENTITY_COLLISION')
+            seen.add(iid)
+            data={key:_restore_safe(value) for key,value in item['data'].items()};data.pop('project_id',None)
+            match=ITEM.fullmatch(iid);kind=str(data.get('body') or '').removeprefix('editing-search/v1:')
+            if match is None or kind not in PASSES or data.get('annotation_type')!='highlight':
+                self._stage_entity('annotation',{'project_id':pid},data,entity_id=iid,unpublished_only=True)
+                continue
+            block=blocks.get(data.get('block_id'));lid=data.get('label_id')
+            if block is None or lid not in labels:raise ValueError('HOSTED_PACKAGE_ANNOTATION_TARGET_INVALID')
+            hid='epack_'+match[1];tab=require_opaque_id(block.get('tab_id'),label='tab_id')
+            key=(tab,lid,kind);stamp=block['created_at']
+            group=groups.setdefault(hid,{'key':key,'stamp':stamp,'rows':[]})
+            if group['key']!=key:raise ValueError('HOSTED_PACKAGE_ANNOTATION_CONTEXT_INVALID')
+            if not data.get('stale'):
+                if block['id'] not in texts:texts[block['id']]=self.domain._hydrate('manuscript_block',block).get('text_content') or ''
+                start,end=data.get('start_offset'),data.get('end_offset');text=texts[block['id']]
+                if (type(start) is int and type(end) is int and 0<=start<=end<=len(text)
+                        and text[start:end]==data.get('selected_text')):
+                    data['source_generation']=block['generation']
+                else:data['stale']=True
+            group['rows'].append({**data,'id':iid,'annotation_id':iid,'project_id':pid,'chapter_id':None,
+                'created_at':stamp,'updated_at':stamp,'generation':1})
+        if len(groups)>MAX_PACKS or sum(len(group['rows']) for group in groups.values())>MAX_ROWS:
+            raise ValueError('HOSTED_PACKAGE_ANNOTATION_LIMIT')
+        packs=PackedAnnotations(self.domain)
+        decoded=0
+        for hid,group in groups.items():
+            tab,lid,kind=group['key'];stamp=group['stamp']
+            head=dict(id=hid,annotation_id=hid,project_id=pid,tab_id=tab,label_id=lid,scan=kind,
+                annotation_type='editing-pack/v1',generation=1,created_at=stamp,updated_at=stamp)
+            staged=packs.stage(pid,head,group['rows'],available_bytes=MAX_TOTAL_DECODED-decoded);packs.rows(pid,staged)
+            decoded+=staged[FIELD]['decoded_bytes']
+            if decoded>MAX_TOTAL_DECODED:raise ValueError('HOSTED_PACKAGE_ANNOTATION_LIMIT')
+            def commit(tx):
+                if tx.get(('projects',pid)) is not None:raise ValueError('HOSTED_IMPORT_PROJECT_ALREADY_PUBLISHED')
+                path=('projects',pid,'annotations',hid);old=tx.get(path)
+                if old is not None:
+                    if dict(old.data)!=staged:raise ValueError('HOSTED_PACKAGE_ENTITY_COLLISION')
+                    return
+                tx.create(path,staged)
+            self.documents.run_transaction(commit)
+
     def stage_import_batch(self,pid:str,entries:list[dict],*,bundle_blocks:bool=False) -> None:
         """Bounded object-first staging under an UNPUBLISHED project only.
 
@@ -542,6 +603,7 @@ class HostedProjectPackageService:
                 key=lambda pair:(len(pair[1].path_template.split('/')),pair[0]),
             )
             for logical,model in ordered:
+                if logical=='annotation':continue
                 final=_fields(model.path_template)[-1]
                 for item in entities.get(logical) or []:
                     if not isinstance(item,dict) or not isinstance(item.get('ids'),dict) or not isinstance(item.get('data'),dict):raise ValueError('HOSTED_PACKAGE_INVALID')
@@ -551,6 +613,7 @@ class HostedProjectPackageService:
                     data={k:_restore_safe(v) for k,v in item['data'].items()}
                     data.pop('project_id',None)
                     self._stage_entity(logical,{**parents,'project_id':pid},data,entity_id=eid)
+            self._stage_annotation_records(pid,entities.get('annotation') or [])
             for name in sorted(archive.namelist()):
                 if not name.startswith('assets/') or name.endswith('/'):continue
                 leaf=name.split('/')[-1];parts=leaf.split('.',1)

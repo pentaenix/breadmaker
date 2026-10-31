@@ -1,11 +1,12 @@
-// One-shot English editing searches. No feature flag, model or background scan.
+// One-shot English editing searches. Hosted capability is server-controlled;
+// native mode needs no flag, model or background scan.
 const EDITING_SEARCHES=['telling','filter','adverbs','qualifiers','wordy','redundancies','emotions'];
 function experimentalEditingSearchMarkup(){
-  if(state.runtime?.mode!=='local')return '';
+  if(state.runtime?.mode!=='local'&&!runtimeSupports('editor_highlights'))return '';
   return `<section class="project-settings-section">${projectSettingsRow('experimentalEditorHighlights',i18nText('editing_search.title'),i18nText('editing_search.entry_help'),{translated:true})}</section>`;
 }
 function openEditorHighlights(onDismiss=null){
-  if(state.runtime?.mode!=='local')return;
+  if(state.runtime?.mode!=='local'&&!runtimeSupports('editor_highlights'))return;
   let cleanup=()=>{};
   showModal(i18nText('editing_search.title'),`<div class="editing-searches"><p class="small-muted">${escapeHtml(i18nText('editing_search.help'))}</p>${EDITING_SEARCHES.map(scan=>`<button class="project-settings-row" type="button" data-editing-search="${scan}"><span><b>${escapeHtml(i18nText(`editing_search.${scan}`))}</b><small>${escapeHtml(i18nText(`editing_search.${scan}_help`))}</small></span><span class="project-settings-row-caret" aria-hidden="true">›</span></button>`).join('')}<p id="editingSearchStatus" class="small-muted" role="status" aria-live="polite"></p></div>`,'',()=>{cleanup();onDismiss?.()});
   cleanup=wireExperimentalEditingSearches();

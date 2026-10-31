@@ -231,12 +231,21 @@ def hosted_label_usage(lid:str,request:Request):
 @router.delete('/api/labels/{lid}')
 def hosted_label_delete(lid:str,request:Request):return _delete('markup_label',{'project_id':_pid(request),'label_id':lid})
 @router.post('/api/annotations/clear-highlights')
-def hosted_clear_highlights(request:Request):
-    pid=_pid(request);removed=0
-    for row in list(_list('annotation',{'project_id':pid})):
-        if str(row.get('annotation_type') or row.get('type') or '')=='highlight':
-            _delete('annotation',{'project_id':pid,'annotation_id':str(row.get('id'))});removed+=1
-    return {'ok':True,'removed':removed}
+async def hosted_clear_highlights(request:Request):
+    from hosted.editing_search import HostedEditingSearch
+    from hosted.editing_http import _run
+    body=await _body(request);pid,uid=_pid(request),_uid()
+    if _domain().encrypted_fields is not None or _domain().encrypted_objects is not None:
+        # Preserve the pre-existing explicitly injected private-codec path; no
+        # packed plaintext publication is available in that experimental mode.
+        removed=0
+        for row in list(_list('annotation',{'project_id':pid})):
+            if str(row.get('annotation_type') or row.get('type') or '')=='highlight':
+                _delete('annotation',{'project_id':pid,'annotation_id':str(row.get('id'))});removed+=1
+        return {'ok':True,'removed':removed}
+    # Same native selection semantics for ordinary and generated highlights;
+    # one atomic request, never thousands of per-range GCS rewrites.
+    return await _run(partial(HostedEditingSearch(_domain()).clear_selected,pid,uid,body))
 
 @router.get('/api/comments/{tid}')
 def hosted_comment_get(tid:str,request:Request):

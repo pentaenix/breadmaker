@@ -608,6 +608,10 @@ def hosted_book(request:Request):
             if blocks is not None:
                 order={row['id']:index for index,row in enumerate(data['chapters'])}
                 data['blocks']=sorted(blocks,key=lambda row:(order[row['chapter_id']],int(row.get('position') or 0),str(row.get('created_at') or ''),str(row.get('id') or '')))
+        from hosted.editing_packs import annotation_view
+        data['annotations']=annotation_view(_domain(),pid,_uid(),tab=tab)
+        if _domain().project_generation(pid,_uid())!=int(data['project']['generation']):
+            raise DocumentConflict('HOSTED_SNAPSHOT_GENERATION_CHANGED')
         data['read_tag']=tag(pid,tab,data['project']['generation'])
         phase=perf_counter()
         response=JSONResponse(data,headers={'Cache-Control':'private, no-store','ETag':data['read_tag']})
@@ -652,10 +656,12 @@ def hosted_chapter_get(cid:str,request:Request):
     page_info={}
     blocks=_list('manuscript_block',{'project_id':pid},field='chapter_id',value=cid,
         cache_refresh_chapters=cache_refresh,page_info=page_info,**page)
+    from hosted.editing_packs import annotation_view
+    annotations=annotation_view(_domain(),pid,_uid(),chapter=cid)
     if _domain().project_generation(pid,_uid())!=generation:
         raise HTTPException(409,detail='HOSTED_SNAPSHOT_GENERATION_CHANGED')
     revision=str(generation)
-    return {'chapter':{**chapter,'revision':revision},'blocks':blocks,'revision':revision,
+    return {'chapter':{**chapter,'revision':revision},'blocks':blocks,'revision':revision,'annotations':annotations,
         'read_tag':tag,
         'cache_refresh_needed':bool(cache_refresh),
         'next_block_offset':page_info.get('next_block_offset'),
@@ -707,7 +713,12 @@ def hosted_scene_manuscript(sid:str,request:Request):
 
 # Labels / annotations
 @product_router.get('/api/annotations')
-def hosted_annotations(request:Request):return {'annotations':_list('annotation',{'project_id':_pid(request)})}
+def hosted_annotations(request:Request):
+    from hosted.editing_packs import annotation_view
+    rows=annotation_view(_domain(),_pid(request),_uid())
+    for field in ('label_id','status','block_id','chapter_id'):
+        if field in request.query_params:rows=[row for row in rows if str(row.get(field))==request.query_params[field]]
+    return {'annotations':rows}
 @product_router.post('/api/annotations/batch')
 async def hosted_annotations_batch(request:Request):
     pid=_pid(request);body=await _body(request)

@@ -17,3 +17,9 @@
 
 Callers that need implementation helpers target `routes` explicitly. Do not
 recreate `api/annotations.py` or sibling `annotations_contracts.py` facades.
+
+The package loads its native router only when native composition requests it.
+Importing the pure matcher must not initialize SQL, a workspace or either runtime.
+Hosted owners are `hosted/editing_search.py` (one-shot publication),
+`editing_packs.py` (canonical projection/edits/recovery) and `editing_http.py`
+(default-off capability, session/CSRF boundary and bounded worker).

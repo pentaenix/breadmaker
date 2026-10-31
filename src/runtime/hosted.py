@@ -175,8 +175,18 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
     usage=HostedProjectUsageService(documents,objects)
     from hosted.narration.composition import configured as configured_narration
     narration=configured_narration(projects.domain,mode=runtime_mode,auth_mode=auth_mode,environment=environment)
+    # Same read-only current account/admission/membership fence used by Narration;
+    # this does not make Highlights depend on its device models or entitlement.
+    from hosted.narration.authority import NarrationAuthority
+    import time
+    projects.domain.editing_authority=NarrationAuthority(projects.domain,
+        issuer='identity-platform://'+str(os.environ.get('BREADMAKER_GCP_PROJECT_ID','')),
+        now=time.time,development=runtime_mode=='hosted_dev')
     capabilities=dict(_HOSTED_CAPABILITIES)
     capabilities['narration']=narration is not None
+    editing_flag=os.environ.get('BREADMAKER_EDITOR_HIGHLIGHTS_ENABLED','')
+    if editing_flag not in {'','false','0','true'}:raise RuntimeError('HOSTED_EDITOR_HIGHLIGHTS_CONFIGURATION_INVALID')
+    capabilities['editor_highlights']=editing_flag=='true'
     capabilities['account_erasure_fence'] = lifecycle is not None
     capabilities['developer_identity']=auth_mode=='developer'
     capabilities['account_sessions']=auth_mode in {'test','session','identity_platform'}

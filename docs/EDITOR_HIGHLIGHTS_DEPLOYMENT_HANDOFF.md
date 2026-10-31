@@ -1,5 +1,33 @@
 # Editor Highlights: narration release handoff
 
+## Current integration candidate (not deployed)
+
+The reconciled narration branch now includes the expanded vocabulary and a
+default-off hosted adapter (`BREADMAKER_EDITOR_HIGHLIGHTS_ENABLED=true`). Native
+SQL remains separate. Generated ranges use immutable, generation/hash-verified
+GCS bodies under `projects/<id>/annotation-packs/`, with small canonical heads in
+the existing annotations collection. Head/marker/source-CAS and ordinary structural
+Undo commit together; the journal's size/permission limits were NOT increased.
+Logical reads, individual range mutations, marker deletion, book/chapter display,
+native-shaped presentation joins and package restore understand this format.
+Packed ranges retain code-point anchors and source generations; stale content is
+not relabeled fresh. Explicit hosted UTF16 selection clear converts once, retaining
+legacy manual offset semantics. Restore verifies fresh source before rebinding.
+
+Bounds: 20K matches/pass, 5M source characters, 100K/paragraph, 20K source blocks;
+64 canonical packs, 100K packed ranges and 24MiB decoded packed data/project;
+16MiB decoded/8MiB compressed per pack. Operations touching over90 physical
+records (for example a marker with very many manual links) fail BEFORE canonical
+publication instead of partially applying. Current actor/admission/owner/membership
+and erasure fences still apply. No persistent private browser cache, scheduled
+scanner, new service or infrastructure change. Existing app-layer-encrypted pilot
+mode explicitly rejects new packed publication; do not claim it supports this new
+format or complete operational backup coverage. Rollback must retain a pack-aware
+application once this format has been written. Source/CI/provider acceptance and
+manual delivery gates remain required before activation.
+
+The historical feature-agent handoff below describes the original local work.
+
 User approved including this feature alongside narration. No production deployment
 or Cloud repository changes were performed by the feature agent.
 

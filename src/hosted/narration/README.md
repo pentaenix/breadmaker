@@ -29,8 +29,9 @@ public release manifest. Disabled startup uses no model files or cloud SDKs.
 Browser context/logout fencing and thin/lazy private RAM reads have synthetic
 UI/HTTP coverage. Publisher/workflow gates, cleanup provisioning, real provider
 acceptance and full release CI remain required BEFORE deployment/activation.
-Editor Highlights still needs its separate canonical atomic adapter. No feature
-activation or complete recovery/erasure claim follows from these focused tests.
+Editor Highlights now has a separate default-off canonical atomic adapter in
+`hosted.editing_search` / `editing_packs`; it does not depend on narration models.
+No feature activation or complete recovery/erasure claim follows from focused tests.
 
 `index.py` now couples encrypted 128-record thin pages to the SAME head transaction
 for publication/replacement/delete/Undo. Source hashes, excerpts, voice and ranges
@@ -54,7 +55,8 @@ successful call settles to measured server time; uncertain failures stay charged
 Admission is rechecked afterward. The fixed run.app audience uses metadata-issued
 short-lived identity, no redirects/environment proxy or unbounded retries. The
 helper has a separately pinned minimal image/data graph and kills its dictionary
-worker on deadline/language change. Linux image/scans/provider acceptance remain.
+worker on deadline/language change. Local Linux image/scan/offline language smoke
+checks passed; exact-commit CI and real-provider acceptance still precede activation.
 
 GC uses a scoped non-HTTP maintenance port, distributed lease, eligible-only queue
 and bounded whole-bucket census. It fences publication/Undo first, then atomically
