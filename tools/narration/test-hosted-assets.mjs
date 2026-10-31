@@ -51,4 +51,8 @@ await assert.rejects(()=>HostedPublicAssets.open({project:'a'.repeat(32),origin:
 Object.defineProperty(globalThis,'navigator',{configurable:true,value:{}});
 const fallback=await open();assert.equal(fallback.cache,null,'no unsafe persistent cache without cross-context locks');
 assert.deepEqual(new Uint8Array(await (await fallback.fetch(modelURL)).arrayBuffer()),payload);
+const captured=await HostedPublicAssets.open({project:'a'.repeat(32),client:'synthetic-client',origin:'https://example.test',fetcher});
+await captured.part(asset,0);
+for(const [,options] of calls.slice(-2)){assert.equal(options.headers['X-Breadmaker-Project'],'a'.repeat(32));assert.equal(options.headers['X-Breadmaker-Client'],'synthetic-client')}
+await assert.rejects(()=>HostedPublicAssets.open({project:'a'.repeat(32),client:'bad\nclient',origin:'https://example.test',fetcher}),/CLIENT_INVALID/);
 console.log('Hosted public-asset integrity, bounded reads, cache, coalescing and authorization failures passed');

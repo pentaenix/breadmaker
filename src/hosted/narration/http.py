@@ -4,6 +4,10 @@ Not installed until the complete hosted service bundle passes activation gates.
 Provider, identity and project callbacks are server composition, never JSON IDs.
 """
 import time
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from contextvars import copy_context
+from functools import partial
 from threading import BoundedSemaphore
 
 import anyio
@@ -17,10 +21,50 @@ from hosted.narration.reads import NarrationReads
 from hosted.narration.sealed_parts import PART_BYTES
 from hosted.narration.transfers import TransferDenied
 from hosted.idempotency import request_scope_key
+from narration.pronunciation import PronunciationError
 
 CONTROL_BYTES = 512 * 1024
 TOTAL_SECONDS = 55
 _CAPACITY = BoundedSemaphore(4)
+_PROVIDER_CAPACITY = BoundedSemaphore(4)
+_PROVIDERS = ThreadPoolExecutor(max_workers=4, thread_name_prefix='narration-provider')
+
+
+async def run_provider(fn, *args, **kwargs):
+    """Cancellation cannot release a slot while provider I/O is still running.
+
+    HTTP timeout is not thread cancellation. Without a second bounded ownership
+    layer, abandoned requests could accumulate paid work beyond four in-flight
+    operations. Done callbacks release even a future cancelled BEFORE starting.
+    """
+    if not _PROVIDER_CAPACITY.acquire(blocking=False):
+        raise HTTPException(429, 'NARRATION_PROVIDER_BUSY', headers={'Retry-After': '2'})
+    try:
+        future = _PROVIDERS.submit(copy_context().run, partial(fn, *args, **kwargs))
+    except BaseException:
+        _PROVIDER_CAPACITY.release()
+        raise
+    future.add_done_callback(lambda _: _PROVIDER_CAPACITY.release())
+    return await asyncio.wrap_future(future)
+
+
+class BoundedControlResponse(Response):
+    """Control JSON must not escape the total deadline through backpressure."""
+    def __init__(self, response, *, deadline):
+        super().__init__(response.body, status_code=response.status_code, background=response.background)
+        self.raw_headers = list(response.raw_headers)
+        self.deadline, self.release_capacity = deadline, None
+
+    async def __call__(self, scope, receive, send):
+        try:
+            remaining = self.deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError('NARRATION_RESPONSE_DEADLINE')
+            with anyio.fail_after(remaining):
+                await super().__call__(scope, receive, send)
+        finally:
+            if self.release_capacity is not None:
+                self.release_capacity()
 
 
 class LeasedAudioResponse(Response):
@@ -49,7 +93,7 @@ class LeasedAudioResponse(Response):
                     self.release_capacity()
 
 
-def build_recording_router(*, provider, identity, project, model_provider=None):
+def build_recording_router(*, provider, identity, project, model_provider=None, pronunciation_provider=None):
     """Callbacks are called within the existing authenticated request context."""
     class Boundary(APIRoute):
         def get_route_handler(self):
@@ -66,10 +110,12 @@ def build_recording_router(*, provider, identity, project, model_provider=None):
                         _CAPACITY.release()
 
             async def admitted(request):
+                deadline = time.monotonic() + TOTAL_SECONDS
                 identity()  # prove authentication BEFORE receiving/parsing a body
                 if request.headers.get('x-breadmaker-action'):
                     raise HTTPException(409, 'NARRATION_NOT_A_CANONICAL_ACTION')
-                limit = (PART_BYTES if request.method == 'PUT' else
+                limit = (256 * 1024 if request.url.path == '/api/narration-pronunciation' else
+                         PART_BYTES if request.method == 'PUT' else
                          4 * 1024**2 if request.method == 'POST' and request.url.path == '/api/narrations'
                          else CONTROL_BYTES)
                 raw = request.headers.get('content-length')
@@ -95,9 +141,10 @@ def build_recording_router(*, provider, identity, project, model_provider=None):
                     with anyio.fail_after(TOTAL_SECONDS):
                         response = await handler(Request(request.scope, receive=receive))
                         response.headers['Cache-Control'] = 'private, no-store'
-                        if isinstance(response, LeasedAudioResponse):
-                            response.release_capacity = _CAPACITY.release
-                            request.state._narration_capacity_transferred = True
+                        if not isinstance(response, LeasedAudioResponse):
+                            response = BoundedControlResponse(response, deadline=deadline)
+                        response.release_capacity = _CAPACITY.release
+                        request.state._narration_capacity_transferred = True
                         return response
                 except TransferDenied as exc:
                     raise HTTPException(429, exc.code, headers={'Retry-After': str(exc.retry_after)}) from None
@@ -109,6 +156,10 @@ def build_recording_router(*, provider, identity, project, model_provider=None):
                     raise HTTPException(409, str(exc)) from None
                 except HostedValidationError as exc:
                     raise HTTPException(400, str(exc)) from None
+                except PronunciationError as exc:
+                    code = str(exc)
+                    status = 400 if code.endswith('_INVALID') else 429 if code.endswith('_BUSY') else 503
+                    raise HTTPException(status, code, headers={'Retry-After': '2'}) from None
                 except TimeoutError:
                     raise HTTPException(504, 'NARRATION_RESPONSE_DEADLINE') from None
             return bounded
@@ -124,9 +175,7 @@ def build_recording_router(*, provider, identity, project, model_provider=None):
         return value
 
     async def call(fn, *args, **kwargs):
-        # Do not block the ASGI loop on GCS/KMS/Firestore. Timed-out threads may
-        # finish an already bounded provider request, never send a late body.
-        return await anyio.to_thread.run_sync(lambda: fn(*args, **kwargs), abandon_on_cancel=True)
+        return await run_provider(fn, *args, **kwargs)
 
     def context(request):
         return provider(), identity(), project(request)
@@ -207,5 +256,13 @@ def build_recording_router(*, provider, identity, project, model_provider=None):
         _, uid, pid = context(request)
         body, permit, budget = await call(models().read_part, uid, pid, asset_id, part)
         return LeasedAudioResponse(body, permit, budget, deadline=deadline)
+
+    @router.post('/api/narration-pronunciation')
+    async def pronunciation(request: Request):
+        _, uid, pid = context(request)
+        service = pronunciation_provider() if pronunciation_provider else None
+        if service is None:
+            raise HTTPException(409, 'NARRATION_PRONUNCIATION_UNAVAILABLE')
+        return await call(service.convert, uid, pid, await json_body(request))
 
     return router

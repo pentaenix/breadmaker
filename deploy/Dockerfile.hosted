@@ -20,6 +20,9 @@ COPY docs/HOSTED_DATA_MODEL_V1.json ./docs/HOSTED_DATA_MODEL_V1.json
 COPY VERSION ./VERSION
 COPY scripts/assert_hosted_image_stack.py ./scripts/assert_hosted_image_stack.py
 RUN python scripts/assert_hosted_image_stack.py
+# Narration's large PUBLIC assets belong in the private immutable model origin,
+# never in the app's 512 MiB scale-to-zero image or its static-serving routes.
+RUN python -c "from pathlib import Path; p=Path('static/vendor/narration'); assert not any(f.suffix in {'.onnx','.bin','.wasm'} or 'models' in f.relative_to(p).parts or 'dictionaries' in f.relative_to(p).parts for f in p.rglob('*') if f.is_file()), 'NARRATION_BINARY_IN_APP_IMAGE'"
 
 # Copy only required shared libraries and their real Debian package records.
 # Retaining metadata keeps OS scanning accurate; no scanner exclusions are used.

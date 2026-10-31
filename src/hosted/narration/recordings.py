@@ -28,6 +28,13 @@ MAX_RECORDS = 20_000
 UNDO_SECONDS = 86400
 UPLOAD_SECONDS = 3600
 ATTEMPT_SECONDS = 120
+FENCE_BYTES = 2048  # retained zero-byte GCS fence + small physical-attempt index
+ATTEMPTS = 'narration_object_attempts_v1'
+QUEUE = 'narration_publication_queue_v1'
+
+
+def _queue(pid, publication, owner, eligible):
+    return dict(v=1, project_id=pid, publication=publication, owner_user_id=owner, eligible_at=eligible)
 
 
 def _json(value):
@@ -88,6 +95,8 @@ class HostedNarrationRecordings:
     def _load(self, tx, uid, pid, publication, kind='read'):
         self.authority(tx, uid, pid, kind)
         data = _required(tx.get(_intent(pid, publication)))
+        if data.get('state') == 'collecting':
+            raise DocumentConflict('NARRATION_UPLOAD_UNAVAILABLE')
         if data.get('epoch') != self.epoch or data.get('project_id') != pid:
             raise DocumentConflict('NARRATION_AUTHORITY_EPOCH_CHANGED')
         fields = {'v', 'project_id', 'publication', 'record_id', 'actor', 'owner_user_id', 'epoch',
@@ -160,7 +169,7 @@ class HostedNarrationRecordings:
         # Lossless compression avoids making CJK/emoji metadata a Firestore-size
         # exception. The encrypted envelope and strict decoded bound stay intact.
         sealed = self.parts.envelope.seal(gzip.compress(encoded, mtime=0), context=self._context(pid, publication))
-        reserved = audio_bytes + count * 16
+        reserved = audio_bytes + count * (16 + FENCE_BYTES)
         def commit(tx):
             self.source.check(tx, uid, pid, fence)
             owner = self.authority.owner(tx, pid)
@@ -191,6 +200,7 @@ class HostedNarrationRecordings:
             self._reserve_growth(data, usage)
             self._put_intent(tx, _intent(pid, publication), data, create=True)
             tx.create(op_path, {'v': 1, 'publication': publication, 'actor': uid})
+            tx.create((QUEUE, publication), _queue(pid, publication, owner, stamp + UPLOAD_SECONDS + 172800))
             tx.set((USAGE, owner), usage)
         self.documents.run_transaction(commit)
         return {'publication': publication, 'id': rid, 'part_bytes': PART_BYTES}
@@ -238,7 +248,7 @@ class HostedNarrationRecordings:
                 raise DocumentConflict('NARRATION_UPLOAD_RETRY_LIMIT')
             owner = current['owner_user_id']
             usage = _ledger(tx.get((USAGE, owner)))
-            extra = expected + 16 if old else 0
+            extra = expected + 16 + FENCE_BYTES if old else 0
             if usage['bytes'] + extra > CAPACITY + (HEADROOM if current['replaces'] else 0):
                 raise DocumentConflict('NARRATION_STORAGE_CAPACITY')
             current['reserved_bytes'] += extra
@@ -246,6 +256,9 @@ class HostedNarrationRecordings:
             current['attempts'].append(dict(id=attempt, ordinal=ordinal, until=stamp + ATTEMPT_SECONDS,
                 bytes=expected + 16, header=header, sha256=hashlib.sha256(ciphertext).hexdigest()))
             self._reserve_growth(current, usage)
+            tx.create((ATTEMPTS, attempt), dict(v=1, project_id=pid, publication=publication,
+                owner_user_id=owner, ordinal=ordinal, size=expected + 16,
+                sha256=hashlib.sha256(ciphertext).hexdigest(), fenced=False, generation=None))
             self._put_intent(tx, _intent(pid, publication), current)
             tx.set((USAGE, owner), usage)
         self.documents.run_transaction(prepare)
@@ -311,8 +324,10 @@ class HostedNarrationRecordings:
                 raise HostedValidationError('NARRATION_METADATA_TOO_LARGE')
             if old:
                 tx.set(old_path, {**old, 'state': 'retired', 'retired_at': stamp, 'generation': old['generation'] + 1})
+                tx.set((QUEUE, old['publication']), _queue(pid, old['publication'], owner, stamp + 172800))
             self._put_intent(tx, _intent(pid, publication), current)
             tx.create(head_path, dict(v=1, state='active', publication=publication, epoch=self.epoch, generation=1))
+            tx.delete((QUEUE, publication))
             tx.set((USAGE, owner), usage)
         self.documents.run_transaction(commit)
         return {**record, 'id': before['record_id'], 'duration': duration, 'generation': 1}
@@ -356,12 +371,14 @@ class HostedNarrationRecordings:
         sealed = self.parts.envelope.seal(token.encode('ascii'), context=context)
         def commit(tx):
             self.authority(tx, uid, pid, 'write')
-            head, _ = self.record(tx, uid, pid, rid)
+            head, data = self.record(tx, uid, pid, rid)
             if head != before:
                 raise DocumentConflict('NARRATION_RECORD_CHANGED')
             tx.set(_head(pid, rid), {**head, 'state': 'deleted', 'deleted_at': stamp,
                 'generation': head['generation'] + 1, 'delete_operation': operation, 'sealed_undo_token': sealed,
                 'undo_until': stamp + UNDO_SECONDS, 'undo_digest': hashlib.sha256(token.encode()).hexdigest()})
+            eligible = max(stamp + UNDO_SECONDS, *(item['until'] + 172800 for item in data['attempts']))
+            tx.set((QUEUE, head['publication']), _queue(pid, head['publication'], data['owner_user_id'], eligible))
         self.documents.run_transaction(commit)
         return {'undo_token': token}
 
@@ -381,6 +398,7 @@ class HostedNarrationRecordings:
             if head['state'] == 'deleted':
                 head.update(state='active', generation=head['generation'] + 1)
                 tx.set(_head(pid, rid), head)
+                tx.delete((QUEUE, head['publication']))
             return data, head
         data, head = self.documents.run_transaction(commit)
         record = self._open(pid, data['publication'], data['sealed_metadata'])

@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "files": [
+    {"path": "gruut_lang_it/lexicon.db", "size": 2916352, "sha256": "845af5314ea1f412af7e3625ecfb329c7e2a0aee6251590d9774a31faf1b8fdc"},
+    {"path": "gruut_lang_it/g2p/model.crf", "size": 1446892, "sha256": "7871874abe3869863bfb3e7edd8f1624788b123cda0f1c168c45496f736008ca"},
+    {"path": "misaki/data/ja_words.txt", "size": 1921140, "sha256": "a93a8e8aee24db307a32becb8bf01c4c2908ecf37e6c91f7a705fafdfeba67ff"},
+    {"path": "unidic_lite/dicdir/sys.dic", "size": 187680870, "sha256": "122c4c91f026bf4b65bbe2dfd8b9f8eeb6ab56d8eb2a7287a68bca75708ba513"},
+    {"path": "unidic_lite/dicdir/unk.dic", "size": 5475, "sha256": "e3b92803feeb6c2712c796b905317ec192a59729d2c1e92b2728d454169541c4"},
+    {"path": "unidic_lite/dicdir/matrix.bin", "size": 71544726, "sha256": "88fb99efe1075d9b8b40e01bb2751e4095f1612618f2490af776eb5ed39190a9"},
+    {"path": "unidic_lite/dicdir/char.bin", "size": 262496, "sha256": "dd31396563d8924645b80fd3c9aa7b13ca089d7748f25553a1d6bc3f9b511ae8"},
+    {"path": "jieba/dict.txt", "size": 5071852, "sha256": "7197c3211ddd98962b036cdf40324d1ea2bfaa12bd028e68faa70111a88e12a8"},
+    {"path": "pypinyin/pinyin_dict.json", "size": 788780, "sha256": "5f294c01e6c6c0a1c8e329c79335a3f8e0b27d06bf1de7a99244b765892d1e5b"},
+    {"path": "pypinyin/phrases_dict.json", "size": 2545585, "sha256": "a45ff140a6b631ca9c82127b280a2f414e0aba6bb2824a0e9d1e77fff359c665"}
+  ]
+}

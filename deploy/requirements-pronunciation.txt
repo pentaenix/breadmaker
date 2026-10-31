@@ -1,0 +1,28 @@
+# Complete minimal helper graph, matching the tested native language versions.
+# No Google SDK, auth provider, torch, ONNX inference or Editor runtime.
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.15.1
+click==8.5.0
+cn2an==0.5.24
+fastapi==0.141.1
+fugashi==1.5.2
+gruut-lang-it==2.0.1
+h11==0.16.0
+idna==3.20
+jaconv==0.5.0
+jieba==0.42.1
+misaki[ja,zh]==0.7.4
+mojimoji==0.0.13
+ordered-set==4.1.0
+proces==0.1.7
+pydantic==2.13.5
+pydantic-core==2.46.5
+pypinyin==0.55.0
+python-crfsuite==0.9.12
+regex==2026.9.29
+starlette==1.7.0
+typing-inspection==0.4.4
+typing-extensions==4.16.0
+unidic-lite==1.0.8
+uvicorn==0.54.0

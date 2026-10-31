@@ -28,6 +28,31 @@ GC/lifecycle census, actual-provider acceptance and full release CI are still
 required. Editor Highlights needs its separate canonical atomic adapter too.
 No feature activation or complete recovery/erasure claim follows from these tests.
 
+The inactive pronunciation client now precharges durable monthly character,
+attempt and server-time budgets before private helper I/O. Only a confirmed
+successful call settles to measured server time; uncertain failures stay charged.
+Admission is rechecked afterward. The fixed run.app audience uses metadata-issued
+short-lived identity, no redirects/environment proxy or unbounded retries. The
+helper has a separately pinned minimal image/data graph and kills its dictionary
+worker on deadline/language change. Linux image/scans/provider acceptance remain.
+
+GC uses a scoped non-HTTP maintenance port, distributed lease, eligible-only queue
+and bounded whole-bucket census. It fences publication/Undo first, then atomically
+replaces exact ciphertext generations with permanent zero-byte markers. This
+prevents late create-only uploads resurrecting deleted bytes; NEVER delete/expire
+these markers. Each attempt retains a conservative 2 KiB capacity charge for its
+marker/index. Only verified fences permit one-time quota settlement. Unknown
+objects/schema, ownership drift, held retention or lost leases fail closed; orphan
+census blockers are reported, not erased or mistaken for complete account erasure.
+The existing account physical-purge approval/retention gates remain mandatory.
+These new top-level derivative families must accompany any future account census:
+`narration_projects_v1`, `narration_storage_usage_v1`,
+`narration_object_attempts_v1`, `narration_publication_queue_v1`,
+`narration_transfer_usage_v1`, `narration_pronunciation_usage_v1`,
+`narration_gc_receipts_v1`. Shared global quota rows are not an account delete list.
+Whole-database restore still requires disabling narration/GC and rotating authority
+epoch before re-enablement. Do not repeat an account reset to test these adapters.
+
 `transfers.py` owns cross-instance narration transfer admission. Its caller must
 supply a READ-ONLY transaction authority callback checking current account
 admission, project membership and closure fences in the SAME Firestore database.

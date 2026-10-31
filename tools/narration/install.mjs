@@ -1,12 +1,18 @@
 // Explicit one-time installation. Runtime inference never contacts the network.
 import {cp,mkdir,writeFile,readFile,readdir,realpath} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
-import {join} from 'node:path';
+import {join,resolve} from 'node:path';
 import {downloadPinned,matchesPinned} from './download.mjs';
 import {createRequire} from 'node:module';
 import {dirname} from 'node:path';
 import {build} from 'esbuild';
-const root=fileURLToPath(new URL('../../',import.meta.url)),base=join(root,'static/vendor/narration');
+const root=fileURLToPath(new URL('../../',import.meta.url));
+// Hosted builds use a disposable binary staging root. Only the separately
+// allowlisted small runtime is copied into the application image.
+const output=process.argv.find(arg=>arg.startsWith('--output='));
+const base=output?resolve(output.slice('--output='.length)):join(root,'static/vendor/narration');
+const hosted=process.argv.includes('--hosted');
+if(hosted&&!output)throw Error('Hosted narration requires an explicit disposable --output directory');
 await mkdir(base,{recursive:true});
 const packages=join(root,'tools/narration/node_modules');
 await cp(join(packages,'@met4citizen/headtts/modules'),join(base,'modules'),{recursive:true});
@@ -51,11 +57,11 @@ const download=async file=>{
   await mkdir(dirname(target),{recursive:true});
   await downloadPinned({url:`https://huggingface.co/${model}/resolve/${revision}/${file}`,target,...pin});
 };
-if(process.argv.includes('--with-gpu')||process.argv.includes('--gpu-only')){
+if(hosted||process.argv.includes('--with-gpu')||process.argv.includes('--gpu-only')){
   console.log('Downloading optional fp32 GPU model');
   await download('onnx/model.onnx');
 }
-const files=['config.json','tokenizer.json','tokenizer_config.json','onnx/model_quantized.onnx',...catalog.voices.filter(voice=>voice.default||voice.id==='af_bella').map(voice=>'voices/'+voice.id+'.bin'),'README.md'];
+const files=['config.json','tokenizer.json','tokenizer_config.json','onnx/model_quantized.onnx',...catalog.voices.filter(voice=>hosted||voice.default||voice.id==='af_bella').map(voice=>'voices/'+voice.id+'.bin'),'README.md'];
 for(const file of process.argv.includes('--runtime-only')||process.argv.includes('--gpu-only')?[]:files.filter(file=>!process.argv.includes('--voices-only')||file.startsWith('voices/'))){
   console.log('Checking/installing',file);await download(file);
 }

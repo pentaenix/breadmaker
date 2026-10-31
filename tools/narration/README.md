@@ -1,5 +1,18 @@
 # Kokoro narration: Editor implementation and Cloud handoff
 
+## Inactive hosted packaging adapter
+
+Hosted builds must use `node tools/narration/install.mjs --hosted --output=/absolute/disposable/staging`.
+This verifies both model precisions and all 44 curated voice pins without copying
+large files into the application source. Then `python tools/narration/hosted_manifest.py build --root /absolute/disposable/staging --runtime-output /absolute/new/runtime`
+creates the trusted manifest and allowlisted JS/notices-only runtime. The app image
+rejects model/WASM/dictionary binaries. The explicit `publish` subcommand publishes
+only missing immutable chunks under the serialized manual release workflow; never
+run it from verification or normal startup. It needs existing release WIF, the
+matching generated manifest and the exact dedicated model bucket. No delete or
+overwrite of rollback assets is supported. Packaging/HTTP primitives are tested;
+browser/installer/pipeline integration and hosted activation are still pending.
+
 ## Settings voice-library usability (October 30, 2026)
 
 Settings-only update: Narration settings now put Voices first, then Playback, Generation, Text highlighting and Performance. Speed/pitch share a compact row; Save/Cancel remain visible while the body scrolls. The main manuscript narration panel is unchanged.

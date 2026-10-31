@@ -1,0 +1,40 @@
+# Build and scan independently; this helper NEVER contains the Editor runtime.
+ARG PYTHON_BASE_DIGEST
+FROM python:3.14.8-slim-trixie@sha256:${PYTHON_BASE_DIGEST} AS build
+WORKDIR /helper
+COPY deploy/requirements-pronunciation.txt ./requirements.txt
+RUN python -m pip install --no-cache-dir -r requirements.txt setuptools==84.2.0
+COPY src/narration ./src/narration
+COPY src/hosted/narration/pronunciation_helper.py ./src/hosted/narration/pronunciation_helper.py
+COPY tools/narration/assert-helper-data.py tools/narration/language-data-pins.json tools/narration/THIRD_PARTY_NOTICES.md ./notices/
+RUN python notices/assert-helper-data.py --isolated-image
+# Never redistribute the unused eSpeak-derived alternative dictionary. Native
+# parity uses only the separately pinned top-level lexicon and CRF model.
+RUN python -c "import gruut_lang_it,shutil; from pathlib import Path; shutil.rmtree(Path(gruut_lang_it.__file__).parent/'espeak')"
+RUN mkdir -p /runtime-libs /runtime-status && \
+    for package in libbz2-1.0 libexpat1 libffi8 liblzma5 libsqlite3-0; do \
+      if dpkg-query -s "$package" > "/runtime-status/$package"; then \
+        dpkg-query -L "$package" | while IFS= read -r file; do \
+          case "$file" in /usr/lib/*/*.so.*) cp -L "$file" /runtime-libs/ ;; esac; \
+        done; \
+      else rm "/runtime-status/$package"; fi; \
+    done
+RUN python -m pip uninstall --yes pip && rm -r /usr/local/lib/python3.14/ensurepip
+
+FROM gcr.io/distroless/cc-debian13:nonroot@sha256:e792ab3d241a468a4fd7519ddbbebe66b49b5f365771716ea688ad40b6c6f1c2
+COPY --from=build /usr/local /usr/local
+COPY --from=build /runtime-libs /opt/python-libs
+COPY --from=build /runtime-status /var/lib/dpkg/status.d
+COPY --from=build /helper /helper
+WORKDIR /helper
+ENV PATH=/usr/local/bin:$PATH \
+    LD_LIBRARY_PATH=/usr/local/lib:/opt/python-libs \
+    HOME=/nonexistent \
+    PYTHONPATH=/helper/src \
+    PYTHONDONTWRITEBYTECODE=1 \
+    TMPDIR=/tmp
+USER 10001:10001
+RUN ["python", "notices/assert-helper-data.py", "--isolated-image"]
+RUN ["python", "-c", "import ssl,sqlite3,pycrfsuite,fugashi,mojimoji; import importlib.util; assert importlib.util.find_spec('pip') is None; assert importlib.util.find_spec('ensurepip') is None; from hosted.narration.pronunciation_helper import app"]
+EXPOSE 8080
+CMD ["python", "-m", "uvicorn", "hosted.narration.pronunciation_helper:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1", "--timeout-graceful-shutdown", "8", "--no-access-log", "--no-proxy-headers", "--no-server-header"]

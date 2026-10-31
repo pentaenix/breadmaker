@@ -17,7 +17,7 @@ from tests.test_v10569_narration_recordings import env, UID, PID, OTHER
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools' / 'narration'))
-from hosted_manifest import build_manifest, publish_missing
+from hosted_manifest import build_manifest, publish_missing, package_runtime, build_release
 
 PATH = 'models/onnx-community/Kokoro-82M-v1.0-ONNX-timestamped/onnx/model_quantized.onnx'
 
@@ -152,3 +152,72 @@ def test_symlinked_model_file_is_rejected_before_read(tmp_path):
     path.symlink_to(target)
     with pytest.raises(ValueError, match='SYMLINK_FORBIDDEN'):
         build_manifest(tmp_path, [PATH], model_pins={})
+
+
+def runtime_inputs(root):
+    files = ['modules/headtts.mjs', 'modules/worker-tts.mjs', 'modules/language-en-us.mjs',
+             'transformers/ort-wasm-simd-threaded.mjs', 'transformers/transformers.web.min.js',
+             'spanish.mjs', 'languages.mjs', 'HEADTTS-LICENSE', 'TRANSFORMERS-LICENSE',
+             'SPANISH-G2P-LICENSE', 'SPANISH-NUMBERS-LICENSE']
+    for name in files:
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('// Synthetic public runtime')
+    for name in ('transformers/ort-wasm-simd-threaded.wasm', 'dictionaries/en-us.txt',
+                 'models/private-do-not-copy', '.env', 'credentials.json'):
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b'Synthetic not part of runtime')
+
+
+def test_small_hosted_runtime_excludes_all_binaries_dictionaries_and_unlisted_files(models, tmp_path):
+    import json
+    _, _, catalog, root, _ = models
+    runtime_inputs(root)
+    output = tmp_path / 'packaged'
+    result = package_runtime(root, output, catalog)
+    assert result['manifest'] == catalog.digest
+    files = [path.relative_to(output).as_posix() for path in output.rglob('*') if path.is_file()]
+    assert len(files) == result['runtime_files']
+    assert not any(path.endswith(('.onnx', '.wasm', '.bin', '.txt')) or path.startswith(('models/', 'dictionaries/')) for path in files)
+    assert '.env' not in files and 'credentials.json' not in files
+    assert json.loads((output / 'hosted-manifest.json').read_text()) == catalog.manifest
+    assert json.loads((output / 'installation.json').read_text())['gpu'] is False
+
+
+def test_generated_worker_loader_pins_manifest_and_preserves_native_backend_rules(models, tmp_path):
+    _, _, catalog, root, _ = models
+    runtime_inputs(root)
+    output = tmp_path / 'packaged'
+    package_runtime(root, output, catalog)
+    wrapper = (output / 'transformers-hosted.mjs').read_text()
+    assert catalog.digest in wrapper and 'HostedPublicAssets.open' in wrapper
+    assert 'env.fetch=globalThis.fetch' in wrapper and 'env.allowRemoteModels=false' in wrapper
+    assert 'env.useBrowserCache=false' in wrapper and 'env.useCustomCache=false' in wrapper
+    assert 'crossOriginIsolated' in wrapper and 'wasm.proxy=false' in wrapper
+    assert 'context.get(\'project\')' in wrapper and 'context.get(\'client\')' in wrapper
+
+
+def test_packaging_refuses_missing_modules_symlinks_and_existing_destination(models, tmp_path):
+    _, _, catalog, root, _ = models
+    with pytest.raises(ValueError, match='MODULES_REQUIRED'):
+        package_runtime(root, tmp_path / 'missing', catalog)
+    runtime_inputs(root)
+    file = root / 'modules/headtts.mjs'
+    file.unlink(); file.symlink_to(root / 'modules/worker-tts.mjs')
+    with pytest.raises(ValueError, match='SYMLINK_FORBIDDEN'):
+        package_runtime(root, tmp_path / 'symlink', catalog)
+    assert not (tmp_path / 'symlink').exists()
+    with pytest.raises(ValueError, match='DESTINATION_MUST_BE_NEW'):
+        package_runtime(root, root, catalog)
+
+
+def test_release_manifest_requires_complete_pinned_models_and_wasm(tmp_path):
+    with pytest.raises(ValueError, match='WASM_REQUIRED'):
+        build_release(tmp_path)
+    path = tmp_path / 'transformers/ort-wasm-simd-threaded.wasm'
+    path.parent.mkdir(); path.write_bytes(b'Synthetic')
+    # A tiny valid q8 file is not enough: fp32/config/tokenizer and ALL curated
+    # voice pins must be available and verified before a release pack is built.
+    with pytest.raises(ValueError, match='FILE_INVALID'):
+        build_release(tmp_path)

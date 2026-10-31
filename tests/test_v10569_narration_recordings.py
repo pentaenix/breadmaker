@@ -12,7 +12,7 @@ from hosted.firestore.contracts import (DocumentConflict, DocumentNotFound, Host
                                          HostedValidationError, ProjectUnavailable)
 from hosted.firestore.memory import MemoryDocumentStore
 from hosted.narration.authority import NarrationAuthority
-from hosted.narration.recordings import HostedNarrationRecordings, ROOT, USAGE, CAPACITY, _head, _intent
+from hosted.narration.recordings import HostedNarrationRecordings, ROOT, USAGE, CAPACITY, FENCE_BYTES, _head, _intent
 from hosted.narration.sealed_parts import SealedNarrationParts, PART_BYTES
 from hosted.runtime_services import ensure_hosted_user
 from hosted.security.envelope import HostedEnvelopeCodec
@@ -111,7 +111,7 @@ def test_operation_replay_survives_instance_loss_without_duplicate_quota(env):
     assert replica.begin(UID, PID, env[4], audio_bytes=len(wav()), operation='first') == made
     row = documents.get((USAGE, UID)).data
     intent = documents.get(_intent(PID, made['publication'])).data
-    assert row['records'] == 1 and row['bytes'] == len(wav()) + 16 + intent['metadata_reserved']
+    assert row['records'] == 1 and row['bytes'] == len(wav()) + 16 + FENCE_BYTES + intent['metadata_reserved']
 
 
 def test_begin_rejects_changed_metadata_with_same_operation(env):
@@ -316,7 +316,7 @@ def test_uncertain_object_completion_retry_is_new_ciphertext_and_stays_accounted
     service.finalize(UID, PID, made['publication'])
     assert len(objects.list_prefix('projects/')) == 2
     data = documents.get(_intent(PID, made['publication'])).data
-    assert documents.get((USAGE, UID)).data['bytes'] == (len(wav()) + 16) * 2 + data['metadata_reserved']
+    assert documents.get((USAGE, UID)).data['bytes'] == (len(wav()) + 16 + FENCE_BYTES) * 2 + data['metadata_reserved']
     assert len(data['attempts']) == 2
 
 

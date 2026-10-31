@@ -18,9 +18,11 @@ async function bounded(response,limit){
 const boundedJSON=async(response,limit)=>JSON.parse(new TextDecoder().decode(await bounded(response,limit)));
 
 export class HostedPublicAssets {
-  static async open({project,origin=globalThis.location.origin,fetcher=nativeFetch,expectedDigest=null,cacheStorage=globalThis.caches}){
+  static async open({project,client='',origin=globalThis.location.origin,fetcher=nativeFetch,expectedDigest=null,cacheStorage=globalThis.caches}){
     if(!/^[a-f0-9]{32}$/.test(project))throw Error('NARRATION_PROJECT_REQUIRED');
-    const response=await fetcher(new URL('/api/narration-models?project_id='+project,origin),{credentials:'same-origin',cache:'no-store'});
+    if(typeof client!=='string'||client.length>128||client&&!/^[a-zA-Z0-9_-]+$/.test(client))throw Error('NARRATION_CLIENT_INVALID');
+    const headers={'X-Breadmaker-Project':project,...(client?{'X-Breadmaker-Client':client}:{})};
+    const response=await fetcher(new URL('/api/narration-models?project_id='+project,origin),{credentials:'same-origin',cache:'no-store',headers});
     if(!response.ok)throw Error('NARRATION_MODELS_AUTHORIZATION_FAILED');
     const bytes=await bounded(response,256*1024);
     const value=JSON.parse(new TextDecoder().decode(bytes)),{digest,...manifest}=value;
@@ -29,7 +31,7 @@ export class HostedPublicAssets {
     // Cross-tab/worker writes require a real browser Web Lock. Without it,
     // verified streaming still works, but never risks an unbounded shared cache.
     let cache=null;try{if(globalThis.navigator?.locks)cache=await cacheStorage?.open(CACHE)}catch{}
-    const result=new HostedPublicAssets({project,origin,fetcher,cache,digest,manifest,assets});
+    const result=new HostedPublicAssets({project,origin,fetcher,cache,digest,manifest,assets,headers});
     await result.retainPublicManifests();return result;
   }
   static async validate(manifest){
@@ -83,7 +85,7 @@ export class HostedPublicAssets {
         if(cached){try{const bytes=await bounded(cached,part.size);if(bytes.length===part.size&&await sha(bytes)===part.sha256)return bytes}catch{}await this.cache.delete(key)}
       }
       const url=new URL('/api/narration-models/'+asset.id+'?part='+ordinal+'&project_id='+this.project,this.origin);
-      const response=await this.fetcher(url,{credentials:'same-origin',cache:'no-store'});
+      const response=await this.fetcher(url,{credentials:'same-origin',cache:'no-store',headers:this.headers});
       if(!response.ok)throw Error(response.status===429?'NARRATION_TRANSFER_LIMIT':'NARRATION_MODEL_DOWNLOAD_FAILED');
       const bytes=await bounded(response,part.size);
       if(bytes.length!==part.size||await sha(bytes)!==part.sha256)throw Error('NARRATION_MODEL_INTEGRITY_FAILED');

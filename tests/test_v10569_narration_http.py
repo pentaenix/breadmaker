@@ -1,13 +1,15 @@
 """In-process adapter HTTP behavior; outer production session/CSRF stays required."""
 import asyncio
 import time
+from contextvars import ContextVar
+from threading import Event
 
 import anyio
 import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
-from hosted.narration.http import build_recording_router, LeasedAudioResponse
+from hosted.narration.http import build_recording_router, LeasedAudioResponse, BoundedControlResponse, run_provider
 from hosted.narration.reads import NarrationReads
 from hosted.narration.transfers import TransferPolicy, TransferDenied
 from tests.test_v10569_narration_recordings import env, publish, UID, PID, OTHER, wav
@@ -130,3 +132,63 @@ def test_model_or_private_source_is_not_eagerly_loaded_by_router_creation(env):
     objects.read_chunks = prohibited
     app = client(env)
     assert app.get('/api/narrations').json() == {'records': [], 'next': None}
+
+
+def test_control_json_send_deadline_also_releases_process_capacity():
+    from fastapi.responses import JSONResponse
+    released = []
+    response = BoundedControlResponse(JSONResponse({'ok': True}, headers={'Cache-Control': 'private, no-store'}),
+                                      deadline=time.monotonic() + .02)
+    response.release_capacity = lambda: released.append(True)
+    async def run():
+        async def send(message): await anyio.sleep(1)
+        with pytest.raises(TimeoutError):
+            await response({'type': 'http', 'method': 'POST'}, None, send)
+    asyncio.run(run())
+    assert released == [True] and response.headers['cache-control'] == 'private, no-store'
+
+
+def test_cancelled_http_calls_keep_provider_slots_until_actual_work_stops():
+    ready = [Event() for _ in range(4)]
+    finish = Event()
+    def blocked(index):
+        ready[index].set()
+        assert finish.wait(2)
+    async def run():
+        tasks = [asyncio.create_task(run_provider(blocked, i)) for i in range(4)]
+        try:
+            deadline = time.monotonic() + 1
+            while not all(event.is_set() for event in ready) and time.monotonic() < deadline:
+                await asyncio.sleep(.005)
+            assert all(event.is_set() for event in ready)
+            for task in tasks: task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            with pytest.raises(HTTPException) as error:
+                await run_provider(lambda: None)
+            assert error.value.status_code == 429
+        finally:
+            finish.set()
+        # The actual worker's done callback, NOT HTTP cancellation, releases it.
+        deadline = time.monotonic() + 1
+        while time.monotonic() < deadline:
+            try:
+                assert await run_provider(lambda: 'released') == 'released'
+                return
+            except HTTPException:
+                await asyncio.sleep(.005)
+        pytest.fail('provider slots were not released')
+    asyncio.run(run())
+
+
+def test_bounded_worker_retains_request_authority_context_and_releases_failed_calls():
+    actor = ContextVar('synthetic-actor', default=None)
+    async def run():
+        token = actor.set('synthetic-bound-actor')
+        try:
+            assert await run_provider(actor.get) == 'synthetic-bound-actor'
+            def failed(): raise ValueError('Synthetic failure')
+            with pytest.raises(ValueError): await run_provider(failed)
+            assert await run_provider(lambda: True)
+        finally:
+            actor.reset(token)
+    asyncio.run(run())
