@@ -1,6 +1,7 @@
 # Annotations ownership
 
-`api.annotations` is a composition boundary only.
+`api.annotations` is an inert namespace. Native API composition explicitly
+installs `api.annotations.routes.router`; pure matching imports do not boot SQL.
 
 - `routes.py` — HTTP/domain behavior.
 - `contracts.py` — request payload models owned by this domain.
@@ -18,7 +19,7 @@
 Callers that need implementation helpers target `routes` explicitly. Do not
 recreate `api/annotations.py` or sibling `annotations_contracts.py` facades.
 
-The package loads its native router only when native composition requests it.
+Only native composition imports the native router's explicit owner.
 Importing the pure matcher must not initialize SQL, a workspace or either runtime.
 Hosted owners are `hosted/editing_search.py` (one-shot publication),
 `editing_packs.py` (canonical projection/edits/recovery) and `editing_http.py`

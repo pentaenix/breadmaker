@@ -10,7 +10,7 @@
     },
     {
       "file": "src/api/__init__.py",
-      "lines": 33,
+      "lines": 36,
       "symbols": [
         {
           "name": "install_routers",
@@ -21,14 +21,8 @@
     },
     {
       "file": "src/api/annotations/__init__.py",
-      "lines": 19,
-      "symbols": [
-        {
-          "name": "__getattr__",
-          "kind": "function",
-          "line": 12
-        }
-      ]
+      "lines": 7,
+      "symbols": []
     },
     {
       "file": "src/api/annotations/contracts.py",
@@ -6577,7 +6571,7 @@
     },
     {
       "file": "src/backend/http_boundary.py",
-      "lines": 167,
+      "lines": 168,
       "symbols": [
         {
           "name": "_index_inline_script_csp_hash",
@@ -6592,12 +6586,12 @@
         {
           "name": "prevent_stale_local_ui_assets",
           "kind": "async_function",
-          "line": 67
+          "line": 68
         },
         {
           "name": "feature_flags",
           "kind": "function",
-          "line": 98,
+          "line": 99,
           "routes": [
             {
               "method": "GET",
@@ -6608,7 +6602,7 @@
         {
           "name": "metro_view_config",
           "kind": "function",
-          "line": 104,
+          "line": 105,
           "routes": [
             {
               "method": "GET",
@@ -6619,27 +6613,27 @@
         {
           "name": "_validation_json_safe",
           "kind": "function",
-          "line": 107
+          "line": 108
         },
         {
           "name": "request_validation_exception_handler",
           "kind": "async_function",
-          "line": 114
+          "line": 115
         },
         {
           "name": "http_exception_localization_bridge",
           "kind": "async_function",
-          "line": 135
+          "line": 136
         },
         {
           "name": "unhandled_exception_handler",
           "kind": "async_function",
-          "line": 149
+          "line": 150
         },
         {
           "name": "install",
           "kind": "function",
-          "line": 159
+          "line": 160
         }
       ]
     },
@@ -26503,14 +26497,14 @@
       "method": "GET",
       "function": "feature_flags",
       "file": "src/backend/http_boundary.py",
-      "line": 98,
+      "line": 99,
       "path": "/api/features"
     },
     {
       "method": "GET",
       "function": "metro_view_config",
       "file": "src/backend/http_boundary.py",
-      "line": 104,
+      "line": 105,
       "path": "/api/metro-view-config"
     },
     {

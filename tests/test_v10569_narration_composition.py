@@ -118,3 +118,16 @@ def test_hosted_wasm_csp_is_capability_and_surface_scoped_without_changing_auth_
         assert "'unsafe-eval'" not in actual['Content-Security-Policy']
         assert 'Cross-Origin-Opener-Policy' not in actual and 'Cross-Origin-Embedder-Policy' not in actual
     assert 'wasm-unsafe-eval' not in headers('/auth/login')['Content-Security-Policy']
+
+
+def test_wasm_surface_uses_scope_path_even_with_a_path_in_the_host_header(monkeypatch):
+    from backend import http_boundary as owner
+    monkeypatch.setattr(owner,'runtime',SimpleNamespace(mode='hosted',
+        sessions=SimpleNamespace(metadata=lambda:{'auth_mode':'identity_platform'}),
+        capabilities=SimpleNamespace(supports=lambda _:True)))
+    def csp(path,host):
+        request=Request(dict(type='http',scheme='https',path=path,raw_path=path.encode(),
+            headers=[(b'host',host.encode())],server=('synthetic.test',443),query_string=b''))
+        return owner._security_headers(request)['Content-Security-Policy']
+    assert 'wasm-unsafe-eval' not in csp('/api/private','synthetic.test/static/vendor/narration/worker-tts.mjs')
+    assert 'wasm-unsafe-eval' in csp('/p/'+PID,'synthetic.test/not-a-shell')

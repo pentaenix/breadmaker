@@ -39,8 +39,9 @@ def _security_headers(request:Request) -> dict[str,str]:
     # its SDK paths, not arbitrary Google hosts or unsafe-inline/unsafe-eval.
     script_policy="'self'"+(f" '{_INDEX_INLINE_SCRIPT_CSP_HASH}'" if _INDEX_INLINE_SCRIPT_CSP_HASH else '')+(" https://www.gstatic.com https://apis.google.com/js/ https://apis.google.com/_/scs/" if identity_web else '')
     narration_enabled=getattr(getattr(runtime,'capabilities',None),'supports',lambda _:False)('narration')
-    narration_surface=(request.url.path.startswith('/static/vendor/narration/') or
-                       request.url.path in APP_SHELL_PATHS or bool(_PROJECT_SHELL_RE.fullmatch(request.url.path)))
+    path=canonical_request_path(request)
+    narration_surface=(path.startswith('/static/vendor/narration/') or
+                       path in APP_SHELL_PATHS or bool(_PROJECT_SHELL_RE.fullmatch(path)))
     if runtime.mode=='local' or narration_enabled and narration_surface:script_policy+=" 'wasm-unsafe-eval'"
     connect_policy="'self'"+(" https://identitytoolkit.googleapis.com https://securetoken.googleapis.com" if identity_web else '')
     frame_policy="'self'"+(" https://accounts.google.com https://appleid.apple.com https://*.firebaseapp.com https://auth.breadmaker.studio" if identity_web else '')

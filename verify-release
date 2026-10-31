@@ -44,10 +44,18 @@ has_test_deps(){
   "$1" - <<'PYCHECK' >/dev/null 2>&1
 import importlib.metadata as m, pathlib, re
 
-def exact_requirements(path):
-    for raw in pathlib.Path(path).read_text(encoding="utf-8").splitlines():
+def exact_requirements(path, seen=None):
+    path=pathlib.Path(path).resolve()
+    seen=set() if seen is None else seen
+    if path in seen:
+        return
+    seen.add(path)
+    for raw in path.read_text(encoding="utf-8").splitlines():
         raw=raw.strip()
-        if not raw or raw.startswith("#") or raw.startswith("-r "):
+        if not raw or raw.startswith("#"):
+            continue
+        if raw.startswith("-r "):
+            exact_requirements(path.parent/raw[3:].strip(), seen)
             continue
         match=re.fullmatch(r"([A-Za-z0-9_.-]+)==([^ ]+)",raw)
         if not match:
@@ -58,6 +66,7 @@ def exact_requirements(path):
 exact_requirements("requirements.txt")
 exact_requirements("requirements-test.txt")
 import fastapi, starlette, uvicorn, docx, multipart, bs4, pytest, playwright, requests, httpx, cryptography, authlib, joserfc, PIL, pip_audit
+import google.auth, google.cloud.firestore, google.cloud.storage, google.cloud.kms, firebase_admin
 PYCHECK
 }
 

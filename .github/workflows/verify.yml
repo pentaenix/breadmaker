@@ -22,8 +22,11 @@ jobs:
         run: python -m pip_audit --strict --progress-spinner=off --desc=off -r requirements-hosted.txt
       # Cheap regression tripwire before OS/browser setup. This is not a substitute
       # for the complete, exact-commit gate below; every full-suite check remains.
-      - name: Check startup contracts and bundled-read safety before browser setup
-        run: python -m pytest -q tests/test_v1055.py tests/test_v965.py tests/test_v10560.py
+      - name: Check startup, security and hosted SDK readiness before browser setup
+        run: >-
+          python -m pytest -q tests/test_v1055.py tests/test_v965.py tests/test_v10560.py
+          tests/test_v10227.py tests/test_v10314.py tests/test_v10569_ci_readiness.py
+          tests/test_v10569_narration_maintenance.py tests/test_v10569_narration_maintenance_google.py
       - name: Install Linux browser dependencies
         run: python -m playwright install-deps chromium
       - name: Install pinned Playwright Chromium
