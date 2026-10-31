@@ -233,15 +233,17 @@ class NarrationGC:
             raise DocumentConflict('NARRATION_GC_RETENTION_HELD')
         return data
 
-    def collect(self, pid, publication, lease, *, max_objects=32, deadline=None):
+    def collect(self, pid, publication, lease, *, max_objects=32, deadline=None, safety_margin=45):
         if type(max_objects) is not int or not 1 <= max_objects <= 32:
             raise ValueError('NARRATION_GC_BATCH_INVALID')
+        if type(safety_margin) is not int or not 1 <= safety_margin <= 45:
+            raise ValueError('NARRATION_GC_RUNTIME_INVALID')
         data = self.claim(pid, publication, lease)
         if data is None:
             return False
         stop = min(len(data['objects']), data['cursor'] + max_objects)
         while data['cursor'] < stop:
-            if deadline is not None and time.monotonic() >= deadline - 45:
+            if deadline is not None and time.monotonic() >= deadline - safety_margin:
                 return False
             self.checkpoint(lease)  # renew/check BEFORE provider I/O
             item = data['objects'][data['cursor']]
@@ -293,7 +295,7 @@ class NarrationGC:
         # Final independent readback. A fence must not be removed by another
         # cleanup path, bucket lifecycle, or physical-erasure inventory sweeper.
         for item in data['objects']:
-            if deadline is not None and time.monotonic() >= deadline - 30:
+            if deadline is not None and time.monotonic() >= deadline - min(30, safety_margin):
                 return False
             self.checkpoint(lease)
             if not is_fence(self.objects.stat(item['name'])):

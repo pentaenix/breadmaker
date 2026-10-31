@@ -114,6 +114,12 @@ async def _provider_binding(provider,*args,**kwargs):
 
 async def hosted_request_boundary(request: Request, call_next):
     path=canonical_request_path(request)
+    # Exact-path machine owner, NOT a public-API/session/CSRF exception. It must
+    # validate Google's signature + pinned service-account identity before I/O.
+    from hosted.narration.maintenance_identity import PATH as narration_gc_path
+    if path==narration_gc_path:
+        from hosted.narration.maintenance_http import dispatch
+        return await dispatch(request,getattr(runtime,'narration',None))
     # These installed application files are already anonymously readable. Do
     # not perform synchronous provider/Firestore session reads for every CSS/JS
     # file: they serialize concurrent startup downloads on the ASGI event loop.

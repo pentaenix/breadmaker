@@ -21,6 +21,7 @@ class NarrationBundle:
     recordings: HostedNarrationRecordings
     models: NarrationModelReads
     pronunciation: HostedPronunciation
+    maintenance: object | None = None
 
 
 def compose(domain, *, envelope, objects, model_objects, model_catalog,
@@ -82,6 +83,8 @@ def configured(domain, *, mode, auth_mode, environment, env=None, static=None,
         asset = paths.get(prefix + 'voices/' + voice['id'] + '.bin')
         if asset is None or (asset['size'], asset['sha256']) != (voice['size'], voice['sha256']):
             raise ValueError('NARRATION_RELEASE_VOICE_MISMATCH')
+    from hosted.narration.maintenance_composition import configured as configured_maintenance, validate_configuration
+    validate_configuration(env, project=project)
     # Validate ALL configuration and trusted release files before initializing SDKs.
     if object_factory is None:
         from hosted.narration.google_objects import GoogleNarrationObjects
@@ -94,7 +97,9 @@ def configured(domain, *, mode, auth_mode, environment, env=None, static=None,
         key_factory = GoogleNarrationKeys
     from hosted.security.envelope import HostedEnvelopeCodec
     authority = NarrationAuthority(domain, issuer='identity-platform://' + project, now=time.time)
-    return compose(domain, envelope=HostedEnvelopeCodec(key_factory(exact['BREADMAKER_NARRATION_KMS_KEY'])),
+    bundle = compose(domain, envelope=HostedEnvelopeCodec(key_factory(exact['BREADMAKER_NARRATION_KMS_KEY'])),
         objects=object_factory(bucket=exact['BREADMAKER_NARRATION_BUCKET'], project=project),
         model_objects=model_object_factory(bucket=exact['BREADMAKER_NARRATION_MODELS_BUCKET'], project=project),
         model_catalog=catalog, voice_catalog=voices, authority=authority, epoch=epoch, pronunciation_client=client)
+    from dataclasses import replace
+    return replace(bundle, maintenance=configured_maintenance(env, project=project, objects=bundle.recordings.parts.objects))

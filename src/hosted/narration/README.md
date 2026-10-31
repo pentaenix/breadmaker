@@ -27,7 +27,7 @@ production flag, exact dedicated resource scope, authority epoch and verified
 public release manifest. Disabled startup uses no model files or cloud SDKs.
 `app.py` installs the bounded routes; without the bundle they reject access.
 Browser context/logout fencing and thin/lazy private RAM reads have synthetic
-UI/HTTP coverage. Publisher/workflow gates, cleanup authorization, real provider
+UI/HTTP coverage. Publisher/workflow gates, cleanup provisioning, real provider
 acceptance and full release CI remain required BEFORE deployment/activation.
 Editor Highlights still needs its separate canonical atomic adapter. No feature
 activation or complete recovery/erasure claim follows from these focused tests.
@@ -72,6 +72,23 @@ These new top-level derivative families must accompany any future account census
 `narration_gc_receipts_v1`. Shared global quota rows are not an account delete list.
 Whole-database restore still requires disabling narration/GC and rotating authority
 epoch before re-enablement. Do not repeat an account reset to test these adapters.
+
+The optional daily job now invokes ONE fixed machine-only operation in the
+existing app; it has NO Firestore, Storage or KMS permissions. It uses a
+metadata-issued Google ID token for the exact public-origin + operation-path
+audience. The app verifies Google's signature, issuer, lifetime, exact service
+account email AND numeric unique subject; browser sessions are not accepted.
+No caller-selected targets, cursor, body, query or budget is accepted. Both
+Narration and its separate GC flag default OFF. Public-host pinning is unchanged.
+The operation has one process-local worker slot retained until actual completion,
+the distributed GC lease, a durable eight-batch UTC daily limit, 35-second work
+batches and a 40-second cooperative provider deadline. The isolated maintenance
+Firestore client bounds begin/read/commit/rollback RPCs without changing the
+canonical client; unknown/expired/uncertain operations remain resumable. Provider
+and maximum-backlog acceptance still precede activation. No background app task,
+warm instance or new publicly invokable service is introduced. The existing app
+identity retains its existing database-wide authority: this is an explicit scoped
+code boundary, NOT a claim of collection-level Firestore IAM isolation.
 
 `transfers.py` owns cross-instance narration transfer admission. Its caller must
 supply a READ-ONLY transaction authority callback checking current account

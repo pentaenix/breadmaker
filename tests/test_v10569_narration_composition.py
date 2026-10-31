@@ -58,7 +58,8 @@ def test_invalid_scope_and_unverified_manifest_fail_before_provider_initializati
     options = configuration(tmp_path)
     checks = {'BREADMAKER_NARRATION_ENABLED': 'yes', 'BREADMAKER_NARRATION_BUCKET': 'canonical',
         'BREADMAKER_NARRATION_MODELS_BUCKET': 'recovery', 'BREADMAKER_NARRATION_KMS_KEY': 'canonical-key',
-        'BREADMAKER_NARRATION_HELPER_URL': 'https://attacker.example', 'BREADMAKER_NARRATION_MANIFEST_SHA256': '1' * 64}
+        'BREADMAKER_NARRATION_HELPER_URL': 'https://attacker.example', 'BREADMAKER_NARRATION_MANIFEST_SHA256': '1' * 64,
+        'BREADMAKER_NARRATION_GC_ENABLED': 'true'}  # missing machine identity must fail before SDKs
     for key, value in checks.items():
         with pytest.raises(ValueError):
             configured(env[1], **{**options,'env':{**options['env'],key:value}},object_factory=never,model_object_factory=never,key_factory=never)

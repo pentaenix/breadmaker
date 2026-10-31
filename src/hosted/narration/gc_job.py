@@ -1,4 +1,4 @@
-"""Daily bounded Narration maintenance. Explicit CLI only; never a web route."""
+"""App-side bounded maintenance core. CLI invokes the machine-only operation."""
 from datetime import datetime, timezone
 import json
 import math
@@ -9,6 +9,7 @@ from hosted.firestore.ids import require_project_id, require_user_id
 from hosted.narration.gc import NarrationGC, _OBJECT, is_fence
 from hosted.narration.maintenance import NarrationMaintenanceStore
 from hosted.narration.recordings import ATTEMPTS, QUEUE, _intent
+from hosted.narration.io_limits import io_timeout
 
 
 def _date(value):
@@ -68,7 +69,7 @@ class GoogleGCQueue:
                 query = query.start_after({'eligible_at': cursor['eligible'], '__name__': self.client.collection(QUEUE).document(cursor['id'])})
             except (ValueError, TypeError, KeyError):
                 raise ValueError('NARRATION_GC_CURSOR_INVALID') from None
-        rows = list(query.limit(limit).stream(timeout=10, retry=None))
+        rows = list(query.limit(limit).stream(timeout=io_timeout(), retry=None))
         result = []
         for row in rows:
             data = row.to_dict()
@@ -114,8 +115,10 @@ def inspect_object(gc, item, lease):
     return gc.documents.run_transaction(check)
 
 
-def run_batch(gc, queue, *, seconds=500, monotonic=time.monotonic):
+def run_batch(gc, queue, *, seconds=500, monotonic=time.monotonic, safety_margin=45):
     if type(seconds) is not int or not 1 <= seconds <= 500:
+        raise ValueError('NARRATION_GC_RUNTIME_INVALID')
+    if type(safety_margin) is not int or not 1 <= safety_margin <= 45:
         raise ValueError('NARRATION_GC_RUNTIME_INVALID')
     deadline = monotonic() + seconds
     counts = dict(collected=0, held=0, tracked=0, fences=0, orphans=0, partial=False)
@@ -124,17 +127,17 @@ def run_batch(gc, queue, *, seconds=500, monotonic=time.monotonic):
     try:
         state = gc.checkpoint(lease)
         after = state['intent_after']
-        while monotonic() < deadline - 45:
+        while monotonic() < deadline - safety_margin:
             page = queue.page(after=after, now=gc._time())
             if not page:
                 gc.checkpoint(lease, intent_after='')
                 queue_done = True
                 break
             for data, cursor in page:
-                if monotonic() >= deadline - 45:
+                if monotonic() >= deadline - safety_margin:
                     counts['partial'] = True
                     return counts
-                done = gc.collect(data['project_id'], data['publication'], lease, deadline=deadline)
+                done = gc.collect(data['project_id'], data['publication'], lease, deadline=deadline, safety_margin=safety_margin)
                 current = gc.documents.get(_intent(data['project_id'], data['publication']))
                 if current is not None and current.data.get('state') == 'collecting':
                     counts['partial'] = True
@@ -145,11 +148,11 @@ def run_batch(gc, queue, *, seconds=500, monotonic=time.monotonic):
         # Separate resumable census of the ENTIRE bucket, not just DB prefixes.
         # Missing parent/intent/index does not make an object invisible to audit.
         after = state['object_after']
-        while monotonic() < deadline - 30:
+        while monotonic() < deadline - min(30, safety_margin):
             gc.checkpoint(lease)
             page, following = gc.objects.inventory_page(after=after)
             for item in page:
-                if monotonic() >= deadline - 30:
+                if monotonic() >= deadline - min(30, safety_margin):
                     counts['partial'] = True
                     return counts  # next run safely repeats this bounded page
                 counts[inspect_object(gc, item, lease)] += 1
@@ -165,32 +168,8 @@ def run_batch(gc, queue, *, seconds=500, monotonic=time.monotonic):
 
 
 def main():
-    import argparse
-    import os
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--confirm', required=True, choices=['COLLECT_DERIVED_NARRATION_ONLY'])
-    parser.parse_args()
-    if (os.environ.get('BREADMAKER_OPERATOR_MODE') != 'narration_gc'
-            or os.environ.get('BREADMAKER_GCP_PROJECT_ID') != 'breadmaker-prod-511902'
-            or os.environ.get('BREADMAKER_NARRATION_BUCKET') != 'breadmaker-prod-511902-breadmaker-narration'):
-        raise SystemExit('NARRATION_GC_CONFIGURATION_REQUIRED')
-    from hosted.firestore.google_driver import GoogleFirestoreDocumentStore
-    from hosted.narration.google_objects import GoogleNarrationObjects
-    provider = GoogleFirestoreDocumentStore(project='breadmaker-prod-511902', database='(default)')
-    objects = GoogleNarrationObjects(project='breadmaker-prod-511902', bucket=os.environ['BREADMAKER_NARRATION_BUCKET'])
-    objects.verify_gc_bucket()  # prove no versioning/soft-delete/lifecycle/public origin first
-    gc = NarrationGC(NarrationMaintenanceStore(provider), objects,
-        retention_allows=lambda tx, pid, owner: retention_allows(tx, pid, owner, now=time.time()))
-    try:
-        result = run_batch(gc, GoogleGCQueue(provider._client))
-    except Exception:
-        # Provider errors can include private object names or payloads. Keep the
-        # operational failure observable without emitting the exception body.
-        print(json.dumps({'ok': False, 'code': 'NARRATION_GC_FAILED_RESUMABLE'}))
-        raise SystemExit(2) from None
-    print(json.dumps({'ok': result['orphans'] == 0, **result}, sort_keys=True))
-    if result['orphans']:
-        raise SystemExit(2)
+    from hosted.narration.gc_client import main as invoke
+    invoke()
 
 
 if __name__ == '__main__':
