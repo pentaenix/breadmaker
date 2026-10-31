@@ -52,7 +52,7 @@ def env():
     chapter = domain.create('chapter', {'project_id': PID}, {'title': 'Synthetic title', 'tab_id': tab['id']}, user_id=UID)
     block = domain.create('manuscript_block', {'project_id': PID}, {
         'text_content': 'Synthetic 😀 prose', 'content_html': 'Synthetic 😀 prose',
-        'chapter_id': chapter['id'], 'position': 0}, user_id=UID)
+        'chapter_id': chapter['id'], 'tab_id': tab['id'], 'position': 0}, user_id=UID)
     clock = [1000.0]
     authority = NarrationAuthority(domain, issuer='', now=lambda: clock[0], development=True)
     parts = SealedNarrationParts(audio_objects, HostedEnvelopeCodec(Wrapper()))
@@ -63,6 +63,19 @@ def env():
                     start=0, end=len(block['text_content'].encode('utf-16-le')) // 2,
                     voice='af_heart', timings=[dict(start=0, end=9, time=0, duration=.005)])
     return service, domain, documents, audio_objects, metadata, clock
+
+
+@pytest.fixture
+def editor_saved_env(env):
+    """Real atomic-writer shape, isolated from the shared integration fixture."""
+    from hosted.chapter_mutations import replace_chapter_blocks
+    service, domain, documents, objects, metadata, clock = env
+    block = documents.get(('projects', PID, 'blocks', metadata['block_id'])).data
+    replace_chapter_blocks(domain, project_id=PID, chapter_id=block['chapter_id'], user_id=UID,
+        blocks=[{'id': 'b_editor_save', 'text_content': metadata['source_text'],
+                 'content_html': metadata['source_text'], 'block_type': 'paragraph'}],
+        expected_revision=domain.project_generation(PID, UID), operation='synthetic_editor_save')
+    return service, domain, documents, objects, {**metadata, 'block_id': 'b_editor_save'}, clock
 
 
 def begin(env, *, payload=None, operation='first', metadata=None):
@@ -188,21 +201,16 @@ def test_history_bookkeeping_alone_does_not_reject_unchanged_source(env):
     assert service.finalize(UID, PID, made['publication'])['id'] == made['id']
 
 
-def test_atomic_editor_save_without_redundant_tab_field_can_publish(env):
-    from hosted.chapter_mutations import replace_chapter_blocks
-    service, domain, documents, _, metadata, _ = env
-    block = documents.get(('projects', PID, 'blocks', metadata['block_id'])).data
-    replace_chapter_blocks(domain, project_id=PID, chapter_id=block['chapter_id'], user_id=UID,
-        blocks=[{'id': 'b_editor_save', 'text_content': metadata['source_text'],
-                 'content_html': metadata['source_text'], 'block_type': 'paragraph'}],
-        expected_revision=domain.project_generation(PID, UID), operation='synthetic_editor_save')
-    raw = documents.get(('projects', PID, 'blocks', 'b_editor_save')).data
+def test_atomic_editor_save_without_redundant_tab_field_can_publish(editor_saved_env):
+    _, _, documents, _, metadata, _ = editor_saved_env
+    raw = documents.get(('projects', PID, 'blocks', metadata['block_id'])).data
     assert 'tab_id' not in raw  # The normal writer binds blocks to chapters, not tabs.
-    _, result = publish(env, metadata={**metadata, 'block_id': 'b_editor_save'})
+    _, result = publish(editor_saved_env)
     assert result['source_text'] == metadata['source_text']
 
 
-def test_parent_chapter_move_after_capture_cannot_publish(env):
+def test_parent_chapter_move_after_capture_cannot_publish(editor_saved_env):
+    env = editor_saved_env
     service, domain, documents, _, metadata, _ = env
     made = begin(env)
     service.upload_part(UID, PID, made['publication'], 0, wav())
@@ -226,7 +234,8 @@ def test_optional_tab_field_cannot_disagree_with_parent_chapter(env):
     assert documents.get((USAGE, UID)) is None and not objects.list_prefix('projects/')
 
 
-def test_missing_parent_tab_after_capture_cannot_publish(env):
+def test_missing_parent_tab_after_capture_cannot_publish(editor_saved_env):
+    env = editor_saved_env
     service, _, documents, _, metadata, _ = env
     made = begin(env)
     service.upload_part(UID, PID, made['publication'], 0, wav())

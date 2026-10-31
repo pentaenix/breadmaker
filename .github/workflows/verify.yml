@@ -27,6 +27,8 @@ jobs:
           python -m pytest -q tests/test_v1055.py tests/test_v965.py tests/test_v10560.py
           tests/test_v10227.py tests/test_v10314.py tests/test_v10569_ci_readiness.py
           tests/test_v10569_narration_maintenance.py tests/test_v10569_narration_maintenance_google.py
+          tests/test_v10569_narration_recordings.py::test_atomic_editor_save_without_redundant_tab_field_can_publish
+          tests/test_v10569_editing_hosted.py::test_unicode_expanded_vocabulary_publishes_canonical_ranges_and_supports_undo_redo
       - name: Install Linux browser dependencies
         run: python -m playwright install-deps chromium
       - name: Install pinned Playwright Chromium
