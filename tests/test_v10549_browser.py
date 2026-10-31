@@ -56,8 +56,10 @@ def test_failed_startup_keeps_editor_hidden_and_offers_retry(tmp_path):
 def test_startup_modal_is_interactive_without_revealing_editor(tmp_path):
     with hosted_browser(tmp_path) as (base,page):
         pending=[]
-        page.route('**/api/runtime',lambda route:pending.append(route))
-        with page.expect_request('**/api/runtime'):
+        # Hold only this document's startup. Creating the first project performs
+        # a real navigation with its OWN runtime request, which must not be held.
+        page.route('**/api/runtime',lambda route:pending.append(route),times=1)
+        with page.expect_request('**/api/runtime',timeout=5000):
             page.goto(base,wait_until='domcontentloaded',timeout=8000)
         page.evaluate('()=>{showModal("Synthetic startup decision","<p>Continue opening?</p>","<button id=syntheticStartupContinue>Continue</button>");document.getElementById("syntheticStartupContinue").onclick=()=>{window.syntheticStartupContinued=true;closeModal(false)}}')
         expect(page.locator('#startupScreen')).to_be_visible()
@@ -65,5 +67,12 @@ def test_startup_modal_is_interactive_without_revealing_editor(tmp_path):
         assert page.locator('#app').evaluate('(el)=>el.inert')
         page.locator('#syntheticStartupContinue').click()
         assert page.evaluate('()=>window.syntheticStartupContinued')
+        expect(page.locator('#app')).to_be_hidden()
+        assert len(pending)==1
         pending.pop().continue_()
-        page.wait_for_function('()=>document.documentElement.dataset.breadmakerBootReady==="true"')
+        # Do not mistake the old document's transient ready flag for completion
+        # of the persisted project's new document (the previous timing race).
+        page.wait_for_url(re.compile(r'/p/[0-9a-f]{32}$'),timeout=5000)
+        page.wait_for_function('()=>document.documentElement.dataset.breadmakerBootReady==="true"',timeout=5000)
+        expect(page.locator('#startupScreen')).to_be_hidden()
+        expect(page.locator('#app')).to_be_visible()

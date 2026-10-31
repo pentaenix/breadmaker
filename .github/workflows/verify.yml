@@ -33,6 +33,24 @@ jobs:
         run: python -m playwright install-deps chromium
       - name: Install pinned Playwright Chromium
         run: python -m playwright install chromium
+      # Exercise the real navigation boundary before spending time on the full
+      # core stage. Keep the verifier's existing discovery, watchdog and accounting.
+      - name: Check startup modal and first-project navigation
+        env:
+          PYTEST_ADDOPTS: '-o faulthandler_timeout=12'
+        run: |
+          python - <<'PY'
+          from scripts import verify_release as verifier
+          target = 'test_v10549_browser.py::test_startup_modal_is_interactive_without_revealing_editor'
+          jobs = [job for job in verifier.discover_browser_jobs() if job.name == target]
+          assert len(jobs) == 1 and jobs[0].expected_items == 1
+          results = verifier.run_stage('Startup navigation smoke', jobs, 1)
+          verifier._print_stage_accounting(results)
+          for result in results:
+              if not result.ok:
+                  print(result.output)
+          assert len(results) == 1 and results[0].ok and results[0].passed_items == 1
+          PY
       - name: Complete local Editor release gate
         env:
           # Dump stalled Python stacks before the unchanged 15s browser watchdog.
