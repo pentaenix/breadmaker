@@ -18,12 +18,14 @@ async function bounded(response,limit){
 const boundedJSON=async(response,limit)=>JSON.parse(new TextDecoder().decode(await bounded(response,limit)));
 
 export class HostedPublicAssets {
-  static async open({project,client='',origin=globalThis.location.origin,fetcher=nativeFetch,expectedDigest=null,cacheStorage=globalThis.caches}){
+  static async open({project,account,client='',origin=globalThis.location.origin,fetcher=nativeFetch,expectedDigest=null,cacheStorage=globalThis.caches,onContextLost=()=>{}}){
     if(!/^[a-f0-9]{32}$/.test(project))throw Error('NARRATION_PROJECT_REQUIRED');
+    if(typeof account!=='string'||!/^usr_[a-f0-9]{32}$/.test(account))throw Error('NARRATION_ACCOUNT_REQUIRED');
     if(typeof client!=='string'||client.length>128||client&&!/^[a-zA-Z0-9_-]+$/.test(client))throw Error('NARRATION_CLIENT_INVALID');
-    const headers={'X-Breadmaker-Project':project,...(client?{'X-Breadmaker-Client':client}:{})};
-    const response=await fetcher(new URL('/api/narration-models?project_id='+project,origin),{credentials:'same-origin',cache:'no-store',headers});
-    if(!response.ok)throw Error('NARRATION_MODELS_AUTHORIZATION_FAILED');
+    const headers={'X-Breadmaker-Project':project,'X-Breadmaker-Narration-Account':account,...(client?{'X-Breadmaker-Client':client}:{})};
+    const response=await fetcher(new URL('/api/narration-models',origin),{credentials:'same-origin',cache:'no-store',headers});
+    if(!response.ok){if([401,403,404].includes(response.status))onContextLost();throw Error('NARRATION_MODELS_AUTHORIZATION_FAILED')}
+    if(response.headers.get('X-Breadmaker-Narration-Actor')!==account||response.headers.get('X-Breadmaker-Narration-Project')!==project){onContextLost();throw Error('NARRATION_ACCOUNT_CONTEXT_CHANGED')}
     const bytes=await bounded(response,256*1024);
     const value=JSON.parse(new TextDecoder().decode(bytes)),{digest,...manifest}=value;
     if(!digestPattern.test(digest)||expectedDigest&&digest!==expectedDigest||await sha(new TextEncoder().encode(canonical(manifest)))!==digest)throw Error('NARRATION_MANIFEST_INTEGRITY_FAILED');
@@ -31,7 +33,7 @@ export class HostedPublicAssets {
     // Cross-tab/worker writes require a real browser Web Lock. Without it,
     // verified streaming still works, but never risks an unbounded shared cache.
     let cache=null;try{if(globalThis.navigator?.locks)cache=await cacheStorage?.open(CACHE)}catch{}
-    const result=new HostedPublicAssets({project,origin,fetcher,cache,digest,manifest,assets,headers});
+    const result=new HostedPublicAssets({project,account,origin,fetcher,cache,digest,manifest,assets,headers,onContextLost});
     await result.retainPublicManifests();return result;
   }
   static async validate(manifest){
@@ -45,6 +47,13 @@ export class HostedPublicAssets {
     if(size>POOL)throw Error('NARRATION_PUBLIC_CACHE_CAPACITY');return assets;
   }
   constructor(values){Object.assign(this,values);this.pending=new Map();this.writeQueue=Promise.resolve()}
+  async reauthorize(){
+    const response=await this.fetcher(new URL('/api/narration-models',this.origin),{credentials:'same-origin',cache:'no-store',headers:this.headers});
+    if(!response.ok){if([401,403,404].includes(response.status))this.onContextLost();throw Error('NARRATION_MODELS_AUTHORIZATION_FAILED')}
+    if(response.headers.get('X-Breadmaker-Narration-Actor')!==this.account||response.headers.get('X-Breadmaker-Narration-Project')!==this.project){this.onContextLost();throw Error('NARRATION_ACCOUNT_CONTEXT_CHANGED')}
+    const value=await boundedJSON(response,256*1024);
+    if(value.digest!==this.digest)throw Error('NARRATION_MANIFEST_CHANGED');
+  }
   key(part){return new URL(PREFIX+'chunks/'+part.sha256,this.origin).href}
   locked(fn){
     if(globalThis.navigator?.locks)return globalThis.navigator.locks.request('breadmaker-narration-public-cache-write',fn);
@@ -84,9 +93,10 @@ export class HostedPublicAssets {
         const cached=await this.cache.match(key);
         if(cached){try{const bytes=await bounded(cached,part.size);if(bytes.length===part.size&&await sha(bytes)===part.sha256)return bytes}catch{}await this.cache.delete(key)}
       }
-      const url=new URL('/api/narration-models/'+asset.id+'?part='+ordinal+'&project_id='+this.project,this.origin);
+      const url=new URL('/api/narration-models/'+asset.id+'?part='+ordinal,this.origin);
       const response=await this.fetcher(url,{credentials:'same-origin',cache:'no-store',headers:this.headers});
-      if(!response.ok)throw Error(response.status===429?'NARRATION_TRANSFER_LIMIT':'NARRATION_MODEL_DOWNLOAD_FAILED');
+      if(!response.ok){if([401,403,404].includes(response.status))this.onContextLost();throw Error(response.status===429?'NARRATION_TRANSFER_LIMIT':'NARRATION_MODEL_DOWNLOAD_FAILED')}
+      if(response.headers.get('X-Breadmaker-Narration-Actor')!==this.account||response.headers.get('X-Breadmaker-Narration-Project')!==this.project){this.onContextLost();throw Error('NARRATION_ACCOUNT_CONTEXT_CHANGED')}
       const bytes=await bounded(response,part.size);
       if(bytes.length!==part.size||await sha(bytes)!==part.sha256)throw Error('NARRATION_MODEL_INTEGRITY_FAILED');
       if(this.cache){

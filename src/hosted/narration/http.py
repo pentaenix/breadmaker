@@ -22,6 +22,7 @@ from hosted.narration.sealed_parts import PART_BYTES
 from hosted.narration.transfers import TransferDenied
 from hosted.idempotency import request_scope_key
 from narration.pronunciation import PronunciationError
+from hosted.narration.io_limits import deadline as provider_deadline
 
 CONTROL_BYTES = 512 * 1024
 TOTAL_SECONDS = 55
@@ -111,7 +112,13 @@ def build_recording_router(*, provider, identity, project, model_provider=None, 
 
             async def admitted(request):
                 deadline = time.monotonic() + TOTAL_SECONDS
-                identity()  # prove authentication BEFORE receiving/parsing a body
+                actor = identity()  # server authority BEFORE receiving/parsing a body
+                # Negative context/CAS precondition, NEVER authentication. A
+                # cookie changed in another tab must not publish an old tab's
+                # cached request under a newly signed-in account.
+                claimed = request.headers.getlist('x-breadmaker-narration-account')
+                if len(claimed) != 1 or claimed[0] != actor:
+                    raise HTTPException(409, 'NARRATION_ACCOUNT_CONTEXT_CHANGED')
                 if request.headers.get('x-breadmaker-action'):
                     raise HTTPException(409, 'NARRATION_NOT_A_CANONICAL_ACTION')
                 limit = (256 * 1024 if request.url.path == '/api/narration-pronunciation' else
@@ -139,8 +146,12 @@ def build_recording_router(*, provider, identity, project, model_provider=None, 
                     return message
                 try:
                     with anyio.fail_after(TOTAL_SECONDS):
-                        response = await handler(Request(request.scope, receive=receive))
+                        token = provider_deadline.set(deadline)
+                        try:response = await handler(Request(request.scope, receive=receive))
+                        finally:provider_deadline.reset(token)
                         response.headers['Cache-Control'] = 'private, no-store'
+                        response.headers['X-Breadmaker-Narration-Actor'] = actor
+                        response.headers['X-Breadmaker-Narration-Project'] = project(request)
                         if not isinstance(response, LeasedAudioResponse):
                             response = BoundedControlResponse(response, deadline=deadline)
                         response.release_capacity = _CAPACITY.release
@@ -230,8 +241,9 @@ def build_recording_router(*, provider, identity, project, model_provider=None, 
     async def audio_manifest(record_id: str, request: Request):
         service, uid, pid = context(request)
         def read():
-            _, data = service.documents.run_transaction(lambda tx: service.record(tx, uid, pid, record_id))
-            return {'audio_bytes': data['audio_bytes'], 'parts': data['part_count'], 'part_bytes': PART_BYTES}
+            head, data = service.documents.run_transaction(lambda tx: service.record(tx, uid, pid, record_id))
+            return {'audio_bytes': data['audio_bytes'], 'parts': data['part_count'], 'part_bytes': PART_BYTES,
+                    'generation': head['generation'], 'publication': data['publication']}
         return await call(read)
 
     @router.get('/api/narrations/{record_id}')
@@ -256,6 +268,14 @@ def build_recording_router(*, provider, identity, project, model_provider=None, 
     async def model_manifest(request: Request):
         _, uid, pid = context(request)
         return await call(models().manifest, uid, pid)
+
+    @router.get('/api/narration-voices')
+    async def voice_catalog(request: Request):
+        service, uid, pid = context(request)
+        await call(models().manifest, uid, pid)  # current admission/membership
+        # Availability on the origin is NOT installation in this browser. The
+        # public device adapter verifies cached pins/downloads locally.
+        return {**service.catalog, 'voices': [{**voice, 'installed': False} for voice in service.catalog['voices']]}
 
     @router.get('/api/narration-models/{asset_id}')
     async def model_part(asset_id: str, request: Request, part: int):

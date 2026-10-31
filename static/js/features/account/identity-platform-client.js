@@ -112,6 +112,12 @@ async function csrf(){
   if(!response.ok)throw new Error('Could not prepare secure authentication request.');
   return (await response.json()).csrf_token;
 }
+function announceSessionChange(){
+  // Cross-tab invalidation only: no IDs, tokens or private content in messages.
+  if(typeof BroadcastChannel!=='function')return;
+  const channel=new BroadcastChannel('breadmaker-auth-session');
+  channel.postMessage('session-changed');channel.close();
+}
 export async function exchangeServerSession(user,{invitationToken=''}={}){
   const [idToken,csrfToken]=await Promise.all([getFreshIdToken(user),csrf()]);
   const response=await fetch('/api/auth/session/exchange',{
@@ -121,6 +127,7 @@ export async function exchangeServerSession(user,{invitationToken=''}={}){
   });
   const body=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(body?.detail||'Breadmaker could not create the server session.');
+  announceSessionChange();
   return body;
 }
 export async function signOutClient(){
@@ -214,5 +221,6 @@ export async function signOutEverywhere(user){
   });
   const body=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(body?.detail||'Could not sign out everywhere.');
+  announceSessionChange();
   return body;
 }

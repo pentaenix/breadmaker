@@ -2,7 +2,7 @@
 // Only a complete WAV is published to the project cache.
 class BreadmakerNarrationPlayback {
   constructor(native=new Audio()){
-    this.native=native;this.stream=null;this.rate=1;this.pitch=0;this.pitchGraphs=new WeakMap();
+    this.native=native;this.stream=null;this.rate=1;this.pitch=0;this.pitchGraphs=new WeakMap();this.playEpoch=0;
     for(const event of ['play','pause','timeupdate','ended'])native['on'+event]=()=>{if(!this.stream)this['on'+event]?.()};
   }
   get paused(){return this.stream?!this.stream.playing:this.native.paused}
@@ -31,7 +31,7 @@ class BreadmakerNarrationPlayback {
   set src(value){this.clearStream();this.native.src=value;this.native.playbackRate=this.rate}
   startStream(context){this.native.pause();this.clearStream();this.stream={context,chunks:[],duration:0,position:0,anchor:0,playing:false,waiting:false,finished:false,ended:false,nodes:new Set(),version:0}}
   clearNodes(){const s=this.stream;if(!s)return;s.version++;for(const node of s.nodes){node.onended=null;try{node.stop()}catch{}node.disconnect()}s.nodes.clear()}
-  clearStream(){if(!this.stream)return;this.clearNodes();clearInterval(this.stream.timer);this.stream=null}
+  clearStream(){this.playEpoch++;if(!this.stream)return;this.clearNodes();clearInterval(this.stream.timer);this.stream=null}
   appendStream(buffer){
     const s=this.stream;if(!s)return;const previous=s.duration;s.chunks.push({buffer,start:previous});s.duration+=buffer.duration;
     if(s.playing){const position=s.waiting?previous:Math.min(previous,this.currentTime);s.position=position;this.schedule()}
@@ -51,16 +51,16 @@ class BreadmakerNarrationPlayback {
   checkEnd(){const s=this.stream;if(s?.playing&&s.finished&&s.waiting&&!s.ended){s.ended=true;s.playing=false;clearInterval(s.timer);this.onended?.()}}
   finishStream(){if(!this.stream)return;this.stream.finished=true;this.checkEnd();this.ontimeupdate?.()}
   async play(){
-    const s=this.stream;if(!s){await this.nativeContext?.resume();return this.native.play()}
-    if(this.pitch!==0&&!s.pitchNode){const node=await this.pitchGraph(s.context);if(this.stream!==s)return;s.pitchNode=node;this.updatePitch()}
-    await s.context.resume();if(this.stream!==s)return;
+    const s=this.stream,epoch=this.playEpoch;if(!s){await this.nativeContext?.resume();if(epoch!==this.playEpoch)return;return this.native.play()}
+    if(this.pitch!==0&&!s.pitchNode){const node=await this.pitchGraph(s.context);if(this.stream!==s||epoch!==this.playEpoch)return;s.pitchNode=node;this.updatePitch()}
+    await s.context.resume();if(this.stream!==s||epoch!==this.playEpoch)return;
     if(s.ended){s.position=0;s.ended=false}s.playing=true;this.schedule();if(!s.playing)return;clearInterval(s.timer);s.timer=setInterval(()=>this.ontimeupdate?.(),100);this.onplay?.();
   }
-  pause(){const s=this.stream;if(!s){this.native.pause();return}const position=this.currentTime;s.position=position;s.playing=false;s.waiting=false;this.clearNodes();clearInterval(s.timer);this.onpause?.()}
+  pause(){this.playEpoch++;const s=this.stream;if(!s){this.native.pause();return}const position=this.currentTime;s.position=position;s.playing=false;s.waiting=false;this.clearNodes();clearInterval(s.timer);this.onpause?.()}
 }
 window.BreadmakerNarrationPlayback=BreadmakerNarrationPlayback;
 
 function findNarrationRecording(source,records,voice,anyVoice=false){
-  return records.filter(record=>String(record.block_id)===String(source.block_id)&&record.source_text===source.source_text&&record.start===source.start&&record.end===source.end&&(anyVoice||record.voice===voice)).sort((a,b)=>Number(b.voice===voice)-Number(a.voice===voice)||String(a.id).localeCompare(String(b.id)))[0];
+  return records.filter(record=>String(record.block_id)===String(source.block_id)&&(record.thin?!!source.source_hash&&record.source_hash===source.source_hash&&record.source_length===source.source_text.length:record.source_text===source.source_text)&&record.start===source.start&&record.end===source.end&&(anyVoice||record.voice===voice)).sort((a,b)=>Number(b.voice===voice)-Number(a.voice===voice)||String(a.id).localeCompare(String(b.id)))[0];
 }
 window.findNarrationRecording=findNarrationRecording;

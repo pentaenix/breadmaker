@@ -135,7 +135,7 @@ def test_http_model_delivery_is_private_and_uses_bounded_transfer_response(model
     app = FastAPI()
     app.include_router(build_recording_router(provider=lambda: env[0], identity=lambda: UID,
         project=lambda request: PID, model_provider=lambda: service))
-    http = TestClient(app)
+    http = TestClient(app, headers={'X-Breadmaker-Narration-Account': UID})
     assert http.get('/api/narration-models').json()['digest'] == catalog.digest
     response = http.get('/api/narration-models/' + next(iter(catalog.assets)) + '?part=0')
     assert response.status_code == 200 and response.content == payload

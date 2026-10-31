@@ -38,7 +38,10 @@ def _security_headers(request:Request) -> dict[str,str]:
     # Firebase popup auth loads gapi.iframes through Google's loader. Allow only
     # its SDK paths, not arbitrary Google hosts or unsafe-inline/unsafe-eval.
     script_policy="'self'"+(f" '{_INDEX_INLINE_SCRIPT_CSP_HASH}'" if _INDEX_INLINE_SCRIPT_CSP_HASH else '')+(" https://www.gstatic.com https://apis.google.com/js/ https://apis.google.com/_/scs/" if identity_web else '')
-    if runtime.mode=='local':script_policy+=" 'wasm-unsafe-eval'"
+    narration_enabled=getattr(getattr(runtime,'capabilities',None),'supports',lambda _:False)('narration')
+    narration_surface=(request.url.path.startswith('/static/vendor/narration/') or
+                       request.url.path in APP_SHELL_PATHS or bool(_PROJECT_SHELL_RE.fullmatch(request.url.path)))
+    if runtime.mode=='local' or narration_enabled and narration_surface:script_policy+=" 'wasm-unsafe-eval'"
     connect_policy="'self'"+(" https://identitytoolkit.googleapis.com https://securetoken.googleapis.com" if identity_web else '')
     frame_policy="'self'"+(" https://accounts.google.com https://appleid.apple.com https://*.firebaseapp.com https://auth.breadmaker.studio" if identity_web else '')
     headers={

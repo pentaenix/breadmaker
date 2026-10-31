@@ -209,7 +209,7 @@ def test_http_pronunciation_is_bounded_and_uses_server_context(env):
     app = FastAPI()
     app.include_router(build_recording_router(provider=lambda: object(), identity=lambda: UID,
         project=lambda request: PID, pronunciation_provider=lambda: service))
-    http = TestClient(app)
+    http = TestClient(app, headers={'X-Breadmaker-Narration-Account': UID})
     response = http.post('/api/narration-pronunciation', json={'language': 'ja', 'text': 'Synthetic'})
     assert response.status_code == 200 and response.json() == RESULT
     assert response.headers['cache-control'] == 'private, no-store'

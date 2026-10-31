@@ -6026,7 +6026,7 @@
     },
     {
       "file": "src/app.py",
-      "lines": 21,
+      "lines": 28,
       "symbols": []
     },
     {
@@ -6555,7 +6555,7 @@
     },
     {
       "file": "src/backend/http_boundary.py",
-      "lines": 164,
+      "lines": 167,
       "symbols": [
         {
           "name": "_index_inline_script_csp_hash",
@@ -6570,12 +6570,12 @@
         {
           "name": "prevent_stale_local_ui_assets",
           "kind": "async_function",
-          "line": 64
+          "line": 67
         },
         {
           "name": "feature_flags",
           "kind": "function",
-          "line": 95,
+          "line": 98,
           "routes": [
             {
               "method": "GET",
@@ -6586,7 +6586,7 @@
         {
           "name": "metro_view_config",
           "kind": "function",
-          "line": 101,
+          "line": 104,
           "routes": [
             {
               "method": "GET",
@@ -6597,27 +6597,27 @@
         {
           "name": "_validation_json_safe",
           "kind": "function",
-          "line": 104
+          "line": 107
         },
         {
           "name": "request_validation_exception_handler",
           "kind": "async_function",
-          "line": 111
+          "line": 114
         },
         {
           "name": "http_exception_localization_bridge",
           "kind": "async_function",
-          "line": 132
+          "line": 135
         },
         {
           "name": "unhandled_exception_handler",
           "kind": "async_function",
-          "line": 146
+          "line": 149
         },
         {
           "name": "install",
           "kind": "function",
-          "line": 156
+          "line": 159
         }
       ]
     },
@@ -8442,7 +8442,7 @@
     },
     {
       "file": "src/hosted/http_api.py",
-      "lines": 890,
+      "lines": 896,
       "symbols": [
         {
           "name": "_projects",
@@ -8852,182 +8852,182 @@
         {
           "name": "hosted_tasks",
           "kind": "function",
-          "line": 762
+          "line": 768
         },
         {
           "name": "hosted_task_create",
           "kind": "async_function",
-          "line": 764
+          "line": 770
         },
         {
           "name": "hosted_task_update",
           "kind": "async_function",
-          "line": 766
+          "line": 772
         },
         {
           "name": "hosted_task_delete",
           "kind": "function",
-          "line": 768
+          "line": 774
         },
         {
           "name": "hosted_milestones",
           "kind": "function",
-          "line": 770
+          "line": 776
         },
         {
           "name": "hosted_milestone_create",
           "kind": "async_function",
-          "line": 772
+          "line": 778
         },
         {
           "name": "hosted_canvas_create",
           "kind": "async_function",
-          "line": 776
+          "line": 782
         },
         {
           "name": "hosted_canvas_get",
           "kind": "function",
-          "line": 778
+          "line": 784
         },
         {
           "name": "hosted_canvas_update",
           "kind": "async_function",
-          "line": 781
+          "line": 787
         },
         {
           "name": "hosted_canvas_delete",
           "kind": "function",
-          "line": 783
+          "line": 789
         },
         {
           "name": "hosted_canvas_node",
           "kind": "async_function",
-          "line": 785
+          "line": 791
         },
         {
           "name": "hosted_canvas_edge",
           "kind": "async_function",
-          "line": 787
+          "line": 793
         },
         {
           "name": "hosted_maps",
           "kind": "function",
-          "line": 794
+          "line": 800
         },
         {
           "name": "hosted_map_create",
           "kind": "async_function",
-          "line": 796
+          "line": 802
         },
         {
           "name": "hosted_map_get",
           "kind": "function",
-          "line": 798
+          "line": 804
         },
         {
           "name": "hosted_map_update",
           "kind": "async_function",
-          "line": 806
+          "line": 812
         },
         {
           "name": "hosted_map_delete",
           "kind": "function",
-          "line": 808
+          "line": 814
         },
         {
           "name": "hosted_map_line",
           "kind": "async_function",
-          "line": 810
+          "line": 816
         },
         {
           "name": "hosted_map_item",
           "kind": "async_function",
-          "line": 812
+          "line": 818
         },
         {
           "name": "hosted_map_junction",
           "kind": "async_function",
-          "line": 815
+          "line": 821
         },
         {
           "name": "hosted_reviews",
           "kind": "function",
-          "line": 819
+          "line": 825
         },
         {
           "name": "hosted_review_create",
           "kind": "async_function",
-          "line": 821
+          "line": 827
         },
         {
           "name": "hosted_review_get",
           "kind": "function",
-          "line": 823
+          "line": 829
         },
         {
           "name": "hosted_review_update",
           "kind": "async_function",
-          "line": 826
+          "line": 832
         },
         {
           "name": "hosted_review_delete",
           "kind": "function",
-          "line": 828
+          "line": 834
         },
         {
           "name": "hosted_review_participant",
           "kind": "async_function",
-          "line": 830
+          "line": 836
         },
         {
           "name": "hosted_questionnaires",
           "kind": "function",
-          "line": 832
+          "line": 838
         },
         {
           "name": "hosted_questionnaire_create",
           "kind": "async_function",
-          "line": 834
+          "line": 840
         },
         {
           "name": "hosted_checkpoints",
           "kind": "function",
-          "line": 838
+          "line": 844
         },
         {
           "name": "hosted_checkpoint_create",
           "kind": "async_function",
-          "line": 840
+          "line": 846
         },
         {
           "name": "hosted_checkpoint_get",
           "kind": "function",
-          "line": 847
+          "line": 853
         },
         {
           "name": "hosted_history_list",
           "kind": "function",
-          "line": 849
+          "line": 855
         },
         {
           "name": "hosted_autocommit",
           "kind": "async_function",
-          "line": 851
+          "line": 857
         },
         {
           "name": "_commit_history_snapshot",
           "kind": "function",
-          "line": 856
+          "line": 862
         },
         {
           "name": "hosted_local_backup_unavailable",
           "kind": "function",
-          "line": 878
+          "line": 884
         },
         {
           "name": "hosted_unported_bulk_mutation",
           "kind": "function",
-          "line": 889
+          "line": 895
         }
       ]
     },
@@ -11305,6 +11305,32 @@
       ]
     },
     {
+      "file": "src/hosted/narration/composition.py",
+      "lines": 100,
+      "symbols": [
+        {
+          "name": "NarrationBundle",
+          "kind": "class",
+          "line": 20
+        },
+        {
+          "name": "compose",
+          "kind": "function",
+          "line": 26
+        },
+        {
+          "name": "_public_json",
+          "kind": "function",
+          "line": 36
+        },
+        {
+          "name": "configured",
+          "kind": "function",
+          "line": 46
+        }
+      ]
+    },
+    {
       "file": "src/hosted/narration/gc.py",
       "lines": 332,
       "symbols": [
@@ -11362,45 +11388,72 @@
       ]
     },
     {
+      "file": "src/hosted/narration/google_keys.py",
+      "lines": 22,
+      "symbols": [
+        {
+          "name": "_Client",
+          "kind": "class",
+          "line": 6
+        },
+        {
+          "name": "GoogleNarrationKeys",
+          "kind": "class",
+          "line": 17
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/narration/google_models.py",
+      "lines": 45,
+      "symbols": [
+        {
+          "name": "GoogleNarrationModels",
+          "kind": "class",
+          "line": 10
+        }
+      ]
+    },
+    {
       "file": "src/hosted/narration/google_objects.py",
-      "lines": 121,
+      "lines": 122,
       "symbols": [
         {
           "name": "GoogleNarrationObjects",
           "kind": "class",
-          "line": 20
+          "line": 21
         }
       ]
     },
     {
       "file": "src/hosted/narration/http.py",
-      "lines": 275,
+      "lines": 295,
       "symbols": [
         {
           "name": "run_provider",
           "kind": "async_function",
-          "line": 33
+          "line": 34
         },
         {
           "name": "BoundedControlResponse",
           "kind": "class",
-          "line": 51
+          "line": 52
         },
         {
           "name": "LeasedAudioResponse",
           "kind": "class",
-          "line": 70
+          "line": 71
         },
         {
           "name": "build_recording_router",
           "kind": "function",
-          "line": 96
+          "line": 97
         }
       ]
     },
     {
       "file": "src/hosted/narration/index.py",
-      "lines": 248,
+      "lines": 252,
       "symbols": [
         {
           "name": "_json",
@@ -11436,6 +11489,17 @@
           "name": "PrivateNarrationIndex",
           "kind": "class",
           "line": 100
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/narration/io_limits.py",
+      "lines": 15,
+      "symbols": [
+        {
+          "name": "io_timeout",
+          "kind": "function",
+          "line": 8
         }
       ]
     },
@@ -11582,7 +11646,7 @@
     },
     {
       "file": "src/hosted/narration/reads.py",
-      "lines": 61,
+      "lines": 60,
       "symbols": [
         {
           "name": "NarrationReads",
@@ -11593,7 +11657,7 @@
     },
     {
       "file": "src/hosted/narration/recordings.py",
-      "lines": 438,
+      "lines": 447,
       "symbols": [
         {
           "name": "_queue",
@@ -13205,7 +13269,7 @@
     },
     {
       "file": "src/runtime/contracts.py",
-      "lines": 187,
+      "lines": 189,
       "symbols": [
         {
           "name": "ProjectRequestContext",
@@ -13291,7 +13355,7 @@
     },
     {
       "file": "src/runtime/hosted.py",
-      "lines": 223,
+      "lines": 227,
       "symbols": [
         {
           "name": "_validate_worker_configuration",
@@ -13316,12 +13380,12 @@
         {
           "name": "build_hosted_dev_runtime",
           "kind": "function",
-          "line": 218
+          "line": 222
         },
         {
           "name": "build_hosted_runtime",
           "kind": "function",
-          "line": 222
+          "line": 226
         }
       ]
     },
@@ -15156,7 +15220,7 @@
     },
     {
       "file": "static/js/core/runtime.js",
-      "lines": 91,
+      "lines": 96,
       "symbols": [
         {
           "name": "$",
@@ -15221,7 +15285,7 @@
         {
           "name": "apiList",
           "kind": "function",
-          "line": 86
+          "line": 91
         }
       ]
     },
@@ -15459,7 +15523,7 @@
     },
     {
       "file": "static/js/features/account/identity-platform-client.js",
-      "lines": 218,
+      "lines": 226,
       "symbols": [
         {
           "name": "loadModules",
@@ -15475,6 +15539,11 @@
           "name": "csrf",
           "kind": "function",
           "line": 110
+        },
+        {
+          "name": "announceSessionChange",
+          "kind": "function",
+          "line": 115
         }
       ]
     },
@@ -19139,48 +19208,53 @@
     },
     {
       "file": "static/js/features/manuscript/narration-engine.js",
-      "lines": 115,
+      "lines": 124,
       "symbols": [
         {
           "name": "armWatchdog",
           "kind": "function",
-          "line": 77
+          "line": 86
         },
         {
           "name": "run",
           "kind": "function",
-          "line": 100
+          "line": 109
         }
       ]
     },
     {
       "file": "static/js/features/manuscript/narration-export.js",
-      "lines": 59,
+      "lines": 66,
       "symbols": [
         {
-          "name": "narrationExportClip",
+          "name": "narrationExportCandidate",
           "kind": "function",
           "line": 4
         },
         {
+          "name": "narrationExportClip",
+          "kind": "function",
+          "line": 7
+        },
+        {
           "name": "narrationWavPCM",
           "kind": "function",
-          "line": 14
+          "line": 18
         },
         {
           "name": "narrationJoinWav",
           "kind": "function",
-          "line": 31
+          "line": 35
         },
         {
           "name": "exportNarrationAudio",
           "kind": "function",
-          "line": 37
+          "line": 41
         },
         {
           "name": "check",
           "kind": "function",
-          "line": 40
+          "line": 44
         }
       ]
     },
@@ -19202,7 +19276,7 @@
     },
     {
       "file": "static/js/features/manuscript/narration-preferences.js",
-      "lines": 50,
+      "lines": 52,
       "symbols": [
         {
           "name": "normalizeNarrationPreferences",
@@ -19215,9 +19289,14 @@
           "line": 27
         },
         {
+          "name": "live",
+          "kind": "function",
+          "line": 29
+        },
+        {
           "name": "saveNarrationPreferences",
           "kind": "function",
-          "line": 41
+          "line": 42
         }
       ]
     },
@@ -19244,7 +19323,7 @@
     },
     {
       "file": "static/js/features/manuscript/narration-voices.js",
-      "lines": 28,
+      "lines": 33,
       "symbols": [
         {
           "name": "narrationInterfaceLanguage",
@@ -19274,228 +19353,278 @@
         {
           "name": "narrationVoiceOptionLabel",
           "kind": "function",
-          "line": 19
+          "line": 24
         },
         {
           "name": "narrationVoiceOptions",
           "kind": "function",
-          "line": 20
+          "line": 25
         },
         {
           "name": "syncNarrationVoiceChoices",
           "kind": "function",
-          "line": 23
+          "line": 28
         }
       ]
     },
     {
       "file": "static/js/features/manuscript/narration.js",
-      "lines": 190,
+      "lines": 266,
       "symbols": [
         {
-          "name": "narrationOpen",
-          "kind": "function",
-          "line": 11
-        },
-        {
-          "name": "narrationParagraphs",
+          "name": "narrationHosted",
           "kind": "function",
           "line": 12
         },
         {
-          "name": "narrationSourceProse",
+          "name": "narrationSnapshot",
           "kind": "function",
           "line": 13
         },
         {
-          "name": "narrationSourceText",
-          "kind": "function",
-          "line": 14
-        },
-        {
-          "name": "narrationGutterWrap",
-          "kind": "function",
-          "line": 15
-        },
-        {
-          "name": "narrationProse",
-          "kind": "function",
-          "line": 16
-        },
-        {
-          "name": "narrationFresh",
+          "name": "narrationCurrent",
           "kind": "function",
           "line": 17
         },
         {
-          "name": "narrationGenerationFresh",
+          "name": "requireNarrationContext",
           "kind": "function",
           "line": 18
         },
         {
-          "name": "narrationListContext",
+          "name": "resetNarrationPrivateUI",
           "kind": "function",
           "line": 19
         },
         {
-          "name": "narrationVisibleRecords",
-          "kind": "function",
-          "line": 20
-        },
-        {
-          "name": "narrationTitleSource",
-          "kind": "function",
-          "line": 21
-        },
-        {
-          "name": "narrationRecreationSource",
-          "kind": "function",
-          "line": 22
-        },
-        {
-          "name": "clearNarrationPreviewHighlights",
-          "kind": "function",
-          "line": 23
-        },
-        {
-          "name": "narrationRange",
-          "kind": "function",
-          "line": 24
-        },
-        {
-          "name": "paintNarrationPreview",
-          "kind": "function",
-          "line": 25
-        },
-        {
-          "name": "narrationLabel",
+          "name": "clearHostedNarrationContext",
           "kind": "function",
           "line": 31
         },
         {
-          "name": "narrationText",
-          "kind": "function",
-          "line": 32
-        },
-        {
-          "name": "narrationVoiceLabel",
-          "kind": "function",
-          "line": 33
-        },
-        {
-          "name": "syncNarrationPlayControl",
-          "kind": "function",
-          "line": 34
-        },
-        {
-          "name": "narrationTime",
-          "kind": "function",
-          "line": 35
-        },
-        {
-          "name": "cancelNarrationEarly",
+          "name": "prepareNarrationSources",
           "kind": "function",
           "line": 36
         },
         {
-          "name": "closeNarrationPanel",
+          "name": "refreshNarrationSourceHashes",
           "kind": "function",
-          "line": 37
+          "line": 41
         },
         {
-          "name": "syncNarrationBackend",
-          "kind": "function",
-          "line": 38
-        },
-        {
-          "name": "applyNarrationPreferences",
-          "kind": "function",
-          "line": 39
-        },
-        {
-          "name": "narrationEngine",
+          "name": "narrationOpen",
           "kind": "function",
           "line": 46
         },
         {
-          "name": "receiveNarrationChunk",
+          "name": "narrationParagraphs",
           "kind": "function",
           "line": 47
         },
         {
-          "name": "narrationSource",
+          "name": "narrationSourceProse",
+          "kind": "function",
+          "line": 48
+        },
+        {
+          "name": "narrationSourceText",
+          "kind": "function",
+          "line": 49
+        },
+        {
+          "name": "narrationGutterWrap",
+          "kind": "function",
+          "line": 50
+        },
+        {
+          "name": "narrationProse",
+          "kind": "function",
+          "line": 51
+        },
+        {
+          "name": "narrationFresh",
+          "kind": "function",
+          "line": 52
+        },
+        {
+          "name": "narrationGenerationFresh",
+          "kind": "function",
+          "line": 53
+        },
+        {
+          "name": "narrationListContext",
+          "kind": "function",
+          "line": 54
+        },
+        {
+          "name": "narrationVisibleRecords",
           "kind": "function",
           "line": 55
         },
         {
-          "name": "narrationChapterSources",
+          "name": "narrationTitleSource",
           "kind": "function",
           "line": 56
         },
         {
-          "name": "captureNarrationSelection",
+          "name": "narrationRecreationSource",
           "kind": "function",
           "line": 57
         },
         {
-          "name": "syncNarrationActions",
+          "name": "clearNarrationPreviewHighlights",
           "kind": "function",
-          "line": 62
+          "line": 58
         },
         {
-          "name": "openNarrationActionMenu",
+          "name": "narrationRange",
           "kind": "function",
-          "line": 63
+          "line": 59
         },
         {
-          "name": "narrationReplacementSources",
+          "name": "paintNarrationPreview",
+          "kind": "function",
+          "line": 60
+        },
+        {
+          "name": "narrationLabel",
+          "kind": "function",
+          "line": 66
+        },
+        {
+          "name": "narrationText",
+          "kind": "function",
+          "line": 67
+        },
+        {
+          "name": "narrationVoiceLabel",
+          "kind": "function",
+          "line": 68
+        },
+        {
+          "name": "syncNarrationPlayControl",
+          "kind": "function",
+          "line": 69
+        },
+        {
+          "name": "narrationTime",
+          "kind": "function",
+          "line": 70
+        },
+        {
+          "name": "cancelNarrationEarly",
+          "kind": "function",
+          "line": 71
+        },
+        {
+          "name": "closeNarrationPanel",
+          "kind": "function",
+          "line": 72
+        },
+        {
+          "name": "syncNarrationBackend",
           "kind": "function",
           "line": 73
         },
         {
-          "name": "narrateScope",
+          "name": "applyNarrationPreferences",
           "kind": "function",
           "line": 74
         },
         {
-          "name": "deleteNarrationScope",
+          "name": "narrationDevice",
           "kind": "function",
-          "line": 102
+          "line": 81
         },
         {
-          "name": "narrationFail",
+          "name": "narrationEngine",
           "kind": "function",
-          "line": 117
+          "line": 94
         },
         {
-          "name": "deleteNarration",
+          "name": "receiveNarrationChunk",
+          "kind": "function",
+          "line": 103
+        },
+        {
+          "name": "narrationSource",
+          "kind": "function",
+          "line": 111
+        },
+        {
+          "name": "narrationChapterSources",
+          "kind": "function",
+          "line": 112
+        },
+        {
+          "name": "captureNarrationSelection",
+          "kind": "function",
+          "line": 113
+        },
+        {
+          "name": "syncNarrationActions",
           "kind": "function",
           "line": 118
         },
         {
+          "name": "openNarrationActionMenu",
+          "kind": "function",
+          "line": 119
+        },
+        {
+          "name": "narrationReplacementSources",
+          "kind": "function",
+          "line": 129
+        },
+        {
+          "name": "narrateScope",
+          "kind": "function",
+          "line": 130
+        },
+        {
+          "name": "deleteNarrationScope",
+          "kind": "function",
+          "line": 159
+        },
+        {
+          "name": "narrationFail",
+          "kind": "function",
+          "line": 174
+        },
+        {
+          "name": "deleteNarration",
+          "kind": "function",
+          "line": 175
+        },
+        {
           "name": "playNarration",
           "kind": "function",
-          "line": 127
+          "line": 184
+        },
+        {
+          "name": "resumeNarrationPlayback",
+          "kind": "function",
+          "line": 192
         },
         {
           "name": "renderNarrations",
           "kind": "function",
-          "line": 133
+          "line": 202
         },
         {
           "name": "generateNarrations",
           "kind": "function",
-          "line": 145
+          "line": 214
         },
         {
           "name": "openNarrationPanel",
           "kind": "function",
-          "line": 163
+          "line": 233
         },
         {
           "name": "initializeNarrationUI",
           "kind": "function",
-          "line": 176
+          "line": 246
         }
       ]
     },
@@ -22671,7 +22800,7 @@
     },
     {
       "file": "static/js/features/projects/narration_voices.js",
-      "lines": 86,
+      "lines": 87,
       "symbols": [
         {
           "name": "openNarrationVoiceSettings",
@@ -22686,27 +22815,27 @@
         {
           "name": "stopPreview",
           "kind": "function",
-          "line": 21
+          "line": 22
         },
         {
           "name": "render",
           "kind": "function",
-          "line": 22
+          "line": 23
         },
         {
           "name": "download",
           "kind": "function",
-          "line": 40
+          "line": 41
         },
         {
           "name": "showInstalled",
           "kind": "function",
-          "line": 43
+          "line": 44
         },
         {
           "name": "item",
           "kind": "function",
-          "line": 79
+          "line": 80
         }
       ]
     },
@@ -24108,6 +24237,11 @@
           "line": 136
         }
       ]
+    },
+    {
+      "file": "static/vendor/narration/transformers/transformers.web.min.js",
+      "lines": 51,
+      "symbols": []
     }
   ],
   "routes": [
@@ -26194,14 +26328,14 @@
       "method": "GET",
       "function": "feature_flags",
       "file": "src/backend/http_boundary.py",
-      "line": 95,
+      "line": 98,
       "path": "/api/features"
     },
     {
       "method": "GET",
       "function": "metro_view_config",
       "file": "src/backend/http_boundary.py",
-      "line": 101,
+      "line": 104,
       "path": "/api/metro-view-config"
     },
     {
@@ -27832,84 +27966,91 @@
       "method": "GET",
       "function": "list_records",
       "file": "src/hosted/narration/http.py",
-      "line": 186,
+      "line": 197,
       "path": "/api/narrations"
     },
     {
       "method": "POST",
       "function": "begin_record",
       "file": "src/hosted/narration/http.py",
-      "line": 191,
+      "line": 202,
       "path": "/api/narrations"
     },
     {
       "method": "PUT",
       "function": "upload_part",
       "file": "src/hosted/narration/http.py",
-      "line": 200,
+      "line": 211,
       "path": "/api/narrations/uploads/{publication}/parts/{ordinal}"
     },
     {
       "method": "POST",
       "function": "finish_record",
       "file": "src/hosted/narration/http.py",
-      "line": 206,
+      "line": 217,
       "path": "/api/narrations/uploads/{publication}/finish"
     },
     {
       "method": "DELETE",
       "function": "delete_record",
       "file": "src/hosted/narration/http.py",
-      "line": 211,
+      "line": 222,
       "path": "/api/narrations/{record_id}"
     },
     {
       "method": "POST",
       "function": "restore_record",
       "file": "src/hosted/narration/http.py",
-      "line": 222,
+      "line": 233,
       "path": "/api/narrations/{record_id}/restore"
     },
     {
       "method": "GET",
       "function": "audio_manifest",
       "file": "src/hosted/narration/http.py",
-      "line": 230,
+      "line": 241,
       "path": "/api/narrations/{record_id}/manifest"
     },
     {
       "method": "GET",
       "function": "recording_metadata",
       "file": "src/hosted/narration/http.py",
-      "line": 238,
+      "line": 250,
       "path": "/api/narrations/{record_id}"
     },
     {
       "method": "GET",
       "function": "audio_part",
       "file": "src/hosted/narration/http.py",
-      "line": 243,
+      "line": 255,
       "path": "/api/narrations/{record_id}/audio"
     },
     {
       "method": "GET",
       "function": "model_manifest",
       "file": "src/hosted/narration/http.py",
-      "line": 256,
+      "line": 268,
       "path": "/api/narration-models"
+    },
+    {
+      "method": "GET",
+      "function": "voice_catalog",
+      "file": "src/hosted/narration/http.py",
+      "line": 273,
+      "path": "/api/narration-voices"
     },
     {
       "method": "GET",
       "function": "model_part",
       "file": "src/hosted/narration/http.py",
-      "line": 261,
+      "line": 281,
       "path": "/api/narration-models/{asset_id}"
     },
     {
       "method": "POST",
       "function": "pronunciation",
       "file": "src/hosted/narration/http.py",
-      "line": 268,
+      "line": 288,
       "path": "/api/narration-pronunciation"
     },
     {
@@ -27927,5 +28068,5 @@
       "path": "/pronounce"
     }
   ],
-  "route_decorator_count": 545
+  "route_decorator_count": 546
 }

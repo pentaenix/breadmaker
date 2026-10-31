@@ -12,6 +12,7 @@ from hosted.narration.gc import FENCE_METADATA, is_fence
 from hosted.storage.contracts import (ObjectAlreadyExists, ObjectGenerationConflict,
     ObjectIntegrityError, ObjectLimitExceeded, ObjectNotFound)
 from hosted.storage.google_driver import GoogleCloudObjectStore
+from hosted.narration.io_limits import io_timeout
 
 MAX_BYTES = 2 * 1024**2 + 16
 _NAME = re.compile(r'projects/[0-9a-f]{32}/narration/[0-9a-f]{32}/[0-9]{3}\.bin')
@@ -30,7 +31,7 @@ class GoogleNarrationObjects(GoogleCloudObjectStore):
         return name
 
     def verify_gc_bucket(self):
-        self._bucket.reload(timeout=10, retry=None)
+        self._bucket.reload(timeout=io_timeout(), retry=None)
         if (self._bucket.versioning_enabled or self._bucket.retention_period
                 or getattr(self._bucket.soft_delete_policy, 'retention_duration_seconds', None) != 0
                 or list(self._bucket.lifecycle_rules)
@@ -41,7 +42,7 @@ class GoogleNarrationObjects(GoogleCloudObjectStore):
     def stat(self, name):
         blob = self._bucket.blob(self._name(name))
         try:
-            blob.reload(timeout=10, retry=None)
+            blob.reload(timeout=io_timeout(), retry=None)
         except Exception as exc:
             translated = self._translate(exc)
             if isinstance(translated, ObjectNotFound):
@@ -74,11 +75,11 @@ class GoogleNarrationObjects(GoogleCloudObjectStore):
             # <=2 MiB uses a single multipart object insert, not a long-lived
             # resumable session. No automatic retry after an uncertain response.
             blob.upload_from_string(payload, content_type=content_type, if_generation_match=if_generation_match,
-                                    checksum='auto', timeout=(3, 15), retry=None)
+                                    checksum='auto', timeout=io_timeout(15), retry=None)
             generation = int(blob.generation or 0)
             if generation < 1:
                 raise ObjectGenerationConflict('NARRATION_OBJECT_GENERATION_MISSING')
-            blob.reload(if_generation_match=generation, timeout=10, retry=None)
+            blob.reload(if_generation_match=generation, timeout=io_timeout(), retry=None)
             result = self._metadata(blob)
             if (result.size, result.sha256, result.generation) != (size, digest, generation) or fence and not is_fence(result):
                 raise ObjectIntegrityError('NARRATION_OBJECT_READBACK_FAILED')
@@ -99,7 +100,7 @@ class GoogleNarrationObjects(GoogleCloudObjectStore):
             # end bounds the response BEFORE allocating it, even if a corrupt
             # reference or external writer points at a larger provider object.
             payload = blob.download_as_bytes(if_generation_match=if_generation_match, start=0, end=max_bytes,
-                                             timeout=(3, 15), retry=None, checksum=None, raw_download=True)
+                                             timeout=io_timeout(15), retry=None, checksum=None, raw_download=True)
         except Exception as exc:
             raise self._translate(exc) from None
         if len(payload) > max_bytes:
@@ -116,6 +117,6 @@ class GoogleNarrationObjects(GoogleCloudObjectStore):
         if (type(limit) is not int or not 1 <= limit <= 100 or not isinstance(after, str) or len(after) > 1024):
             raise ValueError('NARRATION_INVENTORY_PAGE_INVALID')
         blobs = self._client.list_blobs(self._bucket, prefix='', start_offset=after,
-            max_results=limit + 2, page_size=limit + 2, timeout=10, retry=None)
+            max_results=limit + 2, page_size=limit + 2, timeout=io_timeout(), retry=None)
         values = [self._metadata(blob) for blob in blobs if blob.name > after]
         return values[:limit], values[limit - 1].name if len(values) > limit else ''

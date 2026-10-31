@@ -101,6 +101,7 @@
     "narration.settings_description": "Voice, playback, highlights, and audio downloads.",
     "narration.settings_help": "These preferences apply to this project. Changing them does not regenerate saved recordings.",
     "narration.gpu": "GPU acceleration",
+    "narration.gpu_download_confirm": "Download the optional GPU model ({size} MiB) to this device? CPU narration remains available without it. Only public model files are cached, never your manuscript or audio.",
     "narration.gpu_help": "Use the GPU when available, with CPU fallback. Turn off to use CPU only.",
     "narration.early": "Start playback early",
     "narration.early_help": "Allow playback before the whole recording is ready.",

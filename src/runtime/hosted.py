@@ -173,7 +173,10 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
     history=HostedHistoryStore(documents,objects,user_id_provider,current_project_id)
     backups=HostedBackupStore()
     usage=HostedProjectUsageService(documents,objects)
+    from hosted.narration.composition import configured as configured_narration
+    narration=configured_narration(projects.domain,mode=runtime_mode,auth_mode=auth_mode,environment=environment)
     capabilities=dict(_HOSTED_CAPABILITIES)
+    capabilities['narration']=narration is not None
     capabilities['account_erasure_fence'] = lifecycle is not None
     capabilities['developer_identity']=auth_mode=='developer'
     capabilities['account_sessions']=auth_mode in {'test','session','identity_platform'}
@@ -212,6 +215,7 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
         native_assets=None,
         native_history=None,
         native_backups=None,
+        narration=narration,
     )
 
 

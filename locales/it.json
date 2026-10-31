@@ -101,6 +101,7 @@
     "narration.settings_description": "Voce, riproduzione, evidenziazione e download audio.",
     "narration.settings_help": "Queste preferenze si applicano a questo progetto. Modificarle non rigenera le registrazioni salvate.",
     "narration.gpu": "Accelerazione GPU",
+    "narration.gpu_download_confirm": "Scaricare il modello GPU facoltativo ({size} MiB) su questo dispositivo? La narrazione su CPU rimane disponibile senza. La cache contiene solo file pubblici del modello, mai il manoscritto o l'audio.",
     "narration.gpu_help": "Usa la GPU quando disponibile, con la CPU come alternativa. Disattiva per usare solo la CPU.",
     "narration.early": "Avvia prima la riproduzione",
     "narration.early_help": "Consente la riproduzione prima che la registrazione sia completa.",

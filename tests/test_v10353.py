@@ -227,7 +227,7 @@ def test_v10353_hosted_route_boundary_covers_every_current_local_product_route()
             for route in domain["routes"]:
                 expected.add((str(route["method"]).upper(), str(route["path"])))
     actual = set()
-    for relative in ("src/hosted/http_api.py", "src/hosted/http_compat.py", "src/hosted/http_auth.py"):
+    for relative in ("src/hosted/http_api.py", "src/hosted/http_compat.py", "src/hosted/http_auth.py", "src/hosted/narration/http.py"):
         tree = ast.parse((ROOT / relative).read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -241,24 +241,17 @@ def test_v10353_hosted_route_boundary_covers_every_current_local_product_route()
                 path = decorator.args[0]
                 if isinstance(path, ast.Constant) and isinstance(path.value, str):
                     actual.add((method, path.value))
-    # Narration and Editor Highlights remain local-only until their authorized
-    # hosted adapters exist. Keep every existing hosted coverage requirement and
-    # enumerate (never prefix-ignore) the ten deliberately disabled routes.
-    # test_v10566_narration proves all eight reject hosted/hosted_dev requests
-    # before parsing bodies or accessing the local cache.
+    # Narration has its explicit default-off hosted adapter, never a native
+    # filesystem bridge. Composition/HTTP/browser tests verify that boundary.
+    # Only Highlights and native SERVER-side voice installation stay excluded;
+    # hosted public voice downloads belong to the authenticated device adapter.
     local_only={
         ('GET','/api/annotations/editing-search'),
         ('POST','/api/annotations/editing-search'),
-        ('GET','/api/narrations'),('POST','/api/narrations'),
-        ('DELETE','/api/narrations/{record_id}'),
-        ('POST','/api/narrations/{record_id}/restore'),
-        ('GET','/api/narrations/{record_id}/audio'),
-        ('GET','/api/narration-voices'),
         ('POST','/api/narration-voices/{voice_id}/download'),
-        ('POST','/api/narration-pronunciation'),
     }
     assert local_only <= expected
-    assert not local_only & actual, 'Hosted narration/Highlights activation requires explicit adapter/security review'
+    assert not local_only & actual, 'Native-only features require an explicit hosted adapter/security review'
     assert expected-local_only <= actual, sorted(expected-local_only-actual)
 
 

@@ -101,6 +101,7 @@
     "narration.settings_description": "声音、播放、高亮和音频下载。",
     "narration.settings_help": "这些偏好设置适用于此项目。更改设置不会重新生成已保存的录音。",
     "narration.gpu": "GPU 加速",
+    "narration.gpu_download_confirm": "是否将可选的 GPU 模型（{size} MiB）下载到此设备？无需下载也能使用 CPU 朗读。缓存仅保存公开模型文件，绝不保存您的稿件或音频。",
     "narration.gpu_help": "可用时使用 GPU，否则回退到 CPU。关闭后仅使用 CPU。",
     "narration.early": "提前开始播放",
     "narration.early_help": "允许在整段录音完成前开始播放。",

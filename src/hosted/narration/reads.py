@@ -31,8 +31,7 @@ class NarrationReads:
             if (current_head, current) != (head, before):
                 raise DocumentConflict('NARRATION_RECORD_CHANGED')
         service.documents.run_transaction(recheck)
-        return {**record, 'id': rid, 'duration': before['duration'], 'audio_bytes': before['audio_bytes'],
-                'generation': head['generation']}
+        return service.authorized_view(record, before, head)
 
     def audio_part(self, uid, pid, rid, ordinal):
         """Returns server-only lease state; HTTP MUST finish after send, not here.

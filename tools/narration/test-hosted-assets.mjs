@@ -17,13 +17,14 @@ const payload=new Uint8Array([1,2,3,4,5]),digest=await hash(payload);
 const asset={id:(await hash(new TextEncoder().encode(path))).slice(0,24),path,size:payload.length,sha256:digest,chunks:[{size:payload.length,sha256:digest}]};
 const manifest={v:1,assets:[asset]},manifestDigest=await hash(new TextEncoder().encode(canonical(manifest)));
 const cache=new Cache(),calls=[];let fail=false,corrupt=false,huge=false;
+const account='usr_'+'b'.repeat(32),project='a'.repeat(32),authority={'X-Breadmaker-Narration-Actor':account,'X-Breadmaker-Narration-Project':project};
 const fetcher=async(input,options)=>{
   const url=new URL(input);calls.push([url,options]);
-  if(url.pathname==='/api/narration-models')return new Response(JSON.stringify({digest:manifestDigest,...manifest}),{headers:{'Content-Type':'application/json'}});
-  if(url.pathname.startsWith('/api/narration-models/'))return fail?new Response('',{status:403}):new Response(huge?new Uint8Array(1024):corrupt?new Uint8Array(5):payload);
+  if(url.pathname==='/api/narration-models')return new Response(JSON.stringify({digest:manifestDigest,...manifest}),{headers:{'Content-Type':'application/json',...authority}});
+  if(url.pathname.startsWith('/api/narration-models/'))return fail?new Response('',{status:403}):new Response(huge?new Uint8Array(1024):corrupt?new Uint8Array(5):payload,{headers:authority});
   return new Response('delegated');
 };
-const open=()=>HostedPublicAssets.open({project:'a'.repeat(32),origin:'https://example.test',fetcher,expectedDigest:manifestDigest,cacheStorage:{open:async()=>cache}});
+const open=()=>HostedPublicAssets.open({project,account,origin:'https://example.test',fetcher,expectedDigest:manifestDigest,cacheStorage:{open:async()=>cache}});
 const modelURL='https://example.test/static/vendor/narration/'+path;
 const transport=await open();assert.equal(calls.length,1);assert.equal(await transport.installed(path),false);
 assert.deepEqual(new Uint8Array(await (await transport.fetch(modelURL)).arrayBuffer()),payload);
@@ -47,12 +48,15 @@ const privateStrings=['source_text','usr_','cookie','Bearer','project_id'];
 for(const [name,value] of cache.items){const text=await value.clone().text();for(const secret of privateStrings)assert.equal((name+text).includes(secret),false,'cache contains public binary/schema only')}
 for(const [url,options] of calls.filter(([url])=>url.pathname.startsWith('/api/narration-models/'))){assert.equal(url.origin,'https://example.test');assert.equal(options.credentials,'same-origin');assert.equal(options.cache,'no-store')}
 await assert.rejects(()=>HostedPublicAssets.open({project:'../foreign',origin:'https://example.test',fetcher}),/PROJECT_REQUIRED/);
-await assert.rejects(()=>HostedPublicAssets.open({project:'a'.repeat(32),origin:'https://example.test',fetcher,expectedDigest:'0'.repeat(64)}),/INTEGRITY_FAILED/);
+await assert.rejects(()=>HostedPublicAssets.open({project,account,origin:'https://example.test',fetcher,expectedDigest:'0'.repeat(64)}),/INTEGRITY_FAILED/);
 Object.defineProperty(globalThis,'navigator',{configurable:true,value:{}});
 const fallback=await open();assert.equal(fallback.cache,null,'no unsafe persistent cache without cross-context locks');
 assert.deepEqual(new Uint8Array(await (await fallback.fetch(modelURL)).arrayBuffer()),payload);
-const captured=await HostedPublicAssets.open({project:'a'.repeat(32),client:'synthetic-client',origin:'https://example.test',fetcher});
+const captured=await HostedPublicAssets.open({project,account,client:'synthetic-client',origin:'https://example.test',fetcher});
 await captured.part(asset,0);
 for(const [,options] of calls.slice(-2)){assert.equal(options.headers['X-Breadmaker-Project'],'a'.repeat(32));assert.equal(options.headers['X-Breadmaker-Client'],'synthetic-client')}
-await assert.rejects(()=>HostedPublicAssets.open({project:'a'.repeat(32),client:'bad\nclient',origin:'https://example.test',fetcher}),/CLIENT_INVALID/);
+await assert.rejects(()=>HostedPublicAssets.open({project,account,client:'bad\nclient',origin:'https://example.test',fetcher}),/CLIENT_INVALID/);
+await assert.rejects(()=>HostedPublicAssets.open({project,origin:'https://example.test',fetcher}),/ACCOUNT_REQUIRED/);
+const switched=async()=>new Response(JSON.stringify({digest:manifestDigest,...manifest}),{headers:{...authority,'X-Breadmaker-Narration-Actor':'usr_'+'c'.repeat(32)}});
+await assert.rejects(()=>HostedPublicAssets.open({project,account,origin:'https://example.test',fetcher:switched}),/ACCOUNT_CONTEXT_CHANGED/);
 console.log('Hosted public-asset integrity, bounded reads, cache, coalescing and authorization failures passed');

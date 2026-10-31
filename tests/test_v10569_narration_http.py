@@ -23,13 +23,27 @@ def client(env, *, actor=UID, enabled=True):
         return actor
     app.include_router(build_recording_router(provider=lambda: env[0] if enabled else None,
         identity=identity, project=lambda request: PID))
-    return TestClient(app)
+    return TestClient(app, headers={'X-Breadmaker-Narration-Account': actor or ''})
 
 
 def test_disabled_adapter_and_unauthenticated_call_do_not_parse_or_write(env):
     assert client(env, enabled=False).post('/api/narrations', content=b'invalid').status_code == 404
     assert client(env, actor=None).post('/api/narrations', content=b'invalid').status_code == 401
     assert not env[2].query_collection(('narration_projects_v1', PID, 'intents'))
+
+
+def test_account_context_precondition_is_not_identity_and_rejects_before_body_or_provider(env):
+    http = client(env)
+    for header in ('', OTHER):
+        response = http.post('/api/narrations', content=b'not json',
+            headers={'X-Breadmaker-Narration-Account': header})
+        assert response.status_code == 409 and response.json()['detail'] == 'NARRATION_ACCOUNT_CONTEXT_CHANGED'
+    response = http.get('/api/narrations', headers=[('X-Breadmaker-Narration-Account', UID), ('X-Breadmaker-Narration-Account', UID)])
+    assert response.status_code == 409
+    assert not env[2].query_collection(('narration_projects_v1', PID, 'intents'))
+    response = http.get('/api/narrations')
+    assert response.headers['X-Breadmaker-Narration-Actor'] == UID
+    assert response.headers['X-Breadmaker-Narration-Project'] == PID
 
 
 def test_http_begin_parts_finish_read_delete_restore(env):
@@ -61,7 +75,7 @@ def test_audio_is_never_a_signed_or_public_object_url(env):
     made, _ = publish(env)
     http = client(env)
     payload = http.get(f"/api/narrations/{made['id']}/manifest").json()
-    assert set(payload) == {'audio_bytes', 'parts', 'part_bytes'}
+    assert set(payload) == {'audio_bytes', 'parts', 'part_bytes', 'generation', 'publication'}
     assert 'storage.googleapis.com' not in str(payload)
     assert client(env, actor=OTHER).get(f"/api/narrations/{made['id']}/audio?part=0").status_code == 404
 

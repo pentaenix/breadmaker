@@ -1,16 +1,17 @@
 // Browser-only Kokoro adapter. No manuscript text leaves this origin.
 class BreadmakerKokoroEngine {
-  constructor({backend='auto'}={}){this.preferredBackend=backend;this.backend='wasm';this.pending=null;this.context=null;this.ready=false;this.generated=false;this.timing=new window.BreadmakerNarrationTiming()}
+  constructor({backend='auto',hosted=null}={}){this.hosted=hosted;this.preferredBackend=backend;this.backend='wasm';this.pending=null;this.context=null;this.ready=false;this.generated=false;this.timing=new window.BreadmakerNarrationTiming()}
   dispose(){this.disposed=true;this.cancelLoad?.(Error('KOKORO_ENGINE_REPLACED'));this.cancelSynthesis?.(Error('KOKORO_ENGINE_REPLACED'));this.worker?.ww?.terminate();if(this.context?.state!=='closed')this.context?.close().catch(()=>{});this.ready=false}
   async chooseBackend(){
     if(this.preferredBackend==='wasm')return 'wasm';
     if(!globalThis.navigator?.gpu){this.fallbackReason='GPU_UNAVAILABLE';return 'wasm'}
     try{
       if(this.preferredBackend==='auto'&&window.sessionStorage?.getItem('breadmaker-narration-gpu-failed')){this.fallbackReason='GPU_PREVIOUSLY_FAILED';return 'wasm'}
-      const installed=await fetch('/static/vendor/narration/installation.json').then(response=>response.ok?response.json():null);
-      if(!installed?.gpu){this.fallbackReason='GPU_MODEL_MISSING';return 'wasm'}
+      const available=this.hosted?await (await this.hosted.device()).chooseGPU():(await fetch('/static/vendor/narration/installation.json').then(response=>response.ok?response.json():null))?.gpu;
+      if(!available){this.fallbackReason='GPU_MODEL_MISSING';return 'wasm'}
+      this.hosted?.check();
       let timer;try{const backend=await Promise.race([navigator.gpu.requestAdapter().then(adapter=>adapter?'webgpu':'wasm'),new Promise(resolve=>{timer=setTimeout(()=>resolve('wasm'),1500)})]);if(backend==='wasm')this.fallbackReason='GPU_UNAVAILABLE';return backend}finally{clearTimeout(timer)}
-    }catch{this.fallbackReason='GPU_UNAVAILABLE';return 'wasm'}
+    }catch(error){this.hosted?.check();this.fallbackReason='GPU_UNAVAILABLE';return 'wasm'}
   }
   async discardGPU(){
     this.fallbackReason='GPU_FAILED';try{window.sessionStorage?.setItem('breadmaker-narration-gpu-failed','1')}catch{}
@@ -25,11 +26,18 @@ class BreadmakerKokoroEngine {
       this.backend=await this.chooseBackend();this.timing=new window.BreadmakerNarrationTiming(this.backend);
       if(this.disposed)throw Error('KOKORO_ENGINE_REPLACED');
       const connect=async backend=>{
+        this.hosted?.check();
         this.context=new AudioContext({sampleRate:24000});
-        const engine=new HeadTTS({endpoints:[backend],audioCtx:this.context,transformersModule:new URL('/static/vendor/narration/transformers-local.mjs',location.origin).href,model:'onnx-community/Kokoro-82M-v1.0-ONNX-timestamped',dtypeWebgpu:'fp32',dtypeWasm:'q8',dictionaryURL:new URL('/static/vendor/narration/dictionaries/',location.origin).href,voiceURL:new URL('/static/vendor/narration/models/onnx-community/Kokoro-82M-v1.0-ONNX-timestamped/voices/',location.origin).href,languages:['en-us'],voices:[],splitLength:400});
+        const module=new URL('/static/vendor/narration/transformers-'+(this.hosted?'hosted':'local')+'.mjs',location.origin);
+        if(this.hosted)module.hash=new URLSearchParams({project:this.hosted.project,account:this.hosted.account,client:this.hosted.client}).toString();
+        const engine=new HeadTTS({endpoints:[backend],audioCtx:this.context,transformersModule:module.href,model:'onnx-community/Kokoro-82M-v1.0-ONNX-timestamped',dtypeWebgpu:'fp32',dtypeWasm:'q8',dictionaryURL:new URL('/static/vendor/narration/dictionaries/',location.origin).href,voiceURL:new URL('/static/vendor/narration/models/onnx-community/Kokoro-82M-v1.0-ONNX-timestamped/voices/',location.origin).href,languages:['en-us'],voices:[],splitLength:400});
         this.worker=engine;
         let timer;
-        try{await Promise.race([engine.connect(),new Promise((_,reject)=>{this.cancelLoad=reject;timer=setTimeout(()=>reject(Error('KOKORO_LOAD_TIMEOUT')),backend==='webgpu'?120000:90000)})]);return engine}
+        try{
+          const connecting=engine.connect();
+          if(this.hosted)engine.ww?.addEventListener('message',event=>{if(event.data?.type==='breadmaker-narration-context-invalid'&&!this.disposed)this.hosted.invalidate()});
+          await Promise.race([connecting,new Promise((_,reject)=>{this.cancelLoad=reject;timer=setTimeout(()=>reject(Error('KOKORO_LOAD_TIMEOUT')),backend==='webgpu'?120000:90000)})]);this.hosted?.check();return engine;
+        }
         catch(error){engine.ww?.terminate();if(this.context.state!=='closed')await this.context.close().catch(()=>{});throw error}
         finally{clearTimeout(timer);this.cancelLoad=null}
       };
@@ -46,6 +54,7 @@ class BreadmakerKokoroEngine {
     if(typeof punctuationPauses!=='boolean')throw Error('KOKORO_PUNCTUATION_INVALID');
     this.generating=true;
     try{
+      if(this.hosted){this.hosted.check();await (await this.hosted.device()).authorize();this.hosted.check()}
       try{return await this.synthesize(text,voice,onprogress,onchunk,pace,punctuationPauses)}catch(error){if(this.backend!=='webgpu'||this.disposed)throw error;onchunk({reset:true});await this.discardGPU();return await this.synthesize(text,voice,onprogress,onchunk,pace,punctuationPauses)}
     }finally{this.generating=false}
   }
@@ -63,7 +72,7 @@ class BreadmakerKokoroEngine {
     }else if(['f','i','j','p','z'].includes(voice[0])){
       const language=({f:'fr',i:'it',j:'ja',p:'pt-BR',z:'zh-CN'})[voice[0]];
       const project=typeof currentProjectIdentity==='function'?currentProjectIdentity():null;
-      const pronounce=async data=>{const options={method:'POST',headers:{'Content-Type':'application/json',...(project?{'X-Breadmaker-Project':project}:{})},body:JSON.stringify(data)};if(typeof api==='function')return api('/api/narration-pronunciation',options);const response=await fetch('/api/narration-pronunciation',options);if(!response.ok)throw Error('NARRATION_PRONUNCIATION_FAILED');return response.json()};
+      const pronounce=async data=>{if(this.hosted){this.hosted.check();const result=await this.hosted.pronounce(data);this.hosted.check();return result}const options={method:'POST',headers:{'Content-Type':'application/json',...(project?{'X-Breadmaker-Project':project}:{})},body:JSON.stringify(data)};if(typeof api==='function')return api('/api/narration-pronunciation',options);const response=await fetch('/api/narration-pronunciation',options);if(!response.ok)throw Error('NARRATION_PRONUNCIATION_FAILED');return response.json()};
       if(language==='ja'||language==='zh-CN')input=(await pronounce({language,text:spoken})).items;
       else{this.languages??=await import('/static/vendor/narration/languages.mjs');input=language==='it'?await this.languages.prepareItalian(spoken,pronounce):this.languages.prepareRomance(spoken,language)}
     }
@@ -71,7 +80,7 @@ class BreadmakerKokoroEngine {
     // is bypassed by HeadTTS's supported phonetic-input interface.
     // HeadTTS 1.3.0's WASM queue overwrites per-request voice with ttsSetup.
     // Its public setup queue must be awaited before submitting synthesis.
-    if(this.disposed)throw Error('KOKORO_ENGINE_REPLACED');
+    if(this.disposed)throw Error('KOKORO_ENGINE_REPLACED');this.hosted?.check();
     const chunks=[],timings=[];let offset=0,cursor=0;
     let watchdog,rejectStall,active=true;
     const armWatchdog=()=>{clearTimeout(watchdog);watchdog=setTimeout(()=>rejectStall(Error(this.backend==='webgpu'?'KOKORO_GPU_STALLED':'KOKORO_CPU_STALLED')),this.backend==='webgpu'?90000:180000)};

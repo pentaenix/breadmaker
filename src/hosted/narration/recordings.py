@@ -84,6 +84,15 @@ class HostedNarrationRecordings:
     def _context(self, pid, publication):
         return {'project_id': pid, 'entity': 'narration_metadata', 'record_id': publication}
 
+    @staticmethod
+    def authorized_view(metadata, data, head):
+        from hosted.narration.index import summary
+        return {**metadata, 'id': data['record_id'], 'duration': data['duration'],
+                'audio_bytes': data['audio_bytes'], 'generation': head['generation'],
+                'index': summary(metadata, data['source'], record_id=data['record_id'],
+                    publication=data['publication'], generation=head['generation'],
+                    duration=data['duration'], audio_bytes=data['audio_bytes'])}
+
     def _open(self, pid, publication, sealed):
         encoded = self.parts.envelope.open(sealed, context=self._context(pid, publication))
         try:
@@ -167,7 +176,7 @@ class HostedNarrationRecordings:
                 raise DocumentConflict('NARRATION_IDEMPOTENCY_CONFLICT')
             if prior.get('state') not in {'pending', 'published'}:
                 raise DocumentConflict('NARRATION_UPLOAD_UNAVAILABLE')
-            return {'publication': prior['publication'], 'id': prior['record_id'], 'part_bytes': PART_BYTES}
+            return {'publication': prior['publication'], 'id': prior['record_id'], 'part_bytes': PART_BYTES, 'state': prior['state']}
         publication, rid, stamp = secrets.token_hex(16), secrets.token_hex(32), self.now()
         count = (audio_bytes + PART_BYTES - 1) // PART_BYTES
         # Lossless compression avoids making CJK/emoji metadata a Firestore-size
@@ -207,7 +216,7 @@ class HostedNarrationRecordings:
             tx.create((QUEUE, publication), _queue(pid, publication, owner, stamp + UPLOAD_SECONDS + 172800))
             tx.set((USAGE, owner), usage)
         self.documents.run_transaction(commit)
-        return {'publication': publication, 'id': rid, 'part_bytes': PART_BYTES}
+        return {'publication': publication, 'id': rid, 'part_bytes': PART_BYTES, 'state': 'pending'}
 
     def _pending(self, tx, uid, pid, publication):
         data = self._load(tx, uid, pid, publication, 'write')
@@ -300,7 +309,7 @@ class HostedNarrationRecordings:
             head, current = self.documents.run_transaction(lambda tx: self.record(tx, uid, pid, before['record_id']))
             if current != before:
                 raise DocumentConflict('NARRATION_REPLAY_SUPERSEDED')
-            return {**record, 'id': before['record_id'], 'duration': before['duration'], 'generation': head['generation']}
+            return self.authorized_view(record, before, head)
         if set(before['parts']) != {str(i) for i in range(before['part_count'])}:
             raise DocumentConflict('NARRATION_UPLOAD_INCOMPLETE')
         payload = b''.join(self.parts.read(before['parts'][str(i)], pid=pid,
@@ -345,7 +354,7 @@ class HostedNarrationRecordings:
             tx.delete((QUEUE, publication))
             tx.set((USAGE, owner), usage)
         self.documents.run_transaction(commit)
-        return {**record, 'id': before['record_id'], 'duration': duration, 'generation': 1}
+        return self.authorized_view(record, {**before, 'duration': duration}, {'generation': 1})
 
     def record(self, tx, uid, pid, rid):
         require_authority(self.authority, tx, uid, pid, 'read')
@@ -435,4 +444,4 @@ class HostedNarrationRecordings:
         current_head, current_data = self.documents.run_transaction(lambda tx: self.record(tx, uid, pid, rid))
         if current_head != head or current_data != data:
             raise DocumentConflict('NARRATION_RECORD_CHANGED')
-        return {**record, 'id': rid, 'duration': data['duration'], 'generation': head['generation']}
+        return self.authorized_view(record, data, head)

@@ -57,10 +57,23 @@ def test_two_page_read_is_bounded_and_does_not_open_every_record_envelope(env):
         return original(*args, **kwargs)
     owner.envelope.open = spy
     first = owner.page(UID, PID)
-    assert len(first['records']) == PAGE_RECORDS and first['next'] == '001:'
+    assert len(first['records']) == PAGE_RECORDS and first['next'] == '001:2'
     second = owner.page(UID, PID, after=first['next'])
     assert second == {'records': [values[-1]], 'next': None}
     assert len(opened) == 2  # page envelopes, not129 per-record KMS unwraps
+
+
+def test_concurrent_index_change_between_pages_rejects_mixed_listing(env):
+    owner = index(env)
+    values = [record(env, i) for i in range(PAGE_RECORDS + 1)]
+    install(env, owner, add=values[:PAGE_RECORDS])
+    install(env, owner, add=values[PAGE_RECORDS:])
+    first = owner.page(UID, PID)
+    removed = values[0]
+    install(env, owner, remove=[('000', removed['id'], removed['publication'], removed['generation'])])
+    with pytest.raises(DocumentConflict, match='INDEX_CHANGED'):
+        owner.page(UID, PID, after=first['next'])
+    assert len(owner.page(UID, PID)['records']) == PAGE_RECORDS - 1
 
 
 def test_index_stage_is_non_mutating_and_stale_preparation_cannot_overwrite(env):

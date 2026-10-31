@@ -84,7 +84,7 @@ def test_writes_are_bounded_single_request_create_only_and_read_back_generation(
     original = write(objects)
     upload, reload = client.value.calls
     assert upload[1] == dict(content_type='application/octet-stream', if_generation_match=0,
-                            checksum='auto', timeout=(3, 15), retry=None)
+                            checksum='auto', timeout=15, retry=None)
     assert reload[1] == dict(if_generation_match=original.generation, timeout=10, retry=None)
     with pytest.raises(ObjectAlreadyExists): write(objects)
     with pytest.raises(ValueError, match='REPLACEMENT_FORBIDDEN'):
@@ -119,7 +119,7 @@ def test_reads_use_generation_range_and_no_decompression_or_unbounded_retries(en
     original = write(objects)
     assert b''.join(objects.read_chunks(NAME, max_bytes=32, if_generation_match=original.generation)) == b'x' * 32
     assert client.value.calls[-1] == ('read', dict(if_generation_match=original.generation,
-        start=0, end=32, timeout=(3, 15), retry=None, checksum=None, raw_download=True))
+        start=0, end=32, timeout=15, retry=None, checksum=None, raw_download=True))
     with pytest.raises(ObjectLimitExceeded):
         objects.read_chunks(NAME, max_bytes=10, if_generation_match=original.generation)
     with pytest.raises(ValueError, match='READ_INVALID'):
@@ -153,3 +153,14 @@ def test_whole_bucket_inventory_is_bounded_and_does_not_hide_unknown_prefixes(en
     assert all(call['prefix'] == '' and call['max_results'] == 3 and call['retry'] is None for call in client.calls)
     with pytest.raises(ValueError, match='BOUNDED_INVENTORY'):
         objects.list_prefix('projects/')
+
+
+def test_expired_http_deadline_prevents_any_new_object_rpc(env):
+    from hosted.narration.io_limits import deadline
+    objects, client = env
+    token=deadline.set(0)
+    try:
+        with pytest.raises(TimeoutError,match='PROVIDER_DEADLINE'):objects.stat(NAME)
+        with pytest.raises(TimeoutError,match='PROVIDER_DEADLINE'):write(objects)
+        assert not client.value.calls
+    finally:deadline.reset(token)

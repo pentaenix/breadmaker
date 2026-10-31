@@ -101,6 +101,7 @@
     "narration.settings_description": "Voix, lecture, surlignage et téléchargement audio.",
     "narration.settings_help": "Ces préférences s’appliquent à ce projet. Les modifier ne régénère pas les enregistrements.",
     "narration.gpu": "Accélération GPU",
+    "narration.gpu_download_confirm": "Télécharger le modèle GPU facultatif ({size} MiB) sur cet appareil ? La narration sur CPU reste disponible sans lui. Seuls les fichiers publics du modèle sont mis en cache, jamais votre manuscrit ni votre audio.",
     "narration.gpu_help": "Utiliser le GPU si disponible, sinon le CPU. Désactivez pour utiliser uniquement le CPU.",
     "narration.early": "Commencer la lecture plus tôt",
     "narration.early_help": "Permet la lecture avant que l’enregistrement soit terminé.",

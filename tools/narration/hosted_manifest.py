@@ -140,13 +140,17 @@ def package_runtime(root, destination, catalog):
         shutil.copyfile(source, target)
     tools = Path(__file__).resolve().parent
     shutil.copyfile(tools / 'hosted-assets.mjs', destination / 'hosted-assets.mjs')
+    shutil.copyfile(tools / 'hosted-store.mjs', destination / 'hosted-store.mjs')
+    shutil.copyfile(tools / 'hosted-device.mjs', destination / 'hosted-device.mjs')
     shutil.copyfile(tools / 'THIRD_PARTY_NOTICES.md', destination / 'THIRD_PARTY_NOTICES.md')
     (destination / 'hosted-manifest.json').write_bytes(encode_manifest(catalog.manifest))
     wrapper = """// Generated from the verified release manifest; loaded only on explicit narration.
 import {env} from './transformers/transformers.web.min.js';
 import {HostedPublicAssets} from './hosted-assets.mjs';
-const context=new URL(import.meta.url).searchParams;
-const assets=await HostedPublicAssets.open({project:context.get('project'),client:context.get('client')||'',expectedDigest:__DIGEST__});
+// Fragment is worker-local: account/project context NEVER enters a static URL's
+// network/access log or HTTP cache key. Private headers go only to authorized APIs.
+const context=new URLSearchParams(new URL(import.meta.url).hash.slice(1));
+const assets=await HostedPublicAssets.open({project:context.get('project'),account:context.get('account'),client:context.get('client')||'',expectedDigest:__DIGEST__,onContextLost:()=>globalThis.postMessage({type:'breadmaker-narration-context-invalid'})});
 assets.installFetchInterceptor();
 env.fetch=globalThis.fetch;
 env.allowRemoteModels=false;env.allowLocalModels=true;
@@ -161,7 +165,7 @@ export * from './transformers/transformers.web.min.js';
     (destination / 'installation.json').write_text(json.dumps(dict(model='onnx-community/Kokoro-82M-v1.0-ONNX-timestamped',
         revision='dd4401a9add81ac692d20e240d22ec9dda82cc29', headtts='1.3.0', transformers='4.3.2',
         hosted=True, manifest=catalog.digest, gpu_available=True, gpu=False)))
-    return {'manifest': catalog.digest, 'runtime_files': len(files) + 5}
+    return {'manifest': catalog.digest, 'runtime_files': len(files) + 7}
 
 
 def main():

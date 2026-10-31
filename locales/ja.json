@@ -101,6 +101,7 @@
     "narration.settings_description": "音声、再生、ハイライト、音声のダウンロード。",
     "narration.settings_help": "この設定はこのプロジェクトに適用されます。変更しても保存済み録音は再生成されません。",
     "narration.gpu": "GPUアクセラレーション",
+    "narration.gpu_download_confirm": "オプションのGPUモデル（{size} MiB）をこのデバイスにダウンロードしますか？ダウンロードしなくてもCPUでナレーションを利用できます。キャッシュには公開モデルファイルのみを保存し、原稿や音声は保存しません。",
     "narration.gpu_help": "利用可能な場合はGPUを使い、それ以外はCPUを使います。オフにするとCPUのみ使用します。",
     "narration.early": "再生を早く開始",
     "narration.early_help": "録音全体が完成する前に再生できるようにします。",

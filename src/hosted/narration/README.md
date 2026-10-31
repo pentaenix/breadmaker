@@ -22,20 +22,31 @@ The model client verifies ordered pinned chunks without a second complete-model
 hash/copy, caches PUBLIC binaries only, and disables persistent writes without
 browser Web Locks. No plaintext project/audio browser persistence is added.
 
-These HTTP factories are NOT installed in normal runtime yet. Model installer/
-publisher/workflow wiring, browser context/logout fencing, private pronunciation,
-GC/lifecycle census, actual-provider acceptance and full release CI are still
-required. Editor Highlights needs its separate canonical atomic adapter too.
-No feature activation or complete recovery/erasure claim follows from these tests.
+`composition.py` now installs the recording/model/pronunciation bundle only behind the default-off
+production flag, exact dedicated resource scope, authority epoch and verified
+public release manifest. Disabled startup uses no model files or cloud SDKs.
+`app.py` installs the bounded routes; without the bundle they reject access.
+Browser context/logout fencing and thin/lazy private RAM reads have synthetic
+UI/HTTP coverage. Publisher/workflow gates, cleanup authorization, real provider
+acceptance and full release CI remain required BEFORE deployment/activation.
+Editor Highlights still needs its separate canonical atomic adapter. No feature
+activation or complete recovery/erasure claim follows from these focused tests.
 
 `index.py` now couples encrypted 128-record thin pages to the SAME head transaction
 for publication/replacement/delete/Undo. Source hashes, excerpts, voice and ranges
 stay inside the existing envelope; timings/full source load lazily through a
 generation-bound detail route. No full 20k-record bodies/timings startup response.
 Index encryption is outside callbacks; stale prepared pages/current membership
-must still pass before any write. A missing/corrupt/foreign-epoch index fails
-closed, never becomes editable manuscript authority. The browser consumer is
-still pending; these inactive factories cannot be enabled as a local-UI fallback.
+must still pass before any write. Pagination pins one revision, rejecting mixed
+listings after concurrent mutation. A missing/corrupt/foreign-epoch index fails
+closed, never becomes editable manuscript authority. The browser consumer carries
+the ORIGINAL account/project/session context through async work; a negative
+account header never establishes identity. Cached private playback still checks
+current head/admission. Reset stops workers/audio, revokes Blob URLs and clears
+derivative RAM; JavaScript does not promise cryptographic memory zeroization.
+Only public pinned model chunks may persist in the device cache. Optional GPU
+download requires consent; hosted mode preserves popup-auth isolation and falls
+back to single-threaded WASM without claiming local four-thread speed parity.
 
 The inactive pronunciation client now precharges durable monthly character,
 attempt and server-time budgets before private helper I/O. Only a confirmed

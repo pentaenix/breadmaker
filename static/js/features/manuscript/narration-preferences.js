@@ -25,26 +25,28 @@ function normalizeNarrationPreferences(value){
 }
 const narrationPreferences={project:null,value:{...NARRATION_DEFAULTS},loading:null};
 async function loadNarrationPreferences(){
-  const pid=currentProjectIdentity();
+  const pid=currentProjectIdentity(),snapshot=typeof narrationSnapshot==='function'?narrationSnapshot():null;
+  const live=()=>pid===currentProjectIdentity()&&(!snapshot||narrationCurrent(snapshot));
   if(narrationPreferences.project===pid&&narrationPreferences.loading)return narrationPreferences.loading;
   if(narrationPreferences.project===pid)return narrationPreferences.value;
   narrationPreferences.project=pid;narrationPreferences.value={...NARRATION_DEFAULTS};
   const loading=api('/api/ui-state/narration-preferences',{headers:{'X-Breadmaker-Project':pid}}).then(async response=>{
     if(typeof loadNarrationVoiceCatalog==='function')await loadNarrationVoiceCatalog().catch(()=>{});
     const value=normalizeNarrationPreferences(response.value);
-    if(pid===currentProjectIdentity()&&narrationPreferences.project===pid)applyNarrationPreferences(value);
+    if(live()&&narrationPreferences.project===pid)applyNarrationPreferences(value);
     return value;
-  }).catch(error=>{if(narrationPreferences.project===pid)narrationPreferences.project=null;throw error}).finally(()=>{if(narrationPreferences.loading===loading)narrationPreferences.loading=null});
+  }).catch(error=>{if(live()&&narrationPreferences.loading===loading)narrationPreferences.project=null;throw error}).finally(()=>{if(narrationPreferences.loading===loading)narrationPreferences.loading=null});
   narrationPreferences.loading=loading;return loading;
 }
 let narrationPreferenceWrite=Promise.resolve();
-function saveNarrationPreferences(patch){
-  const pid=currentProjectIdentity();
+function saveNarrationPreferences(patch,context=null){
+  const pid=currentProjectIdentity(),snapshot=context||(typeof narrationSnapshot==='function'?narrationSnapshot():null);
+  const live=()=>pid===currentProjectIdentity()&&(!snapshot||narrationCurrent(snapshot));
   const task=narrationPreferenceWrite.catch(()=>{}).then(async()=>{
-    if(pid!==currentProjectIdentity())return;await loadNarrationPreferences();if(pid!==currentProjectIdentity())return;
+    if(!live())return;await loadNarrationPreferences();if(!live())return;
     const value=normalizeNarrationPreferences({...narrationPreferences.value,...patch});
-    await api('/api/ui-state/narration-preferences',{method:'PUT',headers:{'X-Breadmaker-Project':pid},body:JSON.stringify({value})});
-    if(pid===currentProjectIdentity())applyNarrationPreferences(value);
+    await api('/api/ui-state/narration-preferences',{method:'PUT',headers:{'X-Breadmaker-Project':pid,...(snapshot?.transport?{'X-Breadmaker-Narration-Account':snapshot.account}:{})},body:JSON.stringify({value})});
+    if(live())applyNarrationPreferences(value);
   });
   narrationPreferenceWrite=task;return task;
 }

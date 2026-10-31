@@ -755,7 +755,13 @@ def hosted_ui_state_get(key:str,request:Request):
     key=require_opaque_id(key,label='key');return runtime.projects.member_state(_pid(request),key=key,user_id=_uid()) or {'key':key,'value':None}
 @product_router.put('/api/ui-state/{key}')
 async def hosted_ui_state_put(key:str,request:Request):
-    key=require_opaque_id(key,label='key');return await run_in_threadpool(runtime.projects.put_member_state,_pid(request),await _body(request),key=key,user_id=_uid())
+    key=require_opaque_id(key,label='key');uid=_uid()
+    # Optional negative precondition for the long-lived narration settings UI.
+    # The session remains identity; this header can only RESTRICT a write.
+    if key=='narration-preferences' and 'x-breadmaker-narration-account' in request.headers:
+        claimed=request.headers.getlist('x-breadmaker-narration-account')
+        if len(claimed)!=1 or claimed[0]!=uid:raise HTTPException(409,'NARRATION_ACCOUNT_CONTEXT_CHANGED')
+    return await run_in_threadpool(runtime.projects.put_member_state,_pid(request),await _body(request),key=key,user_id=uid)
 
 # Tasks
 @product_router.get('/api/tasks')

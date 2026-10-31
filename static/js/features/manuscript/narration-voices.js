@@ -12,9 +12,14 @@ function narrationEffectiveVoice(value=narrationPreferences.value){
 async function loadNarrationVoiceCatalog(refresh=false){
   if(!refresh&&narrationVoiceCatalog.value)return narrationVoiceCatalog.value;
   if(narrationVoiceCatalog.pending)return narrationVoiceCatalog.pending;
-  const pid=currentProjectIdentity();
-  narrationVoiceCatalog.pending=api('/api/narration-voices',{headers:{'X-Breadmaker-Project':pid}}).then(value=>{narrationVoiceCatalog.value=value;return value}).finally(()=>{narrationVoiceCatalog.pending=null});
-  return narrationVoiceCatalog.pending;
+  const pid=currentProjectIdentity(),snapshot=typeof narrationSnapshot==='function'?narrationSnapshot():null;
+  const pending=api('/api/narration-voices',{headers:{'X-Breadmaker-Project':pid,...(snapshot?.transport?{'X-Breadmaker-Narration-Account':snapshot.account}:{})}}).then(async value=>{
+    if(pid!==currentProjectIdentity()||snapshot&&!narrationCurrent(snapshot))throw Error('NARRATION_ACCOUNT_CONTEXT_CHANGED');
+    if(snapshot?.transport)value=await (await narrationDevice(snapshot)).voices(value);
+    if(snapshot&&!narrationCurrent(snapshot))throw Error('NARRATION_ACCOUNT_CONTEXT_CHANGED');
+    narrationVoiceCatalog.value=value;return value;
+  }).finally(()=>{if(narrationVoiceCatalog.pending===pending)narrationVoiceCatalog.pending=null});
+  narrationVoiceCatalog.pending=pending;return pending;
 }
 function narrationVoiceOptionLabel(voice){return `${voice.name} · ${i18nText(`narration.accent_${voice.accent}`)} · ${i18nText(`narration.gender_${voice.gender}`)}`}
 function narrationVoiceOptions(voices){

@@ -114,6 +114,18 @@ def test_operation_replay_survives_instance_loss_without_duplicate_quota(env):
     assert row['records'] == 1 and row['bytes'] == len(wav()) + 16 + FENCE_BYTES + intent['metadata_reserved']
 
 
+def test_published_begin_retry_advertises_receipt_without_another_upload(env):
+    service, _, documents, objects, _, _ = env
+    made, value = publish(env)
+    before = documents.get((USAGE, UID))
+    generation = objects.list_prefix('projects/')[0].generation
+    replay = begin(env)
+    assert replay['state'] == 'published' and replay['publication'] == made['publication']
+    assert service.finalize(UID, PID, replay['publication']) == value
+    assert documents.get((USAGE, UID)) == before
+    assert objects.list_prefix('projects/')[0].generation == generation
+
+
 def test_begin_rejects_changed_metadata_with_same_operation(env):
     begin(env)
     with pytest.raises(DocumentConflict, match='IDEMPOTENCY'):

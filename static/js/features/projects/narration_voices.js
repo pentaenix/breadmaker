@@ -1,13 +1,14 @@
 // Settings-owned voice library. Fixed samples only; no manuscript publication.
 async function openNarrationVoiceSettings(){
   try{
-    const pid=currentProjectIdentity(),catalog=await loadNarrationVoiceCatalog(true);if(pid!==currentProjectIdentity())return;
+    const context=narrationSnapshot(),pid=context.pid,catalog=await loadNarrationVoiceCatalog(true);if(!narrationCurrent(context))return;
     const parentVoice=$('#narrationSettingsVoice'),toggle=$('[data-narration-setting="showAllLanguages"]'),all=toggle?toggle.getAttribute('aria-checked')==='true':narrationPreferences.value.showAllLanguages;
     let language=narrationInterfaceLanguage(),active=true,busy=false,operation=0,previewURL=null,previewVoice=null,downloadJob=false,stopDownloads=false,message='',packProgress=null;
-    const audio=new Audio(),cache=new Map(),chosen=()=>parentVoice?.value||narrationEffectiveVoice(),live=()=>active&&pid===currentProjectIdentity();
+    const audio=new Audio(),cache=new Map(),chosen=()=>parentVoice?.value||narrationEffectiveVoice(),live=()=>active&&narrationCurrent(context);
     const languageLabel=code=>i18nText(`narration.language_${code==='en-us'?'en':code.replace('-','_')}`);
     const available=narrationLanguageVoices(catalog.voices,all);
-    const cleanup=()=>{active=false;operation++;audio.pause();if(previewURL)URL.revokeObjectURL(previewURL);cache.clear();queueMicrotask(()=>{if(pid===currentProjectIdentity())syncNarrationVoiceChoices()})};
+    const cleanup=()=>{active=false;operation++;audio.pause();audio.src='';if(previewURL)URL.revokeObjectURL(previewURL);cache.clear();window.removeEventListener('breadmaker-narration-context-reset',cleanup);queueMicrotask(()=>{if(narrationCurrent(context))syncNarrationVoiceChoices()})};
+    window.addEventListener('breadmaker-narration-context-reset',cleanup);
     showNestedModal(i18nText('narration.voice_library'),`<div class="narration-voice-library">
       <p class="small-muted">${escapeHtml(i18nText('narration.library_help'))}</p>
       <div class="narration-settings-grid"><div class="field"><label for="narrationVoiceSearch">${escapeHtml(i18nText('narration.search_voices'))}</label><input id="narrationVoiceSearch" type="search" autocomplete="off" placeholder="${escapeHtml(i18nText('narration.search_voices'))}"></div>
@@ -36,7 +37,7 @@ async function openNarrationVoiceSettings(){
       const progress=$('#narrationVoicePackProgress');progress.classList.toggle('hidden',!packProgress);if(packProgress)progress.value=packProgress.current/packProgress.total;
     };
     const find=id=>catalog.voices.find(voice=>voice.id===id);
-    const persistVisible=ids=>saveNarrationPreferences({visibleVoices:[...new Set([...narrationPreferences.value.visibleVoices,...ids])]});
+    const persistVisible=ids=>saveNarrationPreferences({visibleVoices:[...new Set([...narrationPreferences.value.visibleVoices,...ids])]},context);
     const download=async (voices,isPack=false)=>{
       if(!live()||busy)return;const pending=voices.filter(voice=>!voice.installed);if(!pending.length)return;stopPreview();busy=true;downloadJob=true;stopDownloads=false;packProgress={current:0,total:pending.length};message='';render();
       const installed=[];
@@ -45,7 +46,7 @@ async function openNarrationVoiceSettings(){
         for(const voice of pending){
           if(!live()||stopDownloads)break;
           message=i18nText('narration.pack_progress',{current:packProgress.current+1,total:pending.length});render();
-          if(!voice.installed)Object.assign(voice,await api(`/api/narration-voices/${voice.id}/download`,{method:'POST',headers:{'X-Breadmaker-Project':pid}}));
+          if(!voice.installed){const installed=narrationHosted()?await (await narrationDevice(context)).downloadVoice(voice):await api(`/api/narration-voices/${voice.id}/download`,{method:'POST',headers:{'X-Breadmaker-Project':pid}});requireNarrationContext(context);Object.assign(voice,installed)}
           installed.push(voice.id);packProgress.current++;render();
         }
         if(live()){await showInstalled();message=i18nText(stopDownloads?'narration.downloads_stopped':'narration.pack_ready')}
@@ -58,7 +59,7 @@ async function openNarrationVoiceSettings(){
       if(button.dataset.voiceDownload){await download([voice]);return}
       if(button.dataset.voiceUse){
         busy=true;render();
-        try{await persistVisible([voice.id]);if(!live())return;if(parentVoice){closeModal();syncNarrationVoiceChoices();parentVoice.value=voice.id}else{await saveNarrationPreferences({voice:voice.id});closeModal()}}
+        try{await persistVisible([voice.id]);if(!live())return;if(parentVoice){closeModal();syncNarrationVoiceChoices();parentVoice.value=voice.id}else{await saveNarrationPreferences({voice:voice.id},context);if(live())closeModal()}}
         catch{message=i18nText('narration.failed')}finally{busy=false;render()}return;
       }
       if(previewVoice===voice.id&&!audio.paused){stopPreview();render();return}
@@ -68,11 +69,11 @@ async function openNarrationVoiceSettings(){
         if(!blob){const output=await narrationEngine().generate(catalog.samples[voice.language],voice.id,()=>{},()=>{},1,false);blob=output.blob;if(live())cache.set(voice.id,blob)}
         if(!live()||token!==operation)return;if(previewURL)URL.revokeObjectURL(previewURL);previewURL=URL.createObjectURL(blob);audio.src=previewURL;await audio.play();message='';
       }catch{if(live())message=i18nText('narration.failed')}
-      finally{busy=false;narration.queueLoading=false;syncNarrationActions();render()}
+      finally{busy=false;if(narrationCurrent(context)){narration.queueLoading=false;syncNarrationActions();render()}}
     };
     list.onchange=async event=>{
       const input=event.target.closest('[data-voice-show]');if(!input||!live()||busy)return;
-      busy=true;render();try{const ids=narrationPreferences.value.visibleVoices;await saveNarrationPreferences({visibleVoices:input.checked?[...ids,input.dataset.voiceShow]:ids.filter(id=>id!==input.dataset.voiceShow)})}catch{message=i18nText('narration.failed')}finally{busy=false;render()}
+      busy=true;render();try{const ids=narrationPreferences.value.visibleVoices;await saveNarrationPreferences({visibleVoices:input.checked?[...ids,input.dataset.voiceShow]:ids.filter(id=>id!==input.dataset.voiceShow)},context)}catch{message=i18nText('narration.failed')}finally{busy=false;render()}
     };
     $('#narrationVoicePack').onclick=event=>{
       if(busy||!live())return;const voices=available.filter(voice=>voice.language===language),defaults=voices.filter(voice=>voice.default);

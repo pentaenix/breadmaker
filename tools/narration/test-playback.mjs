@@ -20,6 +20,13 @@ await audio.play();assert.equal(audio.currentTime,0);audio.currentTime=3;assert.
 audio.pause();audio.appendStream({duration:1});assert(audio.paused,'New chunks must not override Pause');
 audio.src='blob:saved-recording';assert.equal(audio.stream,null);assert.equal(timers.size,0);await audio.play();assert(!native.paused);
 audio.pause();assert(native.paused);assert.equal(native.src,'blob:saved-recording');
+let resume;audio.nativeContext={resume:()=>new Promise(resolve=>resume=resolve)};
+const pendingPlay=audio.play();audio.pause();resume();await pendingPlay;
+assert(native.paused,'a pending AudioContext resume cannot undo a later pause/logout');
+audio.nativeContext=null;
+audio.startStream({...context,resume:()=>new Promise(resolve=>resume=resolve)});audio.appendStream({duration:1});
+const pendingStream=audio.play();audio.pause();resume();await pendingStream;
+assert(audio.paused,'a pending stream resume cannot undo a later pause');audio.clearStream();
 console.log('PASS: early chunk playback, buffering, pause/resume, seek, speed, restart, single ended event, saved WAV handoff, timer cleanup.');
 
 const sources=[{block_id:'b',source_text:'Hello world.'},{block_id:'a',source_text:'Next passage.'},{block_id:'missing',source_text:'No audio.'}];

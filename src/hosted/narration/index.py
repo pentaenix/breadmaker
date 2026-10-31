@@ -218,18 +218,22 @@ class PrivateNarrationIndex:
     def page(self, uid, pid, *, after=''):
         pid = require_project_id(pid)
         if after:
-            match = re.fullmatch(r'([0-9]{3}):([A-Za-z0-9_-]{0,160})', after) if isinstance(after, str) else None
-            if match is None or int(match[1]) >= MAX_PAGES:
+            match = re.fullmatch(r'([0-9]{3}):([1-9][0-9]{0,18})', after) if isinstance(after, str) else None
+            if match is None or int(match[1]) >= MAX_PAGES or int(match[2]) >= 2**63:
                 raise ValueError('NARRATION_INDEX_CURSOR_INVALID')
-            first, last = match.groups()
+            first, expected = match[1], int(match[2])
         else:
-            first, last = '000', ''
+            first, expected = '000', None
         def capture(tx):
             require_authority(self.authority, tx, uid, pid, 'read')
             root = tx.get(_root(pid))
             if root is None and tx.query_collection((ROOT, pid, 'records'), field='state', value='active'):
                 raise DocumentConflict('NARRATION_INDEX_BOOTSTRAP_REQUIRED')
             control = self._control(root)
+            # A multi-page listing must describe ONE index revision. Otherwise a
+            # concurrent delete/publish could silently omit a moved/new record.
+            if expected is not None and control['generation'] != expected:
+                raise DocumentConflict('NARRATION_INDEX_CHANGED')
             pages = [page for page in sorted(control['pages']) if page >= first]
             page = pages[0] if pages else None
             row = tx.get(_page(pid, page)) if page else None
@@ -238,8 +242,8 @@ class PrivateNarrationIndex:
         if page is None:
             return {'records': [], 'next': None}
         values = self._open(pid, page, row, control['pages'][page])
-        records = [value for rid, value in sorted(values.items()) if page != first or rid > last]
-        next_cursor = pages[1] + ':' if len(pages) > 1 else None
+        records = [value for rid, value in sorted(values.items())]
+        next_cursor = f"{pages[1]}:{control['generation']}" if len(pages) > 1 else None
         def recheck(tx):
             require_authority(self.authority, tx, uid, pid, 'read')
             if tx.get(_root(pid)) != root or tx.get(_page(pid, page)) != row:

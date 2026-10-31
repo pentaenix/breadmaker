@@ -8,7 +8,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 
 
-@pytest.mark.parametrize('name', ['preferences', 'playback', 'progress', 'punctuation', 'lifecycle', 'download', 'hosted-assets'])
+@pytest.mark.parametrize('name', ['preferences', 'playback', 'progress', 'punctuation', 'lifecycle', 'download', 'hosted-assets', 'hosted-store', 'hosted-ui', 'hosted-device'])
 def test_narration_frontend_behavior(name):
     node = shutil.which('node')
     assert node, 'Node is required for narration frontend regressions'

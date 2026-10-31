@@ -67,19 +67,24 @@ async function api(url, options={}) {
   const method=String(options.method||'GET').toUpperCase();
   const mutates=!['GET','HEAD','OPTIONS'].includes(method);
   const hosted=typeof runtimeSupports==='function'&&runtimeSupports('hosted_persistence');
-  const nonceHeaders=hosted&&mutates?{'Idempotency-Key':String(options.idempotencyKey||uid()),...(hostedStructuralActionToken&&!url.startsWith('/api/undo/')?{'X-Breadmaker-Action':hostedStructuralActionToken}:{})}:{};
-  const {idempotencyKey,acceptNotModified,...fetchOptions}=options;
+  // Derivatives have their own publication CAS, not canonical structural Undo.
+  const narrationRequest=/^\/api\/(?:narrations(?:\/|\?|$)|narration-(?:models|pronunciation|voices)(?:\/|\?|$))/.test(url);
+  const nonceHeaders=hosted&&mutates?{'Idempotency-Key':String(options.idempotencyKey||uid()),...(hostedStructuralActionToken&&!url.startsWith('/api/undo/')&&!narrationRequest?{'X-Breadmaker-Action':hostedStructuralActionToken}:{})}:{};
+  const {idempotencyKey,acceptNotModified,rawResponse,...fetchOptions}=options;
   const response = await fetch(url, {...fetchOptions, headers:{...headers, ...contextHeaders, ...nonceHeaders, 'X-Breadmaker-Client':CLIENT_ID, 'X-Breadmaker-Locale':i18nLocale(), ...(options.headers||{})}});
   if(response.status===304&&acceptNotModified&&method==='GET')return null;
   if (!response.ok) {
     // Missing membership intentionally looks like a missing project (404).
     const missingManuscript=method==='GET'&&response.status===404&&(url.startsWith('/api/book?')||url.startsWith('/api/chapters/'));
     if(hosted&&(response.status===401||response.status===403||missingManuscript)&&typeof clearManuscriptReadCache==='function')clearManuscriptReadCache();
+    if(hosted&&(response.status===401||response.status===403)&&typeof clearHostedNarrationContext==='function')clearHostedNarrationContext();
     const raw=await response.text().catch(()=> '');let payload;
     try{payload=raw?JSON.parse(raw):{}}catch{payload={detail:raw||`Request failed (${response.status})`}}
     throw breadmakerErrorFromPayload(payload,response.status);
   }
   if(hosted&&method==='POST'&&url==='/api/auth/logout'&&typeof clearManuscriptReadCache==='function')clearManuscriptReadCache();
+  if(hosted&&method==='POST'&&url==='/api/auth/logout'&&typeof clearHostedNarrationContext==='function')clearHostedNarrationContext(true);
+  if(rawResponse)return response; // caller owns bounded private JSON/binary parsing
   const type = response.headers.get('content-type') || '';
   return type.includes('application/json') ? response.json() : response;
 }

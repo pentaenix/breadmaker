@@ -185,3 +185,5 @@ class RuntimeServices:
     native_assets: NativeAssetStore | None = None
     native_history: NativeHistoryStore | None = None
     native_backups: NativeBackupStore | None = None
+    # Complete hosted-only derivative bundle; absent unless explicitly activated.
+    narration: Any | None = None
