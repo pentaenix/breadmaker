@@ -4,6 +4,13 @@ ARG PYTHON_BASE_DIGEST
 FROM python:3.14.8-slim-trixie@sha256:${PYTHON_BASE_DIGEST} AS build
 
 WORKDIR /app
+COPY deploy/sqlite-source.json ./deploy/sqlite-source.json
+COPY scripts/build_hosted_sqlite.py scripts/assert_hosted_sqlite.py ./scripts/
+# Debian has no fixed SQLite package for the current core advisory. Build the
+# checksum-pinned upstream core; compiler and headers never enter the runtime.
+RUN apt-get update && apt-get install --yes --no-install-recommends gcc libc6-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && python scripts/build_hosted_sqlite.py
 COPY requirements.txt requirements-hosted.txt ./
 COPY deploy/constraints-hosted.txt ./deploy/constraints-hosted.txt
 RUN python -m pip install --no-cache-dir -r requirements-hosted.txt \
@@ -27,7 +34,7 @@ RUN python -c "from pathlib import Path; p=Path('static/vendor/narration'); asse
 # Copy only required shared libraries and their real Debian package records.
 # Retaining metadata keeps OS scanning accurate; no scanner exclusions are used.
 RUN mkdir -p /runtime-libs /runtime-status && \
-    for package in libbz2-1.0 libexpat1 libffi8 liblzma5 libsqlite3-0; do \
+    for package in libbz2-1.0 libexpat1 libffi8 liblzma5; do \
       if dpkg-query -s "$package" > "/runtime-status/$package"; then \
         dpkg-query -L "$package" | while IFS= read -r file; do \
           case "$file" in /usr/lib/*/*.so.*) cp -L "$file" /runtime-libs/ ;; esac; \
@@ -38,7 +45,8 @@ RUN mkdir -p /runtime-libs /runtime-status && \
 # pip vendors its own old dependencies; none are needed after installation.
 # Remove the actual package-manager code and bootstrap wheels, not just SBOMs.
 RUN python -m pip uninstall --yes pip \
-    && rm -r /usr/local/lib/python3.14/ensurepip
+    && rm -r /usr/local/lib/python3.14/ensurepip \
+    && rm /usr/local/lib/python3.14/sqlite3/__main__.py
 
 # The runtime has no shell, package manager, mount/login tools, systemd or Perl.
 # Its maintained OpenSSL library is patched independently of the build image.
@@ -46,6 +54,7 @@ FROM gcr.io/distroless/cc-debian13:nonroot@sha256:e792ab3d241a468a4fd7519ddbbebe
 COPY --from=build /usr/local /usr/local
 COPY --from=build /runtime-libs /opt/python-libs
 COPY --from=build /runtime-status /var/lib/dpkg/status.d
+COPY --from=build /runtime-sqlite /usr/share/breadmaker/sqlite
 COPY --from=build /app /app
 WORKDIR /app
 ENV PATH=/usr/local/bin:$PATH \
@@ -68,6 +77,7 @@ RUN ["python", "-c", "import ssl,sqlite3,bz2,lzma,ctypes,uuid; import firebase_a
 RUN ["python", "-c", "import importlib.util; assert importlib.util.find_spec('pip') is None; assert importlib.util.find_spec('ensurepip') is None"]
 RUN ["python", "scripts/assert_hosted_image_stack.py"]
 RUN ["python", "-c", "from hosted.local_portability import _mapping; assert _mapping()"]
+RUN ["python", "scripts/assert_hosted_sqlite.py"]
 
 # One worker is a cost/memory default, not a security or project-write lock.
 # A Cloud Run replica can disappear at any point; Uvicorn handles SIGTERM and the
