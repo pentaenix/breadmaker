@@ -1,5 +1,7 @@
 """Short isolated-image/offline helper proof, synthetic text only; no cloud I/O."""
 import json
+import importlib.util
+import ctypes
 from pathlib import Path
 import time
 
@@ -7,6 +9,13 @@ from hosted.narration.pronunciation_helper import PronunciationWorker
 
 
 def main():
+    assert all(importlib.util.find_spec(name) is None for name in ('sqlite3', '_sqlite3'))
+    try:
+        ctypes.CDLL('libsqlite3.so.0')
+    except OSError:
+        pass
+    else:
+        raise AssertionError('Unexpected SQLite runtime library')
     worker = PronunciationWorker()
     cases = [('it', '', ['ciao', 'mondo']), ('ja', 'こんにちは世界。', []),
              ('zh-CN', '你好世界。', [])]

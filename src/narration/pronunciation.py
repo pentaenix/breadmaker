@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import base64
+import hashlib
+import json
 import re
-import sqlite3
 import unicodedata
 from functools import lru_cache
 from pathlib import Path
@@ -11,6 +12,27 @@ from pathlib import Path
 
 class PronunciationError(ValueError):
     """Structural codes only; never put private input into errors."""
+
+
+_ITALIAN_LEXICON_SHA256 = 'edb7776a5e8204f55dda8097c1b73601bfe85d8c07e1f7978738b00ad87d84d8'
+
+
+def _italian_lexicon(root):
+    projected = root / 'breadmaker-lexicon.json'
+    if projected.exists():
+        with projected.open('rb') as stream:
+            raw = stream.read(1024 * 1024 + 1)
+        if len(raw) > 1024 * 1024 or hashlib.sha256(raw).hexdigest() != _ITALIAN_LEXICON_SHA256:
+            raise PronunciationError('NARRATION_LANGUAGE_DATA_PIN_MISMATCH')
+        return json.loads(raw)
+    # Native installations retain their existing pinned dictionary path. The
+    # isolated helper exports this exact mapping at build time and has no SQL.
+    import sqlite3
+    with sqlite3.connect(f'{(root/"lexicon.db").as_uri()}?mode=ro',uri=True) as db:
+        lexicon = {}
+        for word,phonemes in db.execute('SELECT word,phonemes FROM word_phonemes ORDER BY pron_order'):
+            lexicon.setdefault(word,phonemes.replace(' ',''))
+    return lexicon
 
 
 def validate_input(language, text, words):
@@ -49,10 +71,7 @@ def _frontend(language):
     import gruut_lang_it
     import pycrfsuite
     root=Path(gruut_lang_it.__file__).parent
-    with sqlite3.connect(f'{(root/"lexicon.db").as_uri()}?mode=ro',uri=True) as db:
-        lexicon={}
-        for word,phonemes in db.execute('SELECT word,phonemes FROM word_phonemes ORDER BY pron_order'):
-            lexicon.setdefault(word,phonemes.replace(' ',''))
+    lexicon = _italian_lexicon(root)
     tagger=pycrfsuite.Tagger();tagger.open(str(root/'g2p'/'model.crf'))
     return lexicon,tagger
 

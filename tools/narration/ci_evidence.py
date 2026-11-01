@@ -10,7 +10,7 @@ import sys
 ROOT=Path(__file__).resolve().parents[2]
 if __package__ in (None,''):sys.path.insert(0,str(ROOT/'src'))
 HELPER_FILES={'deploy/Dockerfile.pronunciation','deploy/requirements-pronunciation.txt',
-    'src/hosted/narration/pronunciation_helper.py','tools/narration/assert-helper-data.py',
+    'src/hosted/narration/pronunciation_helper.py','tools/narration/assert-helper-data.py','tools/narration/build-helper-lexicon.py',
     'tools/narration/language-data-pins.json','tools/narration/THIRD_PARTY_NOTICES.md'}
 
 

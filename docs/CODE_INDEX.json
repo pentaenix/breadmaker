@@ -12889,42 +12889,47 @@
     },
     {
       "file": "src/narration/pronunciation.py",
-      "lines": 111,
+      "lines": 130,
       "symbols": [
         {
           "name": "PronunciationError",
           "kind": "class",
-          "line": 12
+          "line": 13
+        },
+        {
+          "name": "_italian_lexicon",
+          "kind": "function",
+          "line": 20
         },
         {
           "name": "validate_input",
           "kind": "function",
-          "line": 16
+          "line": 38
         },
         {
           "name": "_ipa",
           "kind": "function",
-          "line": 32
+          "line": 54
         },
         {
           "name": "_frontend",
           "kind": "function",
-          "line": 39
+          "line": 61
         },
         {
           "name": "_italian",
           "kind": "function",
-          "line": 59
+          "line": 78
         },
         {
           "name": "_items",
           "kind": "function",
-          "line": 77
+          "line": 96
         },
         {
           "name": "convert",
           "kind": "function",
-          "line": 107
+          "line": 126
         }
       ]
     },

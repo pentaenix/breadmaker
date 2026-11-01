@@ -103,6 +103,14 @@ jobs:
           docker build --build-arg "PYTHON_BASE_DIGEST=$PYTHON_BASE_DIGEST" -f deploy/Dockerfile.pronunciation -t narration-helper:verified .
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$SCANNER" image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --no-progress --format json narration-helper:verified > "$RUNNER_TEMP/narration-proof/helper-scan.json"
           python tools/narration/ci_evidence.py --check-scan "$RUNNER_TEMP/narration-proof/helper-scan.json"
+      - name: Preserve failed helper scan diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: narration-scan-failure-${{ github.sha }}
+          path: ${{ runner.temp }}/narration-proof/helper-scan.json
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Prove offline native pronunciation paths in the bounded helper
         run: |
           set -euo pipefail

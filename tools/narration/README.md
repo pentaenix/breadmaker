@@ -1,5 +1,15 @@
 # Kokoro narration: Editor implementation and Cloud handoff
 
+## Helper lexicon packaging
+
+The isolated helper reads the pinned Italian SQLite dictionary only during image
+build, exporting the same 28,918 first-pronunciation mappings to hash-verified
+JSON. Runtime SQLite libraries/bindings are removed. Native installations retain
+their existing SQLite path; both use the identical lexicon and CRF fallback.
+The original public data pins/notices, isolated-image scan and offline IT/JA/ZH
+smokes remain mandatory. Failed helper scans preserve their small JSON report
+under a diagnostic artifact name that cannot authorize a release.
+
 ## Inactive hosted packaging adapter
 
 Hosted builds must use `node tools/narration/install.mjs --hosted --output=/absolute/disposable/staging`.
