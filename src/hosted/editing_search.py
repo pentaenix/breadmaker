@@ -31,6 +31,17 @@ class HostedEditingSearch:
             return [dict(row.data) for row in tx.query_collection(path,field=field,value=value)]
         return self.domain.documents.run_transaction(read)
 
+    def document_blocks(self,pid,uid,tab):
+        # Chapter membership is canonical; saved/imported blocks need not carry
+        # a duplicate tab_id. A conflicting duplicate is corruption, not routing.
+        chapters={row['id'] for row in self.physical('chapter',{'project_id':pid},user_id=uid,field='tab_id',value=tab)}
+        raw=self.physical('manuscript_block',{'project_id':pid},user_id=uid)
+        selected=[row for row in raw if row.get('chapter_id') in chapters or row.get('tab_id')==tab]
+        if any(row.get('chapter_id') not in chapters or row.get('tab_id') not in (None,tab) for row in selected):
+            raise HostedValidationError('EDITING_SEARCH_DOCUMENT_STRUCTURE_INVALID')
+        if len(selected)>20_000:raise HostedValidationError('EDITING_SEARCH_TOO_LARGE')
+        return selected,chapters
+
     def capture(self,pid,uid,tab):
         pid,uid,tab=require_project_id(pid),require_user_id(uid),require_opaque_id(tab,label='tab_id')
         if self.domain.encrypted_fields is not None or self.domain.encrypted_objects is not None:
@@ -59,8 +70,7 @@ class HostedEditingSearch:
     def status(self,pid,uid,tab):
         generation,physical,labels=self.capture(pid,uid,tab)
         rows=[row for row in physical if FIELD not in row and str(row.get('body') or '').startswith('editing-search/v1:')]
-        blocks=({row['id'] for row in self.physical('manuscript_block',{'project_id':pid},user_id=uid)
-            if row.get('tab_id')==tab} if rows else set())
+        blocks={row['id'] for row in self.document_blocks(pid,uid,tab)[0]} if rows else set()
         result={}
         for kind in PASSES:
             marker=self.marker(labels,physical,kind)
@@ -106,15 +116,11 @@ class HostedEditingSearch:
         if action=='clear':
             matches=[];blocks=None
         else:
-            raw=self.physical('manuscript_block',{'project_id':pid},user_id=uid,field='tab_id',value=tab)
-            if len(raw)>20_000:raise HostedValidationError('EDITING_SEARCH_TOO_LARGE')
-            chapters={row['id'] for row in self.physical('chapter',{'project_id':pid},user_id=uid,field='tab_id',value=tab)}
-            if any(row.get('chapter_id') not in chapters for row in raw):
-                raise HostedValidationError('EDITING_SEARCH_DOCUMENT_STRUCTURE_INVALID')
+            raw,chapters=self.document_blocks(pid,uid,tab)
             chapter_ids={row.get('chapter_id') for row in raw}
             blocks=self.domain.bundled_manuscript(pid,chapter_ids,user_id=uid)
-            if blocks is None:blocks=self.domain.list('manuscript_block',{'project_id':pid},user_id=uid,field='tab_id',value=tab)
-            blocks=[row for row in blocks if row.get('tab_id')==tab and (row.get('block_type') or 'paragraph')=='paragraph']
+            if blocks is None:blocks=self.domain.list('manuscript_block',{'project_id':pid},user_id=uid)
+            blocks=[row for row in blocks if row.get('chapter_id') in chapters and (row.get('block_type') or 'paragraph')=='paragraph']
             if sum(len(row.get('text_content') or '') for row in blocks)>5_000_000 or any(len(row.get('text_content') or '')>100_000 for row in blocks):
                 raise HostedValidationError('EDITING_SEARCH_TOO_LARGE')
             matches=[]

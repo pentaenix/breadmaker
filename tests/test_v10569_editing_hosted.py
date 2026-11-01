@@ -53,6 +53,29 @@ def test_unicode_expanded_vocabulary_publishes_canonical_ranges_and_supports_und
     assert min(r['generation'] for r in rows(editor))>1
 
 
+def test_canonical_chapter_routes_blocks_without_denormalized_tab_and_rejects_conflicts(editor):
+    domain,service,tab,bid,docs=editor
+    def omit(tx):
+        path=('projects',PID,'blocks',bid);row=dict(tx.get(path).data)
+        row.pop('tab_id');tx.set(path,row)
+    docs.run_transaction(omit)
+    _,result=run(editor)
+    assert result['matches']==2
+    assert service.status(PID,UID,tab)['searches']['adverbs']['matches']==2
+    domain.create('annotation',{'project_id':PID},{'block_id':bid,'label_id':result['marker']['id'],
+        'annotation_type':'highlight','body':'editing-search/v1:adverbs','start_offset':13,
+        'end_offset':20,'selected_text':'quietly','stale':False},user_id=UID)
+    assert service.status(PID,UID,tab)['searches']['adverbs']['matches']==3
+    before=rows(editor)
+    def conflict(tx):
+        path=('projects',PID,'blocks',bid);row=dict(tx.get(path).data)
+        row['tab_id']='foreign_tab';tx.set(path,row)
+    docs.run_transaction(conflict)
+    with pytest.raises(HostedValidationError,match='DOCUMENT_STRUCTURE_INVALID'):
+        run(editor,action='recheck')
+    assert rows(editor)==before
+
+
 def test_twenty_thousand_results_keep_existing_small_journal_bounds(editor):
     domain,_,tab,bid,docs=editor
     block=domain.get('manuscript_block',{'project_id':PID,'block_id':bid},user_id=UID)
@@ -243,6 +266,10 @@ def test_real_package_roundtrip_rebuilds_packs_and_keeps_recheck_and_undo(monkey
     tab=domain.list('document_tab',{'project_id':pid},user_id=OWNER)[0]['id']
     block=domain.list('manuscript_block',{'project_id':pid},user_id=OWNER)[0]
     domain.update('manuscript_block',{'project_id':pid,'block_id':block['id']},{'text_content':'quietly and softly'},user_id=OWNER)
+    def canonical_only(tx):
+        path=('projects',pid,'blocks',block['id']);row=dict(tx.get(path).data)
+        row.pop('tab_id');tx.set(path,row)
+    docs.run_transaction(canonical_only)
     # The normal runtime already wraps this port; this isolated fixture does not.
     domain.documents=ActionDocumentStore(docs)
     journal=ActionJournal(domain.documents);token=journal.begin(pid,OWNER)['token']
@@ -257,11 +284,19 @@ def test_real_package_roundtrip_rebuilds_packs_and_keeps_recheck_and_undo(monkey
     assert len(docs.query_collection(('projects',rid,'annotations')))==1
     tid=domain.list('document_tab',{'project_id':rid},user_id=OWNER)[0]['id']
     token=journal.begin(rid,OWNER)['token']
-    with bind_action(token,rid,OWNER):HostedEditingSearch(domain).run(rid,OWNER,dict(scan='adverbs',action='recheck',tab_id=tid))
+    with bind_action(token,rid,OWNER):
+        rechecked=HostedEditingSearch(domain).run(rid,OWNER,dict(scan='adverbs',action='recheck',tab_id=tid))
+    assert rechecked['matches']==2
     journal.finish(rid,OWNER,token)
     journal.restore(rid,OWNER,token,'undo')
     assert {row['selected_text'] for row in domain.list('annotation',{'project_id':rid},user_id=OWNER)}=={'quietly','softly'}
     assert len(domain.list('annotation',{'project_id':pid},user_id=OWNER))==2
+    corrupt=service.export_json(pid,OWNER)
+    for entry in corrupt['entities']['manuscript_block']:entry['data']['tab_id']='foreign_document'
+    published={row.path for row in docs.query_collection(('projects',))}
+    with pytest.raises(ValueError,match='ANNOTATION_CONTEXT_INVALID'):
+        service.import_json(corrupt,OWNER)
+    assert {row.path for row in docs.query_collection(('projects',))}==published
 
 
 def test_source_edit_marks_old_generated_ranges_stale_until_explicit_recheck(editor):
@@ -283,6 +318,10 @@ def test_large_pack_package_restore_retains_bounded_physical_layout_and_recheck(
     domain,_,tab,bid,docs=editor
     block=domain.get('manuscript_block',{'project_id':PID,'block_id':bid},user_id=UID)
     domain.update('manuscript_block',{'project_id':PID,'block_id':bid},{'text_content':'quietly '*10_000},user_id=UID)
+    def canonical_only(tx):
+        path=('projects',PID,'blocks',bid);row=dict(tx.get(path).data)
+        row.pop('tab_id');tx.set(path,row)
+    docs.run_transaction(canonical_only)
     domain.create('manuscript_block',{'project_id':PID},{'tab_id':tab,'chapter_id':block['chapter_id'],
         'block_type':'paragraph','text_content':'softly '*10_000},user_id=UID)
     run(editor)
@@ -298,6 +337,9 @@ def test_large_pack_package_restore_retains_bounded_physical_layout_and_recheck(
     with bind_action(token,rid,UID):
         result=HostedEditingSearch(domain).run(rid,UID,dict(scan='adverbs',action='recheck',tab_id=tab))
     assert result['matches']==20_000
+    ActionJournal(domain.documents).finish(rid,UID,token)
+    ActionJournal(domain.documents).restore(rid,UID,token,'undo')
+    assert len(domain.list('annotation',{'project_id':rid},user_id=UID))==20_000
 
 
 def test_shared_pure_matcher_import_never_boots_a_runtime_or_native_sql():

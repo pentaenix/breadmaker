@@ -452,6 +452,7 @@ class HostedProjectPackageService:
         if not entries:return
         if self.documents.get(('projects',pid)) is not None:raise ValueError('HOSTED_IMPORT_PROJECT_ALREADY_PUBLISHED')
         blocks={row.path[-1]:dict(row.data) for row in self.documents.query_collection(('projects',pid,'blocks'))}
+        chapters={row.path[-1]:dict(row.data) for row in self.documents.query_collection(('projects',pid,'chapters'))}
         labels={row.path[-1] for row in self.documents.query_collection(('projects',pid,'markup_labels'))}
         groups={};seen=set();texts={}
         for item in entries:
@@ -467,7 +468,11 @@ class HostedProjectPackageService:
                 continue
             block=blocks.get(data.get('block_id'));lid=data.get('label_id')
             if block is None or lid not in labels:raise ValueError('HOSTED_PACKAGE_ANNOTATION_TARGET_INVALID')
-            hid='epack_'+match[1];tab=require_opaque_id(block.get('tab_id'),label='tab_id')
+            chapter=chapters.get(block.get('chapter_id'))
+            if chapter is None:raise ValueError('HOSTED_PACKAGE_ANNOTATION_CONTEXT_INVALID')
+            tab=require_opaque_id(chapter.get('tab_id'),label='tab_id')
+            if block.get('tab_id') not in (None,tab):raise ValueError('HOSTED_PACKAGE_ANNOTATION_CONTEXT_INVALID')
+            hid='epack_'+match[1]
             key=(tab,lid,kind);stamp=block['created_at']
             group=groups.setdefault(hid,{'key':key,'stamp':stamp,'rows':[]})
             if group['key']!=key:raise ValueError('HOSTED_PACKAGE_ANNOTATION_CONTEXT_INVALID')

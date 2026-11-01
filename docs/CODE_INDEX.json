@@ -8130,7 +8130,7 @@
     },
     {
       "file": "src/hosted/editing_search.py",
-      "lines": 300,
+      "lines": 306,
       "symbols": [
         {
           "name": "HostedEditingSearch",
@@ -12004,7 +12004,7 @@
     },
     {
       "file": "src/hosted/packages.py",
-      "lines": 706,
+      "lines": 711,
       "symbols": [
         {
           "name": "_fields",

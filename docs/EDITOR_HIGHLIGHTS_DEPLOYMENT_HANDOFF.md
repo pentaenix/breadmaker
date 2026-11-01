@@ -1,5 +1,14 @@
 # Editor Highlights: narration release handoff
 
+## Activation corrective
+
+Hosted scans, status counts and packed-range restoration resolve a block's
+document through its canonical chapter. A missing duplicate block `tab_id` is
+supported; a conflicting duplicate is rejected. Mixed block shapes in one pack
+restore to the same canonical document. Focused regressions cover missing and
+conflicting metadata, 20,000-range mixed-shape restore, recheck and Undo.
+Production activation still requires exact-commit CI and a manual release.
+
 ## Current integration candidate (not deployed)
 
 The reconciled narration branch now includes the expanded vocabulary and a
