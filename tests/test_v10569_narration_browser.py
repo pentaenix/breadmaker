@@ -69,10 +69,12 @@ def browser(home,*,local=False):
         page.wait_for_function('()=>!state.dirty&&!state.saveInFlight')
         yield base,page,pid
     finally:
-        if driver is not None:close_browser(driver,instance)
-        proc.terminate()
-        try:proc.wait(timeout=3)
-        except subprocess.TimeoutExpired:proc.kill();proc.wait(timeout=3)
+        try:
+            if driver is not None:close_browser(driver,instance)
+        finally:
+            proc.terminate()
+            try:proc.wait(timeout=3)
+            except subprocess.TimeoutExpired:proc.kill();proc.wait(timeout=3)
 
 
 def test_hosted_narration_publish_thin_reuse_delete_undo_without_manuscript_mutation(tmp_path):

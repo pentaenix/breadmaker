@@ -19534,7 +19534,7 @@
     },
     {
       "file": "static/js/features/manuscript/narration-voices.js",
-      "lines": 33,
+      "lines": 36,
       "symbols": [
         {
           "name": "narrationInterfaceLanguage",
@@ -19552,35 +19552,40 @@
           "line": 6
         },
         {
+          "name": "narrationVoiceSelectable",
+          "kind": "function",
+          "line": 9
+        },
+        {
           "name": "narrationEffectiveVoice",
           "kind": "function",
-          "line": 7
+          "line": 10
         },
         {
           "name": "loadNarrationVoiceCatalog",
           "kind": "function",
-          "line": 12
+          "line": 15
         },
         {
           "name": "narrationVoiceOptionLabel",
           "kind": "function",
-          "line": 24
+          "line": 27
         },
         {
           "name": "narrationVoiceOptions",
           "kind": "function",
-          "line": 25
+          "line": 28
         },
         {
           "name": "syncNarrationVoiceChoices",
           "kind": "function",
-          "line": 28
+          "line": 31
         }
       ]
     },
     {
       "file": "static/js/features/manuscript/narration.js",
-      "lines": 266,
+      "lines": 269,
       "symbols": [
         {
           "name": "narrationHosted",
@@ -19780,62 +19785,62 @@
         {
           "name": "openNarrationActionMenu",
           "kind": "function",
-          "line": 119
+          "line": 121
         },
         {
           "name": "narrationReplacementSources",
           "kind": "function",
-          "line": 129
+          "line": 131
         },
         {
           "name": "narrateScope",
           "kind": "function",
-          "line": 130
+          "line": 132
         },
         {
           "name": "deleteNarrationScope",
           "kind": "function",
-          "line": 159
+          "line": 162
         },
         {
           "name": "narrationFail",
           "kind": "function",
-          "line": 174
+          "line": 177
         },
         {
           "name": "deleteNarration",
           "kind": "function",
-          "line": 175
+          "line": 178
         },
         {
           "name": "playNarration",
           "kind": "function",
-          "line": 184
+          "line": 187
         },
         {
           "name": "resumeNarrationPlayback",
           "kind": "function",
-          "line": 192
+          "line": 195
         },
         {
           "name": "renderNarrations",
           "kind": "function",
-          "line": 202
+          "line": 205
         },
         {
           "name": "generateNarrations",
           "kind": "function",
-          "line": 214
+          "line": 217
         },
         {
           "name": "openNarrationPanel",
           "kind": "function",
-          "line": 233
+          "line": 236
         },
         {
           "name": "initializeNarrationUI",
           "kind": "function",
-          "line": 246
+          "line": 249
         }
       ]
     },

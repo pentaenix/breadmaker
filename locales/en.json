@@ -129,6 +129,7 @@
     "narration.voice_santa": "Santa · Spanish · male",
     "narration.generating_progress": "Estimated generation progress",
     "narration.loading_voice": "Loading voice…",
+    "narration.preparing_queue": "Preparing narration…",
     "narration.estimating": "Estimating time…",
     "narration.remaining": "About {seconds}s remaining",
     "narration.delete": "Delete recording",

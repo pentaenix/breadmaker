@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 let pid='one',fail=false;const stored=new Map(),writes=[];
-const context={currentProjectIdentity:()=>pid,async api(path,options){const project=options.headers['X-Breadmaker-Project'];if(options.method==='PUT'){if(fail)throw Error('offline');const value=JSON.parse(options.body).value;stored.set(project,value);writes.push(project);return {ok:true}}return {value:stored.get(project)}},applyNarrationPreferences(value){vm.runInContext('narrationPreferences.value=next',Object.assign(context,{next:value}))}};
+const context={narrationHosted:()=>false,currentProjectIdentity:()=>pid,async api(path,options){const project=options.headers['X-Breadmaker-Project'];if(options.method==='PUT'){if(fail)throw Error('offline');const value=JSON.parse(options.body).value;stored.set(project,value);writes.push(project);return {ok:true}}return {value:stored.get(project)}},applyNarrationPreferences(value){vm.runInContext('narrationPreferences.value=next',Object.assign(context,{next:value}))}};
 vm.createContext(context);vm.runInContext(await readFile(new URL('../../static/js/features/manuscript/narration-voices.js',import.meta.url),'utf8'),context);vm.runInContext(await readFile(new URL('../../static/js/features/manuscript/narration-preferences.js',import.meta.url),'utf8'),context);
 const run=source=>vm.runInContext(source,context);
 assert.equal(run('normalizeNarrationPreferences({gpu:"false",speed:100,voice:"bad"}).gpu'),true);
@@ -28,6 +28,18 @@ context.i18nCatalog.code='es';assert.equal(run('narrationLanguageVoices(testCata
 context.i18nCatalog.code='fr';assert.equal(run('narrationLanguageVoices(testCatalog.voices).length'),1);assert.equal(run('narrationEffectiveVoice()'),'ff_siwis');
 assert.equal(run('narrationLanguageVoices(testCatalog.voices,true).length'),44);
 context.i18nCatalog.code='en';
+context.escapeHtml=value=>String(value).replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+context.savedPreferences=run('narrationPreferences.value');
+context.uncachedVoice={...voiceCatalog.voices.find(voice=>voice.id==='am_michael'),installed:false};
+run('narrationVoiceCatalog.value={voices:[uncachedVoice]};narrationPreferences.value=normalizeNarrationPreferences({voice:"am_michael"})');
+assert.equal(run('narrationVoiceSelectable(uncachedVoice)'),false,'local missing voices still require installation');
+assert.match(run('narrationVoiceOptions([uncachedVoice])'),/disabled/);
+context.narrationHosted=()=>true;
+assert.equal(run('narrationVoiceSelectable(uncachedVoice)'),true,'hosted public voices load on demand');
+assert.equal(run('narrationEffectiveVoice()'),'am_michael');
+assert.doesNotMatch(run('narrationVoiceOptions([uncachedVoice])'),/disabled/);
+context.narrationHosted=()=>false;
+run('narrationVoiceCatalog.value=testCatalog;narrationPreferences.value=savedPreferences');
 const html=await readFile(new URL('../../static/index.html',import.meta.url),'utf8');
 const speedOptions=[...html.match(/<select id="narrationSpeed"[^>]*>(.*?)<\/select>/s)[1].matchAll(/<option value="([\d.]+)"/g)].map(match=>Number(match[1]));
 assert.deepEqual(speedOptions,Array.from(run('NARRATION_SPEEDS')),'Panel and settings speed choices must agree');
@@ -50,7 +62,6 @@ const keys=new Set();for(const file of files){const source=await readFile(new UR
 keys.delete('narration.wav'); // Upload filename, not a UI string.
 keys.delete('narration.accent_');keys.delete('narration.gender_');keys.delete('narration.language_');
 // Validate the actual dynamically constructed markers, not just static keys.
-context.escapeHtml=value=>String(value).replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;');
 for(const match of run('narrationVoiceOptions(testCatalog.voices)').matchAll(/\{\{i18n:([^}]+)\}\}/g))keys.add(match[1]);
 for(const voice of voiceCatalog.voices){keys.add('narration.accent_'+voice.accent);keys.add('narration.gender_'+voice.gender)}
 const english=JSON.parse(await readFile(new URL('../../locales/en.json',import.meta.url),'utf8')).strings;

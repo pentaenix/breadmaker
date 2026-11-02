@@ -129,6 +129,7 @@
     "narration.voice_santa": "Santa · 西班牙语 · 男声",
     "narration.generating_progress": "预计生成进度",
     "narration.loading_voice": "正在加载声音…",
+    "narration.preparing_queue": "正在准备朗读…",
     "narration.estimating": "正在估算时间…",
     "narration.remaining": "预计还需{seconds}秒",
     "narration.delete": "删除录音",

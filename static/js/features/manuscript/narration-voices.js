@@ -4,10 +4,13 @@ const NARRATION_LANGUAGES=['en-us','es','fr','it','ja','pt-BR','zh-CN'];
 function narrationInterfaceLanguage(){return ({en:'en-us',es:'es',fr:'fr',it:'it',ja:'ja','pt-BR':'pt-BR','zh-CN':'zh-CN'})[i18nCatalog.code]||'en-us'}
 function narrationVoiceLanguage(id){return ({a:'en-us',b:'en-us',e:'es',f:'fr',i:'it',j:'ja',p:'pt-BR',z:'zh-CN'})[String(id)[0]]}
 function narrationLanguageVoices(voices,all=narrationPreferences.value.showAllLanguages){return all?voices:voices.filter(voice=>voice.language===narrationInterfaceLanguage())}
+// Hosted inference fetches missing PUBLIC pinned voice bytes on demand. Device
+// cache presence must not make a supported visible voice impossible to select.
+function narrationVoiceSelectable(voice){return narrationHosted()||voice.installed!==false}
 function narrationEffectiveVoice(value=narrationPreferences.value){
   const language=narrationInterfaceLanguage(),catalog=narrationVoiceCatalog.value?.voices||[],available=narrationLanguageVoices(catalog.filter(voice=>value.visibleVoices.includes(voice.id)),value.showAllLanguages);
   const preferred=value.showAllLanguages||narrationVoiceLanguage(value.voice)===language?value.voice:value.voicesByLanguage[language];
-  return available.find(voice=>voice.id===preferred&&voice.installed!==false)?.id||available.find(voice=>voice.installed!==false)?.id||available[0]?.id||'';
+  return available.find(voice=>voice.id===preferred&&narrationVoiceSelectable(voice))?.id||available.find(narrationVoiceSelectable)?.id||available[0]?.id||'';
 }
 async function loadNarrationVoiceCatalog(refresh=false){
   if(!refresh&&narrationVoiceCatalog.value)return narrationVoiceCatalog.value;
@@ -23,7 +26,7 @@ async function loadNarrationVoiceCatalog(refresh=false){
 }
 function narrationVoiceOptionLabel(voice){return `${voice.name} · ${i18nText(`narration.accent_${voice.accent}`)} · ${i18nText(`narration.gender_${voice.gender}`)}`}
 function narrationVoiceOptions(voices){
-  return NARRATION_LANGUAGES.map(language=>{const items=voices.filter(voice=>voice.language===language),languageKey='narration.language_'+(language==='en-us'?'en':language.replace('-','_'));return items.length?`<optgroup label="{{i18n:${languageKey}}}">${items.map(voice=>`<option value="${escapeHtml(voice.id)}" ${voice.installed===false?'disabled':''}>${escapeHtml(voice.name)} · {{i18n:${'narration.accent_'+voice.accent}}} · {{i18n:${'narration.gender_'+voice.gender}}}</option>`).join('')}</optgroup>`:''}).join('');
+  return NARRATION_LANGUAGES.map(language=>{const items=voices.filter(voice=>voice.language===language),languageKey='narration.language_'+(language==='en-us'?'en':language.replace('-','_'));return items.length?`<optgroup label="{{i18n:${languageKey}}}">${items.map(voice=>`<option value="${escapeHtml(voice.id)}" ${narrationVoiceSelectable(voice)?'':'disabled'}>${escapeHtml(voice.name)} · {{i18n:${'narration.accent_'+voice.accent}}} · {{i18n:${'narration.gender_'+voice.gender}}}</option>`).join('')}</optgroup>`:''}).join('');
 }
 function syncNarrationVoiceChoices(){
   const catalog=narrationVoiceCatalog.value;if(!catalog)return;

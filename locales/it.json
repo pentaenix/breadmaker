@@ -129,6 +129,7 @@
     "narration.voice_santa": "Santa · Spagnolo · maschile",
     "narration.generating_progress": "Avanzamento stimato della generazione",
     "narration.loading_voice": "Caricamento della voce…",
+    "narration.preparing_queue": "Preparazione della narrazione…",
     "narration.estimating": "Stima del tempo…",
     "narration.remaining": "Circa {seconds} s rimanenti",
     "narration.delete": "Elimina registrazione",

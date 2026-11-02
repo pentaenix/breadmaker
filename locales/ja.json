@@ -129,6 +129,7 @@
     "narration.voice_santa": "Santa · スペイン語 · 男性",
     "narration.generating_progress": "生成の推定進行状況",
     "narration.loading_voice": "音声を読み込み中…",
+    "narration.preparing_queue": "ナレーションを準備中…",
     "narration.estimating": "所要時間を計算中…",
     "narration.remaining": "残り約{seconds}秒",
     "narration.delete": "録音を削除",
