@@ -167,8 +167,23 @@ function failDeleteAllProgress(error){
   $('#modalActions').innerHTML=`<button id="closeFailedDeleteAll" type="button">${escapeHtml(i18nText('ui.close'))}</button>`;$('#closeFailedDeleteAll').onclick=()=>closeModal();
 }
 
+async function trashHostedProject(active){
+  return withManuscriptMutationBarrier(async()=>{
+    const pid=String(active.id);
+    if(String(currentProjectIdentity())!==pid)return;
+    await flushSave();
+    if(String(currentProjectIdentity())!==pid)return;
+    // The server transaction checks current owner/CAS and only tombstones the
+    // project. The confirmed recoverable action needs no global-purge challenge.
+    await api(`/api/projects/${pid}`,{method:'DELETE'});
+    if(String(currentProjectIdentity())!==pid)return;
+    clearManuscriptReadCache();
+    location.replace('/');
+  });
+}
+
 async function runDangerDelete(action,active,onReturn=openProjectSettings){
-  const deletingAll=action==='delete_all_data';
+  const deletingAll=action==='delete_all_data',hostedTrash=runtimeSupports('hosted_projects')&&action==='delete_project';
   if(!active&&!deletingAll)return;
   const firstMessage=deletingAll
     ?'Delete every Breadmaker-managed project, Recovery Backup, History state, Checkpoint, Cut, export, log, and local preference on this computer? External files you exported elsewhere are not touched.'
@@ -176,6 +191,7 @@ async function runDangerDelete(action,active,onReturn=openProjectSettings){
   const first=await dangerFirstDialog(deletingAll?'Delete All Breadmaker Data':'Delete Project',firstMessage,{allowExternalErase:deletingAll});
   if(!first.confirmed){if(onReturn)await onReturn();return}
   try{
+    if(hostedTrash){await trashHostedProject(active);return}
     const challenge=await api('/api/danger/challenge',{method:'POST',body:JSON.stringify({action,...(!deletingAll&&active?.id?{project_id:active.id}:{})})});
     const typed=await dangerCodeDialog(deletingAll?'Final Confirmation':'Delete Project',challenge.code,deletingAll?'Delete All Data':'Delete Project');
     if(typed===null){if(onReturn)await onReturn();return}
@@ -202,7 +218,7 @@ async function runDangerDelete(action,active,onReturn=openProjectSettings){
     }
     const result=await api(`/api/projects/${active.id}`,{method:'DELETE',body:payload});
     const next=String(result?.active_project_id||'');if(runtimeSupports('hosted_projects'))location.href=next?hostedProjectRoute(next,'manuscript'):'/';else location.href='/';
-  }catch(error){toast(error.message||'Delete action failed.',5000);if(onReturn)await onReturn()}
+  }catch(error){toast(error.message||'Delete action failed.',5000);if(onReturn&&!hostedTrash)await onReturn()}
 }
 
 async function openAllProjects(onDismiss=null){

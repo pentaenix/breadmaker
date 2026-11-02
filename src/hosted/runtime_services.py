@@ -788,7 +788,7 @@ class HostedCloudProjectRepository:
             pid=str(membership.path[-3])
             project=self.documents.get(("projects",pid))
             if project is not None and str(project.data.get("status") or "") == "deleted":
-                out.append(self._view(self.authority._open_project(pid, project.data)))
+                out.append({**self._view(self.authority._open_project(pid, project.data)), "trash_id":pid})
         return sorted(out,key=lambda row:str(row.get("deleted_at") or ""),reverse=True)
 
     def restore_from_trash(self, trash_id: str, *, user_id: str | None = None) -> dict[str, Any]:

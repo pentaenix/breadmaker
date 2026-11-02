@@ -15,6 +15,10 @@ Project administration is package-owned in 10.3.5. The package keeps destructive
   Both rename controls save pending writing first. Hosted renames reopen the
   active route from server authority before accepting more input; a new project
   revision must never be attached to an old manuscript snapshot.
+  Hosted project deletion uses the existing recoverable owner-only tombstone
+  after confirmation and a successful manuscript save. Save conflicts keep their
+  recovery dialog and text; failed deletion keeps the current project open.
+  Global/account deletion and native typed-code confirmation remain separate.
 - `editing_search.js` — local-only experimental editing actions, existing marker
   navigation and structural Undo orchestration; no continuous/background scan.
 - `export_recovery.js` — PDF export, project verification, and Recovery-backup UI.

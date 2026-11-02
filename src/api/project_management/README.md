@@ -22,3 +22,7 @@ facades recheck the active account and erasure lock before staging and final
 publication. Membership is created last; interruption leaves no readable project.
 An in-flight object upload can finish after a freeze, but its pointer cannot be
 published. This does not enable physical purge or encrypted-pilot import.
+
+Hosted Trash entries expose the project ID as `trash_id` for the shared Restore
+control. Delete and Restore retain current owner checks, transactional state
+changes and account-erasure fences; neither operation physically deletes content.

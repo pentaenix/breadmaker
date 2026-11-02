@@ -22824,7 +22824,7 @@
     },
     {
       "file": "static/js/features/projects/lifecycle.js",
-      "lines": 221,
+      "lines": 237,
       "symbols": [
         {
           "name": "openExperimentalFeatures",
@@ -22932,24 +22932,29 @@
           "line": 163
         },
         {
-          "name": "runDangerDelete",
+          "name": "trashHostedProject",
           "kind": "function",
           "line": 169
         },
         {
+          "name": "runDangerDelete",
+          "kind": "function",
+          "line": 184
+        },
+        {
           "name": "openAllProjects",
           "kind": "function",
-          "line": 207
+          "line": 223
         },
         {
           "name": "render",
           "kind": "function",
-          "line": 211
+          "line": 227
         },
         {
           "name": "openProjectTrash",
           "kind": "function",
-          "line": 219
+          "line": 235
         }
       ]
     },
