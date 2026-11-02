@@ -26,9 +26,28 @@ function renameCurrentProject(onDismiss=null) {
   showModal('Rename Project', `<div class="field"><label>{{i18n:dynamic.html.text.label.450ca425}}</label><input id="renameProjectName" value="${escapeHtml(active.name)}"></div>`, '<button id="renameProjectConfirm">{{i18n:dynamic.html.text.button.e1458dad}}</button>', onDismiss);
   $('#renameProjectConfirm').onclick = async () => {
     const name=$('#renameProjectName').value.trim(); if(!name)return;
-    await api(`/api/projects/${active.id}`, {method:'PATCH', body:JSON.stringify({name})});
+    if(!await commitWorkspaceProjectRename(active,name)||runtimeSupports('hosted_persistence'))return;
     await refresh(false); state.workspace=await api('/api/workspace'); closeModal();
   };
+}
+
+async function commitWorkspaceProjectRename(active,name){
+  return withManuscriptMutationBarrier(async()=>{
+    await flushSave();
+    if(String(currentProjectIdentity())!==String(active.id))return false;
+    await api(`/api/projects/${active.id}`,{method:'PATCH',body:JSON.stringify({name})});
+    active.name=name;
+    if(String(currentProjectIdentity())!==String(active.id))return false;
+    document.title=name;
+    if(runtimeSupports('hosted_persistence')){
+      // Rename advances the project's write-CAS. Reopen from current authority;
+      // never attach its new revision to the old manuscript or accept more input
+      // while the old page is navigating. Native chapter revisions are separate.
+      clearManuscriptReadCache();
+      openWorkspaceProject(active.id,{replace:true,view:currentView()});
+    }
+    return true;
+  });
 }
 
 async function importProjectPackage(event) {

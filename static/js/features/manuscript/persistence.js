@@ -92,7 +92,7 @@ async function flushSave(){
     if(state.viewMode==='scene'){for(const id of [...state.dirtyChapters]){if((state.chapterDirtyGeneration.get(id)||0)<=sceneGeneration){state.dirtyChapters.delete(id);state.chapterDirtyGeneration.delete(id);state.chapterSavedGeneration.set(id,sceneGeneration)}}}
     state.dirty=state.dirtyChapters.size>0;if(!state.dirty)setSaveState('Saved');else setSaveState('Saving…');renderChapterTree();
   }catch(error){for(const [id,generation] of pending){state.dirtyChapters.add(id);state.chapterDirtyGeneration.set(id,Math.max(state.chapterDirtyGeneration.get(id)||0,generation))}state.dirty=true;setSaveState('Save failed');toast('Save failed. Your text remains in this window.',5000);throw error}finally{state.saveInFlight=null}})();
-  try{await state.saveInFlight}catch(error){clearTimeout(state.saveTimer);if(error.code==='MANUSCRIPT_CONFLICT_001')showManuscriptConflict(error);else if(error.status===409)showLeaseLost(false);else state.saveTimer=setTimeout(()=>flushSave().catch(()=>{}),1500);throw error}
+  try{await state.saveInFlight}catch(error){clearTimeout(state.saveTimer);if(error.code==='MANUSCRIPT_CONFLICT_001'||(runtimeSupports('hosted_persistence')&&error.status===409&&error.message==='HOSTED_GENERATION_CONFLICT'))showManuscriptConflict(error);else if(error.status===409)showLeaseLost(false);else state.saveTimer=setTimeout(()=>flushSave().catch(()=>{}),1500);throw error}
   if(state.dirty||state.dirtyChapters.size)return flushSave();
   kickHostedReadCache();
   if(state.split?.type==='checkpoint')scheduleCheckpointSplitRender();if(state.split?.type==='history')scheduleHistorySplitRender();

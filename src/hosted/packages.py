@@ -483,6 +483,9 @@ class HostedProjectPackageService:
                         and text[start:end]==data.get('selected_text')):
                     data['source_generation']=block['generation']
                 else:data['stale']=True
+            # Native packages have no provider generations. Fresh ranges were
+            # verified above; stale ranges stay explicitly stale after rebinding.
+            data.setdefault('source_generation',block['generation'])
             group['rows'].append({**data,'id':iid,'annotation_id':iid,'project_id':pid,'chapter_id':None,
                 'created_at':stamp,'updated_at':stamp,'generation':1})
         if len(groups)>MAX_PACKS or sum(len(group['rows']) for group in groups.values())>MAX_ROWS:
@@ -657,6 +660,8 @@ class HostedProjectPackageService:
         finally:con.close()
 
     def _translate_legacy_tables(self,con:sqlite3.Connection,pid:str,user_id:str) -> None:
+        from hosted.portability_editing import native_categories,native_annotation_ids
+        editing_categories=native_categories(con);annotations=[]
         contract=json.loads((__import__('pathlib').Path(__file__).resolve().parents[2]/'docs'/'HOSTED_DATA_MODEL_V1.json').read_text(encoding='utf-8'))
         mappings=[row for row in contract['schema42_mappings'] if row['logical_entity'] in MODELS and row['logical_entity'] not in _SKIP and row['logical_entity'] in _ID_FIELDS]
         mappings.sort(key=lambda row:(len(MODELS[row['logical_entity']].path_template.split('/')),row['logical_entity']))
@@ -681,6 +686,8 @@ class HostedProjectPackageService:
                 if not old:continue
                 new_id=f"{_ID_FIELDS[logical][1]}legacy_{old}"
                 id_maps[(logical,old)]=new_id
+        for old,eid in native_annotation_ids(pid,rows_by_entity).items():
+            id_maps[('annotation',old)]=eid
         for mapping in mappings:
             logical=mapping['logical_entity']
             model=MODELS[logical];fields=_fields(model.path_template);final=fields[-1]
@@ -708,4 +715,8 @@ class HostedProjectPackageService:
                 # as a portable opaque value rather than treating SQLite bytes as hosted authority.
                 if logical=='checkpoint' and 'snapshot_blob' in payload:
                     payload['snapshot']={'legacy_snapshot_blob':payload.pop('snapshot_blob')}
-                self._stage_entity(logical,ids,payload,entity_id=eid)
+                if logical=='markup_label' and old in editing_categories:
+                    payload['editing_search_categories']=editing_categories[old]
+                if logical=='annotation':annotations.append({'ids':{**ids,final:eid},'data':{**payload,'id':eid}})
+                else:self._stage_entity(logical,ids,payload,entity_id=eid)
+        self._stage_annotation_records(pid,annotations)

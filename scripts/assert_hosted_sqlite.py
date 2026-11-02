@@ -29,8 +29,13 @@ def portable_package():
         'chapter': [record('chapter_id', 'chapter_fixture', tab_id='tab_fixture',
                            position=0, title='Synthetic chapter')],
         'manuscript_block': [record('block_id', 'block_fixture', tab_id='tab_fixture',
-            chapter_id='chapter_fixture', position=0, text_content='Disposable Ω text',
-            content_html='<p>Disposable Ω text</p>', block_type='paragraph')],
+            chapter_id='chapter_fixture', position=0, text_content='Disposable Ω quietly text',
+            content_html='<p>Disposable Ω quietly text</p>', block_type='paragraph')],
+        'markup_label': [record('label_id', 'label_fixture', name='Synthetic marker', color='#335577',
+                                editing_search_categories=['adverbs'])],
+        'annotation': [record('annotation_id', 'annotation_fixture', block_id='block_fixture',
+            label_id='label_fixture', annotation_type='highlight', body='editing-search/v1:adverbs',
+            source_generation=1, start_offset=13, end_offset=20, selected_text='quietly', stale=False)],
     }
     source = io.BytesIO()
     with zipfile.ZipFile(source, 'w') as archive:
@@ -46,9 +51,15 @@ def portable_package():
     with sqlite3.connect(':memory:') as restored:
         restored.deserialize(raw)
         if (restored.execute('select text_content from manuscript_blocks').fetchall()
-                != [('Disposable Ω text',)] or restored.execute('PRAGMA foreign_key_check').fetchall()
+                != [('Disposable Ω quietly text',)] or restored.execute('PRAGMA foreign_key_check').fetchall()
                 or restored.execute('PRAGMA integrity_check').fetchone() != ('ok',)):
             raise ValueError('SQLITE_PORTABLE_PACKAGE_ROUNDTRIP_FAILED')
+        if restored.execute('select selected_text,stale from annotations').fetchall() != [('quietly', 0)]:
+            raise ValueError('SQLITE_PORTABLE_ANNOTATIONS_FAILED')
+        registry = json.loads(restored.execute("select value_json from ui_state where key='editing-search-markers/v1'").fetchone()[0])
+        marker = restored.execute('select id,created_at from markup_labels').fetchone()
+        if registry.get('adverbs') != dict(id=marker[0], created_at=marker[1]):
+            raise ValueError('SQLITE_PORTABLE_MARKER_OWNERSHIP_FAILED')
         if restored.execute('select value from storage_meta where key="schema_version"').fetchone() != ('42',):
             raise ValueError('SQLITE_PORTABLE_SCHEMA_FAILED')
 

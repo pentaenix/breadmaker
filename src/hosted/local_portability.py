@@ -21,6 +21,7 @@ from typing import Any, Mapping
 from storage.schema import SCHEMA_SQL, SCHEMA_VERSION
 from hosted.portability_history import (HistoryShapeError, prepare_review_rounds,
     checkpoint_v1, finalize_review_round_hashes)
+from hosted.portability_editing import project_row, REGISTRY as EDITING_REGISTRY
 
 _MAX_INPUT = 64 * 1024 * 1024
 _MAX_EXPANDED = 192 * 1024 * 1024
@@ -305,6 +306,7 @@ def to_local_package(source: bytes, *, project_generation: int, created_at: str 
             raise LocalPortabilityError('HOSTED_PORTABLE_ENTITY_LIMIT')
         # For foreign keys the target must have been enumerated above. There is
         # no fallback to provider-specific IDs or to NULL for a non-null source.
+        editing_registry = {}
         for table, identity, row, meta in planned:
             cols = _columns(con, table)
             foreign = _foreign(con, table)
@@ -321,6 +323,10 @@ def to_local_package(source: bytes, *, project_generation: int, created_at: str 
                     row = checkpoint_v1(row, ids, assets, created)
                 except HistoryShapeError as exc:
                     raise LocalPortabilityError(str(exc)) from exc
+            try:
+                row = project_row(table, row, meta['id'], created, editing_registry)
+            except ValueError as exc:
+                raise LocalPortabilityError(str(exc)) from exc
             # Hosted document Tabs encode the primary Manuscript role using
             # `kind`; local Schema 42 uses `is_manuscript`. This role is not
             # merely decorative: local project invariants require exactly one.
@@ -405,6 +411,9 @@ def to_local_package(source: bytes, *, project_generation: int, created_at: str 
                 con.execute(f'INSERT INTO "{table}" ({quoted}) VALUES ({markers})', [values[k] for k in fields])
             except sqlite3.Error as exc:
                 raise LocalPortabilityError(f'HOSTED_PORTABLE_SCHEMA_CONFLICT:{meta["logical"]}') from exc
+        if editing_registry:
+            con.execute('INSERT INTO ui_state(project_id,key,value_json,updated_at) VALUES(1,?,?,?)',
+                        (EDITING_REGISTRY, json.dumps(editing_registry, sort_keys=True), when))
         try:
             finalize_review_round_hashes(con, {str(ids['review_snapshots', sid]) for sid in review_round_ids})
         except HistoryShapeError as exc:

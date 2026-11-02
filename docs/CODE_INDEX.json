@@ -11252,57 +11252,57 @@
     },
     {
       "file": "src/hosted/local_portability.py",
-      "lines": 475,
+      "lines": 484,
       "symbols": [
         {
           "name": "LocalPortabilityError",
           "kind": "class",
-          "line": 57
+          "line": 58
         },
         {
           "name": "_byte_value",
           "kind": "function",
-          "line": 61
+          "line": 62
         },
         {
           "name": "_scalar",
           "kind": "function",
-          "line": 77
+          "line": 78
         },
         {
           "name": "_archive_members",
           "kind": "function",
-          "line": 90
+          "line": 91
         },
         {
           "name": "_mapping",
           "kind": "function",
-          "line": 130
+          "line": 131
         },
         {
           "name": "_columns",
           "kind": "function",
-          "line": 135
+          "line": 136
         },
         {
           "name": "_foreign",
           "kind": "function",
-          "line": 140
+          "line": 141
         },
         {
           "name": "_rebase_typed_reference",
           "kind": "function",
-          "line": 156
+          "line": 157
         },
         {
           "name": "_rebase_non_fk_semantics",
           "kind": "function",
-          "line": 167
+          "line": 168
         },
         {
           "name": "to_local_package",
           "kind": "function",
-          "line": 226
+          "line": 227
         }
       ]
     },
@@ -12004,7 +12004,7 @@
     },
     {
       "file": "src/hosted/packages.py",
-      "lines": 711,
+      "lines": 722,
       "symbols": [
         {
           "name": "_fields",
@@ -12067,6 +12067,27 @@
           "name": "HostedPortabilityAuditService",
           "kind": "class",
           "line": 32
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/portability_editing.py",
+      "lines": 84,
+      "symbols": [
+        {
+          "name": "project_row",
+          "kind": "function",
+          "line": 13
+        },
+        {
+          "name": "native_categories",
+          "kind": "function",
+          "line": 34
+        },
+        {
+          "name": "native_annotation_ids",
+          "kind": "function",
+          "line": 58
         }
       ]
     },
@@ -22787,7 +22808,7 @@
     },
     {
       "file": "static/js/features/projects/lifecycle.js",
-      "lines": 202,
+      "lines": 221,
       "symbols": [
         {
           "name": "openExperimentalFeatures",
@@ -22810,104 +22831,109 @@
           "line": 22
         },
         {
-          "name": "importProjectPackage",
+          "name": "commitWorkspaceProjectRename",
           "kind": "function",
           "line": 33
         },
         {
+          "name": "importProjectPackage",
+          "kind": "function",
+          "line": 52
+        },
+        {
           "name": "currentJsonImportContext",
           "kind": "function",
-          "line": 42
+          "line": 61
         },
         {
           "name": "beginJsonImport",
           "kind": "function",
-          "line": 46
+          "line": 65
         },
         {
           "name": "importJson",
           "kind": "function",
-          "line": 49
+          "line": 68
         },
         {
           "name": "count",
           "kind": "function",
-          "line": 55
+          "line": 74
         },
         {
           "name": "importCutsPackage",
           "kind": "function",
-          "line": 80
+          "line": 99
         },
         {
           "name": "openProjectMetadata",
           "kind": "function",
-          "line": 93
+          "line": 112
         },
         {
           "name": "row",
           "kind": "function",
-          "line": 99
+          "line": 118
         },
         {
           "name": "dangerFirstDialog",
           "kind": "function",
-          "line": 109
+          "line": 128
         },
         {
           "name": "dangerCodeDialog",
           "kind": "function",
-          "line": 113
+          "line": 132
         },
         {
           "name": "sync",
           "kind": "function",
-          "line": 120
+          "line": 139
         },
         {
           "name": "stopDeleteAllProgress",
           "kind": "function",
-          "line": 127
+          "line": 146
         },
         {
           "name": "setDeleteAllProgress",
           "kind": "function",
-          "line": 128
+          "line": 147
         },
         {
           "name": "beginDeleteAllProgress",
           "kind": "function",
-          "line": 133
+          "line": 152
         },
         {
           "name": "completeDeleteAllProgress",
           "kind": "function",
-          "line": 140
+          "line": 159
         },
         {
           "name": "failDeleteAllProgress",
           "kind": "function",
-          "line": 144
+          "line": 163
         },
         {
           "name": "runDangerDelete",
           "kind": "function",
-          "line": 150
+          "line": 169
         },
         {
           "name": "openAllProjects",
           "kind": "function",
-          "line": 188
+          "line": 207
         },
         {
           "name": "render",
           "kind": "function",
-          "line": 192
+          "line": 211
         },
         {
           "name": "openProjectTrash",
           "kind": "function",
-          "line": 200
+          "line": 219
         }
       ]
     },
