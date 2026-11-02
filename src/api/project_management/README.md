@@ -14,3 +14,11 @@
 - `health.py` — deep project verification and storage accounting.
 
 Do not recreate `backend/project_routes.py` or add compatibility re-exports to this package.
+
+Hosted native/v3 package restore uses `hosted.packages` and server-only
+`hosted.import_staging`: an actor-bound durable reservation allows staging only
+under its derived unpublished project ID. Production document/object erasure
+facades recheck the active account and erasure lock before staging and final
+publication. Membership is created last; interruption leaves no readable project.
+An in-flight object upload can finish after a freeze, but its pointer cannot be
+published. This does not enable physical purge or encrypted-pilot import.

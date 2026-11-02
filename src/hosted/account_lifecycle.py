@@ -13,6 +13,7 @@ import re
 from hosted.firestore.contracts import (DocumentAlreadyExists, DocumentConflict,
     ProjectUnavailable, StoredDocument, require_document_path)
 from hosted.storage.keys import require_object_name
+from hosted.import_staging import permits_unpublished_import
 
 _USER = re.compile(r'usr_[0-9a-f]{32}')
 _USER_FIELDS = frozenset({'user_id', 'owner_user_id', 'actor_user_id'})
@@ -132,8 +133,12 @@ class _LifecycleTransaction:
             if row is not None and (row.data.get('status') == 'erasure_pending'
                                     or row.data.get('_bm_erasure_operation')):
                 raise ProjectUnavailable('PROJECT_NOT_FOUND')
-            if row is None and not self.pending.get(root):
-                raise ProjectUnavailable('PROJECT_NOT_FOUND')
+            if row is None:
+                # Recheck the import owner even at final root publication; a
+                # pending root is not permission to cross an account freeze.
+                staging = permits_unpublished_import(self, pid, actor)
+                if not self.pending.get(root) and not staging:
+                    raise ProjectUnavailable('PROJECT_NOT_FOUND')
         for path, data in self.pending.items():
             before = self._original(path)
             if data is None:
@@ -182,7 +187,10 @@ class AccountLifecycleObjectStore:
         def check(tx):
             if parts[0] == 'projects':
                 row = tx.get(('projects', parts[1]))
-                if row is None or row.data.get('_bm_erasure_operation') or row.data.get('status') == 'erasure_pending':
+                if row is None:
+                    if not permits_unpublished_import(tx, parts[1], actor):
+                        raise ProjectUnavailable('PROJECT_NOT_FOUND')
+                elif row.data.get('_bm_erasure_operation') or row.data.get('status') == 'erasure_pending':
                     raise ProjectUnavailable('PROJECT_NOT_FOUND')
             elif parts[0] == 'users' and _USER.fullmatch(parts[1]):
                 target = tx.get(('users', parts[1]))

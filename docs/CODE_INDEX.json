@@ -7834,22 +7834,22 @@
     },
     {
       "file": "src/hosted/account_lifecycle.py",
-      "lines": 198,
+      "lines": 206,
       "symbols": [
         {
           "name": "_LifecycleTransaction",
           "kind": "class",
-          "line": 22
+          "line": 23
         },
         {
           "name": "AccountLifecycleDocumentStore",
           "kind": "class",
-          "line": 147
+          "line": 152
         },
         {
           "name": "AccountLifecycleObjectStore",
           "kind": "class",
-          "line": 164
+          "line": 169
         }
       ]
     },
@@ -11251,6 +11251,22 @@
       ]
     },
     {
+      "file": "src/hosted/import_staging.py",
+      "lines": 41,
+      "symbols": [
+        {
+          "name": "package_import_staging",
+          "kind": "function",
+          "line": 17
+        },
+        {
+          "name": "permits_unpublished_import",
+          "kind": "function",
+          "line": 26
+        }
+      ]
+    },
+    {
       "file": "src/hosted/local_portability.py",
       "lines": 484,
       "symbols": [
@@ -12004,32 +12020,32 @@
     },
     {
       "file": "src/hosted/packages.py",
-      "lines": 722,
+      "lines": 724,
       "symbols": [
         {
           "name": "_fields",
           "kind": "function",
-          "line": 45
+          "line": 46
         },
         {
           "name": "_public",
           "kind": "function",
-          "line": 49
+          "line": 50
         },
         {
           "name": "_json_safe",
           "kind": "function",
-          "line": 55
+          "line": 56
         },
         {
           "name": "_restore_safe",
           "kind": "function",
-          "line": 63
+          "line": 64
         },
         {
           "name": "HostedProjectPackageService",
           "kind": "class",
-          "line": 72
+          "line": 73
         }
       ]
     },

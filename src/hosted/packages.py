@@ -21,6 +21,7 @@ from typing import Any, Mapping
 
 from hosted.domain_store import _ID_FIELDS, HostedDomainStore, operation_id
 from hosted.idempotency import stable_project_id
+from hosted.import_staging import package_import_staging
 from hosted.firestore.ids import new_project_id, require_opaque_id, require_project_id, require_user_id
 from hosted.firestore.contracts import DocumentConflict, HostedAuthorizationError
 from hosted.firestore.model_registry import MODELS
@@ -368,13 +369,14 @@ class HostedProjectPackageService:
                     raise ValueError('HOSTED_PACKAGE_EXPANDED_TOO_LARGE')
                 if sum(i.file_size for i in members)>_MAX_INLINE_EXPANDED:
                     raise ValueError('HOSTED_PACKAGE_EXPANDED_TOO_LARGE')
-                if operation:
-                    self._reserve_import(operation=operation,user_id=user_id,digest=hashlib.sha256(raw).hexdigest(),name_override=name_override)
+                operation=operation or operation_id('project_import')
+                self._reserve_import(operation=operation,user_id=user_id,digest=hashlib.sha256(raw).hexdigest(),name_override=name_override)
                 manifest=json.loads(archive.read('manifest.json').decode('utf-8'))
-                if manifest.get('format')==_FORMAT and int(manifest.get('format_version') or 0)==_VERSION:
-                    return self._import_v3(archive,manifest,user_id,name_override=name_override,import_operation=operation)
-                if str(manifest.get('package_format') or '')=='breadmaker-project' and int(manifest.get('package_version') or 0)==2:
-                    return self._import_legacy_v2(archive,manifest,user_id,name_override=name_override,import_operation=operation)
+                with package_import_staging(operation,user_id):
+                    if manifest.get('format')==_FORMAT and int(manifest.get('format_version') or 0)==_VERSION:
+                        return self._import_v3(archive,manifest,user_id,name_override=name_override,import_operation=operation)
+                    if str(manifest.get('package_format') or '')=='breadmaker-project' and int(manifest.get('package_version') or 0)==2:
+                        return self._import_legacy_v2(archive,manifest,user_id,name_override=name_override,import_operation=operation)
         except (KeyError,zipfile.BadZipFile,json.JSONDecodeError,UnicodeDecodeError) as exc:
             raise ValueError('HOSTED_PACKAGE_INVALID') from exc
         raise ValueError('HOSTED_PACKAGE_UNSUPPORTED')
