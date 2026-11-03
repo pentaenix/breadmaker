@@ -1,4 +1,7 @@
-"""M9C2A source-only conformance: user runs the verifier, never the agent."""
+"""M9C2A source-only conformance: user runs the verifier, never the contributor.
+
+Run these synthetic conformance checks through ./verify-release.
+"""
 from __future__ import annotations
 
 from datetime import datetime, timedelta

@@ -1,4 +1,4 @@
-> **CURRENT CANDIDATE 2026-10-14:** Editor **10.5.14**, Cloud **10.4.11** (unchanged). Owner-run Editor 10.5.13 found 3 stale protected SHA expectations, all for the verifier's reviewed 10.5.12 prewarm-only adjustment; 10.5.14 corrects only those expected hashes, metadata and handoff docs. The original 10.5.13 pilot details below are retained as historical implementation notes. The agent does not run suites; only user verification can close this candidate. See `M12E_VERIFIER_HASH_REVIEW.md`.
+> **CURRENT CANDIDATE 2026-10-14:** Editor **10.5.14**, Cloud **10.4.11** (unchanged). Owner-run Editor 10.5.13 found 3 stale protected SHA expectations, all for the verifier's reviewed 10.5.12 prewarm-only adjustment; 10.5.14 corrects only those expected hashes, metadata and handoff docs. The original 10.5.13 pilot details below are retained as historical implementation notes. The contributor does not run suites; only user verification can close this candidate. See `M12E_VERIFIER_HASH_REVIEW.md`.
 
 # M12E — Opt-in encrypted Firestore Tasks / milestones (2026-10-13)
 
@@ -23,7 +23,7 @@ The only Firestore-visible fields in this experimental format are structural ide
 
 ## Reviewer checklist, user-owned verification
 
-1. Run Editor `./verify-release` from `breadmaker` (includes **core and hosted `pip-audit --strict`**) and report concise digest. **Agent must not run tests**; it may only do syntax checks, version synchronization, ZIP integrity, and diffs.
+1. Run Editor `./verify-release` from `breadmaker` (includes **core and hosted `pip-audit --strict`**) and report concise digest. **contributor must not run tests**; it may only do syntax checks, version synchronization, ZIP integrity, and diffs.
 2. `tests/test_v10513_private_firestore.py` covers ciphertext-only create/read/update/list, nested milestone AAD, authorization before decrypt, ciphertext transplant/legacy plaintext rejection, replay and no plaintext-derived receipt, KMS failure, batch/package bypass guards, and local accountless boundary. New tests are **authored, not run**.
 3. If verification is red, fix root causes before proceeding to M12F. The previous 10.5.12 suspected flaky legacy module timeouts and milestone autofocus are **not** treated as green without operator result. Do not weaken 10s/15s watchdogs.
 4. Cloud source 10.4.11 is unchanged; no need to re-run Cloud solely for Editor changes.

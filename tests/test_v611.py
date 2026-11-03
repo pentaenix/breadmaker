@@ -164,7 +164,7 @@ def test_v611_release_contract():
     assert '/static/styles.css?v=6.1.1' in html
     assert '/static/app.js?v=6.1.1' in html
     assert 'Lossless export boundary' in (root/'docs'/'BREADMAKER_PROJECT_JSON.md').read_text()
-    assert 'empty/no-op Fragment' in (root/'docs'/'skills'/'breadmaker-project-builder'/'SKILL.md').read_text()
+    assert 'an otherwise empty Fragment is rejected' in (root/'docs'/'BREADMAKER_FRAGMENT_JSON.md').read_text()
 
 
 def test_v611_empty_secondary_tabs_import_as_normal_writable_tabs(client,fresh_project):

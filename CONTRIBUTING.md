@@ -49,3 +49,16 @@ third-party licenses in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 The deployment repository, `pentaenix/breadmaker-cloud`, is private and
 proprietary; Editor contributions do not grant deployment access.
+
+## Architecture and component rules
+
+Feature modules must not import `backend.core`; use the canonical domain owner.
+`src/backend/core.py` is composition-only. `static/app.js` is a startup shim only.
+The frontend architecture freeze preserves the ordered classic-script model and
+stylesheet cascade. Follow reuse-before-create: inspect
+`static/css/shared/COMPONENTS.md`, reuse existing components and use the
+`tool-icon-button` primitive for matching toolbar controls.
+
+Keep local editing accountless and offline after installation. Browser IDs are
+not authorization. Never commit credentials, manuscripts or generated backups.
+Review protected-file changes explicitly; preserve release watchdogs and checks.

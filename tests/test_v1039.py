@@ -66,11 +66,11 @@ def test_v1039_workspace_restore_and_collection_helpers_have_correct_owners():
 
 def test_v1039_docs_mark_frontend_architecture_freeze_and_shared_owners():
     docs=_read('js/README.md')
-    agents=(ROOT/'AGENTS.md').read_text(encoding='utf-8')
+    contributor_rules=(ROOT/'CONTRIBUTING.md').read_text(encoding='utf-8')
     architecture=(ROOT/'ARCHITECTURE.md').read_text(encoding='utf-8')
     assert '10.3.9' in docs
     assert '`core/history.js`' in docs
     assert '`core/collections.js`' in docs
-    assert 'frontend architecture freeze' in agents.lower()
+    assert 'frontend architecture freeze' in contributor_rules.lower()
     assert '10.3.9' in architecture
     assert 'frontend architecture freeze' in architecture.lower()

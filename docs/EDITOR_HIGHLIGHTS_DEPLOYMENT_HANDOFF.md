@@ -41,22 +41,22 @@ format or complete operational backup coverage. Rollback must retain a pack-awar
 application once this format has been written. Source/CI/provider acceptance and
 manual delivery gates remain required before activation.
 
-The historical feature-agent handoff below describes the original local work.
+The historical feature-contributor handoff below describes the original local work.
 
 User approved including this feature alongside narration. No production deployment
-or Cloud repository changes were performed by the feature agent.
+or Cloud repository changes were performed by the feature contributor.
 
 ## Source locations
 
-- Feature branch: `codex/experimental-editing-markers`, based on `fecfd56`.
+- Feature branch: the isolated feature branch, based on `fecfd56`.
 - Feature worktree: `experimental-editing-markers/` beside the normal `breadmaker/`.
 - Feature changes have also been applied selectively to normal `breadmaker/`,
   preserving its uncommitted narration source. That checkout is not the reconciled
   release worktree; do not replace current release files wholesale with its older
   baseline. The feature commit is the integration unit.
-- Deployment agent's reconciled Editor checkout at handoff time:
+- Deployment contributor's reconciled Editor checkout at handoff time:
   `LOCAL_ONLY/.deploy-work/auth-social-ui-worktree`, HEAD `661e3de`, version 10.5.68.
-  The feature agent did not modify that worktree or its index.
+  The feature contributor did not modify that worktree or its index.
 
 ## Product contract
 

@@ -1,10 +1,6 @@
 """Guard M12D chapter-replacement hybrid deconstruction.
 
-The operator's 10.5.10 verifier found seven runtime failures with one NameError:
-`encoded` (and subsequently `structured`) were used without unpacking `hybrid`.
-This narrow source contract complements the existing behavioral tests in
-`test_v10364.py` and `test_v10510_private_block_domain.py`.
-The human operator, not the agent, runs this test through `verify-release`.
+Run these synthetic conformance checks through ./verify-release.
 """
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
 """M12T: user-bound private UI state has no plaintext or cross-project restore bypass.
 
-The owner runs ./verify-release. The authoring assistant does not run tests.
+Run these synthetic conformance checks through ./verify-release.
 """
 from __future__ import annotations
 

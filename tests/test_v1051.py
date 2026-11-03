@@ -1,4 +1,7 @@
-"""M10B: read-only recovery plan worker; assistant does not run these tests."""
+"""M10B: read-only recovery plan worker
+
+Run these synthetic conformance checks through ./verify-release.
+"""
 from __future__ import annotations
 
 import json

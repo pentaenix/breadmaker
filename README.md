@@ -1,7 +1,10 @@
 # Breadmaker
 
+A writing workspace for long-form projects.
+
+[Website](https://breadmaker.studio) · [Hosted editor](https://app.breadmaker.studio) · [User guide](docs/USING_BREADMAKER.md)
+
 Open-source Editor: **[pentaenix/breadmaker](https://github.com/pentaenix/breadmaker)** (Apache-2.0).
-The separately managed deployment repository, **`pentaenix/breadmaker-cloud`**, is private.
 
 Breadmaker is a writing workspace for books and other long-form projects. Draft chapters, keep notes and story maps nearby, track revisions, and collect feedback without moving between separate tools.
 
@@ -16,9 +19,6 @@ including its permission for commercial use and modification. Read the [NOTICE](
 and [third-party notices](THIRD_PARTY_NOTICES.md) for bundled artwork attribution.
 The name and branding are not automatically licensed as trademarks.
 
-The separate `pentaenix/breadmaker-cloud` repository contains private
-proprietary deployment configuration. The public Editor license does not
-make the Cloud repository or any hosted service open to third-party access.
 
 ## Start the local editor
 
@@ -99,8 +99,7 @@ Adding a previously unseen test MUST cause release verification to fail until
 it is incorporated into a real test lane (or consciously reviewed as historical).
 Three protected verifier SHA assertions updated after review; per-item watchdogs,
 local offline/accountless behavior, hosted storage and Cloud remain unchanged.
-**Agent NEVER runs pytest, Playwright, or any verifier**; the human operator
-owns test execution. Current handoff: `../READ_THIS_FIRST.md` and
+Release verification was owner-run at this milestone. Current handoff: `../READ_THIS_FIRST.md` and
 `../SERVERLESS_HOSTED_REWRITE_TRACKER.md`. No new milestone-specific root docs.
 
 ## 10.5.19 — M12J regression-verifier audit
@@ -141,14 +140,14 @@ Google objectCreator-only IAM compatibility and full encrypted export/import
 remain pending; do not claim production backup encryption. Local `./run`,
 SQLite, local backups and all accountless offline operations remain unchanged.
 
-**The owner runs all release suites.** Agents do not run tests; consult the ZIP's
+**The owner runs all release suites.** Consult the ZIP's
 `SERVERLESS_HOSTED_REWRITE_TRACKER.md` for the single current status and next
 steps. The Editor verifier performs both core and hosted dependency security
 audits before tests.
 
 ## 10.5.16 — M12G opt-in encrypted structured content and streamlined handoff
 
-Adds twelve additional hosted Firestore-only private-data families to the **inactive**, explicitly injected AES-256-GCM/KMS-backed codec. This does not activate hosted encryption in production or finish archive/export coverage. Local Breadmaker remains completely offline/accountless. Root handoff is now only `../READ_THIS_FIRST.md` and `../SERVERLESS_HOSTED_REWRITE_TRACKER.md`; the tracker is the sole current status source, with old notes moved under `docs/archive/` and current security register under `docs/security/`. Human owner runs `./verify-release`; agents **never run tests**. Cloud 10.4.11 is unchanged and already green.
+Adds twelve additional hosted Firestore-only private-data families to the **inactive**, explicitly injected AES-256-GCM/KMS-backed codec. This does not activate hosted encryption in production or finish archive/export coverage. Local Breadmaker remains completely offline/accountless. Root handoff is now only `../READ_THIS_FIRST.md` and `../SERVERLESS_HOSTED_REWRITE_TRACKER.md`; the tracker is the sole current status source, with old notes moved under `docs/archive/` and current security register under `docs/security/`. The release operator runs `./verify-release`. Cloud 10.4.11 is unchanged and already green.
 
 ## 10.5.15 — M12F encrypted private-field pilot expansion
 
@@ -163,11 +162,11 @@ Only the human operator runs `./verify-release` and shares the digest.
 
 ## 10.5.14 — Exact verifier SHA firewall synchronized after reviewed prewarm
 
-The owner-run Editor 10.5.13 suite reported 1,608 passed, 3 failed and 1 skipped. The three failures were protected-hash contracts comparing `scripts/verify_release.py` to its previous digest, although 10.5.12 had deliberately added two modules to the established setup-prewarm allowlist. 10.5.14 updates **only those three hash expectations** and release metadata/docs. The checks remain exact and all other frozen hashes remain unchanged. No test suite was run by an agent. Cloud 10.4.11 is unchanged and already verified. Local `./run` remains offline and accountless without cloud, KMS, telemetry or hosted dependencies. See `docs/archive/m12_prior_handoffs/M12E_VERIFIER_HASH_REVIEW.md`.
+The owner-run Editor 10.5.13 suite reported 1,608 passed, 3 failed and 1 skipped. The three failures were protected-hash contracts comparing `scripts/verify_release.py` to its previous digest, although 10.5.12 had deliberately added two modules to the established setup-prewarm allowlist. 10.5.14 updates **only those three hash expectations** and release metadata/docs. The checks remain exact and all other frozen hashes remain unchanged. Verification was pending at this historical checkpoint. Cloud 10.4.11 is unchanged and already verified. Local `./run` remains offline and accountless without cloud, KMS, telemetry or hosted dependencies. See `docs/archive/m12_prior_handoffs/M12E_VERIFIER_HASH_REVIEW.md`.
 
 ## 10.5.13 — Experimental hosted private Firestore Task storage
 
-The normal local Editor remains offline and accountless; the normal hosted runtime has **not enabled** application-level encryption. An explicit, hosted-only `HostedPrivateFirestoreFields` injection now protects Task and milestone JSON payloads with AES-256-GCM while leaving only minimal identity/concurrency metadata exposed. All unknown user fields are encrypted by default. Generic batch writing and project import/export are blocked in this experimental mode until their encrypted contracts exist. The security model, limits, release gate and handoff are documented in `docs/archive/m12_prior_handoffs/M12E_ENCRYPTED_FIRESTORE_HANDOFF.md`. User runs the verifier; assistant never runs it.
+The normal local Editor remains offline and accountless; the normal hosted runtime has **not enabled** application-level encryption. An explicit, hosted-only `HostedPrivateFirestoreFields` injection now protects Task and milestone JSON payloads with AES-256-GCM while leaving only minimal identity/concurrency metadata exposed. All unknown user fields are encrypted by default. Generic batch writing and project import/export are blocked in this experimental mode until their encrypted contracts exist. The security model, limits, release gate and handoff are documented in `docs/archive/m12_prior_handoffs/M12E_ENCRYPTED_FIRESTORE_HANDOFF.md`. The release operator runs the verifier.
 
 ## 10.5.12 — Milestone focus race and isolated cold setup prewarming
 
@@ -175,7 +174,7 @@ Editor 10.5.11 passed the earlier encrypted chapter-replacement tests but its ow
 
 ## 10.5.11 — M12D chapter-replacement corrective
 
-The owner ran M12D Editor 10.5.10: 1,593 passed, 7 failed, 1 skipped. All seven failures shared `NameError: encoded is not defined`, affecting six inherited M8B chapter-replacement cases and one new encrypted replacement case. Cloud 10.4.11 is owner-confirmed fully green (133/133), and its files remain unchanged. The original `chapter_mutations.py` M12D edit accidentally omitted `structured, encoded = hybrid` in the `hybrid is not None` branch; 10.5.11 restores that tuple unpacking before immutable publication, preserving both the plain and opt-in encrypted paths. One focused AST guard `tests/test_v10511_chapter_hybrid_contract.py` is added; the existing runtime tests remain unchanged. No suite has been run by the agent; the human must run only Editor `./verify-release` and report the digest. Local runtime/accountless SQLite/backup files and Cloud remain unchanged; hosted encryption remains opt-in, incomplete, and disabled in normal runtime. No GCP deployment, KMS key, hosted telemetry or destructive deletion has been activated. See the top-level successor-agent handoff for verification instructions.
+The owner ran M12D Editor 10.5.10: 1,593 passed, 7 failed, 1 skipped. All seven failures shared `NameError: encoded is not defined`, affecting six inherited M8B chapter-replacement cases and one new encrypted replacement case. Cloud 10.4.11 is owner-confirmed fully green (133/133), and its files remain unchanged. The original `chapter_mutations.py` M12D edit accidentally omitted `structured, encoded = hybrid` in the `hybrid is not None` branch; 10.5.11 restores that tuple unpacking before immutable publication, preserving both the plain and opt-in encrypted paths. One focused AST guard `tests/test_v10511_chapter_hybrid_contract.py` is added; the existing runtime tests remain unchanged. No suite has been run by the contributor; the human must run only Editor `./verify-release` and report the digest. Local runtime/accountless SQLite/backup files and Cloud remain unchanged; hosted encryption remains opt-in, incomplete, and disabled in normal runtime. No GCP deployment, KMS key, hosted telemetry or destructive deletion has been activated. See the top-level successor-contributor handoff for verification instructions.
 
 ## 10.5.10 — M12D hosted encrypted manuscript-block pilot (not enabled by default)
 
@@ -183,7 +182,7 @@ The hosted domain now accepts an explicitly injected AES-256-GCM/KMS-backed encr
 
 ## 10.5.9 — M12C hosted encrypted private-object pilot
 
-New optional `hosted.storage.encrypted_objects.HostedEncryptedObjectStore` implements create-only, integrity-verified AES-256-GCM encrypted GCS object publishing with KMS-wrapped per-payload keys, project/path authentication and opaque operation-based names. This is **not yet wired** to regular hosted manuscript/Review/Cuts/asset/backup paths and is not an enabled privacy guarantee. All real hosted private storage remains marked NOT_INTEGRATED pending audited rollout. Local Breadmaker remains fully offline/accountless and unaffected. See `docs/archive/m12_prior_handoffs/M12C_ENCRYPTED_OBJECT_HANDOFF.md` for implementation boundaries and next steps. Agent does not run test suites; user runs the verifiers.
+New optional `hosted.storage.encrypted_objects.HostedEncryptedObjectStore` implements create-only, integrity-verified AES-256-GCM encrypted GCS object publishing with KMS-wrapped per-payload keys, project/path authentication and opaque operation-based names. This is **not yet wired** to regular hosted manuscript/Review/Cuts/asset/backup paths and is not an enabled privacy guarantee. All real hosted private storage remains marked NOT_INTEGRATED pending audited rollout. Local Breadmaker remains fully offline/accountless and unaffected. See `docs/archive/m12_prior_handoffs/M12C_ENCRYPTED_OBJECT_HANDOFF.md` for implementation boundaries and next steps. contributor does not run test suites; user runs the verifiers.
 
 ## 10.5.8 — Release verification audits hosted dependencies locally
 
@@ -199,8 +198,7 @@ remains an optional focused audit, not an additional required post-verification 
 **Local Breadmaker remains first class and fully offline/accountless.** Running
 `./run` and using local SQLite, editing, backups, and recovery do not require an
 account, GCP, internet, Cloud KMS or metrics collection. Human owner alone runs
-`./verify-release` and shares its summary; automated agents must never execute the
-test suite. See the package's top-level `READ_THIS_FIRST.md`.
+`./verify-release` and shares its summary. See the package's top-level `READ_THIS_FIRST.md`.
 
 ## 10.3.82 — M9 final operator-facing integration candidate
 
@@ -269,7 +267,7 @@ User verification of 10.3.64 / Cloud 10.4.38 returned Editor 1,417 passed, 1 fai
 
 ## 10.3.64 — M8B whole-operation replay and Cloud Run lifecycle hardening
 
-Hosted chapter block replacement commits as one Firestore transaction with a durable operation receipt and generation CAS, with immutable GCS content staged before pointer commit. Composite snapshots have a generation fence; unported bulk Canvas/Map/scene mutations explicitly fail closed. M8A remains carried; Cloud 10.4.38 unchanged. M10 owns deployable Cloud Run desired state. Full user verification required; no assistant-run tests.
+Hosted chapter block replacement commits as one Firestore transaction with a durable operation receipt and generation CAS, with immutable GCS content staged before pointer commit. Composite snapshots have a generation fence; unported bulk Canvas/Map/scene mutations explicitly fail closed. M8A remains carried; Cloud 10.4.38 unchanged. M10 owns deployable Cloud Run desired state. Full release verification required.
 
 ## 10.3.63 — Milestone 8A release-identity corrective
 
@@ -297,7 +295,7 @@ Milestone 5B closes the active Milestone-5 application-integration scope on top 
 
 This round adds behavioral conformance rather than more architecture: Firestore-only annotation batches publish atomically with one project-generation advance; immutable checkpoint bytes remain immutable while deleting a checkpoint removes only the authoritative Firestore pointer and leaves the object as a retention/GC candidate; per-member bookmark/UI state is membership-authorized; chapter block replacement removes omitted hosted blocks; Canvas/Map Populate uses the real source-controlled story-template catalog and project chapter/scene data; and hosted Map auto-arrange now updates canonical map-item layout instead of returning a fake no-op success. Additive credential-free M5 conformance tests cover project lifecycle/membership/member state, manuscript hierarchy, annotations/comments, reviews, canvases/maps/tasks, immutable checkpoint semantics, M5A package/import/export and unauthorized-access contracts.
 
-Backups/account deletion/history restore remain explicit Milestone-9 capability boundaries, and horizontal/process-loss hardening remains Milestone 8. No live GCP resource is created here. The user, not the model/agent, runs the full Editor + Cloud verifier to close Milestone 5.
+Backups/account deletion/history restore remain explicit Milestone-9 capability boundaries, and horizontal/process-loss hardening remains Milestone 8. No live GCP resource is created here. The release operator runs the full Editor + Cloud verifier to close Milestone 5.
 
 ## 10.3.53 — Serverless hosted rewrite Milestone 5A: cloud-native runtime composition
 
@@ -311,7 +309,7 @@ The 10.3.52 verifier/harness is a protected baseline for this migration: verifie
 
 Corrective note: 10.3.52 keeps the verified Milestone-4 storage implementation unchanged. The 10.3.50 user run confirmed the corrected PNG fixture and database-health path, leaving six unrelated hard 10-second Core/API timeouts plus one Durable-E2E Find timing/state race. This release moves exactly those six repeat timeout modules into the existing one-worker no-contention lane without raising the 10-second watchdog, and makes Find report a pending `… / …` / `aria-busy=true` state while its debounced save/search request is in flight instead of falsely showing `0 / 0`.
 
-Milestone 4 implements hosted immutable content/revision/asset storage behind the frozen serverless persistence contracts. The new `src/hosted/storage` package provides canonical server-generated GCS keys, explicit generation preconditions, bounded streaming, exact-generation SHA-256 verification, pointer-last Firestore publication, deterministic orphan discovery/cleanup contracts, and a cloud-backed implementation of the logical `AssetStore` port. Credential-free release coverage uses `MemoryObjectStore`; the real Google Cloud Storage SDK stays isolated in `src/hosted/storage/google_driver.py` and `requirements-hosted.txt`. The current hosted product routes/runtime are intentionally not switched to these adapters until Milestone 5. Local `./run`, Schema 42, SQLite/filesystem persistence, `LocalAssetStore`, and local requirements remain unchanged. The user, not the model/agent, runs the release verifier.
+Milestone 4 implements hosted immutable content/revision/asset storage behind the frozen serverless persistence contracts. The new `src/hosted/storage` package provides canonical server-generated GCS keys, explicit generation preconditions, bounded streaming, exact-generation SHA-256 verification, pointer-last Firestore publication, deterministic orphan discovery/cleanup contracts, and a cloud-backed implementation of the logical `AssetStore` port. Credential-free release coverage uses `MemoryObjectStore`; the real Google Cloud Storage SDK stays isolated in `src/hosted/storage/google_driver.py` and `requirements-hosted.txt`. The current hosted product routes/runtime are intentionally not switched to these adapters until Milestone 5. Local `./run`, Schema 42, SQLite/filesystem persistence, `LocalAssetStore`, and local requirements remain unchanged. The release operator runs the release verifier.
 
 ## 10.3.47 — Serverless hosted rewrite Milestone 3: Firestore structured-state adapter
 
@@ -319,7 +317,7 @@ Milestone 3 implements the server-only Firestore structured-state boundary froze
 
 ## 10.3.43 — Serverless hosted rewrite Milestone 1: persistence seams
 
-Milestone 1 begins the undeployed serverless hosted rewrite while keeping local Breadmaker on Schema 42, SQLite/filesystem persistence, accountless startup, and zero cloud dependencies. Environment-neutral runtime ports now own project catalog/membership, logical asset bytes, project usage/quota projection, and avatar reads. Native filesystem/history/backup operations are isolated behind explicit `Native*` bridges and a machine-readable dependency inventory that may only shrink in later milestones. No Firestore, Cloud Storage, Firebase, or Identity Platform runtime dependency is added in this milestone. The user, not the model/agent, runs the release verifier.
+Milestone 1 begins the undeployed serverless hosted rewrite while keeping local Breadmaker on Schema 42, SQLite/filesystem persistence, accountless startup, and zero cloud dependencies. Environment-neutral runtime ports now own project catalog/membership, logical asset bytes, project usage/quota projection, and avatar reads. Native filesystem/history/backup operations are isolated behind explicit `Native*` bridges and a machine-readable dependency inventory that may only shrink in later milestones. No Firestore, Cloud Storage, Firebase, or Identity Platform runtime dependency is added in this milestone. The release operator runs the release verifier.
 
 ## 10.3.41 — Checkpoint 12: staging activation
 
@@ -558,7 +556,7 @@ The generic context-menu renderer also moves out of `features/manuscript/scenes.
 
 ## 10.2.6 — Stateful backend ownership
 
-10.2.6 removes the final feature-level dependency edges into `backend.core`. Portable Review process state now belongs to `backend.portable_review_runtime`; Recovery/backup coordinator state belongs to `backend.recovery_runtime`; Remote History coordination and explicit History landmarks belong to `backend.history_runtime`; and project switching belongs to `backend.project_activation`. Historical refactor-sensitive tests now patch those canonical owners directly, including hosted request-context security tests. Architecture and agent-navigation documentation is synchronized with the zero-`backend.core` feature dependency rule. `backend.core` remains a shrinking lifecycle/middleware/platform-HTTP assembly boundary for later decomposition. No schema, HTTP route, persistence format, security policy, or frontend behavior is intentionally changed.
+10.2.6 removes the final feature-level dependency edges into `backend.core`. Portable Review process state now belongs to `backend.portable_review_runtime`; Recovery/backup coordinator state belongs to `backend.recovery_runtime`; Remote History coordination and explicit History landmarks belong to `backend.history_runtime`; and project switching belongs to `backend.project_activation`. Historical refactor-sensitive tests now patch those canonical owners directly, including hosted request-context security tests. Architecture and contributor-navigation documentation is synchronized with the zero-`backend.core` feature dependency rule. `backend.core` remains a shrinking lifecycle/middleware/platform-HTTP assembly boundary for later decomposition. No schema, HTTP route, persistence format, security policy, or frontend behavior is intentionally changed.
 
 ## 10.2.5 — Explicit platform ownership
 
@@ -582,21 +580,21 @@ The generic context-menu renderer also moves out of `features/manuscript/scenes.
 
 ## 10.2.0 — Explicit backend dependencies and composition root
 
-10.2.0 removes the transitional 10.1 namespace bridge. Feature modules now use ordinary explicit imports from `backend.core`, and the small cyclic cross-feature helper graph is represented as named lazy function calls to canonical owners. `src/app.py` is reduced to a tiny idempotent composition entrypoint while the existing platform/lifecycle implementation moves intact to `src/backend/core.py`. A generated `src/api/dependency_manifest.json` makes feature dependency ownership machine-readable for contributors and coding agents. HTTP routes, schema, storage, security behavior, and frontend behavior are intentionally unchanged.
+10.2.0 removes the transitional 10.1 namespace bridge. Feature modules now use ordinary explicit imports from `backend.core`, and the small cyclic cross-feature helper graph is represented as named lazy function calls to canonical owners. `src/app.py` is reduced to a tiny idempotent composition entrypoint while the existing platform/lifecycle implementation moves intact to `src/backend/core.py`. A generated `src/api/dependency_manifest.json` makes feature dependency ownership machine-readable for contributors. HTTP routes, schema, storage, security behavior, and frontend behavior are intentionally unchanged.
 
 ## 10.1.1 — Safe cross-domain bridge resolution
 
 10.1.1 fixes the first runtime regression exposed by the 10.1 API decomposition. The transitional compatibility bridge is now two-phase: all domain modules load, their declared shared helpers are collected, then the complete helper namespace is rebound into every module before any request executes. This preserves the semantics-preserving refactor while supporting the mature cyclic helper relationships that existed inside the former monolith. No API, schema, storage, security, or frontend behavior is intentionally changed.
 
-## 10.1.0 — Domain API decomposition and AI navigation
+## 10.1.0 — Domain API decomposition and source navigation
 
-For architecture/navigation, start with [`AGENTS.md`](AGENTS.md); contributor setup is in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+For architecture/navigation, start with [`CONTRIBUTING.md`](CONTRIBUTING.md); contributor setup is in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-10.1.0 is a semantics-preserving architecture release. Feature routes were extracted from the historical `src/app.py` monolith into domain-owned modules under `src/api/`; `src/app.py` is now the platform/composition root. The release adds `AGENTS.md`, a human route code map, a machine-readable route manifest, and a generated symbol/route index so contributors and coding agents can locate implementation code without scanning the repository. Historical source-contract tests now assert across the backend boundary instead of requiring all endpoints to remain in one file. The release verifier now discovers 10.x tests.
+10.1.0 is a semantics-preserving architecture release. Feature routes were extracted from the historical `src/app.py` monolith into domain-owned modules under `src/api/`; `src/app.py` is now the platform/composition root. The release adds `CONTRIBUTING.md`, a human route code map, a machine-readable route manifest, and a generated symbol/route index so contributors can locate implementation code without scanning the repository. Historical source-contract tests now assert across the backend boundary instead of requiring all endpoints to remain in one file. The release verifier now discovers 10.x tests.
 
 ## 10.0.0 — Repository boundary
 
-Breadmaker 10.0.0 establishes the permanent two-repository release layout. This folder is the public/open-source `breadmaker` repository. The commercial deployment/IaC repository is the sibling `breadmaker-cloud` folder in the release archive. The application runtime and security baseline are inherited unchanged from the fully verified 9.6.15 release; local Breadmaker remains accountless and offline-capable. See `docs/REPOSITORY_SPLIT.md`.
+Breadmaker 10.0.0 establishes the permanent two-repository release layout. This folder is the public/open-source `breadmaker` repository. The commercial deployment/IaC repository is the sibling hosting infrastructure folder in the release archive. The application runtime and security baseline are inherited unchanged from the fully verified 9.6.15 release; local Breadmaker remains accountless and offline-capable. See `docs/REPOSITORY_SPLIT.md`.
 
 ## 9.6.15 — Verification isolation cleanup
 

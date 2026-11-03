@@ -88,6 +88,6 @@ backup requirement, cross-runtime idempotent receipts, inventory-drift refusal,
 owner/retention restrictions, inventory budget, and a fake Google
 admin-RPC traversal that verifies `show_missing` plus missing-capability refusal.
   A nested orphan-content change without a root-generation bump must invalidate
-  an existing receipt. **The assistant did not
+  an existing receipt. **The contributor did not
 execute the test suite.** Run the full Editor + Cloud verifier yourself. M9B
 complex hosted Review/Canvas/checkpoint history remains explicitly fail-closed.

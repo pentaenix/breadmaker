@@ -57,7 +57,7 @@ preview as an authorization to execute deletion.
 Source-only conformance in `tests/test_v10371.py` checks tombstone-owner
 restrictions, nested known paths, strict GCS scoping, 30-day floor, independent
 recovery preservation, concurrency-failure and fingerprint changes. These tests
-are for the user's full release verifier; the assistant has not run them.
+are for the user's full release verifier; the contributor has not run them.
 
 This checkpoint continues from the **unverified 10.3.68–10.3.70** portability
 changes. Advanced frozen Review/Canvas/checkpoint codecs remain blocked in the

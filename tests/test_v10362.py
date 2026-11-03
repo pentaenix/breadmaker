@@ -2,7 +2,7 @@ from __future__ import annotations
 
 """M8 replica-loss contracts; deliberately use shared memory Firestore/GCS fakes.
 
-The assistant must never execute this suite. The release operator runs it via the
+The release operator runs this synthetic conformance suite via the
 regular Breadmaker verifier. No cloud credentials, browser, or network are needed.
 """
 

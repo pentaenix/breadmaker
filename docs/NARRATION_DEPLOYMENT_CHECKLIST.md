@@ -6,7 +6,7 @@ Updated: October 30, 2026. Editor source version: 10.5.66.
 this pass. Local tests are not proof of hosted authorization, paid entitlement,
 encrypted storage, production-browser inference, or overnight reliability.
 
-## Architecture the Cloud agent should preserve
+## Architecture the Cloud contributor should preserve
 
 - Kokoro inference runs in the user's browser worker, not a paid speech API or a
   Cloud Run synthesis job. CPU uses q8; optional WebGPU uses fp32 and retries CPU
@@ -33,7 +33,7 @@ encrypted storage, production-browser inference, or overnight reliability.
   saving, startup and recovery must not depend on model availability, Internet,
   accounts, optional dictionaries, or narration activation.
 
-## Activation checklist — Cloud agent owns these items
+## Activation checklist — Cloud contributor owns these items
 
 - [ ] Keep narration disabled in hosted mode until the storage, entitlement,
   pronunciation and asset-delivery adapters pass hosted tests. Local routes
@@ -155,7 +155,7 @@ runtime/dictionary/browser validation; **its first hosted CI execution is still
 pending**. Make that job a required pre-release check; existing Cloud dispatch
 does not by itself prove this additional job passed.
 
-Before production enablement, the Cloud agent must run the full Editor and Cloud
+Before production enablement, the Cloud contributor must run the full Editor and Cloud
 release gates, hosted negative-access/quota/privacy tests, real CPU fallback and
 GPU failure tests on supported browsers, popup login under actual headers,
 download/playback/export checks and native-speaker listening QA. Playwright UI
@@ -207,12 +207,12 @@ certification. Full-book endurance/sleep/resume testing is intentionally deferre
   project-fixture setup timeout under the unchanged 10s watchdog. After the full
   gate finished, the final isolated 91-test rerun passed. No timeout was relaxed.
 - There has **not** been another entire full-gate run after these corrections.
-  The confirmed hosted import failure below remains open for the Cloud agent;
+  The confirmed hosted import failure below remains open for the Cloud contributor;
   rerun the complete Editor/Cloud gates before deployment.
 - One existing Starlette TestClient/httpx deprecation warning remains; it did
   not fail the runs and no framework/test-client replacement was attempted.
 
-### Confirmed hosted import failure — Cloud agent follow-up
+### Confirmed hosted import failure — Cloud contributor follow-up
 
 `tests/test_v10551_browser.py::test_new_project_import_resumes_batches_and_preserves_source`
 failed in both the initial and fresh-process retry. After a failed import batch

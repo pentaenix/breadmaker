@@ -1,6 +1,6 @@
 """M12S source-only regression contracts for encrypted recovery isolation.
 
-The owner, not the authoring assistant, executes these via ./verify-release.
+Run these synthetic conformance checks through ./verify-release.
 """
 from __future__ import annotations
 

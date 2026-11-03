@@ -33,7 +33,7 @@ Added hosted-only `HostedPrivateFirestoreFields` backed by existing AES-256-GCM/
 
 ## Source release acceptance (user executes)
 
-Editor 10.5.7 and Cloud 10.4.10 full suites green, hosted requirements `pip-audit` green/triaged, no local-only regressions, two-user tenant probes, bound failure tested, and additional privacy regressions green. Agent may only do syntax/metadata/ZIP integrity. Live effective IAM and recovery evidence belong to M13.
+Editor 10.5.7 and Cloud 10.4.10 full suites green, hosted requirements `pip-audit` green/triaged, no local-only regressions, two-user tenant probes, bound failure tested, and additional privacy regressions green. contributor may only do syntax/metadata/ZIP integrity. Live effective IAM and recovery evidence belong to M13.
 
 ## 2026-10-13: integrated dependency preflight (Editor 10.5.8)
 
@@ -53,7 +53,7 @@ The encrypted-object primitive is now explicitly injectable into `HostedDomainSt
 
 ## 2026-10-13 — M12D correction and verification handoff
 
-The owner ran M12D Editor 10.5.10: 1,593 passed, 7 failed, 1 skipped. All seven failures shared `NameError: encoded is not defined`, affecting six inherited M8B chapter-replacement cases and one new encrypted replacement case. Cloud 10.4.11 is owner-confirmed fully green (133/133), and its files remain unchanged. The original `chapter_mutations.py` M12D edit accidentally omitted `structured, encoded = hybrid` in the `hybrid is not None` branch; 10.5.11 restores that tuple unpacking before immutable publication, preserving both the plain and opt-in encrypted paths. One focused AST guard `tests/test_v10511_chapter_hybrid_contract.py` is added; the existing runtime tests remain unchanged. No suite has been run by the agent; the human must run only Editor `./verify-release` and report the digest. Local runtime/accountless SQLite/backup files and Cloud remain unchanged; hosted encryption remains opt-in, incomplete, and disabled in normal runtime. No GCP deployment, KMS key, hosted telemetry or destructive deletion has been activated.
+The owner ran M12D Editor 10.5.10: 1,593 passed, 7 failed, 1 skipped. All seven failures shared `NameError: encoded is not defined`, affecting six inherited M8B chapter-replacement cases and one new encrypted replacement case. Cloud 10.4.11 is owner-confirmed fully green (133/133), and its files remain unchanged. The original `chapter_mutations.py` M12D edit accidentally omitted `structured, encoded = hybrid` in the `hybrid is not None` branch; 10.5.11 restores that tuple unpacking before immutable publication, preserving both the plain and opt-in encrypted paths. One focused AST guard `tests/test_v10511_chapter_hybrid_contract.py` is added; the existing runtime tests remain unchanged. No suite has been run by the contributor; the human must run only Editor `./verify-release` and report the digest. Local runtime/accountless SQLite/backup files and Cloud remain unchanged; hosted encryption remains opt-in, incomplete, and disabled in normal runtime. No GCP deployment, KMS key, hosted telemetry or destructive deletion has been activated.
 
 ## 2026-10-14 release correction
 

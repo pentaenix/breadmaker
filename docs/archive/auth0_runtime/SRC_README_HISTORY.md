@@ -84,7 +84,7 @@ Root Python files are limited to:
 
 Do not add a new loose `src/foo.py`. Choose the owning package first. If no package owns the concept, that is an architecture decision and should be explicit rather than solved with a generic `utils.py`/`helpers.py` file.
 
-For HTTP navigation start with `api/CODEMAP.md`; for exact symbols use `../docs/CODE_INDEX.json`. See `../AGENTS.md` for dependency and invariant rules.
+For HTTP navigation start with `api/CODEMAP.md`; for exact symbols use `../docs/CODE_INDEX.json`. See `../CONTRIBUTING.md` for dependency and invariant rules.
 
 ## `api/` ownership
 

@@ -13,7 +13,6 @@ Canvas-version equivalence. M9B must not close until user confirms both
 combined verification and supported content fidelity. M9C deletion and M9D
 scheduled recovery remain separate.
 
-Prohibited for assistant: running pytest, browser/E2E tests, verifier, local
-app validator, or changing test harness/watchdogs. The user will provide the
-compact verification digest. Protected: local Schema 42, local runtime, frozen
+The release operator provides the full verification digest. Do not change the
+test harness or watchdogs to obtain a passing result. Protected: local Schema 42, local runtime, frozen
 Firestore/GCS M3/M4 adapters, Cloud 10.4.38.

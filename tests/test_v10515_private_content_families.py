@@ -1,6 +1,6 @@
 """M12F regression contracts for opt-in encrypted Reviews, Canvas and Maps.
 
-Human-owned verifier only. No agent execution of these tests.
+Run these synthetic conformance checks through ./verify-release.
 """
 from __future__ import annotations
 

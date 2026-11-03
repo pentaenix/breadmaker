@@ -31,7 +31,7 @@ Some frozen Canvas versions, advanced Review snapshots (multiple rounds, missing
 - Production Firestore/GCS purge, account erasure, and recovery-archive delete remain disabled.
 - No live GCP environment has been provisioned by this bundle; resource/IAM/cloud scheduler policies belong to M10.
 - No local schema, tests/conftest timeout/watchdog, verifier orchestration, frozen M3/M4 Firestore/GCS adapters, or Cloud 10.4.38 source changes.
-- `tests/test_v10378.py` contains credential-free, human-verifier-only checks for due/no-due, restart replay, ownership, independent integrity, failed publication, source Firestore loss, isolated restore, and historical export-blocker reporting. **The assistant must not run these tests or the suite.**
+- `tests/test_v10378.py` contains credential-free, human-verifier-only checks for due/no-due, restart replay, ownership, independent integrity, failed publication, source Firestore loss, isolated restore, and historical export-blocker reporting. **The contributor must not run these tests or the suite.**
 - The 10.3.77 carry-forward was not user-verified at the time of authoring; a recent E2E run suffered a first-fixture Playwright startup timeout and its 92 test setups were recorded as errors from that one cause. No watchdog or runtime browser logic is modified in response.
 
 **Operator action:** run the complete Editor + Cloud verifier on 10.3.78. This is an implementation checkpoint, not production-recovery certification.

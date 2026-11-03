@@ -1,6 +1,6 @@
 """M12 source-level private hybrid and creator-only GCS regressions.
 
-User-owned ./verify-release only; never executed by the assistant.
+Run these synthetic conformance checks through ./verify-release.
 """
 from __future__ import annotations
 

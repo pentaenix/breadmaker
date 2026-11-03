@@ -1,6 +1,6 @@
 """M12D corrective contracts: preserve rapid milestone entry and 10s item budgets.
 
-The owner, not the assistant, runs verification and the existing 92-workflow E2E.
+Run these synthetic conformance checks through ./verify-release.
 """
 from pathlib import Path
 import subprocess

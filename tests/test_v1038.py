@@ -38,11 +38,11 @@ def test_v1038_shared_context_menu_renderer_is_owned_by_core_ui():
     assert 'function openContextMenu(x,y,items,{anchorRect=null}={})' not in manuscript
 
 
-def test_v1038_agents_require_component_reuse_before_creation():
-    agents = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
-    assert 'reuse-before-create' in agents
-    assert 'static/css/shared/COMPONENTS.md' in agents
-    assert 'tool-icon-button' in agents
+def test_v1038_contributors_require_component_reuse_before_creation():
+    contributor_rules = (ROOT / 'CONTRIBUTING.md').read_text(encoding='utf-8')
+    assert 'reuse-before-create' in contributor_rules
+    assert 'static/css/shared/COMPONENTS.md' in contributor_rules
+    assert 'tool-icon-button' in contributor_rules
 
 
 def test_v1038_verifier_distinguishes_completed_failure_from_oldest_running_job():

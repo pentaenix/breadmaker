@@ -1,12 +1,12 @@
 > **Historical architecture journal.** This document includes older milestone states and model/operator handoffs. For the current architecture, start with [Architecture](../../ARCHITECTURE.md) and [M12 source closure](../security/M12_SOURCE_CLOSURE.md). Do not use this file to deploy the hosted service.
 
-> **ARCHITECTURE REFERENCE ONLY.** The current release status, agent instructions and revised M12/M13 milestone decisions live exclusively in the ZIP-root `SERVERLESS_HOSTED_REWRITE_TRACKER.md`. Historical deployment-phase prose below is intentionally preserved but superseded when it conflicts with that tracker.
+> **ARCHITECTURE REFERENCE ONLY.** The current release status, contributor instructions and revised M12/M13 milestone decisions live exclusively in the ZIP-root `SERVERLESS_HOSTED_REWRITE_TRACKER.md`. Historical deployment-phase prose below is intentionally preserved but superseded when it conflicts with that tracker.
 
 # Architectural rewrite plan — historical design contract
 
-**Canonical current status, releases, open risks and agent handoff:** see **`SERVERLESS_HOSTED_REWRITE_TRACKER.md`**. This plan retains architectural history; older release-specific status paragraphs below are superseded by that single tracker. Do not add more milestone-specific handoff Markdown files.
+**Canonical current status, releases, open risks and contributor handoff:** see **`SERVERLESS_HOSTED_REWRITE_TRACKER.md`**. This plan retains architectural history; older release-specific status paragraphs below are superseded by that single tracker. Do not add more milestone-specific handoff Markdown files.
 
-Current source candidate at the time of this revision: **Editor 10.5.15 / Cloud 10.4.11**, Editor awaiting owner verification. M12 is offline security hardening; M13 is manual GCP/GitHub/live acceptance. Hosted encryption is experimental, inactive and incomplete. Local Breadmaker is fully independent and needs no account, network, KMS, GCP or telemetry. **Agents must never run the test suites**; only the owner runs release verifiers.
+Current source candidate at the time of this revision: **Editor 10.5.15 / Cloud 10.4.11**, Editor awaiting owner verification. M12 is offline security hardening; M13 is manual GCP/GitHub/live acceptance. Hosted encryption is experimental, inactive and incomplete. Local Breadmaker is fully independent and needs no account, network, KMS, GCP or telemetry. **contributors must never run the test suites**; only the owner runs release verifiers.
 
 ---
 
@@ -16,19 +16,19 @@ Added hosted-only `HostedPrivateFirestoreFields` backed by existing AES-256-GCM/
 
 # CURRENT STATUS — 2026-10-13 — M12D VERIFICATION CORRECTIVE (10.5.12)
 
-Candidate **Editor 10.5.12 / Cloud 10.4.11** (Editor owner-verification PENDING). Last all-green Editor **10.5.9**, Cloud **10.4.11**. Editor 10.5.11 removed the 7-way `NameError` but owner verification found two cold-setup 10s timeouts and one `draft_2` milestone focus race. Editor 10.5.12 uses established module-scoped prewarm for `test_v10326.py`/`test_v700.py` while retaining per-item watchdogs, and guards delayed Tasks milestone auto-focus from stealing a second input. Full human Editor verifier required; Cloud 133/133 already green, byte-identical; agent must NEVER run suites. Local Breadmaker remains no-account/offline/no-GCP/KMS/telemetry; hosted encryption/metrics still inactive and incomplete. This is NOT a deployment release. Read `READ_THIS_FIRST.md` first.
+Candidate **Editor 10.5.12 / Cloud 10.4.11** (Editor owner-verification PENDING). Last all-green Editor **10.5.9**, Cloud **10.4.11**. Editor 10.5.11 removed the 7-way `NameError` but owner verification found two cold-setup 10s timeouts and one `draft_2` milestone focus race. Editor 10.5.12 uses established module-scoped prewarm for `test_v10326.py`/`test_v700.py` while retaining per-item watchdogs, and guards delayed Tasks milestone auto-focus from stealing a second input. Full human Editor verifier required; Cloud 133/133 already green, byte-identical; contributor must NEVER run suites. Local Breadmaker remains no-account/offline/no-GCP/KMS/telemetry; hosted encryption/metrics still inactive and incomplete. This is NOT a deployment release. Read `READ_THIS_FIRST.md` first.
 
 ---
 
 # CURRENT STATUS — 2026-10-13 — M12D 10.5.11 CHAPTER MUTATION CORRECTIVE
 
-Editor **10.5.11** / Cloud **10.4.11** candidate awaiting human verifier. Previous last fully green Editor **10.5.9** / Cloud **10.4.11**; owner confirmed Cloud still 133/133 green, Editor 10.5.10 ran 1593 passed / 7 failed / 1 skipped. M12D adds opt-in encrypted GCS body publication and authenticated reads through actual hosted block CRUD + atomic chapter replacement; real runtime remains inactive and Firestore metadata/other families/packages/recovery are NOT confidentially integrated. No automated activation or live GCP changes. Local `./run` remains completely accountless, offline, KMS/GCP-free. The agent MUST NEVER execute verifier/tests; owner supplies results. See `M12D_HOSTED_BLOCK_INTEGRATION.md` and `READ_THIS_FIRST.md`. M13 remains human-operated infrastructure/deployment; private alpha deferred.
+Editor **10.5.11** / Cloud **10.4.11** candidate awaiting human verifier. Previous last fully green Editor **10.5.9** / Cloud **10.4.11**; owner confirmed Cloud still 133/133 green, Editor 10.5.10 ran 1593 passed / 7 failed / 1 skipped. M12D adds opt-in encrypted GCS body publication and authenticated reads through actual hosted block CRUD + atomic chapter replacement; real runtime remains inactive and Firestore metadata/other families/packages/recovery are NOT confidentially integrated. No automated activation or live GCP changes. Local `./run` remains completely accountless, offline, KMS/GCP-free. The contributor MUST NEVER execute verifier/tests; owner supplies results. See `M12D_HOSTED_BLOCK_INTEGRATION.md` and `READ_THIS_FIRST.md`. M13 remains human-operated infrastructure/deployment; private alpha deferred.
 
 ---
 
 ## 2026-10-13 — M12D Core/API release corrective
 
-The owner ran M12D Editor 10.5.10: 1,593 passed, 7 failed, 1 skipped. All seven failures shared `NameError: encoded is not defined`, affecting six inherited M8B chapter-replacement cases and one new encrypted replacement case. Cloud 10.4.11 is owner-confirmed fully green (133/133), and its files remain unchanged. The original `chapter_mutations.py` M12D edit accidentally omitted `structured, encoded = hybrid` in the `hybrid is not None` branch; 10.5.11 restores that tuple unpacking before immutable publication, preserving both the plain and opt-in encrypted paths. One focused AST guard `tests/test_v10511_chapter_hybrid_contract.py` is added; the existing runtime tests remain unchanged. No suite has been run by the agent; the human must run only Editor `./verify-release` and report the digest. Local runtime/accountless SQLite/backup files and Cloud remain unchanged; hosted encryption remains opt-in, incomplete, and disabled in normal runtime. No GCP deployment, KMS key, hosted telemetry or destructive deletion has been activated.
+The owner ran M12D Editor 10.5.10: 1,593 passed, 7 failed, 1 skipped. All seven failures shared `NameError: encoded is not defined`, affecting six inherited M8B chapter-replacement cases and one new encrypted replacement case. Cloud 10.4.11 is owner-confirmed fully green (133/133), and its files remain unchanged. The original `chapter_mutations.py` M12D edit accidentally omitted `structured, encoded = hybrid` in the `hybrid is not None` branch; 10.5.11 restores that tuple unpacking before immutable publication, preserving both the plain and opt-in encrypted paths. One focused AST guard `tests/test_v10511_chapter_hybrid_contract.py` is added; the existing runtime tests remain unchanged. No suite has been run by the contributor; the human must run only Editor `./verify-release` and report the digest. Local runtime/accountless SQLite/backup files and Cloud remain unchanged; hosted encryption remains opt-in, incomplete, and disabled in normal runtime. No GCP deployment, KMS key, hosted telemetry or destructive deletion has been activated.
 
 # CURRENT STATUS — 2026-10-13 — M12C ENCRYPTED OBJECT PILOT, NOT ACTIVATED
 
@@ -38,11 +38,11 @@ The owner ran M12D Editor 10.5.10: 1,593 passed, 7 failed, 1 skipped. All seven 
 
 ## 2026-10-13 — M12B Cloud-only release contract corrective (Cloud 10.4.11)
 
-The owner reported **Editor 10.5.8 green**, including core + hosted `pip-audit --strict` preflights, and Cloud 10.4.10 with **132 green, one failed** stale version pin in `tests/test_repository_contract.py`. Identity policy and OpenTofu passed. 10.4.11 replaces brittle exact-patch contracts in `test_repository_contract.py` and `test_m12b_privacy.py` with a minimum supported version, three-part format, README first-line identity, and Identity Platform policy-version synchronization. Cloud README/AGENTS, `VERSION` and policy release were updated. Editor is unchanged. The agent did not run any suite. Hosted encryption/metrics, KMS provisioning, deployments and deletion remain DISABLED. Cloud verifier is user-owned and still required.
+The owner reported **Editor 10.5.8 green**, including core + hosted `pip-audit --strict` preflights, and Cloud 10.4.10 with **132 green, one failed** stale version pin in `tests/test_repository_contract.py`. Identity policy and OpenTofu passed. 10.4.11 replaces brittle exact-patch contracts in `test_repository_contract.py` and `test_m12b_privacy.py` with a minimum supported version, three-part format, README first-line identity, and Identity Platform policy-version synchronization. Cloud README/contributors, `VERSION` and policy release were updated. Editor is unchanged. The contributor did not run any suite. Hosted encryption/metrics, KMS provisioning, deployments and deletion remain DISABLED. Cloud verifier is user-owned and still required.
 
 ## 2026-10-13 — M12B release preflight integration (Editor 10.5.8 / Cloud 10.4.10)
 
-Editor `./verify-release` now runs **two fail-closed, networked vulnerability scans** with the pinned `pip-audit`: the existing `requirements.txt` audit followed by a complete `requirements-hosted.txt` audit, which also resolves the core graph transitively. Both scans must pass before any test item starts. This is dependency resolution/advisory checking, not GCP deployment or installation of hosted SDKs. Core local runtime remains fully offline/accountless; verification has always needed network access for the original audit. Standalone `./audit-hosted-dependencies` remains optional. All cloud files stay byte-identical to 10.4.10. New source contracts in `breadmaker/tests/test_v1058_hosted_audit.py` require user verification; **agent MUST NOT run test suites**. Do not activate plaintext-hosted encryption or telemetry just because the verifier passes.
+Editor `./verify-release` now runs **two fail-closed, networked vulnerability scans** with the pinned `pip-audit`: the existing `requirements.txt` audit followed by a complete `requirements-hosted.txt` audit, which also resolves the core graph transitively. Both scans must pass before any test item starts. This is dependency resolution/advisory checking, not GCP deployment or installation of hosted SDKs. Core local runtime remains fully offline/accountless; verification has always needed network access for the original audit. Standalone `./audit-hosted-dependencies` remains optional. All cloud files stay byte-identical to 10.4.10. New source contracts in `breadmaker/tests/test_v1058_hosted_audit.py` require user verification; **contributor MUST NOT run test suites**. Do not activate plaintext-hosted encryption or telemetry just because the verifier passes.
 
 > **Latest scope decision (2026-10-12, M12):** User redefines **Milestone 12 as an offline security audit and hardening checkpoint**. GCP/GitHub/DNS/billing, real deployment and live acceptance are **Milestone 13**, explicitly operator-controlled. No private-alpha admission. This decision supersedes the historical M12/M13 text in sections 20–21 below. See `M12_SECURITY_AUDIT.md` for findings and release blockers. Editor 10.5.5 / Cloud 10.4.8 is the last operator-reported green baseline; 10.5.6 / 10.4.9 is awaiting verification.
 
@@ -71,7 +71,7 @@ Editor `./verify-release` now runs **two fail-closed, networked vulnerability sc
 
 **The model must NOT execute the Breadmaker verifier or test suites.**
 
-Unless the user explicitly changes this rule in a later conversation, the model/agent must not run:
+Unless the user explicitly changes this rule in a later conversation, the contributor must not run:
 
 - `./verify-release` in either repository;
 - `./test`;
@@ -413,7 +413,7 @@ Do not merge them during this rewrite unless a milestone explicitly concludes th
 
 Read these before broad searching:
 
-- `breadmaker/AGENTS.md`
+- `breadmaker/CONTRIBUTING.md`
 - `breadmaker/ARCHITECTURE.md`
 - `breadmaker/src/api/CODEMAP.md`
 - `breadmaker/src/api/route_manifest.json`
@@ -426,7 +426,7 @@ Read these before broad searching:
 
 ### Current high-value cloud ownership map
 
-- `breadmaker-cloud/AGENTS.md`
+- `breadmaker-cloud/CONTRIBUTING.md`
 - `breadmaker-cloud/ARCHITECTURE.md`
 - `breadmaker-cloud/SECURITY.md`
 - `breadmaker-cloud/TESTING.md`
@@ -478,7 +478,7 @@ Milestones 0–12 are source-side program work; Milestone 13 is required for ope
 - Adds this plan and tracker only.
 - Marks the previous VM/staging/Auth0 hosted architecture as superseded for future hosted work.
 - Does **not** delete old code yet; deletion happens only after replacement milestones prove their behavior.
-- Adds pointers in both repo `AGENTS.md` files so a future model finds this program immediately.
+- Adds pointers in both repo `CONTRIBUTING.md` files so contributors find this program immediately.
 
 ### Achieves
 
@@ -1445,9 +1445,9 @@ The payment portal will be easier to build after identity/entitlement boundaries
 
 ---
 
-# 26. Decision rules for future models
+# 26. Decision rules for future contributorss
 
-When a future model encounters uncertainty, use these priorities in order:
+When future contributors encounters uncertainty, use these priorities in order:
 
 1. **Do not damage local Breadmaker.**
 2. **Do not lose or corrupt manuscript data.**
@@ -1512,7 +1512,7 @@ Before coding:
 
 1. Read `SERVERLESS_HOSTED_REWRITE_TRACKER.md` first.
 2. Read this plan's current milestone.
-3. Read both repo `AGENTS.md` files.
+3. Read both repo `CONTRIBUTING.md` files.
 4. Read the owning domain docs/code map before implementation.
 5. Confirm what the last user-run verifier reported.
 6. If tracker and chat disagree, do not guess—inspect files and update tracker with evidence.

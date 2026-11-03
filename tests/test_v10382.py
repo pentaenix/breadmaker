@@ -1,6 +1,6 @@
 """M9 operator-facing production preflight and recovery planning contracts.
 
-Source-only tests. The assistant must NOT invoke pytest or the full verifier.
+Run these synthetic conformance checks through ./verify-release.
 """
 from __future__ import annotations
 

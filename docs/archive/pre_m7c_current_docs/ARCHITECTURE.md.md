@@ -289,7 +289,7 @@ Backend ownership is explicit at the import boundary. Persistence consumers impo
 
 ## Explicit backend dependency graph (10.2.x)
 
-The 10.1 compatibility bridge has been removed. Feature modules no longer receive the composition-root namespace or export their implementations back into every other domain. Each feature imports platform symbols from canonical owning modules and there is no stateful allowlist remaining: feature code has zero imports from `backend.core`. The mature cyclic helper graph is represented as named lazy function edges through `feature_call(owner, symbol)`. Cross-feature mutable state is forbidden. `src/api/dependency_manifest.json` and its generator make this dependency graph inspectable by humans and coding agents. Route order and HTTP contracts remain unchanged.
+The 10.1 compatibility bridge has been removed. Feature modules no longer receive the composition-root namespace or export their implementations back into every other domain. Each feature imports platform symbols from canonical owning modules and there is no stateful allowlist remaining: feature code has zero imports from `backend.core`. The mature cyclic helper graph is represented as named lazy function edges through `feature_call(owner, symbol)`. Cross-feature mutable state is forbidden. `src/api/dependency_manifest.json` and its generator make this dependency graph inspectable by contributors. Route order and HTTP contracts remain unchanged.
 
 `src/app.py` and `backend.core` are both composition-only. Platform behavior lives in focused backend/runtime/storage services; neither composition module should accumulate feature or process implementation.
 
@@ -303,7 +303,7 @@ The initial 10.1 extraction revealed that mature Breadmaker domains have a small
 
 ## Domain API architecture (10.1.0)
 
-`src/app.py` is the platform/composition root: lifecycle, middleware, request identity/project binding, shared process coordinators, and application assembly. Product feature endpoints live under `src/api/` by domain. The retired 10.1 `_bridge.py` made the original extraction behavior-preserving; 10.2 replaces it with explicit dependency declarations. New feature routes belong in their owning domain module and should prefer explicit lower-level runtime/storage services. `AGENTS.md`, `src/api/CODEMAP.md`, `src/api/route_manifest.json`, and `docs/CODE_INDEX.json` are the navigation surfaces for humans and coding agents.
+`src/app.py` is the platform/composition root: lifecycle, middleware, request identity/project binding, shared process coordinators, and application assembly. Product feature endpoints live under `src/api/` by domain. The retired 10.1 `_bridge.py` made the original extraction behavior-preserving; 10.2 replaces it with explicit dependency declarations. New feature routes belong in their owning domain module and should prefer explicit lower-level runtime/storage services. `CONTRIBUTING.md`, `src/api/CODEMAP.md`, `src/api/route_manifest.json`, and `docs/CODE_INDEX.json` are the navigation surfaces for contributors.
 
 ## Repository boundary (10.0.0)
 

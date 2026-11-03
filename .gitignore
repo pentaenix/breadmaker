@@ -57,3 +57,12 @@ test-results/
 *.db-wal
 *.db-shm
 
+
+# Personal development instructions and assistant workspaces.
+AGENTS.md
+AGENTS.md.md
+CLAUDE.md
+.codex/
+.agents/
+.claude/
+docs/skills/

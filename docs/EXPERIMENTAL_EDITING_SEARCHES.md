@@ -103,7 +103,7 @@ and marker-navigation paint respect it; ordinary text Find still works independe
 
 ## Integration boundary
 
-Developed on `codex/experimental-editing-markers` in its own worktree, independent
+Developed on the isolated feature branch in its own worktree, independent
 of the deploying narration work. No Cloud checkout/runtime/deployment changes.
 The UI is hidden outside local mode, and the handler denies non-local runtimes
 before native storage. Hosted route-coverage tests explicitly inventory these two

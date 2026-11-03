@@ -51,8 +51,8 @@ def test_v1028_refactor_sensitive_tests_target_new_canonical_owners():
 
 def test_v1028_docs_declare_thin_core_boundary():
     architecture=(ROOT/'ARCHITECTURE.md').read_text(encoding='utf-8')
-    agents=(ROOT/'AGENTS.md').read_text(encoding='utf-8')
+    contributor_rules=(ROOT/'CONTRIBUTING.md').read_text(encoding='utf-8')
     backend=(BACKEND/'README.md').read_text(encoding='utf-8')
     assert '`backend.core` is now composition-only' in architecture
-    assert '`src/backend/core.py` is composition-only' in agents
+    assert '`src/backend/core.py` is composition-only' in contributor_rules
     assert '`core.py` — thin FastAPI composition only' in backend

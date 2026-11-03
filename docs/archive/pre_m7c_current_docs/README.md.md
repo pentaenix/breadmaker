@@ -10,7 +10,7 @@ Milestone 5B closes the active Milestone-5 application-integration scope on top 
 
 This round adds behavioral conformance rather than more architecture: Firestore-only annotation batches publish atomically with one project-generation advance; immutable checkpoint bytes remain immutable while deleting a checkpoint removes only the authoritative Firestore pointer and leaves the object as a retention/GC candidate; per-member bookmark/UI state is membership-authorized; chapter block replacement removes omitted hosted blocks; Canvas/Map Populate uses the real source-controlled story-template catalog and project chapter/scene data; and hosted Map auto-arrange now updates canonical map-item layout instead of returning a fake no-op success. Additive credential-free M5 conformance tests cover project lifecycle/membership/member state, manuscript hierarchy, annotations/comments, reviews, canvases/maps/tasks, immutable checkpoint semantics, M5A package/import/export and unauthorized-access contracts.
 
-Backups/account deletion/history restore remain explicit Milestone-9 capability boundaries, and horizontal/process-loss hardening remains Milestone 8. No live GCP resource is created here. The user, not the model/agent, runs the full Editor + Cloud verifier to close Milestone 5.
+Backups/account deletion/history restore remain explicit Milestone-9 capability boundaries, and horizontal/process-loss hardening remains Milestone 8. No live GCP resource is created here. The release operator runs the full Editor + Cloud verifier to close Milestone 5.
 
 ## 10.3.53 — Serverless hosted rewrite Milestone 5A: cloud-native runtime composition
 
@@ -24,7 +24,7 @@ The 10.3.52 verifier/harness is a protected baseline for this migration: verifie
 
 Corrective note: 10.3.52 keeps the verified Milestone-4 storage implementation unchanged. The 10.3.50 user run confirmed the corrected PNG fixture and database-health path, leaving six unrelated hard 10-second Core/API timeouts plus one Durable-E2E Find timing/state race. This release moves exactly those six repeat timeout modules into the existing one-worker no-contention lane without raising the 10-second watchdog, and makes Find report a pending `… / …` / `aria-busy=true` state while its debounced save/search request is in flight instead of falsely showing `0 / 0`.
 
-Milestone 4 implements hosted immutable content/revision/asset storage behind the frozen serverless persistence contracts. The new `src/hosted/storage` package provides canonical server-generated GCS keys, explicit generation preconditions, bounded streaming, exact-generation SHA-256 verification, pointer-last Firestore publication, deterministic orphan discovery/cleanup contracts, and a cloud-backed implementation of the logical `AssetStore` port. Credential-free release coverage uses `MemoryObjectStore`; the real Google Cloud Storage SDK stays isolated in `src/hosted/storage/google_driver.py` and `requirements-hosted.txt`. The current hosted product routes/runtime are intentionally not switched to these adapters until Milestone 5. Local `./run`, Schema 42, SQLite/filesystem persistence, `LocalAssetStore`, and local requirements remain unchanged. The user, not the model/agent, runs the release verifier.
+Milestone 4 implements hosted immutable content/revision/asset storage behind the frozen serverless persistence contracts. The new `src/hosted/storage` package provides canonical server-generated GCS keys, explicit generation preconditions, bounded streaming, exact-generation SHA-256 verification, pointer-last Firestore publication, deterministic orphan discovery/cleanup contracts, and a cloud-backed implementation of the logical `AssetStore` port. Credential-free release coverage uses `MemoryObjectStore`; the real Google Cloud Storage SDK stays isolated in `src/hosted/storage/google_driver.py` and `requirements-hosted.txt`. The current hosted product routes/runtime are intentionally not switched to these adapters until Milestone 5. Local `./run`, Schema 42, SQLite/filesystem persistence, `LocalAssetStore`, and local requirements remain unchanged. The release operator runs the release verifier.
 
 ## 10.3.47 — Serverless hosted rewrite Milestone 3: Firestore structured-state adapter
 
@@ -32,7 +32,7 @@ Milestone 3 implements the server-only Firestore structured-state boundary froze
 
 ## 10.3.43 — Serverless hosted rewrite Milestone 1: persistence seams
 
-Milestone 1 begins the undeployed serverless hosted rewrite while keeping local Breadmaker on Schema 42, SQLite/filesystem persistence, accountless startup, and zero cloud dependencies. Environment-neutral runtime ports now own project catalog/membership, logical asset bytes, project usage/quota projection, and avatar reads. Native filesystem/history/backup operations are isolated behind explicit `Native*` bridges and a machine-readable dependency inventory that may only shrink in later milestones. No Firestore, Cloud Storage, Firebase, or Identity Platform runtime dependency is added in this milestone. The user, not the model/agent, runs the release verifier.
+Milestone 1 begins the undeployed serverless hosted rewrite while keeping local Breadmaker on Schema 42, SQLite/filesystem persistence, accountless startup, and zero cloud dependencies. Environment-neutral runtime ports now own project catalog/membership, logical asset bytes, project usage/quota projection, and avatar reads. Native filesystem/history/backup operations are isolated behind explicit `Native*` bridges and a machine-readable dependency inventory that may only shrink in later milestones. No Firestore, Cloud Storage, Firebase, or Identity Platform runtime dependency is added in this milestone. The release operator runs the release verifier.
 
 ## 10.3.41 — Checkpoint 12: staging activation
 
@@ -271,7 +271,7 @@ The generic context-menu renderer also moves out of `features/manuscript/scenes.
 
 ## 10.2.6 — Stateful backend ownership
 
-10.2.6 removes the final feature-level dependency edges into `backend.core`. Portable Review process state now belongs to `backend.portable_review_runtime`; Recovery/backup coordinator state belongs to `backend.recovery_runtime`; Remote History coordination and explicit History landmarks belong to `backend.history_runtime`; and project switching belongs to `backend.project_activation`. Historical refactor-sensitive tests now patch those canonical owners directly, including hosted request-context security tests. Architecture and agent-navigation documentation is synchronized with the zero-`backend.core` feature dependency rule. `backend.core` remains a shrinking lifecycle/middleware/platform-HTTP assembly boundary for later decomposition. No schema, HTTP route, persistence format, security policy, or frontend behavior is intentionally changed.
+10.2.6 removes the final feature-level dependency edges into `backend.core`. Portable Review process state now belongs to `backend.portable_review_runtime`; Recovery/backup coordinator state belongs to `backend.recovery_runtime`; Remote History coordination and explicit History landmarks belong to `backend.history_runtime`; and project switching belongs to `backend.project_activation`. Historical refactor-sensitive tests now patch those canonical owners directly, including hosted request-context security tests. Architecture and contributor-navigation documentation is synchronized with the zero-`backend.core` feature dependency rule. `backend.core` remains a shrinking lifecycle/middleware/platform-HTTP assembly boundary for later decomposition. No schema, HTTP route, persistence format, security policy, or frontend behavior is intentionally changed.
 
 ## 10.2.5 — Explicit platform ownership
 
@@ -295,17 +295,17 @@ The generic context-menu renderer also moves out of `features/manuscript/scenes.
 
 ## 10.2.0 — Explicit backend dependencies and composition root
 
-10.2.0 removes the transitional 10.1 namespace bridge. Feature modules now use ordinary explicit imports from `backend.core`, and the small cyclic cross-feature helper graph is represented as named lazy function calls to canonical owners. `src/app.py` is reduced to a tiny idempotent composition entrypoint while the existing platform/lifecycle implementation moves intact to `src/backend/core.py`. A generated `src/api/dependency_manifest.json` makes feature dependency ownership machine-readable for contributors and coding agents. HTTP routes, schema, storage, security behavior, and frontend behavior are intentionally unchanged.
+10.2.0 removes the transitional 10.1 namespace bridge. Feature modules now use ordinary explicit imports from `backend.core`, and the small cyclic cross-feature helper graph is represented as named lazy function calls to canonical owners. `src/app.py` is reduced to a tiny idempotent composition entrypoint while the existing platform/lifecycle implementation moves intact to `src/backend/core.py`. A generated `src/api/dependency_manifest.json` makes feature dependency ownership machine-readable for contributors. HTTP routes, schema, storage, security behavior, and frontend behavior are intentionally unchanged.
 
 ## 10.1.1 — Safe cross-domain bridge resolution
 
 10.1.1 fixes the first runtime regression exposed by the 10.1 API decomposition. The transitional compatibility bridge is now two-phase: all domain modules load, their declared shared helpers are collected, then the complete helper namespace is rebound into every module before any request executes. This preserves the semantics-preserving refactor while supporting the mature cyclic helper relationships that existed inside the former monolith. No API, schema, storage, security, or frontend behavior is intentionally changed.
 
-## 10.1.0 — Domain API decomposition and AI navigation
+## 10.1.0 — Domain API decomposition and source navigation
 
-For architecture/navigation, start with [`AGENTS.md`](AGENTS.md); contributor setup is in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+For architecture/navigation, start with [`CONTRIBUTING.md`](CONTRIBUTING.md); contributor setup is in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-10.1.0 is a semantics-preserving architecture release. Feature routes were extracted from the historical `src/app.py` monolith into domain-owned modules under `src/api/`; `src/app.py` is now the platform/composition root. The release adds `AGENTS.md`, a human route code map, a machine-readable route manifest, and a generated symbol/route index so contributors and coding agents can locate implementation code without scanning the repository. Historical source-contract tests now assert across the backend boundary instead of requiring all endpoints to remain in one file. The release verifier now discovers 10.x tests.
+10.1.0 is a semantics-preserving architecture release. Feature routes were extracted from the historical `src/app.py` monolith into domain-owned modules under `src/api/`; `src/app.py` is now the platform/composition root. The release adds `CONTRIBUTING.md`, a human route code map, a machine-readable route manifest, and a generated symbol/route index so contributors can locate implementation code without scanning the repository. Historical source-contract tests now assert across the backend boundary instead of requiring all endpoints to remain in one file. The release verifier now discovers 10.x tests.
 
 ## 10.0.0 — Repository boundary
 

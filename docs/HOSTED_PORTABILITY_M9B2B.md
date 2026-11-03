@@ -62,7 +62,7 @@ bucket policy/IAM; no live cloud is deployed.
 `tests/test_v10370.py` adds operator-only credential-free hosted -> unchanged
 local importer conformance for manuscript Tab role, frozen Review content vs
 newer live text and linked checkpoint, native-version checkpoint SHA/content,
-and deliberate refusal of unsupported history. The model/agent has **not** run
+and deliberate refusal of unsupported history. The contributor has **not** run
 pytest, Playwright, the verifier or local app validation. The user's combined
 full Editor + Cloud verifier is the release gate, covering the carried
 unverified 10.3.68 and 10.3.69 changes as well.

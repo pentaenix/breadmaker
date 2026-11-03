@@ -1,6 +1,6 @@
 """M12L private restore and independent inventory regression contracts.
 
-The human runs ./verify-release; this test module must never be run by the agent.
+Run these synthetic conformance checks through ./verify-release.
 """
 from __future__ import annotations
 

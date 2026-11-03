@@ -1,6 +1,6 @@
 # M12C — Encrypted hosted object publication pilot
 
-**Candidate:** Editor `10.5.9` / Cloud `10.4.11`. **User-verified baseline:** Editor `10.5.8` and Cloud `10.4.11` (2026-10-13; all gates green). This candidate has NOT been run through the user's tests. The agent MUST NOT execute pytest, `./verify-release`, Playwright or any test harness. Only static checks, syntax parsing, metadata sync and ZIP CRC are authorized for the agent.
+**Candidate:** Editor `10.5.9` / Cloud `10.4.11`. **User-verified baseline:** Editor `10.5.8` and Cloud `10.4.11` (2026-10-13; all gates green). This candidate has NOT been run through the user's tests. The contributor MUST NOT execute pytest, `./verify-release`, Playwright or any test harness. Only static checks, syntax parsing, metadata sync and ZIP CRC are authorized for the contributor.
 
 ## Scope and threat boundary
 
@@ -17,7 +17,7 @@ The key `projects/{pid}/private/v1/{entity}/{record_id}/{operation_id}.bme` has 
 - No runtime invocation, deployment, IAM change, telemetry upload, automatic encryption or transparent plaintext fallback.
 - All Firestore private model entries remain `NOT_INTEGRATED`; hosted assets, block payloads, Cuts, Reviews, Canvas, Maps, imports/exports, history and backup archives are **not yet encrypted by this pilot**.
 - Existing Firestore/GCS adapters, local storage, verifiers, watchdogs, KMS blueprint and recovery jobs remain byte-identical (aside from version-facing Editor frontend assets).
-- `breadmaker/verify-release` remains strict and audits both core and hosted dependency sets before user-run tests. The agent never runs it.
+- `breadmaker/verify-release` remains strict and audits both core and hosted dependency sets before user-run tests. The contributor never runs it.
 - Key unavailability is an availability failure; it must NEVER trigger plaintext downgrade. Keys needed by retained backups cannot be destroyed or rotated away until recovery proves readability.
 
 ## M12 next source steps (before M13)

@@ -28,6 +28,6 @@ Portable `.breadmaker` import also records a durable operation receipt **before*
 
 ## Verification
 
-The user runs the complete Editor and Cloud release verifier. New `test_v10362.py` cases reconstruct runtime objects on shared fake Firestore/GCS storage, prove generation CAS and retry guards, and test package receipt conflicts. No test runner or live GCP apply is run by the assistant.
+The user runs the complete Editor and Cloud release verifier. New `test_v10362.py` cases reconstruct runtime objects on shared fake Firestore/GCS storage, prove generation CAS and retry guards, and test package receipt conflicts. No test runner or live GCP apply is run by the contributor.
 
 Source: [Cloud Run container runtime contract](https://docs.cloud.google.com/run/docs/container-contract) and [Cloud Run concurrency](https://docs.cloud.google.com/run/docs/about-concurrency).

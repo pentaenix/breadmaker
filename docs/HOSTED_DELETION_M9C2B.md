@@ -65,7 +65,7 @@ permission to erase a writer's content.
 `tests/test_v10376.py` adds ten credential-free, test-only cases for arming,
 separate-instance resume, isolation, lease/after-delete crash recovery, replaced
 GCS generations, new orphan data, corrupt/missing archive, and bounded manifests.
-The assistant did **not** run the tests or verifier. The owner runs the full
+The contributor did **not** run the tests or verifier. The owner runs the full
 Editor + Cloud verifier on this ZIP. Cloud 10.4.38 and local Schema 42/runtime
 are unchanged. **M9C2B is not production-purge readiness.**
 

@@ -39,6 +39,6 @@ Destructive project deletion uses a Firestore tombstone; full GCS/Firestore purg
 
 ## Verification boundary
 
-`tests/test_v10364.py` is a credential-free conformance suite for full-set replacement across reconstructed runtime instances, stale-writer CAS, a simulated Firestore transaction callback retry, replay after later writes, interrupted GCS staging and request bounds. These are designed to run through the **user-operated** full verifier. M8A's tests remain in place. No assistant-run pytest, Playwright, verifier, or cloud apply.
+`tests/test_v10364.py` is a credential-free conformance suite for full-set replacement across reconstructed runtime instances, stale-writer CAS, a simulated Firestore transaction callback retry, replay after later writes, interrupted GCS staging and request bounds. These are designed to run through the **user-operated** full verifier. M8A's tests remain in place. No contributor-run pytest, Playwright, verifier, or cloud apply.
 
 Relevant provider contracts: [Firestore transaction semantics](https://firebase.google.com/docs/firestore/manage-data/transactions), [Cloud Run runtime and SIGTERM](https://docs.cloud.google.com/run/docs/container-contract), [Cloud Run request timeout](https://docs.cloud.google.com/run/docs/configuring/request-timeout).

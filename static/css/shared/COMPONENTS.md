@@ -71,7 +71,7 @@ Some controls are intentionally feature-owned because their visual grammar carri
 
 A specialized control should still reuse a shared base whenever that base is compatible. If it cannot, document the reason beside the feature CSS instead of silently cloning an existing shared component.
 
-## Agent decision rule
+## contributor decision rule
 
 When implementing a requested control, answer these questions in order:
 

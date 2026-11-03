@@ -12,7 +12,7 @@ def _version_tuple(value:str) -> tuple[int,int,int]:
     return tuple(int(part) for part in parts)
 
 
-def test_v1010_domain_api_and_agent_navigation_contract():
+def test_v1010_domain_api_and_contributor_navigation_contract():
     assert _version_tuple((ROOT/'VERSION').read_text(encoding='utf-8')) >= (10,1,0)
     app=(ROOT/'src/app.py').read_text(encoding='utf-8')
     assert len(app.splitlines()) < 3000
@@ -35,7 +35,7 @@ def test_v1010_domain_api_and_agent_navigation_contract():
     assert (ROOT/'src/api/durability').is_dir() and not (ROOT/'src/api/history_backups.py').exists()
     assert (ROOT/'src/api/import_export').is_dir() and not (ROOT/'src/api/import_export.py').exists()
     assert (ROOT/'src/api/workspace_tools').is_dir() and not (ROOT/'src/api/workspace_tools.py').exists()
-    assert (ROOT/'AGENTS.md').is_file()
+    assert (ROOT/'CONTRIBUTING.md').is_file()
     assert (ROOT/'src/api/CODEMAP.md').is_file()
 
     manifest=json.loads((ROOT/'src/api/route_manifest.json').read_text(encoding='utf-8'))

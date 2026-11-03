@@ -12,7 +12,7 @@ The combined Editor 10.3.81/Cloud 10.4.38 release passed 1,516 Editor tests (one
 | `hosted/operator_recovery_plan.py` | Bounded inventory of recovery schedule rows; validates owner/root membership, active project, due timestamps, retention floors, generation and revisions; supports replay checks. | Read Firestore only. **No clock loop, no `tick` invocation.** |
 | `hosted/operator_recovery_drills.py` | Explicit bounded batch for hosted-v3 offline restore drills using independent GCS archives and temporary in-memory providers. No live Firestore source is necessary. | Read independent GCS; mutate **isolated in-memory stores** only. |
 | `hosted/operator_identity_review.py` | Check exact hash-key linkage of known Identity Platform issuer/subject pairs to Breadmaker user IDs, with a revision-bound digest. | Read known Firestore identity bindings only. **Not proof of provider revocation.** |
-| `tests/test_v10382.py` | Source-only regression contracts for invariants, drift refusal, budgets, privacy and disabled deletion. | No tests run by the assistant. |
+| `tests/test_v10382.py` | Source-only regression contracts for invariants, drift refusal, budgets, privacy and disabled deletion. | Verification was pending at this historical checkpoint. |
 
 ## Safety gates not met in a local test suite
 

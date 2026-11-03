@@ -1,4 +1,7 @@
-"""M9C1 read-only deletion inventory. USER RUNS THE VERIFIER, NOT THE AGENT."""
+"""M9C1 read-only deletion inventory. USER RUNS THE VERIFIER, NOT THE contributor.
+
+Run these synthetic conformance checks through ./verify-release.
+"""
 from __future__ import annotations
 
 import hashlib

@@ -1,7 +1,6 @@
 """M12I: owner-only encrypted recovery from opt-in private Firestore + GCS sources.
 
-Source conformance only. The human owner alone runs the verifier; agents must
-never run this file, pytest or Playwright.
+Run these synthetic conformance checks through ./verify-release.
 """
 from __future__ import annotations
 

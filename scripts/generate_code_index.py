@@ -61,7 +61,7 @@ def main() -> None:
     routes.sort(key=lambda r:(r['file'],r['line'],r['method']))
     payload={
         'schema':1,
-        'purpose':'Fast symbol and route navigation for contributors and coding agents.',
+        'purpose':'Fast symbol and route navigation for contributors.',
         'generated_by':'scripts/generate_code_index.py',
         'python':py,
         'javascript':js,

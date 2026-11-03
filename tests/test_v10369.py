@@ -1,8 +1,6 @@
-"""M9B2A semantic ID portability tests (USER verifier only; never run by agent).
+"""M9B2A semantic ID portability tests (USER verifier only
 
-Portable downloads must restore the same Canvas/Map *relationships*, not only
-insert rows that satisfy Schema-42's declared foreign keys. Unsupported frozen
-hosted version/snapshot formats must refuse export rather than lose content.
+Run these synthetic conformance checks through ./verify-release.
 """
 from __future__ import annotations
 

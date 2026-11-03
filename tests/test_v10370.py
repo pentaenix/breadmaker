@@ -1,7 +1,6 @@
 """M9B2B restricted historical conversion; USER executes verification only.
 
-These tests use shared memory hosted adapters and the unchanged local verifier
-and importer. They must never be executed by the assistant/agent.
+Run these synthetic conformance checks through ./verify-release.
 """
 from __future__ import annotations
 

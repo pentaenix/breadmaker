@@ -1,6 +1,6 @@
 """M12K: encrypted recovery must never claim success after silent record loss.
 
-These tests are authored for the owner's verifier. Agent must not run them.
+Run these synthetic conformance checks through ./verify-release.
 """
 from __future__ import annotations
 

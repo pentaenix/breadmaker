@@ -150,7 +150,7 @@ def test_v600_release_ui_and_public_contract():
     assert "JSON Project" in js
     assert (root / "docs" / "BREADMAKER_PROJECT_JSON.md").is_file()
     assert (root / "docs" / "breadmaker-project.schema.json").is_file()
-    assert (root / "docs" / "skills" / "breadmaker-project-builder" / "SKILL.md").is_file()
+    assert (root / "docs" / "BREADMAKER_FRAGMENT_JSON.md").is_file()
 
 
 def test_v600_validation_creates_default_main_tab_and_rejects_bad_refs():

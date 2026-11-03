@@ -66,7 +66,7 @@ def test_v1034_remaining_frontend_domains_have_canonical_owners():
 
 def test_v1034_docs_freeze_javascript_ownership_before_css_refactor():
     docs=(STATIC/'js/README.md').read_text(encoding='utf-8')
-    agents=(ROOT/'AGENTS.md').read_text(encoding='utf-8')
+    contributor_rules=(ROOT/'CONTRIBUTING.md').read_text(encoding='utf-8')
     assert 'startup shim only' in docs
     assert 'features/split_view.js' in docs
     assert 'features/checkpoints/workspace.js' in docs
@@ -74,4 +74,4 @@ def test_v1034_docs_freeze_javascript_ownership_before_css_refactor():
     assert 'features/notes/comments.js' in docs
     assert 'core/quick_open.js' in docs
     assert 'CSS remains intentionally monolithic' in docs
-    assert 'startup shim only' in agents
+    assert 'startup shim only' in contributor_rules

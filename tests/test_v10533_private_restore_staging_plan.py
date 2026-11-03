@@ -1,6 +1,6 @@
 """M12U operator-only, NON-DESTRUCTIVE failed-restore staging evidence.
 
-Human-owned ./verify-release only. These tests are not run by the assistant.
+Run these synthetic conformance checks through ./verify-release.
 """
 from __future__ import annotations
 
