@@ -30,6 +30,15 @@ jobs:
         run: node tools/narration/install.mjs
       - name: Install pinned browser test runtimes
         run: python -m playwright install --with-deps chromium firefox webkit
+      - name: Diagnose and provide virtual audio output for headless browsers
+        run: |
+          python tools/narration/probe-audio-output.py
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pulseaudio pulseaudio-utils
+          pulseaudio --start --exit-idle-time=-1
+          pactl load-module module-null-sink sink_name=breadmaker_test
+          pactl set-default-sink breadmaker_test
+          python tools/narration/probe-audio-output.py
       - name: Narration behavior, dictionaries and three-browser UI checks
         run: python tools/narration/check.py --runtime --browser chromium --browser firefox --browser webkit
       - name: Short real-model samples, never a full-book endurance test

@@ -352,6 +352,7 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             assert page.evaluate('()=>window.testGenerations')==count+1
             assert page.evaluate('()=>window.testInputs.at(-1)')=='The bakery is open. Please come inside.'
             assert len(saves)==saved
+            print('VOICE_PREVIEW_STATUS',page.locator('#narrationVoiceStatus').inner_text(),page.locator('#narrationVoiceStop').is_enabled(),flush=True)
             page.locator('#narrationVoiceStop').click();row('af_bella').locator('[data-voice-preview]').click()
             expect(row('af_bella').locator('[data-voice-preview]')).to_be_enabled()
             assert page.evaluate('()=>window.testGenerations')==count+1,'Repeat preview reuses the sample'
