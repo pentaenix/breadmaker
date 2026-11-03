@@ -133,7 +133,7 @@ async function narrateScope({generateOnly=false,regenerate=false,target=null,con
   if(narration.busy||narration.queueLoading)return;const snapshot=requireNarrationContext(context||narrationSnapshot()),pid=snapshot.pid,documentId=state.activeDocumentId,token=++narration.token;
   const scope=target?.scope||(state.viewMode==='book'?'book':'chapter'),chapterId=String(target?.chapterId||state.chapter?.id||narrationChapterSources()[0]?.chapter_id||'');
   if(target&&target.documentId!==documentId)return;
-  cancelNarrationEarly();narration.audio.pause();narration.queueLoading=true;narration.preparing=true;narration.stopRequested=false;syncNarrationActions();
+  cancelNarrationEarly();narration.audio.pause();if(!generateOnly)narration.audio.activate();narration.queueLoading=true;narration.preparing=true;narration.stopRequested=false;syncNarrationActions();
   let sources,records,savedTail=[];
   try{
     await loadNarrationPreferences();requireNarrationContext(snapshot);await flushSave();requireNarrationContext(snapshot);
@@ -186,14 +186,14 @@ async function deleteNarration(record,context=null){
 }
 async function playNarration(record,queue=[record],continuation=false){
   if(!continuation)cancelNarrationEarly();
-  const snapshot=narrationSnapshot(),pid=snapshot.pid,token=++narration.token;narration.audio.pause();
+  const snapshot=narrationSnapshot(),pid=snapshot.pid,token=++narration.token;narration.audio.pause();narration.audio.activate();
   if(record.thin){record=await narrationStore.metadata(pid,record,snapshot.transport);requireNarrationContext(snapshot)}
   const blob=await narrationStore.audio(pid,record.id,snapshot.transport);if(token!==narration.token||!narrationCurrent(snapshot)||!narrationOpen())return;
   const autoplay=!continuation||!narration.early||narration.early.autoplay;
   if(narration.url)URL.revokeObjectURL(narration.url);narration.url=URL.createObjectURL(blob);narration.selected=record;narration.queue=queue;narration.audio.src=narration.url;narration.audio.playbackRate=Number($('#narrationSpeed').value);$('#narrationPanel .narration-player').classList.remove('hidden');$('#narrationPreviewExcerpt').textContent=record.text;if(autoplay)try{await narration.audio.play()}catch(error){if(error.name!=='NotAllowedError')throw error}if(narrationCurrent(snapshot))renderNarrations();
 }
 async function resumeNarrationPlayback(){
-  if(!narration.selected)return;
+  if(!narration.selected)return;narration.audio.activate();
   const snapshot=narrationSnapshot(),selected=narration.selected,token=narration.token;
   if(narrationHosted()){
     if(selected.id==='pending-narration')await (await narrationDevice(snapshot)).authorize();
@@ -216,7 +216,7 @@ function renderNarrations(){
 }
 async function generateNarrations(sources,recreate=false,{reuseAnyVoice=false,generateOnly=false,savedTail=[],context=null}={}){
   if(narration.busy||narration.queueLoading||!sources.length)return;const snapshot=requireNarrationContext(context||narrationSnapshot()),pid=snapshot.pid,voice=$('#narrationVoice').value,pace=narrationPreferences.value.generationPace,punctuationPauses=narrationPreferences.value.punctuationPauses;narration.busy=true;narration.stopRequested=false;syncNarrationActions();const queue=[];let success=false,progress;
-  cancelNarrationEarly();narration.audio.pause();const early={pid,context:snapshot,voice,queue,started:false,autoplay:!generateOnly&&narrationPreferences.value.autoplay,waitingNext:false,record:null};narration.early=generateOnly?null:early;syncNarrationPlayControl();
+  cancelNarrationEarly();narration.audio.pause();if(!generateOnly)narration.audio.activate();const early={pid,context:snapshot,voice,queue,started:false,autoplay:!generateOnly&&narrationPreferences.value.autoplay,waitingNext:false,record:null};narration.early=generateOnly?null:early;syncNarrationPlayControl();
   try{
   sources=await prepareNarrationSources(sources,snapshot,{remember:true});if(recreate)sources=narrationReplacementSources(sources);narrationEngine();
   const progressSources=sources.map(source=>({...source,cached:!recreate&&!!window.findNarrationRecording(source,narration.records,voice,reuseAnyVoice)}));
