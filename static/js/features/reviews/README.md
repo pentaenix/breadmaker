@@ -5,6 +5,8 @@ Reviews is package-owned in 10.3.5. The package preserves the existing classic-s
 - `view.js` — Reviewer Mode typography and view-popover preferences.
 - `reader.js` — Reviewer Mode rendering, selections, annotations, feedback autosave, portable `.breadreview` sessions, passphrase UI, and drag/drop opening.
 - `workspace.js` — writer-side Review rail, ordering, scope, overview, feedback cards, and collection/review menus.
+  Phone navigation uses the shared `core/collections.js` drawer; selecting a
+  Review dismisses it without changing the saved desktop rail preference.
 - `details.js` — Review create/details dialogs and lifecycle command entry points.
 - `panels.js` — Questionnaires, Participants, Review Markers, and their side-panel workflows.
 - `lifecycle.js` — round/state history presentation and Reviews DOM event wiring.

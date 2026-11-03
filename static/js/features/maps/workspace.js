@@ -75,7 +75,7 @@ function renderMapTree(){
     const openMapActions=async e=>{e.preventDefault();e.stopPropagation();hideChapterDetailsHover();const anchor=e.type==='contextmenu'?{kind:'point',x:e.clientX,y:e.clientY}:{kind:'rect',rect:(()=>{const r=e.currentTarget?.getBoundingClientRect();return r?{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height}:null})()};try{await loadMapPopulateCatalog()}catch(error){console.warn('Could not load Map population catalog',error);return toast('Populate options could not be loaded.')}const items=mapMapMenu(map);if(anchor.kind==='point')openContextMenu(anchor.x,anchor.y,items);else if(anchor.rect)openContextMenu(anchor.rect.left,anchor.rect.bottom+4,items,{anchorRect:anchor.rect})};row.querySelector('.map-tree-more').onclick=openMapActions;row.oncontextmenu=openMapActions;
     const grip=row.querySelector('.map-tree-grip');grip.ondragstart=e=>{hideChapterDetailsHover();e.stopPropagation();e.dataTransfer.setData('application/x-breadmaker-map',String(map.id));e.dataTransfer.effectAllowed='move'};row.ondragover=e=>{if(e.dataTransfer.types.includes('application/x-breadmaker-map')){e.preventDefault();row.classList.add('drag-over')}};row.ondragleave=()=>row.classList.remove('drag-over');row.ondrop=async e=>{row.classList.remove('drag-over');const source=entityId(e.dataTransfer.getData('application/x-breadmaker-map'));if(!source||source===entityId(map.id))return;e.preventDefault();await reorderMaps(source,map.id)};
     wrap.appendChild(row);box.appendChild(wrap);
-    const showLines=state.mapRailExpanded?!collapsed:state.currentMap?.id===map.id;
+    const showLines=(phoneRailMedia.matches||state.mapRailExpanded)?!collapsed:state.currentMap?.id===map.id;
     if(!showLines)continue;
     const children=document.createElement('div');children.className='map-tree-lines';wrap.appendChild(children);
     if(!detail){children.innerHTML='<div class="map-tree-loading">{{i18n:dynamic.html.text.div.6f4f7e1f}}</div>';queueMapTreeDetail(map.id);continue}
@@ -95,6 +95,7 @@ function renderMapTree(){
   appendCollectionQuickAdd(box,i18nSource('Add Map'),()=>newMapDialog());
 }
 async function selectMap(id,{itemId=null,reload=false,persist=true}={}){
+  setPhoneRail('maps',false,{restoreFocus:true});
   const map=mapMapById(id);if(!map)return;const previousMapId=state.currentMap?.id||null,restoreViewport=!state.mapData||entityId(state.mapData.map?.id)!==entityId(map.id);if(previousMapId&&entityId(previousMapId)!==entityId(map.id))persistMapViewportNow(previousMapId).catch(console.warn);
   state.currentMap=map;state.selectedMapItemId=itemId;state.selectedMapJunctionId=null;state.mapPendingConnection=null;state.mapFocusLineId=null;state.mapCollapsed.delete(map.id);if(persist)persistMapTree();
   const cached=state.mapTreeCache.get(map.id);

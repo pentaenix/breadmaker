@@ -82,6 +82,17 @@ def _without_read_cache(data):
     return None if data is None else {k:v for k,v in data.items() if k!='_bm_read_bundle'}
 
 
+def _require_product_path(path, pid, uid):
+    # A bookmark is private product state, not membership authority. Keep this
+    # exception exact: no other member, sibling state, ACL or descendant path.
+    if path == ('projects', pid, 'members', uid, 'state', 'bookmark'):
+        return
+    if (path[:2] != ('projects', pid) or len(path) < 4
+            or path[2] not in _PRODUCT_COLLECTIONS
+            or any(p in _DENIED_COLLECTIONS for p in path[2::2])):
+        raise HostedValidationError('HOSTED_ACTION_ENTITY_UNSUPPORTED')
+
+
 class _BufferedTransaction:
     """Delay provider writes until journal checks/reads finish (Firestore rule)."""
     def __init__(self, tx):
@@ -150,9 +161,7 @@ class ActionDocumentStore:
                 # replay checks project generation before accepting such receipts.
                 if path[:3] == root_path + ('mutation_receipts',) and before is None and after is not None:
                     continue
-                if (path[:2] != root_path or len(path) < 4 or path[2] not in _PRODUCT_COLLECTIONS
-                        or any(p in _DENIED_COLLECTIONS for p in path[2::2])):
-                    raise HostedValidationError('HOSTED_ACTION_ENTITY_UNSUPPORTED')
+                _require_product_path(path, pid, uid)
                 if path in records and _without_read_cache(records[path]['after']) != _without_read_cache(before):
                     raise DocumentConflict('HOSTED_ACTION_RECORD_CHANGED')
                 record = records.setdefault(path, {'path': list(path), 'before': before})
@@ -238,6 +247,7 @@ class ActionJournal:
             pending = []
             for record in action['records']:
                 path = tuple(record['path'])
+                _require_product_path(path, pid, uid)
                 current = _data(tx.get(path))
                 expected = record.get('current', record['after'])
                 if _without_read_cache(current) != _without_read_cache(expected):
@@ -265,6 +275,7 @@ class ActionJournal:
                 valid = related_data['state'] == ('undone' if direction == 'redo' else 'finished')
                 for record in related_data['records']:
                     path=tuple(record['path'])
+                    _require_product_path(path, pid, uid)
                     actual=pending_map[path] if path in pending_map else _data(tx.get(path))
                     expected=record.get('current',record['after'])
                     if _semantic(actual) != _semantic(expected): valid=False

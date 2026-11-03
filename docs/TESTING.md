@@ -12,6 +12,39 @@ It reports unit, Core/API, current-browser, and durable end-to-end results, incl
 
 For focused work, developers can run a relevant test module or item first, but that does not replace the full suite. Do not loosen watchdogs or suppress errors to obtain a green result. When the full suite fails, use the failure digest and the saved report to locate the underlying test or application fault.
 
+## Fast feature smoke
+
+With the pinned test dependencies and Playwright Chromium already installed:
+
+```sh
+./verify-feature-smoke --list
+./verify-feature-smoke --report /tmp/breadmaker-feature-smoke.json
+./verify-feature-smoke --mode hosted --workers 2
+```
+
+The default is 21 exact browser items, both local and synthetic hosted modes,
+one worker. It exercises visible bookmark create/remove, marker validation and
+create/remove, Unicode manuscript save/reopen, voice selection/generation, Stop
+during preparation, hosted access-denial cleanup, and startup-modal interaction
+while editor chrome remains hidden/inert. It reuses existing cases
+where possible. It also selects the product owner's dedicated local/hosted masked
+password, modal keyboard/focus/owned-menu, touch project-switching, voice-library
+pack-menu and responsive rail/panel cases. Password clients are synthetic; local
+mode remains accountless. These IDs require the matching mobile follow-up source
+and tests; a checkout missing them fails discovery rather than omitting coverage.
+Every case has an isolated home/project/server/browser, standard
+discovery and the existing hard timeout/accounting/one fresh-process retry.
+The report retains original failures and recovered retries; skips or missing
+items fail. Narration inference is synthetic; this is not a speech-quality,
+production authentication or disaster-recovery test, and never authorizes release.
+
+The command does not install dependencies or request cloud credentials. On macOS,
+set `BREADMAKER_TEST_PYTHON=/absolute/path/to/test-venv/bin/python` to reuse a pinned
+environment. If needed, the existing `BREADMAKER_TEST_BROWSER` override accepts an
+installed Chrome executable; it still must pass the bounded launch/render/close
+probe. Workers are explicitly limited to one or two; this command changes no CI
+or full-suite defaults. `./verify-release` remains the complete release gate.
+
 ## Historical test notes
 
 The material below documents earlier authentication providers, harness changes, and reliability decisions. It should not be treated as the current setup for CI or Identity Platform.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 from source_contracts import frontend_styles_source
 
@@ -33,9 +34,10 @@ def test_v1038_cross_workspace_toolbar_icon_is_shared_not_manuscript_owned():
 def test_v1038_shared_context_menu_renderer_is_owned_by_core_ui():
     core = (STATIC / 'js' / 'core' / 'ui.js').read_text(encoding='utf-8')
     manuscript = (STATIC / 'js' / 'features' / 'manuscript' / 'scenes.js').read_text(encoding='utf-8')
-    assert 'function openContextMenu(x,y,items,{anchorRect=null}={})' in core
-    assert 'function contextMenuItems(container,items,root)' in core
-    assert 'function openContextMenu(x,y,items,{anchorRect=null}={})' not in manuscript
+    for name in ('openContextMenu', 'contextMenuItems'):
+        declaration = rf'(?m)^\s*(?:async\s+)?function\s+{name}\s*\('
+        assert len(re.findall(declaration, core)) == 1, name
+        assert not re.search(declaration, manuscript), name
 
 
 def test_v1038_contributors_require_component_reuse_before_creation():

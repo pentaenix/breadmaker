@@ -1,0 +1,13 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")"
+# Reuse an installed environment. No dependency installation, advisory calls,
+# real account credentials or cloud services are part of this synthetic smoke.
+if [ -n "${BREADMAKER_TEST_PYTHON:-}" ]; then
+  smoke_python="$BREADMAKER_TEST_PYTHON"
+elif [ -x .venv/bin/python ]; then
+  smoke_python=.venv/bin/python
+else
+  smoke_python=python3
+fi
+exec "$smoke_python" scripts/verify_feature_smoke.py "$@"

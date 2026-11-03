@@ -3,6 +3,9 @@
 Project administration is package-owned in 10.3.5. The package keeps destructive, backup, and transfer responsibilities explicit instead of accumulating them in one Project shell file.
 
 - `menu.js` — brand Project menu, submenus, and rename entry point.
+  Submenu hover opens only for mouse pointers. Touch opens on click so
+  compatibility hover events cannot move a project row under the initial tap.
+  Arrow-key entry/navigation and Escape return use the same menu builders.
 - `settings.js` — Project Settings, language selection, local History retention, and the Narration settings dialog. Narration preference persistence/application belongs to Manuscript's `narration-preferences.js`/`narration.js`.
   Generation pace, playback-only pitch, and the nested selection/chapter/book audio-download prompt live here, not in the main narration panel. Export assembly belongs to Manuscript's `narration-export.js`.
   Punctuation pauses is a project-scoped, default-on generation preference; changing it does not rewrite saved recordings.

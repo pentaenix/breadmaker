@@ -260,6 +260,7 @@ $('#developmentalLaneViewport')?.addEventListener('scroll',()=>queueCanvasViewpo
 $('#canvasStage').addEventListener('wheel',event=>{if(!state.currentCanvas)return;event.preventDefault();if(!event.deltaY)return;const factor=Math.exp(-event.deltaY*.0016);applyCanvasZoom((state.canvasZoom||1)*factor,{anchorClientX:event.clientX,anchorClientY:event.clientY})},{passive:false});
 
 async function selectCanvas(id,{persist=true}={}){cancelCanvasCardTool();cancelCanvasFigureTool();
+  setPhoneRail('canvas',false,{restoreFocus:true});
   if(state.currentCanvas?.id&&entityId(state.currentCanvas.id)!==entityId(id)){cancelQueuedCanvasViewportPersist();persistCurrentCanvasViewport().catch(console.warn)}
   const same=entityId(state.currentCanvas?.id)===entityId(id),data=await api(`/api/canvases/${id}`);if(!same)state.developmentalStructureOpen=true;state.currentCanvas=data.canvas;state.canvasNodes=data.nodes;state.canvasEdges=data.edges;state.selectedNodes.clear();clearCanvasEdgeSelection();state.activeLegendId=null;state.legendFilterMode='highlight';if(!same){state.activeCanvasVersionId=null;state.activeCanvasVersion=null;state.canvasVersions=[]}$('#canvasName').value=data.canvas.name;if(persist)await persistActiveCanvas(data.canvas.id).catch(console.warn);else state.lastCanvasId=entityId(data.canvas.id);await initializeCanvasVersions();syncApplyStructureButton();renderCanvasRail();renderNodes();drawEdges();renderCanvasGuides();closeCanvasPanel();await restoreCanvasViewport(id);applyLegendFilter();
 }

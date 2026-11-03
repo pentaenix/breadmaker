@@ -79,7 +79,7 @@ async function openNarrationVoiceSettings(){
       if(busy||!live())return;const voices=available.filter(voice=>voice.language===language),defaults=voices.filter(voice=>voice.default);
       const item=(key,pack)=>{const missing=pack.filter(voice=>!voice.installed),size=new Intl.NumberFormat(i18nCatalog.code,{maximumFractionDigits:1}).format(missing.reduce((total,voice)=>total+voice.size,0)/1024/1024);return {label:i18nText(key,{count:pack.length,size}),disabled:!missing.length,action:()=>download(pack,true)}};
       const items=[item('narration.pack_defaults',defaults)];if(defaults.length!==voices.length)items.push(item('narration.pack_all',voices));
-      const rect=event.currentTarget.getBoundingClientRect();openContextMenu(rect.left,rect.bottom,items,{anchorRect:rect});
+      const rect=event.currentTarget.getBoundingClientRect();openContextMenu(rect.left,rect.bottom,items,{anchorRect:rect,owner:event.currentTarget});
     };
     search.oninput=()=>render();languageSelect.onchange=()=>{stopPreview();language=languageSelect.value;search.value='';message='';render()};
     $('#narrationVoiceStop').onclick=()=>{if(downloadJob){stopDownloads=true;render();return}stopPreview();message='';render()};$('#narrationVoiceDone').onclick=()=>closeModal();audio.onended=()=>{previewVoice=null;render()};render();

@@ -31,6 +31,7 @@ function syncViewRoute(view,{replace=false}={}){
   try{history[method]({breadmakerView:view},'',`${path}${location.search}${location.hash}`)}catch(error){console.warn('Could not update Breadmaker route',error)}
 }
 function setView(view,{historyMode='push'}={}) {
+  closePhoneRails();
   $$('.view').forEach(v => v.classList.remove('active'));
   const target=$(`#${view}View`);
   if(!target){reportViewRenderError(view,new Error(`Missing view shell #${view}View`));return}
