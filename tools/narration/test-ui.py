@@ -65,6 +65,7 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             assert browser_name in ('chromium','firefox','webkit')
             browser=getattr(pw,browser_name).launch(headless=True,**({'args':['--autoplay-policy=no-user-gesture-required']} if browser_name=='chromium' else {}))
             page=browser.new_page();errors=[];saves=[]
+            page.add_init_script('''(()=>{const original=AudioContext.prototype.resume;AudioContext.prototype.resume=function(...args){const row={start:this.state,done:false};(window.testAudioResumes??=[]).push(row);const result=original.apply(this,args);result.then(()=>{row.done=true;row.end=this.state},error=>{(window.testAudioErrors??=[]).push(String(error))});return result}})()''')
             # Exercise the four-thread settings contract independently of runner CPU count.
             page.add_init_script("Object.defineProperty(navigator,'hardwareConcurrency',{get:()=>8})")
             page.on('pageerror',lambda error:errors.append(str(error)))
@@ -188,7 +189,12 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             blocks(overnight,[f'Night passage {i}.' for i in range(1,9)],headers)
             # A persisted Continue playback setting must not generate later
             # chapters from either the main chapter button or its menu.
-            page.locator('#narrationChapter').click();expect(page.locator('#narrationChapter')).to_be_enabled(timeout=10000)
+            page.locator('#narrationChapter').click()
+            try:
+                expect(page.locator('#narrationChapter')).to_be_enabled(timeout=10000)
+            except BaseException:
+                print('NARRATION_FAILURE_STATE',page.evaluate('''()=>({busy:narration.busy,queueLoading:narration.queueLoading,preparing:narration.preparing,token:narration.token,selected:narration.selected?.id,queue:narration.queue?.length,nativeContext:narration.audio.nativeContext?.state,native:{paused:narration.audio.native.paused,readyState:narration.audio.native.readyState,networkState:narration.audio.native.networkState,currentTime:narration.audio.native.currentTime,error:narration.audio.native.error?.message},stream:!!narration.audio.stream,early:narration.early?{started:narration.early.started,autoplay:narration.early.autoplay,waitingNext:narration.early.waitingNext}:null,errors:window.testAudioErrors||[],resumeCalls:window.testAudioResumes||[]})'''),flush=True)
+                raise
             assert len(saves)==6 and page.evaluate('()=>window.testGenerations')==1
             assert page.evaluate('()=>narration.queue.map(record=>record.text)')==[first['title'],'First one.','Second one.','Missing audio.']
             page.evaluate('()=>openWholeBook(false,true,{force:true})');expect(page.locator('#narrationChapter')).to_have_text('Narrate book')
