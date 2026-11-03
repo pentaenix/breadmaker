@@ -65,6 +65,8 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             assert browser_name in ('chromium','firefox','webkit')
             browser=getattr(pw,browser_name).launch(headless=True,**({'args':['--autoplay-policy=no-user-gesture-required']} if browser_name=='chromium' else {}))
             page=browser.new_page();errors=[];saves=[]
+            # Exercise the four-thread settings contract independently of runner CPU count.
+            page.add_init_script("Object.defineProperty(navigator,'hardwareConcurrency',{get:()=>8})")
             page.on('pageerror',lambda error:errors.append(str(error)))
             page.on('request',lambda request:saves.append(request.url) if request.method=='POST' and request.url==base+'/api/narrations' else None)
             page.route('**/narration-engine.js?*',lambda route:route.fulfill(status=200,content_type='text/javascript',body=STUB))
