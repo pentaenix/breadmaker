@@ -24,7 +24,7 @@ jobs:
         run: |
           node -e 'if(Number(process.versions.node.split(".")[0])<22)process.exit(1)'
           npm install --global pnpm@11.25.0
-          pnpm --dir tools/narration install --frozen-lockfile
+          pnpm --dir tools/narration install --frozen-lockfile --ignore-scripts
           pnpm --dir tools/narration audit
       - name: Build and verify offline CPU model assets
         run: node tools/narration/install.mjs
