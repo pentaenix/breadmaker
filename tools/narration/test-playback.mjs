@@ -27,19 +27,6 @@ audio.nativeContext=null;
 audio.startStream({...context,resume:()=>new Promise(resolve=>resume=resolve)});audio.appendStream({duration:1});
 const pendingStream=audio.play();audio.pause();resume();await pendingStream;
 assert(audio.paused,'a pending stream resume cannot undo a later pause');audio.clearStream();
-// A cached scope fetch must not consume the click needed to resume pitched audio.
-let gesture=true,activations=0;
-const gatedContext={state:'suspended',resume(){
-  if(this.state==='running')return Promise.resolve();
-  activations++;if(!gesture)return new Promise(()=>{});
-  this.state='running';return Promise.resolve();
-}};
-audio.nativeContext=gatedContext;audio.activate();
-assert.equal(activations,1,'Activation must run synchronously before a fetch/await');
-assert(native.paused,'Activation does not play data before scope authorization');
-gesture=false;await Promise.resolve();await audio.play();assert(!native.paused);
-audio.pause();audio.nativeContext={state:'suspended',resume:()=>Promise.reject(Error('blocked'))};
-audio.activate();await Promise.resolve();audio.nativeContext=null;
 console.log('PASS: early chunk playback, buffering, pause/resume, seek, speed, restart, single ended event, saved WAV handoff, timer cleanup.');
 
 const sources=[{block_id:'b',source_text:'Hello world.'},{block_id:'a',source_text:'Next passage.'},{block_id:'missing',source_text:'No audio.'}];

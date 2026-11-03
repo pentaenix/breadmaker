@@ -63,3 +63,28 @@ assert.equal(run('findNarrationRecording({...prepared,source_hash:"0".repeat(64)
 assert.equal(run('narrationExportCandidate(prepared,[thin],"af_heart").id'),'r');
 assert.equal(run('narrationExportClip({...prepared,start:1},[thin],"af_heart")'),null,'partial export must hydrate word timing metadata');
 console.log('PASS: old UI generation cannot cross accounts; reset stops workers/audio and old finalizers cannot clobber new state; thin matching/export retain source proof.');
+
+// A browser can leave resume() pending. Cached scope readiness is not playback readiness.
+let releaseAudio,nativePlays=0,scopeFinished=false;
+context.URL.createObjectURL=()=> 'blob:synthetic-pending-audio';
+context.pendingAudioContext={resume:()=>new Promise(resolve=>releaseAudio=resolve)};
+context.countNativePlay=()=>{nativePlays++};
+run(`state.runtime.mode='local';state.chapter={id:'c_synthetic'};
+  narration.audio.nativeContext=pendingAudioContext;
+  narration.audio.native.play=async()=>countNativePlay();
+  loadNarrationPreferences=async()=>{};prepareNarrationSources=async sources=>sources;
+  loadBookData=async()=>({chapters:[{id:'c_synthetic',is_implicit:true}],blocks:[{id:'b_synthetic',chapter_id:'c_synthetic',block_type:'paragraph',text_content:'Synthetic prose.'}]});
+  narrationStore={list:async()=>[{...syntheticSource,id:'cached',voice:'af_heart',duration:1}],audio:async()=>new Blob(['synthetic audio'])};`);
+const cachedScope=run('narrateScope()').then(()=>scopeFinished=true);
+await new Promise(resolve=>setImmediate(resolve));
+assert.equal(scopeFinished,true,'A suspended output device must not hold the cached queue loader');
+await cachedScope;
+assert.equal(run('narration.queueLoading'),false);
+assert.equal(run('narration.preparing'),false);
+assert.equal(run('narration.queue.length'),1);
+assert.equal(run('narration.selected.id'),'cached');
+assert.equal(nativePlays,0,'Pending context activation does not pretend audio played');
+run('resetNarrationPrivateUI()');releaseAudio();await new Promise(resolve=>setImmediate(resolve));
+assert.equal(nativePlays,0,'A late output-device resume cannot restart audio after reset');
+assert.equal(posts,0,'Playback readiness never publishes or bypasses private storage');
+console.log('PASS: cached scope readiness survives pending audio resume; reset cancels delayed playback.');

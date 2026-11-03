@@ -19585,7 +19585,7 @@
     },
     {
       "file": "static/js/features/manuscript/narration.js",
-      "lines": 269,
+      "lines": 272,
       "symbols": [
         {
           "name": "narrationHosted",
@@ -19820,27 +19820,27 @@
         {
           "name": "resumeNarrationPlayback",
           "kind": "function",
-          "line": 195
+          "line": 198
         },
         {
           "name": "renderNarrations",
           "kind": "function",
-          "line": 205
+          "line": 208
         },
         {
           "name": "generateNarrations",
           "kind": "function",
-          "line": 217
+          "line": 220
         },
         {
           "name": "openNarrationPanel",
           "kind": "function",
-          "line": 236
+          "line": 239
         },
         {
           "name": "initializeNarrationUI",
           "kind": "function",
-          "line": 249
+          "line": 252
         }
       ]
     },
@@ -24463,11 +24463,6 @@
           "line": 136
         }
       ]
-    },
-    {
-      "file": "static/vendor/narration/transformers/transformers.web.min.js",
-      "lines": 51,
-      "symbols": []
     }
   ],
   "routes": [

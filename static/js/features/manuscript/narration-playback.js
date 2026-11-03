@@ -12,13 +12,6 @@ class BreadmakerNarrationPlayback {
   set currentTime(value){const s=this.stream;if(!s){this.native.currentTime=value;return}s.position=Math.max(0,Math.min(s.duration,Number(value)||0));s.ended=false;if(s.playing)this.schedule();this.ontimeupdate?.()}
   get playbackRate(){return this.rate}
   set playbackRate(value){const position=this.currentTime;this.rate=Number(value)||1;this.native.playbackRate=this.rate;this.updatePitch();if(this.stream){this.stream.position=position;if(this.stream.playing)this.schedule()}}
-  activate(){
-    // Request playback permission during the click, before any cache/network await.
-    for(const context of new Set([this.nativeContext,this.stream?.context])){
-      if(!context||context.state==='running'||context.state==='closed')continue;
-      try{context.resume().catch(()=>{})}catch{}
-    }
-  }
   async pitchGraph(context){
     if(!this.pitchGraphs.has(context))this.pitchGraphs.set(context,(async()=>{await context.audioWorklet.addModule('/static/js/features/manuscript/narration-pitch-worklet.js');const node=new AudioWorkletNode(context,'breadmaker-narration-pitch',{outputChannelCount:[1]});node.connect(context.destination);return node})());
     return this.pitchGraphs.get(context);
