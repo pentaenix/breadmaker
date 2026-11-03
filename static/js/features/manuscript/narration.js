@@ -190,7 +190,10 @@ async function playNarration(record,queue=[record],continuation=false){
   if(record.thin){record=await narrationStore.metadata(pid,record,snapshot.transport);requireNarrationContext(snapshot)}
   const blob=await narrationStore.audio(pid,record.id,snapshot.transport);if(token!==narration.token||!narrationCurrent(snapshot)||!narrationOpen())return;
   const autoplay=!continuation||!narration.early||narration.early.autoplay;
-  if(narration.url)URL.revokeObjectURL(narration.url);narration.url=URL.createObjectURL(blob);narration.selected=record;narration.queue=queue;narration.audio.src=narration.url;narration.audio.playbackRate=Number($('#narrationSpeed').value);$('#narrationPanel .narration-player').classList.remove('hidden');$('#narrationPreviewExcerpt').textContent=record.text;if(autoplay)try{await narration.audio.play()}catch(error){if(error.name!=='NotAllowedError')throw error}if(narrationCurrent(snapshot))renderNarrations();
+  if(narration.url)URL.revokeObjectURL(narration.url);narration.url=URL.createObjectURL(blob);narration.selected=record;narration.queue=queue;narration.audio.src=narration.url;narration.audio.playbackRate=Number($('#narrationSpeed').value);$('#narrationPanel .narration-player').classList.remove('hidden');$('#narrationPreviewExcerpt').textContent=record.text;
+  // A browser may leave resume() pending; loaded queues must remain usable.
+  if(autoplay)narration.audio.play().catch(error=>{if(error.name!=='NotAllowedError'&&token===narration.token&&narrationCurrent(snapshot)&&narrationOpen())narrationFail(error)});
+  if(narrationCurrent(snapshot))renderNarrations();
 }
 async function resumeNarrationPlayback(){
   if(!narration.selected)return;
