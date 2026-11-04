@@ -1,9 +1,11 @@
 # Optional Targets review checkpoint
 
-Targets is implemented on isolated branch `feature/optional-targets`, based on
-`ad196f5` (the phone touch/menu release candidate, Editor 10.5.80). This checkpoint
-does not change the release version and is not deployed. Integrate it with the
-current release branch before assigning the next version/cache identity.
+Targets is integrated with Canvas in the isolated 10.5.81 candidate on
+`integration/canvas-next`, based on deployed main `8dcf79e`. It includes the
+Targets owner's checkpoints `4613591` and `bc2cef2`; original owner worktrees
+remain preserved. This candidate is not deployed. All 23 parameter combinations
+now have explicit one-item browser entries for the unchanged release verifier.
+Full integrated release verification remains required before promotion.
 
 ## Product behavior
 

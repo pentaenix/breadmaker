@@ -20,8 +20,7 @@ def client_headers(page,base,pid):
             'X-Breadmaker-Client':page.evaluate('CLIENT_ID')}
 
 
-@pytest.mark.parametrize('local',[True,False],ids=['local','hosted'])
-def test_targets_revision_is_checked_inside_the_store_transaction(tmp_path,local):
+def _exercise_targets_revision_is_checked_inside_the_store_transaction(tmp_path,local):
     with browser(tmp_path,local=local) as (base,page,pid):
         url=base+'/api/ui-state/'+target_key(page);headers=client_headers(page,base,pid)
         def project_generation():
@@ -49,8 +48,7 @@ def test_targets_revision_is_checked_inside_the_store_transaction(tmp_path,local
         assert project_generation()==generation
 
 
-@pytest.mark.parametrize('local',[True,False],ids=['local','hosted'])
-def test_targets_independent_devices_retry_a_forced_atomic_merge_conflict(tmp_path,local,shared_tab=False):
+def _exercise_targets_independent_devices_retry_a_forced_atomic_merge_conflict(tmp_path,local,shared_tab=False):
     with browser(tmp_path,local=local) as (base,page,pid):
         add_word_goal(page)
         interval=page.evaluate("""async()=>{const settings=structuredClone(targets.doc);settings.goals.push({id:uid(),metric:'time',period:'daily',amount:600,created:Date.now()});targetsEnqueue({},Date.now(),settings);await flushTargets();const end=targetsModel.period('daily').end;return [end-3000,end-1000]}""")
@@ -93,14 +91,11 @@ def test_targets_independent_devices_retry_a_forced_atomic_merge_conflict(tmp_pa
             else:other.close()
 
 
-@pytest.mark.parametrize('local',[True,False],ids=['local','hosted'])
-def test_targets_simultaneous_tabs_share_atomic_sequence_and_outbox(tmp_path,local):
-    test_targets_independent_devices_retry_a_forced_atomic_merge_conflict(tmp_path,local,shared_tab=True)
+def _exercise_targets_simultaneous_tabs_share_atomic_sequence_and_outbox(tmp_path,local):
+    _exercise_targets_independent_devices_retry_a_forced_atomic_merge_conflict(tmp_path,local,shared_tab=True)
 
 
-@pytest.mark.parametrize('local',[True,False],ids=['local','hosted'])
-@pytest.mark.parametrize('fail_idb',[False,True],ids=['committed-idb','synchronous-prejournal'])
-def test_targets_new_tab_recovers_unacknowledged_progress_after_close(tmp_path,local,fail_idb,engine='chromium'):
+def _exercise_targets_new_tab_recovers_unacknowledged_progress_after_close(tmp_path,local,fail_idb,engine='chromium'):
     with browser(tmp_path,local=local,engine=engine) as (base,page,pid):
         add_word_goal(page)
         context=page.context.browser.new_context()
@@ -127,13 +122,11 @@ def test_targets_new_tab_recovers_unacknowledged_progress_after_close(tmp_path,l
         finally:context.close()
 
 
-@pytest.mark.parametrize('local',[True,False],ids=['local','hosted'])
-def test_targets_webkit_recovers_prejournal_in_a_new_tab(tmp_path,local):
-    test_targets_new_tab_recovers_unacknowledged_progress_after_close(tmp_path,local,True,engine='webkit')
+def _exercise_targets_webkit_recovers_prejournal_in_a_new_tab(tmp_path,local):
+    _exercise_targets_new_tab_recovers_unacknowledged_progress_after_close(tmp_path,local,True,engine='webkit')
 
 
-@pytest.mark.parametrize('local',[True,False],ids=['local','hosted'])
-def test_targets_failed_prejournal_cleanup_cannot_resurrect_an_acknowledged_operation(tmp_path,local):
+def _exercise_targets_failed_prejournal_cleanup_cannot_resurrect_an_acknowledged_operation(tmp_path,local):
     with browser(tmp_path,local=local) as (_,page,_):
         add_word_goal(page)
         page.evaluate("""()=>{window.originalTargetsRemove=Storage.prototype.removeItem;Storage.prototype.removeItem=function(key){if(key.startsWith('breadmaker-targets-journal:'))throw new Error('Synthetic cleanup failure');return window.originalTargetsRemove.call(this,key)};targetsEnqueue({words:2})}""")
@@ -144,3 +137,48 @@ def test_targets_failed_prejournal_cleanup_cannot_resurrect_an_acknowledged_oper
         page.evaluate('async()=>await flushTargets()')
         assert page.evaluate('()=>targetsModel.progress(targets.doc)[0].value')==2
         assert page.evaluate('async()=>await targetsJournal.read(targets.context)')==[]
+
+
+# Explicit cases preserve all parameter combinations under one-item browser jobs.
+
+def test_targets_revision_is_checked_inside_the_store_transaction_local(tmp_path):
+    _exercise_targets_revision_is_checked_inside_the_store_transaction(tmp_path, local=True)
+
+def test_targets_revision_is_checked_inside_the_store_transaction_hosted(tmp_path):
+    _exercise_targets_revision_is_checked_inside_the_store_transaction(tmp_path, local=False)
+
+def test_targets_independent_devices_retry_a_forced_atomic_merge_conflict_local(tmp_path):
+    _exercise_targets_independent_devices_retry_a_forced_atomic_merge_conflict(tmp_path, local=True)
+
+def test_targets_independent_devices_retry_a_forced_atomic_merge_conflict_hosted(tmp_path):
+    _exercise_targets_independent_devices_retry_a_forced_atomic_merge_conflict(tmp_path, local=False)
+
+def test_targets_simultaneous_tabs_share_atomic_sequence_and_outbox_local(tmp_path):
+    _exercise_targets_simultaneous_tabs_share_atomic_sequence_and_outbox(tmp_path, local=True)
+
+def test_targets_simultaneous_tabs_share_atomic_sequence_and_outbox_hosted(tmp_path):
+    _exercise_targets_simultaneous_tabs_share_atomic_sequence_and_outbox(tmp_path, local=False)
+
+def test_targets_new_tab_recovers_unacknowledged_progress_after_close_local_idb(tmp_path):
+    _exercise_targets_new_tab_recovers_unacknowledged_progress_after_close(tmp_path, local=True, fail_idb=False)
+
+def test_targets_new_tab_recovers_unacknowledged_progress_after_close_local_prejournal(tmp_path):
+    _exercise_targets_new_tab_recovers_unacknowledged_progress_after_close(tmp_path, local=True, fail_idb=True)
+
+def test_targets_new_tab_recovers_unacknowledged_progress_after_close_hosted_idb(tmp_path):
+    _exercise_targets_new_tab_recovers_unacknowledged_progress_after_close(tmp_path, local=False, fail_idb=False)
+
+def test_targets_new_tab_recovers_unacknowledged_progress_after_close_hosted_prejournal(tmp_path):
+    _exercise_targets_new_tab_recovers_unacknowledged_progress_after_close(tmp_path, local=False, fail_idb=True)
+
+def test_targets_webkit_recovers_prejournal_in_a_new_tab_local(tmp_path):
+    _exercise_targets_webkit_recovers_prejournal_in_a_new_tab(tmp_path, local=True)
+
+def test_targets_webkit_recovers_prejournal_in_a_new_tab_hosted(tmp_path):
+    _exercise_targets_webkit_recovers_prejournal_in_a_new_tab(tmp_path, local=False)
+
+def test_targets_failed_prejournal_cleanup_cannot_resurrect_an_acknowledged_operation_local(tmp_path):
+    _exercise_targets_failed_prejournal_cleanup_cannot_resurrect_an_acknowledged_operation(tmp_path, local=True)
+
+def test_targets_failed_prejournal_cleanup_cannot_resurrect_an_acknowledged_operation_hosted(tmp_path):
+    _exercise_targets_failed_prejournal_cleanup_cannot_resurrect_an_acknowledged_operation(tmp_path, local=False)

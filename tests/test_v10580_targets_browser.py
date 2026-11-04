@@ -24,8 +24,7 @@ def write_more(page,text):
     page.keyboard.insert_text(text)
 
 
-@pytest.mark.parametrize('local',[True,False],ids=['local','hosted'])
-def test_targets_optional_create_write_complete_persist_disable(tmp_path,local):
+def _exercise_targets_optional_create_write_complete_persist_disable(tmp_path,local):
     with browser(tmp_path,local=local) as (base,page,pid):
         errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
         if not local:
@@ -61,8 +60,7 @@ def test_targets_optional_create_write_complete_persist_disable(tmp_path,local):
         assert not errors,errors
 
 
-@pytest.mark.parametrize('width',[390,820,1360])
-def test_targets_modal_follows_manuscript_mobile_and_narrow_layout(tmp_path,width):
+def _exercise_targets_modal_follows_manuscript_mobile_and_narrow_layout(tmp_path,width):
     with browser(tmp_path,local=True,page_options={'viewport':{'width':width,'height':844}}) as (_,page,_):
         open_targets(page)
         page.get_by_role('switch',name='Enable targets',exact=True).click()
@@ -157,3 +155,21 @@ def test_targets_activity_uses_workspaces_thinking_grace_and_window_focus(tmp_pa
         page.evaluate("()=>{window.dispatchEvent(new Event('blur'));Object.defineProperty(document,'hasFocus',{configurable:true,value:()=>false})}")
         assert page.evaluate('()=>targets.lastActivity')==0
         assert tick(5000)==pytest.approx([0,0]),'an unfocused app cannot accrue either kind of time'
+
+
+# Explicit cases preserve all parameter combinations under one-item browser jobs.
+
+def test_targets_optional_create_write_complete_persist_disable_local(tmp_path):
+    _exercise_targets_optional_create_write_complete_persist_disable(tmp_path, local=True)
+
+def test_targets_optional_create_write_complete_persist_disable_hosted(tmp_path):
+    _exercise_targets_optional_create_write_complete_persist_disable(tmp_path, local=False)
+
+def test_targets_modal_follows_manuscript_mobile_and_narrow_layout_390px(tmp_path):
+    _exercise_targets_modal_follows_manuscript_mobile_and_narrow_layout(tmp_path, width=390)
+
+def test_targets_modal_follows_manuscript_mobile_and_narrow_layout_820px(tmp_path):
+    _exercise_targets_modal_follows_manuscript_mobile_and_narrow_layout(tmp_path, width=820)
+
+def test_targets_modal_follows_manuscript_mobile_and_narrow_layout_1360px(tmp_path):
+    _exercise_targets_modal_follows_manuscript_mobile_and_narrow_layout(tmp_path, width=1360)
