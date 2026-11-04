@@ -181,7 +181,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   #findPopover{left:8px;right:8px;width:auto;max-width:calc(100% - 16px);max-height:calc(100% - 56px);overflow:auto}
   .find-options,.replace-row{flex-wrap:wrap}.replace-row input{flex-basis:100%}
   .phone-command-menu{max-width:calc(100vw - 12px);max-height:calc(var(--phone-viewport-height,100dvh) - 80px);overflow:auto;overscroll-behavior:contain}
-  .phone-command-menu button{min-height:44px}
+  .phone-command-menu button{min-height:44px;display:flex;align-items:center;gap:10px}
+  .phone-command-icon{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  /* Writing taps select/place the caret; pinch zoom and native text selection remain available. */
+  #manuscriptPaper{touch-action:manipulation;font-size:16px}
+  #documentScroller .editor{font-size:max(16px,var(--manuscript-font-size,14px))}
+  #documentScroller.editors-eye-active .editor{font-size:max(16px,var(--ee-size,16px))}
   :is(#app,#modal,.project-overlay,.quick-open) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select){font-size:16px}
 }
 
