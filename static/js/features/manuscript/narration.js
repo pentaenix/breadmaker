@@ -1,6 +1,6 @@
 // Playback/highlights only. Project cache and browser inference are separate adapters.
 const narrationPreview={passage:true,word:true};
-const narration={records:[],selected:null,selection:[],busy:false,stopRequested:false,queueLoading:false,preparing:false,audio:new window.BreadmakerNarrationPlayback(),url:null,engine:null,project:null,token:0,gutters:[],queue:[],early:null};
+const narration={records:[],selected:null,selection:[],busy:false,stopRequested:false,queueLoading:false,preparing:false,audio:new window.BreadmakerNarrationPlayback(),url:null,engine:null,project:null,token:0,gutters:[],queue:[],early:null,playbackSuspended:false};
 let narrationStore={
   async list(pid){return (await api('/api/narrations',{headers:{'X-Breadmaker-Project':pid}})).records},
   async save(pid,record,blob){const body=new FormData();body.append('metadata',JSON.stringify(record));body.append('file',blob,'narration.wav');return api('/api/narrations',{method:'POST',headers:{'X-Breadmaker-Project':pid},body})},
@@ -69,6 +69,13 @@ function narrationVoiceLabel(voice){const item=narrationVoiceCatalog.value?.voic
 function syncNarrationPlayControl(){const playing=!narration.audio.paused||narration.early?.waitingNext;$('#narrationPlay').innerHTML=playing?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg>';narrationLabel($('#narrationPlay'),playing?'narration.pause':'narration.play')}
 function narrationTime(){const f=value=>`${Math.floor(value/60)}:${String(Math.floor(value%60)).padStart(2,'0')}`,duration=narration.selected?.duration||0;$('#narrationTime').textContent=`${f(narration.audio.currentTime)} / ${f(duration)}`+((narration.audio.waiting||narration.early?.waitingNext)?' · '+i18nText('narration.buffering'):'');$('#narrationSeek').value=String(duration?narration.audio.currentTime/duration*100:0);paintNarrationPreview()}
 function cancelNarrationEarly(){narration.early=null;if(narration.selected?.id==='pending-narration'){narration.audio.pause();narration.audio.clearStream();narration.selected=null;$('#narrationPanel .narration-player').classList.add('hidden')}}
+// WebKit can deliver an already-queued ended event after beforeunload but
+// before pagehide. It must not start another request in the departing document.
+// Keep saved audio and the queue so a cancelled navigation can resume by user action.
+function suspendNarrationPlaybackForNavigation(){
+  narration.playbackSuspended=true;narration.token++;narration.stopRequested=true;
+  cancelNarrationEarly();narration.audio.pause();
+}
 function closeNarrationPanel(){cancelNarrationEarly();narration.audio.pause();narration.token++;clearNarrationPreviewHighlights();narration.gutters.forEach(node=>node.remove());narration.gutters=[];$('#narrationPanel').classList.add('hidden');$('#narrationBtn').classList.remove('active');$('#narrationBtn').setAttribute('aria-pressed','false')}
 function syncNarrationBackend(){const engine=narration.engine;if(!engine)return;$('#narrationProgressBar').dataset.cpuThreads=String(engine.timing.threads);const status=$('#narrationSettingsBackend');if(status)status.textContent=!engine.ready?i18nText('narration.backend_preparing'):engine.backend==='webgpu'?i18nText('narration.backend_gpu'):i18nText(engine.fallbackReason?'narration.backend_fallback':'narration.backend_cpu',{threads:engine.timing.threads})}
 function applyNarrationPreferences(value){
@@ -130,6 +137,7 @@ function openNarrationActionMenu(kind,event){
 }
 function narrationReplacementSources(sources){const voice=$('#narrationVoice').value;return sources.map(source=>{if(source.replaces)return source;const full=source.start===0&&source.end===source.source_text.length,candidates=narration.records.filter(record=>String(record.block_id)===String(source.block_id)&&(full?record.start===0&&record.end===(record.thin?record.source_length:record.source_text.length):(record.thin?!!source.source_hash&&record.source_hash===source.source_hash:record.source_text===source.source_text)&&record.start===source.start&&record.end===source.end)).sort((a,b)=>Number(b.voice===voice)-Number(a.voice===voice)||String(a.id).localeCompare(String(b.id)));return candidates.length?{...source,replaces:candidates[0].id}:{...source}})}
 async function narrateScope({generateOnly=false,regenerate=false,target=null,context=null}={}){
+  narration.playbackSuspended=false;
   if(narration.busy||narration.queueLoading)return;const snapshot=requireNarrationContext(context||narrationSnapshot()),pid=snapshot.pid,documentId=state.activeDocumentId,token=++narration.token;
   const scope=target?.scope||(state.viewMode==='book'?'book':'chapter'),chapterId=String(target?.chapterId||state.chapter?.id||narrationChapterSources()[0]?.chapter_id||'');
   if(target&&target.documentId!==documentId)return;
@@ -185,9 +193,12 @@ async function deleteNarration(record,context=null){
   }
 }
 async function playNarration(record,queue=[record],continuation=false){
+  if(continuation&&narration.playbackSuspended)return;
+  if(!continuation)narration.playbackSuspended=false;
   if(!continuation)cancelNarrationEarly();
   const snapshot=narrationSnapshot(),pid=snapshot.pid,token=++narration.token;narration.audio.pause();
   if(record.thin){record=await narrationStore.metadata(pid,record,snapshot.transport);requireNarrationContext(snapshot)}
+  if(token!==narration.token||narration.playbackSuspended||!narrationCurrent(snapshot)||!narrationOpen())return;
   const blob=await narrationStore.audio(pid,record.id,snapshot.transport);if(token!==narration.token||!narrationCurrent(snapshot)||!narrationOpen())return;
   const autoplay=!continuation||!narration.early||narration.early.autoplay;
   if(narration.url)URL.revokeObjectURL(narration.url);narration.url=URL.createObjectURL(blob);narration.selected=record;narration.queue=queue;narration.audio.src=narration.url;narration.audio.playbackRate=Number($('#narrationSpeed').value);$('#narrationPanel .narration-player').classList.remove('hidden');$('#narrationPreviewExcerpt').textContent=record.text;
@@ -197,6 +208,7 @@ async function playNarration(record,queue=[record],continuation=false){
 }
 async function resumeNarrationPlayback(){
   if(!narration.selected)return;
+  narration.playbackSuspended=false;
   const snapshot=narrationSnapshot(),selected=narration.selected,token=narration.token;
   if(narrationHosted()){
     if(selected.id==='pending-narration')await (await narrationDevice(snapshot)).authorize();
@@ -218,6 +230,7 @@ function renderNarrations(){
   syncNarrationActions();paintNarrationPreview();
 }
 async function generateNarrations(sources,recreate=false,{reuseAnyVoice=false,generateOnly=false,savedTail=[],context=null}={}){
+  narration.playbackSuspended=false;
   if(narration.busy||narration.queueLoading||!sources.length)return;const snapshot=requireNarrationContext(context||narrationSnapshot()),pid=snapshot.pid,voice=$('#narrationVoice').value,pace=narrationPreferences.value.generationPace,punctuationPauses=narrationPreferences.value.punctuationPauses;narration.busy=true;narration.stopRequested=false;syncNarrationActions();const queue=[];let success=false,progress;
   cancelNarrationEarly();narration.audio.pause();const early={pid,context:snapshot,voice,queue,started:false,autoplay:!generateOnly&&narrationPreferences.value.autoplay,waitingNext:false,record:null};narration.early=generateOnly?null:early;syncNarrationPlayControl();
   try{
@@ -257,15 +270,17 @@ async function initializeNarrationUI(){
     if(typeof BroadcastChannel==='function'){narrationSessionChannel=new BroadcastChannel('breadmaker-auth-session');narrationSessionChannel.onmessage=event=>{if(event.data==='session-changed')clearHostedNarrationContext()}}
     window.addEventListener('pagehide',()=>clearHostedNarrationContext());
   }
+  window.addEventListener('beforeunload',suspendNarrationPlaybackForNavigation);
+  window.addEventListener('pagehide',suspendNarrationPlaybackForNavigation);
   narrationLabel($('#narrationBtn'),'narration.title');$('#narrationBtn').classList.remove('hidden');$('#narrationViewOptions').classList.remove('hidden');$('#narrationBtn').onclick=()=>openNarrationPanel().catch(narrationFail);$('#closeNarrationPanel').onclick=closeNarrationPanel;
   $('#narrationSelection').onclick=()=>generateNarrations(narration.selection.map(item=>({...item}))).catch(narrationFail);$('#narrationChapter').onclick=()=>narrateScope().catch(narrationFail);
   $('#narrationStop').onclick=()=>{narration.stopRequested=true;if(narration.preparing)narration.token++;syncNarrationActions()};
   for(const [kind,id] of [['selection','narrationSelectionOptions'],['scope','narrationScopeOptions']]){$('#'+id).onclick=event=>openNarrationActionMenu(kind,event);$(`[data-narration-action="${kind}"]`).oncontextmenu=event=>openNarrationActionMenu(kind,event)}
   $('#narrationVoice').onchange=()=>saveNarrationPreferences({voice:$('#narrationVoice').value}).catch(narrationFail);
-  $('#narrationPlay').onclick=()=>{if(!narration.selected)return;const early=narration.early;if(!narration.audio.paused||early?.waitingNext){narration.token++;if(early){early.autoplay=false;early.waitingNext=false}narration.audio.pause();syncNarrationPlayControl();return}if(early)early.autoplay=true;const index=narration.queue.findIndex(record=>record.id===narration.selected?.id),next=narration.queue[index+1];if(narration.audio.ended&&next)playNarration(next,narration.queue,true).catch(narrationFail);else resumeNarrationPlayback().catch(narrationFail)};$('#narrationPrevious').onclick=()=>{if(narration.early)narration.early.waitingNext=false;narration.audio.currentTime=0};$('#narrationNext').onclick=()=>{const continuous=narration.queue.length>1,records=continuous?narration.queue:narrationVisibleRecords(),index=records.findIndex(record=>record.id===narration.selected?.id);if(records[index+1])playNarration(records[index+1],continuous?records:[records[index+1]]).catch(narrationFail)};
+  $('#narrationPlay').onclick=()=>{if(!narration.selected)return;narration.playbackSuspended=false;const early=narration.early;if(!narration.audio.paused||early?.waitingNext){narration.token++;if(early){early.autoplay=false;early.waitingNext=false}narration.audio.pause();syncNarrationPlayControl();return}if(early)early.autoplay=true;const index=narration.queue.findIndex(record=>record.id===narration.selected?.id),next=narration.queue[index+1];if(narration.audio.ended&&next)playNarration(next,narration.queue,true).catch(narrationFail);else resumeNarrationPlayback().catch(narrationFail)};$('#narrationPrevious').onclick=()=>{if(narration.early)narration.early.waitingNext=false;narration.audio.currentTime=0};$('#narrationNext').onclick=()=>{const continuous=narration.queue.length>1,records=continuous?narration.queue:narrationVisibleRecords(),index=records.findIndex(record=>record.id===narration.selected?.id);if(records[index+1])playNarration(records[index+1],continuous?records:[records[index+1]]).catch(narrationFail)};
   $('#narrationRewind').onclick=()=>{narration.audio.currentTime=Math.max(0,narration.audio.currentTime-5)};$('#narrationForward').onclick=()=>{narration.audio.currentTime=Math.min(narration.selected?.duration||0,narration.audio.currentTime+5)};$('#narrationSeek').oninput=event=>{narration.audio.currentTime=Number(event.target.value)/100*(narration.selected?.duration||0)};$('#narrationSpeed').onchange=()=>{narration.audio.playbackRate=Number($('#narrationSpeed').value);saveNarrationPreferences({speed:Number($('#narrationSpeed').value)}).catch(narrationFail)};
   let highlightFrame=null;const followWord=()=>{if(narration.audio.paused||!narrationOpen())return;paintNarrationPreview();highlightFrame=requestAnimationFrame(followWord)};
-  narration.audio.ontimeupdate=narrationTime;narration.audio.onplay=()=>{syncNarrationPlayControl();cancelAnimationFrame(highlightFrame);followWord()};narration.audio.onpause=()=>{cancelAnimationFrame(highlightFrame);syncNarrationPlayControl()};narration.audio.onended=()=>{const index=narration.queue.findIndex(record=>record.id===narration.selected?.id),next=narration.queue[index+1];if(next)playNarration(next,narration.queue,true).catch(narrationFail);else if(narration.busy&&narration.early?.autoplay)narration.early.waitingNext=true;syncNarrationPlayControl();narrationTime()};document.addEventListener('selectionchange',captureNarrationSelection);
+  narration.audio.ontimeupdate=narrationTime;narration.audio.onplay=()=>{syncNarrationPlayControl();cancelAnimationFrame(highlightFrame);followWord()};narration.audio.onpause=()=>{cancelAnimationFrame(highlightFrame);syncNarrationPlayControl()};narration.audio.onended=()=>{if(narration.playbackSuspended)return;const index=narration.queue.findIndex(record=>record.id===narration.selected?.id),next=narration.queue[index+1];if(next)playNarration(next,narration.queue,true).catch(narrationFail);else if(narration.busy&&narration.early?.autoplay)narration.early.waitingNext=true;syncNarrationPlayControl();narrationTime()};document.addEventListener('selectionchange',captureNarrationSelection);
   $('#manuscriptPaper').addEventListener('input',()=>{cancelNarrationEarly();narration.audio.pause();clearNarrationPreviewHighlights();if(narrationOpen()){const snapshot=narrationSnapshot();refreshNarrationSourceHashes(snapshot).then(()=>{if(narrationCurrent(snapshot)&&narrationOpen())renderNarrations()}).catch(narrationFail)}});
   let queued=false;new MutationObserver(changes=>{if(queued||!narrationOpen()||changes.every(change=>$('#narrationPanel').contains(change.target)))return;queued=true;requestAnimationFrame(()=>{queued=false;syncNarrationActions();if(['checkpointPanel','cutsPanel','commentsPanel','markupPanel','manuscriptImagePanel','manuscriptReviewsPanel'].some(id=>!$('#'+id).classList.contains('hidden'))){closeNarrationPanel();return}if(narration.listContext!==narrationListContext()||narration.gutters.some(node=>!node.isConnected)){const snapshot=narrationSnapshot();refreshNarrationSourceHashes(snapshot).then(()=>{if(narrationCurrent(snapshot)&&narrationOpen())renderNarrations()}).catch(narrationFail)}else if(narration.records.some(record=>narrationFresh(record)&&!narrationGutterWrap(record,narrationProse(record)).querySelector('.narration-preview-gutter')))renderNarrations()})}).observe($('#manuscriptView'),{subtree:true,childList:true,attributes:true,attributeFilter:['class']});attachManuscriptToolTooltip('narrationBtn','narrationTooltip');
 }

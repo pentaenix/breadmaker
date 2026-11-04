@@ -19688,7 +19688,7 @@
     },
     {
       "file": "static/js/features/manuscript/narration.js",
-      "lines": 272,
+      "lines": 287,
       "symbols": [
         {
           "name": "narrationHosted",
@@ -19836,114 +19836,119 @@
           "line": 71
         },
         {
+          "name": "suspendNarrationPlaybackForNavigation",
+          "kind": "function",
+          "line": 75
+        },
+        {
           "name": "closeNarrationPanel",
           "kind": "function",
-          "line": 72
+          "line": 79
         },
         {
           "name": "syncNarrationBackend",
           "kind": "function",
-          "line": 73
+          "line": 80
         },
         {
           "name": "applyNarrationPreferences",
           "kind": "function",
-          "line": 74
+          "line": 81
         },
         {
           "name": "narrationDevice",
           "kind": "function",
-          "line": 81
+          "line": 88
         },
         {
           "name": "narrationEngine",
           "kind": "function",
-          "line": 94
+          "line": 101
         },
         {
           "name": "receiveNarrationChunk",
           "kind": "function",
-          "line": 103
+          "line": 110
         },
         {
           "name": "narrationSource",
           "kind": "function",
-          "line": 111
+          "line": 118
         },
         {
           "name": "narrationChapterSources",
           "kind": "function",
-          "line": 112
+          "line": 119
         },
         {
           "name": "captureNarrationSelection",
           "kind": "function",
-          "line": 113
+          "line": 120
         },
         {
           "name": "syncNarrationActions",
           "kind": "function",
-          "line": 118
+          "line": 125
         },
         {
           "name": "openNarrationActionMenu",
           "kind": "function",
-          "line": 121
+          "line": 128
         },
         {
           "name": "narrationReplacementSources",
           "kind": "function",
-          "line": 131
+          "line": 138
         },
         {
           "name": "narrateScope",
           "kind": "function",
-          "line": 132
+          "line": 139
         },
         {
           "name": "deleteNarrationScope",
           "kind": "function",
-          "line": 162
+          "line": 170
         },
         {
           "name": "narrationFail",
           "kind": "function",
-          "line": 177
+          "line": 185
         },
         {
           "name": "deleteNarration",
           "kind": "function",
-          "line": 178
+          "line": 186
         },
         {
           "name": "playNarration",
           "kind": "function",
-          "line": 187
+          "line": 195
         },
         {
           "name": "resumeNarrationPlayback",
           "kind": "function",
-          "line": 198
+          "line": 209
         },
         {
           "name": "renderNarrations",
           "kind": "function",
-          "line": 208
+          "line": 220
         },
         {
           "name": "generateNarrations",
           "kind": "function",
-          "line": 220
+          "line": 232
         },
         {
           "name": "openNarrationPanel",
           "kind": "function",
-          "line": 239
+          "line": 252
         },
         {
           "name": "initializeNarrationUI",
           "kind": "function",
-          "line": 252
+          "line": 265
         }
       ]
     },
