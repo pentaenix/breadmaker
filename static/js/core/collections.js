@@ -97,7 +97,12 @@ function openPhoneCommandMenu(button,items){
   openContextMenu(rect.left,rect.bottom+6,items,{anchorRect:rect,owner:button});
   phoneCommandMenuOwner=button;button.setAttribute('aria-expanded','true');
   phoneCommandMenuLabel=button.getAttribute('aria-label');menu.setAttribute('role','menu');menu.setAttribute('aria-label',phoneCommandMenuLabel);
-  menu.querySelectorAll('button').forEach((item,index)=>{item.dataset.phoneCommandOwner=button.id;item.setAttribute('role','menuitem');if(items[index]?.current)item.setAttribute('aria-current','page')});
+  menu.querySelectorAll('button').forEach((item,index)=>{
+    item.dataset.phoneCommandOwner=button.id;item.setAttribute('role','menuitem');
+    const icon=items[index]?.icon?.cloneNode(true);
+    if(icon){icon.classList.add('phone-command-icon');icon.setAttribute('aria-hidden','true');icon.setAttribute('focusable','false');item.prepend(icon)}
+    if(items[index]?.current)item.setAttribute('aria-current','page');
+  });
   menu.querySelector('button:not(:disabled)')?.focus({preventScroll:true});
 }
 new MutationObserver(()=>{if(phoneCommandMenuOwner&&!ownsPhoneCommandMenu())resetPhoneCommandMenu()}).observe($('#contextMenu'),{attributes:true,attributeFilter:['class'],childList:true});

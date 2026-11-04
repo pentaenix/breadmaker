@@ -118,3 +118,5 @@ The script order declared by `static/index.html` is part of the runtime contract
 CSS ownership is now separate from JavaScript ownership. As of 10.3.6 use the ordered boundary under `static/css/` documented in `static/css/README.md`; 10.3.7 keeps that order stable and removes only provably redundant declarations; do not add feature CSS to `static/styles.css` or infer the complete CSS boundary from that one file.
 
 Phone layouts reuse `core/collections.js` for workspace-command menus and visual-viewport containment. Menus call the existing primary navigation handlers; desktop preferences and authorization/Undo owners remain unchanged. `features/manuscript/workspace.js` maps its phone Tools menu to the existing panel controls.
+
+The phone Manuscript Tools menu clones each existing toolbar SVG as decoration while preserving the original command handler and accessible label. Phone writing uses a 16px minimum (including Editor’s Eye), keeps larger preferences, and opts only the paper into `touch-action: manipulation`; pinch zoom and native text selection remain browser-owned. Desktop typography is unchanged.

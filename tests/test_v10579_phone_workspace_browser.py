@@ -123,3 +123,62 @@ def test_phone_find_and_keyboard_height_dialog_keep_controls_inside_viewport_loc
 
 def test_phone_find_and_keyboard_height_dialog_keep_controls_inside_viewport_hosted(tmp_path):
     _exercise_phone_find_and_keyboard_height_dialog_keep_controls_inside_viewport(tmp_path,False)
+
+
+def _exercise_phone_writing_taps_and_tool_icons(tmp_path,local,engine):
+    options={'viewport':{'width':390,'height':844},'is_mobile':True,'has_touch':True,'device_scale_factor':3}
+    with browser(tmp_path,local=local,page_options=options,engine=engine) as (_,page,_):
+        block=page.locator('.manuscript-block').first
+        block.fill('Harbor morning light.')
+        assert block.evaluate('e=>parseFloat(getComputedStyle(e).fontSize)')>=16
+        assert page.locator('#manuscriptPaper').evaluate('e=>getComputedStyle(e).touchAction')=='manipulation'
+        viewport=page.locator('meta[name=viewport]').get_attribute('content')
+        assert 'user-scalable=no' not in viewport and 'maximum-scale' not in viewport
+        page.wait_for_function('()=>!state.dirty&&!state.saveInFlight')
+        block.tap();page.keyboard.press('End');page.keyboard.type(' Quiet writing.')
+        page.wait_for_function('()=>!state.dirty&&!state.saveInFlight')
+        expect(block).to_contain_text('Quiet writing.')
+        block.dblclick()
+        assert page.evaluate('()=>getSelection().toString().length')>0
+        assert page.evaluate('()=>visualViewport.scale')==1
+        page.locator('#phoneManuscriptToolsBtn').tap()
+        menu=page.get_by_role('menu',name='Manuscript tools',exact=True)
+        items=menu.get_by_role('menuitem')
+        assert items.count()>=7
+        for item in items.all():
+            icon=item.locator('svg')
+            expect(icon).to_be_visible();expect(icon).to_have_attribute('aria-hidden','true')
+            assert icon.bounding_box()['width']==18
+        page.screenshot(path=str(tmp_path/'phone-tools.png'))
+        menu.get_by_role('menuitem',name='Notes',exact=True).tap()
+        expect(page.locator('#commentsPanel')).to_be_visible()
+        page.get_by_role('button',name='Close Notes',exact=True).tap()
+        page.locator('#phoneManuscriptToolsBtn').tap()
+        page.get_by_role('menuitem',name='Editor’s Eye',exact=True).tap()
+        page.wait_for_function('()=>document.querySelector("#documentScroller").classList.contains("editors-eye-active")')
+        assert block.evaluate('e=>parseFloat(getComputedStyle(e).fontSize)')>=16
+        page.locator('#phoneManuscriptToolsBtn').tap()
+        page.get_by_role('menuitem',name='Editor’s Eye on — click to restore normal manuscript view',exact=True).tap()
+        page.wait_for_function('()=>!document.querySelector("#documentScroller").classList.contains("editors-eye-active")')
+        # Larger writer preferences survive the phone minimum and desktop remains unchanged.
+        page.evaluate("()=>document.documentElement.style.setProperty('--manuscript-font-size','22px')")
+        assert block.evaluate('e=>parseFloat(getComputedStyle(e).fontSize)')==22
+        page.evaluate("()=>document.documentElement.style.removeProperty('--manuscript-font-size')")
+        page.set_viewport_size({'width':1200,'height':900})
+        assert block.evaluate('e=>parseFloat(getComputedStyle(e).fontSize)')==14
+
+
+def test_phone_writing_taps_and_tool_icons_local(tmp_path):
+    _exercise_phone_writing_taps_and_tool_icons(tmp_path,True,'chromium')
+
+
+def test_phone_writing_taps_and_tool_icons_hosted(tmp_path):
+    _exercise_phone_writing_taps_and_tool_icons(tmp_path,False,'chromium')
+
+
+def test_webkit_phone_writing_taps_and_tool_icons_local(tmp_path):
+    _exercise_phone_writing_taps_and_tool_icons(tmp_path,True,'webkit')
+
+
+def test_webkit_phone_writing_taps_and_tool_icons_hosted(tmp_path):
+    _exercise_phone_writing_taps_and_tool_icons(tmp_path,False,'webkit')
