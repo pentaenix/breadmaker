@@ -328,3 +328,7 @@ download never replaces the previous model/voice. HTTPS-only bounded downloads
 stage in the destination filesystem before verified atomic publication. The
 model hashes were verified against the fixed Hugging Face revision; ONNX digests
 match its LFS metadata. Changing the revision requires reviewing these pins.
+
+### Optional hosted GPU refusal
+
+Declining the optional hosted GPU model download records only a public-manifest refusal flag in tab sessionStorage, following the existing GPU-failure session fallback. It survives refresh but is neither manuscript data nor a persistent consent grant. GPU off then on in the existing Project Settings → Narration control clears that refusal and permits a fresh prompt. An accepted answer is never stored across a reload; installed pinned public model availability is still checked separately. Blocked storage falls back to the existing in-memory choice, and authorization/context checks still apply.

@@ -46,7 +46,7 @@ function saveNarrationPreferences(patch,context=null){
     if(!live())return;await loadNarrationPreferences();if(!live())return;
     const value=normalizeNarrationPreferences({...narrationPreferences.value,...patch});
     await api('/api/ui-state/narration-preferences',{method:'PUT',headers:{'X-Breadmaker-Project':pid,...(snapshot?.transport?{'X-Breadmaker-Narration-Account':snapshot.account}:{})},body:JSON.stringify({value})});
-    if(live())applyNarrationPreferences(value);
+    if(live())applyNarrationPreferences(value,{retryGPU:patch.gpu===true});
   });
   narrationPreferenceWrite=task;return task;
 }

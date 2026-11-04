@@ -424,7 +424,9 @@ def hosted_project_health(request:Request):
 @platform_router.post('/api/assets')
 async def hosted_asset_upload(file:UploadFile=File(...)):
     raw=await _bounded_upload(file,max_bytes=12*1024*1024);name=str(file.filename or '').lower();ext='.'+name.rsplit('.',1)[1] if '.' in name else ''
-    try:return runtime.assets.put_blob(raw,ext).__dict__
+    try:
+        stored=runtime.assets.put_blob(raw,ext)
+        return {**stored.__dict__,'path':stored.api_path,'reused':not stored.created,'hash':stored.digest}
     except Exception as exc:raise _error(exc)
 
 @platform_router.get('/api/assets/{asset_path:path}')

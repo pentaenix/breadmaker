@@ -8528,7 +8528,7 @@
     },
     {
       "file": "src/hosted/http_api.py",
-      "lines": 937,
+      "lines": 939,
       "symbols": [
         {
           "name": "_projects",
@@ -8738,392 +8738,392 @@
         {
           "name": "hosted_asset_read",
           "kind": "function",
-          "line": 431
+          "line": 433
         },
         {
           "name": "hosted_integrity_deep",
           "kind": "function",
-          "line": 439
+          "line": 441
         },
         {
           "name": "_body",
           "kind": "async_function",
-          "line": 453
+          "line": 455
         },
         {
           "name": "_bounded_upload",
           "kind": "async_function",
-          "line": 460
+          "line": 462
         },
         {
           "name": "_create",
           "kind": "function",
-          "line": 477
+          "line": 479
         },
         {
           "name": "_list",
           "kind": "function",
-          "line": 492
+          "line": 494
         },
         {
           "name": "_get",
           "kind": "function",
-          "line": 496
+          "line": 498
         },
         {
           "name": "_update",
           "kind": "function",
-          "line": 500
+          "line": 502
         },
         {
           "name": "_delete",
           "kind": "function",
-          "line": 506
+          "line": 508
         },
         {
           "name": "_project_snapshot",
           "kind": "function",
-          "line": 513
+          "line": 515
         },
         {
           "name": "hosted_bootstrap",
           "kind": "function",
-          "line": 569
+          "line": 571
         },
         {
           "name": "hosted_book",
           "kind": "function",
-          "line": 574
+          "line": 576
         },
         {
           "name": "hosted_document_create",
           "kind": "async_function",
-          "line": 629
+          "line": 631
         },
         {
           "name": "hosted_document_update",
           "kind": "async_function",
-          "line": 631
+          "line": 633
         },
         {
           "name": "hosted_document_delete",
           "kind": "function",
-          "line": 633
+          "line": 635
         },
         {
           "name": "hosted_chapter_create",
           "kind": "async_function",
-          "line": 637
+          "line": 639
         },
         {
           "name": "hosted_chapter_get",
           "kind": "function",
-          "line": 639
+          "line": 641
         },
         {
           "name": "hosted_chapter_read_cache",
           "kind": "async_function",
-          "line": 671
+          "line": 673
         },
         {
           "name": "hosted_chapter_update",
           "kind": "async_function",
-          "line": 680
+          "line": 682
         },
         {
           "name": "hosted_chapter_delete",
           "kind": "function",
-          "line": 691
+          "line": 693
         },
         {
           "name": "hosted_chapter_blocks",
           "kind": "async_function",
-          "line": 693
+          "line": 695
         },
         {
           "name": "hosted_scene_create",
           "kind": "async_function",
-          "line": 705
+          "line": 707
         },
         {
           "name": "hosted_scene_update",
           "kind": "async_function",
-          "line": 707
+          "line": 709
         },
         {
           "name": "hosted_scene_delete",
           "kind": "function",
-          "line": 709
+          "line": 711
         },
         {
           "name": "hosted_scene_manuscript",
           "kind": "function",
-          "line": 711
+          "line": 713
         },
         {
           "name": "hosted_annotations",
           "kind": "function",
-          "line": 716
+          "line": 718
         },
         {
           "name": "hosted_annotations_batch",
           "kind": "async_function",
-          "line": 723
+          "line": 725
         },
         {
           "name": "hosted_annotation_update",
           "kind": "async_function",
-          "line": 736
+          "line": 738
         },
         {
           "name": "hosted_label_create",
           "kind": "async_function",
-          "line": 738
+          "line": 740
         },
         {
           "name": "_notes_call",
           "kind": "function",
-          "line": 742
+          "line": 744
         },
         {
           "name": "hosted_comments",
           "kind": "function",
-          "line": 749
+          "line": 751
         },
         {
           "name": "hosted_comment_create",
           "kind": "async_function",
-          "line": 752
+          "line": 754
         },
         {
           "name": "hosted_comment_update",
           "kind": "async_function",
-          "line": 754
+          "line": 756
         },
         {
           "name": "hosted_comment_delete",
           "kind": "function",
-          "line": 756
+          "line": 758
         },
         {
           "name": "hosted_comment_message",
           "kind": "async_function",
-          "line": 758
+          "line": 760
         },
         {
           "name": "hosted_bookmark_get",
           "kind": "function",
-          "line": 763
+          "line": 765
         },
         {
           "name": "hosted_bookmark_put",
           "kind": "async_function",
-          "line": 766
+          "line": 768
         },
         {
           "name": "hosted_bookmark_delete",
           "kind": "function",
-          "line": 769
+          "line": 771
         },
         {
           "name": "hosted_ui_state_batch",
           "kind": "function",
-          "line": 772
+          "line": 774
         },
         {
           "name": "hosted_ui_state_get",
           "kind": "function",
-          "line": 783
+          "line": 785
         },
         {
           "name": "hosted_ui_state_put",
           "kind": "async_function",
-          "line": 786
+          "line": 788
         },
         {
           "name": "hosted_tasks",
           "kind": "function",
-          "line": 797
+          "line": 799
         },
         {
           "name": "hosted_task_create",
           "kind": "async_function",
-          "line": 799
+          "line": 801
         },
         {
           "name": "hosted_task_update",
           "kind": "async_function",
-          "line": 801
+          "line": 803
         },
         {
           "name": "hosted_task_delete",
           "kind": "function",
-          "line": 803
+          "line": 805
         },
         {
           "name": "hosted_milestones",
           "kind": "function",
-          "line": 805
+          "line": 807
         },
         {
           "name": "hosted_milestone_create",
           "kind": "async_function",
-          "line": 807
+          "line": 809
         },
         {
           "name": "hosted_canvas_create",
           "kind": "async_function",
-          "line": 811
+          "line": 813
         },
         {
           "name": "hosted_canvas_get",
           "kind": "function",
-          "line": 813
+          "line": 815
         },
         {
           "name": "hosted_canvas_update",
           "kind": "async_function",
-          "line": 816
+          "line": 818
         },
         {
           "name": "hosted_canvas_delete",
           "kind": "function",
-          "line": 818
+          "line": 820
         },
         {
           "name": "hosted_canvas_node",
           "kind": "async_function",
-          "line": 820
+          "line": 822
         },
         {
           "name": "hosted_canvas_edge",
           "kind": "async_function",
-          "line": 822
+          "line": 824
         },
         {
           "name": "hosted_maps",
           "kind": "function",
-          "line": 829
+          "line": 831
         },
         {
           "name": "hosted_map_create",
           "kind": "async_function",
-          "line": 831
+          "line": 833
         },
         {
           "name": "hosted_map_get",
           "kind": "function",
-          "line": 833
+          "line": 835
         },
         {
           "name": "hosted_map_update",
           "kind": "async_function",
-          "line": 841
+          "line": 843
         },
         {
           "name": "hosted_map_delete",
           "kind": "function",
-          "line": 843
+          "line": 845
         },
         {
           "name": "hosted_map_line",
           "kind": "async_function",
-          "line": 845
+          "line": 847
         },
         {
           "name": "hosted_map_item",
           "kind": "async_function",
-          "line": 847
+          "line": 849
         },
         {
           "name": "hosted_map_junction",
           "kind": "async_function",
-          "line": 850
+          "line": 852
         },
         {
           "name": "hosted_reviews",
           "kind": "function",
-          "line": 854
+          "line": 856
         },
         {
           "name": "hosted_review_create",
           "kind": "async_function",
-          "line": 856
+          "line": 858
         },
         {
           "name": "hosted_review_get",
           "kind": "function",
-          "line": 858
+          "line": 860
         },
         {
           "name": "hosted_review_update",
           "kind": "async_function",
-          "line": 861
+          "line": 863
         },
         {
           "name": "hosted_review_delete",
           "kind": "function",
-          "line": 863
+          "line": 865
         },
         {
           "name": "hosted_review_participant",
           "kind": "async_function",
-          "line": 865
+          "line": 867
         },
         {
           "name": "hosted_questionnaires",
           "kind": "function",
-          "line": 867
+          "line": 869
         },
         {
           "name": "hosted_questionnaire_create",
           "kind": "async_function",
-          "line": 869
+          "line": 871
         },
         {
           "name": "_checkpoint_ui",
           "kind": "function",
-          "line": 872
+          "line": 874
         },
         {
           "name": "hosted_checkpoints",
           "kind": "function",
-          "line": 877
+          "line": 879
         },
         {
           "name": "hosted_checkpoint_create",
           "kind": "async_function",
-          "line": 882
+          "line": 884
         },
         {
           "name": "hosted_checkpoint_get",
           "kind": "function",
-          "line": 891
+          "line": 893
         },
         {
           "name": "hosted_history_list",
           "kind": "function",
-          "line": 896
+          "line": 898
         },
         {
           "name": "hosted_autocommit",
           "kind": "async_function",
-          "line": 898
+          "line": 900
         },
         {
           "name": "_commit_history_snapshot",
           "kind": "function",
-          "line": 903
+          "line": 905
         },
         {
           "name": "hosted_local_backup_unavailable",
           "kind": "function",
-          "line": 925
+          "line": 927
         },
         {
           "name": "hosted_unported_bulk_mutation",
           "kind": "function",
-          "line": 936
+          "line": 938
         }
       ]
     },
@@ -19688,7 +19688,7 @@
     },
     {
       "file": "static/js/features/manuscript/narration.js",
-      "lines": 287,
+      "lines": 288,
       "symbols": [
         {
           "name": "narrationHosted",
@@ -19858,97 +19858,97 @@
         {
           "name": "narrationDevice",
           "kind": "function",
-          "line": 88
+          "line": 89
         },
         {
           "name": "narrationEngine",
           "kind": "function",
-          "line": 101
+          "line": 102
         },
         {
           "name": "receiveNarrationChunk",
           "kind": "function",
-          "line": 110
+          "line": 111
         },
         {
           "name": "narrationSource",
           "kind": "function",
-          "line": 118
+          "line": 119
         },
         {
           "name": "narrationChapterSources",
           "kind": "function",
-          "line": 119
+          "line": 120
         },
         {
           "name": "captureNarrationSelection",
           "kind": "function",
-          "line": 120
+          "line": 121
         },
         {
           "name": "syncNarrationActions",
           "kind": "function",
-          "line": 125
+          "line": 126
         },
         {
           "name": "openNarrationActionMenu",
           "kind": "function",
-          "line": 128
+          "line": 129
         },
         {
           "name": "narrationReplacementSources",
           "kind": "function",
-          "line": 138
+          "line": 139
         },
         {
           "name": "narrateScope",
           "kind": "function",
-          "line": 139
+          "line": 140
         },
         {
           "name": "deleteNarrationScope",
           "kind": "function",
-          "line": 170
+          "line": 171
         },
         {
           "name": "narrationFail",
           "kind": "function",
-          "line": 185
+          "line": 186
         },
         {
           "name": "deleteNarration",
           "kind": "function",
-          "line": 186
+          "line": 187
         },
         {
           "name": "playNarration",
           "kind": "function",
-          "line": 195
+          "line": 196
         },
         {
           "name": "resumeNarrationPlayback",
           "kind": "function",
-          "line": 209
+          "line": 210
         },
         {
           "name": "renderNarrations",
           "kind": "function",
-          "line": 220
+          "line": 221
         },
         {
           "name": "generateNarrations",
           "kind": "function",
-          "line": 232
+          "line": 233
         },
         {
           "name": "openNarrationPanel",
           "kind": "function",
-          "line": 252
+          "line": 253
         },
         {
           "name": "initializeNarrationUI",
           "kind": "function",
-          "line": 265
+          "line": 266
         }
       ]
     },

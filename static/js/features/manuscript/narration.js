@@ -78,7 +78,8 @@ function suspendNarrationPlaybackForNavigation(){
 }
 function closeNarrationPanel(){cancelNarrationEarly();narration.audio.pause();narration.token++;clearNarrationPreviewHighlights();narration.gutters.forEach(node=>node.remove());narration.gutters=[];$('#narrationPanel').classList.add('hidden');$('#narrationBtn').classList.remove('active');$('#narrationBtn').setAttribute('aria-pressed','false')}
 function syncNarrationBackend(){const engine=narration.engine;if(!engine)return;$('#narrationProgressBar').dataset.cpuThreads=String(engine.timing.threads);const status=$('#narrationSettingsBackend');if(status)status.textContent=!engine.ready?i18nText('narration.backend_preparing'):engine.backend==='webgpu'?i18nText('narration.backend_gpu'):i18nText(engine.fallbackReason?'narration.backend_fallback':'narration.backend_cpu',{threads:engine.timing.threads})}
-function applyNarrationPreferences(value){
+function applyNarrationPreferences(value,{retryGPU=false}={}){
+  if(retryGPU&&value.gpu&&!narrationPreferences.value.gpu)narration.device?.resetGPUChoice();
   narrationPreferences.value=normalizeNarrationPreferences(value);
   if(narration.engine&&narration.engine.allowGPU!==value.gpu){cancelNarrationEarly();narration.audio.pause();if(narration.audio.stream){narration.audio.clearStream();narration.selected=null;$('#narrationPanel .narration-player').classList.add('hidden');clearNarrationPreviewHighlights()}narration.engine.dispose();narration.engine=null}
   narrationPreview.passage=value.passage;narrationPreview.word=value.word;
