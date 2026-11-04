@@ -17013,7 +17013,7 @@
     },
     {
       "file": "static/js/features/canvas/nodes.js",
-      "lines": 437,
+      "lines": 439,
       "symbols": [
         {
           "name": "canvasShapeIcon",
@@ -17458,247 +17458,247 @@
         {
           "name": "developmentalLaneContains",
           "kind": "function",
-          "line": 186
+          "line": 188
         },
         {
           "name": "developmentalStageContains",
           "kind": "function",
-          "line": 187
+          "line": 189
         },
         {
           "name": "refreshDevelopmentalDirtyState",
           "kind": "function",
-          "line": 188
+          "line": 190
         },
         {
           "name": "persistDevelopmentalLayout",
           "kind": "function",
-          "line": 189
+          "line": 191
         },
         {
           "name": "startDevelopmentalLaneDrag",
           "kind": "function",
-          "line": 190
+          "line": 192
         },
         {
           "name": "restore",
           "kind": "function",
-          "line": 193
+          "line": 195
         },
         {
           "name": "clearVisual",
           "kind": "function",
-          "line": 195
+          "line": 197
         },
         {
           "name": "startDevelopmentalDeskStructuralDrag",
           "kind": "function",
-          "line": 200
+          "line": 202
         },
         {
           "name": "chooseDevelopmentalSceneChapter",
           "kind": "function",
-          "line": 209
+          "line": 211
         },
         {
           "name": "promoteDevelopmentalPlanningCard",
           "kind": "function",
-          "line": 210
+          "line": 212
         },
         {
           "name": "startNodeGroupDrag",
           "kind": "function",
-          "line": 211
+          "line": 213
         },
         {
           "name": "startFigureLineEndpointDrag",
           "kind": "function",
-          "line": 218
+          "line": 220
         },
         {
           "name": "startNodeResize",
           "kind": "function",
-          "line": 225
+          "line": 227
         },
         {
           "name": "persistCanvasNodeContent",
           "kind": "function",
-          "line": 231
+          "line": 233
         },
         {
           "name": "queueNodeSave",
           "kind": "function",
-          "line": 238
+          "line": 240
         },
         {
           "name": "flushPendingCanvasNodeSaves",
           "kind": "function",
-          "line": 247
+          "line": 249
         },
         {
           "name": "canvasCopyEligibleNodes",
           "kind": "function",
-          "line": 252
+          "line": 254
         },
         {
           "name": "copyCanvasCards",
           "kind": "function",
-          "line": 254
+          "line": 256
         },
         {
           "name": "canvasPasteAnchor",
           "kind": "function",
-          "line": 263
+          "line": 265
         },
         {
           "name": "pasteCanvasCards",
           "kind": "function",
-          "line": 268
+          "line": 270
         },
         {
           "name": "cancelCanvasPan",
           "kind": "function",
-          "line": 282
+          "line": 284
         },
         {
           "name": "beginCanvasPan",
           "kind": "function",
-          "line": 283
+          "line": 285
         },
         {
           "name": "capture",
           "kind": "function",
-          "line": 287
+          "line": 289
         },
         {
           "name": "move",
           "kind": "function",
-          "line": 289
+          "line": 291
         },
         {
           "name": "finish",
           "kind": "function",
-          "line": 295
+          "line": 297
         },
         {
           "name": "canvasEdgeFullyInsideRect",
           "kind": "function",
-          "line": 311
+          "line": 313
         },
         {
           "name": "beginCanvasLasso",
           "kind": "function",
-          "line": 316
+          "line": 318
         },
         {
           "name": "updateSelection",
           "kind": "function",
-          "line": 320
+          "line": 322
         },
         {
           "name": "scrollDelta",
           "kind": "function",
-          "line": 321
+          "line": 323
         },
         {
           "name": "autoScroll",
           "kind": "function",
-          "line": 322
+          "line": 324
         },
         {
           "name": "restoreCanvasSpaceTypingSnapshot",
           "kind": "function",
-          "line": 337
+          "line": 339
         },
         {
           "name": "canvasPopulateCatalog",
           "kind": "function",
-          "line": 363
+          "line": 365
         },
         {
           "name": "canvasPopulateMenuItems",
           "kind": "function",
-          "line": 364
+          "line": 366
         },
         {
           "name": "afterCanvasPaint",
           "kind": "function",
-          "line": 365
+          "line": 367
         },
         {
           "name": "settlePopulatedRows",
           "kind": "function",
-          "line": 366
+          "line": 368
         },
         {
           "name": "populateCanvas",
           "kind": "function",
-          "line": 376
+          "line": 378
         },
         {
           "name": "quickCreateNode",
           "kind": "function",
-          "line": 378
+          "line": 380
         },
         {
           "name": "quickCreateFigure",
           "kind": "function",
-          "line": 379
+          "line": 381
         },
         {
           "name": "releaseCanvasSpacePan",
           "kind": "function",
-          "line": 380
+          "line": 382
         },
         {
           "name": "resetCanvasPan",
           "kind": "function",
-          "line": 384
+          "line": 386
         },
         {
           "name": "normalizeColor",
           "kind": "function",
-          "line": 386
+          "line": 388
         },
         {
           "name": "updateSelectionInspector",
           "kind": "function",
-          "line": 388
+          "line": 390
         },
         {
           "name": "applyNodePatch",
           "kind": "function",
-          "line": 389
+          "line": 391
         },
         {
           "name": "openNodeInspector",
           "kind": "function",
-          "line": 392
+          "line": 394
         },
         {
           "name": "mixedChoice",
           "kind": "function",
-          "line": 405
+          "line": 407
         },
         {
           "name": "mixedValue",
           "kind": "function",
-          "line": 406
+          "line": 408
         },
         {
           "name": "openMultiNodeInspector",
           "kind": "function",
-          "line": 407
+          "line": 409
         },
         {
           "name": "bulk",
           "kind": "function",
-          "line": 410
+          "line": 412
         },
         {
           "name": "deleteSelectedNodes",
           "kind": "function",
-          "line": 414
+          "line": 416
         }
       ]
     },
