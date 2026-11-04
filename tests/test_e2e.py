@@ -848,11 +848,11 @@ def test_browser_v421_canvas_pan_resize_drag_target_cancel_and_autosave(live_ser
         assert page.evaluate('state.canvasZoom') != before_zoom
         assert page.evaluate('(id)=>{const n=state.canvasNodes.find(x=>x.id===id);return[n.x,n.y,n.w,n.h]}',created['a'])==before_world
 
-        # Hand mode: plain drag on empty canvas pans; Pointer mode owns marquee selection.
+        # Right-drag pans; empty-space left-drag is now direct marquee selection.
         stage.evaluate('el=>{el.scrollLeft=0;el.scrollTop=0}')
         start=(stage_box['x']+stage_box['width']*.82,stage_box['y']+stage_box['height']*.78)
         end=(start[0]-220,start[1]-140)
-        page.mouse.move(*start);page.mouse.down();page.mouse.move(*end,steps=8);page.mouse.up();page.wait_for_timeout(80)
+        page.mouse.move(*start);page.mouse.down(button='right');page.mouse.move(*end,steps=8);page.mouse.up(button='right');page.wait_for_timeout(80)
         drag_scroll=stage.evaluate('el=>({left:el.scrollLeft,top:el.scrollTop})')
         assert drag_scroll['left']>0 and drag_scroll['top']>0
         stage.evaluate('el=>{el.scrollLeft=0;el.scrollTop=0}')
