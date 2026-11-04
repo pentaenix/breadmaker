@@ -19,7 +19,7 @@ def test_v5413_background_figures_and_full_containment_marquee(scene_live_server
     try:
         canvas_id = page.evaluate("""async()=>{
           const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Figure canvas',canvas_type:'blank'})});
-          await refresh(false);setView('canvas');await selectCanvas(cv.id);await setCanvasMode('pointer');return cv.id;
+          await refresh(false);setView('canvas');await selectCanvas(cv.id);return cv.id;
         }""")
         page.wait_for_selector('#canvasView.active')
 
@@ -90,7 +90,7 @@ def test_v5413_background_figures_and_full_containment_marquee(scene_live_server
           const partial=await createNodeAt('rect',1060,510,{w:120,h:70,title:'Only touched'},{inspect:false});
           return [inside.id,partial.id]
         }""")
-        page.evaluate("()=>{state.selectedNodes.clear();renderNodeSelection();closeCanvasPanel();setCanvasMode('pointer')}")
+        page.evaluate("()=>{state.selectedNodes.clear();renderNodeSelection();closeCanvasPanel();}")
         # marquee world bounds ~880,480 -> 1110,650: inside is fully contained, partial extends beyond right edge.
         start_x, start_y = box['x'] + 880, box['y'] + 480
         end_x, end_y = box['x'] + 1110, box['y'] + 650

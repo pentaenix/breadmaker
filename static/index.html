@@ -351,17 +351,11 @@ window.__breadmakerStartupDeadline=setTimeout(()=>window.breadmakerStartupFailed
           <div id="developmentalLaneItems" class="developmental-lane-items"></div>
         </div>
       </section>
-      <div class="canvas-mode-overlay" role="group" aria-label="{{i18n:static.attr.aria.label.123bfecb}}">
-        <div class="canvas-mode-toggle">
-          <button id="canvasHandMode" class="toolbar-button mode-button active" title="{{i18n:static.attr.title.7315640e}}" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 11.2V6.8a1.4 1.4 0 0 1 2.8 0v3.4-5a1.4 1.4 0 0 1 2.8 0v5-3.8a1.4 1.4 0 0 1 2.8 0v4.3-2.3a1.4 1.4 0 0 1 2.8 0v5.2c0 4.6-2.7 7.4-7 7.4h-.8c-2.2 0-3.7-.7-5.1-2.2l-3.5-3.6a1.6 1.6 0 0 1 2.2-2.3l3 2.4"/></svg></button>
-          <button id="canvasPointerMode" data-testid="canvas-pointer-mode" class="toolbar-button mode-button" title="{{i18n:static.attr.title.8a1b2a13}}" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5 18.7 13l-6.1 1.2-3.1 5.4L5 3.5Z"/></svg></button>
-        </div>
-      </div>
       <aside id="canvasLegendDrawer" class="canvas-legend-drawer hidden" aria-label="{{i18n:static.attr.aria.label.bb085fe8}}">
         <div class="canvas-legend-drawer-head"><b>{{i18n:static.text.text.b79aac4a}}</b><div><button id="legendDrawerAdd" class="bare-button" title="{{i18n:static.attr.title.dc96f320}}">+</button><button id="legendDrawerClose" class="bare-button ui-close-button" title="{{i18n:static.attr.title.c8afa85e}}">×</button></div></div>
         <div id="canvasLegendDrawerList" class="canvas-legend-drawer-list"></div>
       </aside>
-      <div id="canvasStage" data-testid="canvas-stage" class="canvas-stage hand-mode" tabindex="0">
+      <div id="canvasStage" data-testid="canvas-stage" class="canvas-stage" tabindex="0">
         <div id="canvasEmpty" class="workspace-empty hidden"><b>{{i18n:static.text.text.cdc8e7cb}}</b><p>{{i18n:static.text.text.7e7f739f}}</p><button id="emptyCreateCanvas">{{i18n:static.text.text.c0f0348d}}</button></div>
         <div id="canvasSpace" class="canvas-space">
           <div id="canvasWorld" class="canvas-world">

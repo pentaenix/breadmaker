@@ -24,7 +24,7 @@ def test_v5418_image_context_menu_and_screen_space_tracking(scene_live_server, s
         asset = uploaded.json()['path']
         node_id = page.evaluate("""async asset=>{
           const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Images',canvas_type:'blank'})});
-          await refresh(false);setView('canvas');await selectCanvas(cv.id);await setCanvasMode('pointer');
+          await refresh(false);setView('canvas');await selectCanvas(cv.id);
           applyCanvasZoom(2.2,{persist:false});
           const node=await createNodeAt('rect',180,150,{node_type:'image',image_path:asset,w:180,h:120,color:''},{inspect:false,label:'Test image'});
           // Pointer math must follow the actual DOM transform, not a stale state value.

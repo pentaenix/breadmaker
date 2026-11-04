@@ -102,10 +102,7 @@ def test_v640_canvas_marquee_autoscrolls_while_pointer_is_held_at_viewport_edge(
         page.evaluate('(id)=>selectCanvas(id)',canvas['id'])
         page.wait_for_function('(id)=>+state.currentCanvas?.id===+id',arg=canvas['id'])
 
-        pointer=page.get_by_test_id('canvas-pointer-mode')
-        pointer.wait_for(state='visible')
-        pointer.click()
-        page.wait_for_function("()=>state.canvasMode==='pointer'&&document.querySelector('[data-testid=\"canvas-stage\"]')?.classList.contains('pointer-mode')")
+        assert page.locator('#canvasHandMode,#canvasPointerMode').count()==0
 
         stage=page.get_by_test_id('canvas-stage')
         stage.wait_for(state='visible')

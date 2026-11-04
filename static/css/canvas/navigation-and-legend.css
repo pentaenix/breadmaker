@@ -1,14 +1,10 @@
 /* =========================================================
    Canvas navigation, organization & legend
    ========================================================= */
-.canvas-mode-toggle,.canvas-zoom-controls{display:flex;align-items:center;gap:2px}
-.canvas-mode-toggle{padding:2px;border:1px solid var(--line);border-radius:6px;background:var(--surface2)}
-.canvas-mode-toggle .mode-button{width:31px;height:29px;padding:5px;border:0;background:transparent}
-.canvas-mode-toggle .mode-button svg{width:17px;height:17px;display:block;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.canvas-mode-toggle .mode-button.active{background:var(--surface);box-shadow:0 0 0 1px var(--line2);color:var(--text)}
+.canvas-zoom-controls{display:flex;align-items:center;gap:2px}
 .canvas-zoom-controls{margin-left:3px}.canvas-zoom-controls .toolbar-button{min-width:30px;padding-inline:7px}.canvas-zoom-controls .zoom-value{min-width:53px;font-variant-numeric:tabular-nums}
 .canvas-stage{cursor:default;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;touch-action:none}
-.canvas-stage.hand-mode{cursor:grab}.canvas-stage.hand-mode.panning,.canvas-stage.space-pan{cursor:grabbing}.canvas-stage.pointer-mode{cursor:default}.canvas-stage.space-pan,.canvas-stage.space-pan *,.canvas-stage.panning,.canvas-stage.panning *{user-select:none!important;-webkit-user-select:none!important}.canvas-stage.panning,.canvas-stage.panning *{cursor:grabbing!important}
+.canvas-stage.space-pan,.canvas-stage.space-pan *{cursor:grab!important}.canvas-stage.space-pan,.canvas-stage.space-pan *,.canvas-stage.panning,.canvas-stage.panning *{user-select:none!important;-webkit-user-select:none!important}.canvas-stage.panning,.canvas-stage.panning *{cursor:grabbing!important}
 .canvas-space{position:relative;width:6000px;height:4000px;min-width:6000px;min-height:4000px}
 .canvas-world{position:absolute;left:0;top:0;width:6000px;height:4000px;transform-origin:0 0;will-change:transform}
 .canvas-world>.edge-layer{position:absolute;inset:0;width:6000px;height:4000px;max-width:none;max-height:none}

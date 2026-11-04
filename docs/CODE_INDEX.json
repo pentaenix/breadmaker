@@ -15083,7 +15083,7 @@
     },
     {
       "file": "static/js/core/collections.js",
-      "lines": 127,
+      "lines": 132,
       "symbols": [
         {
           "name": "phoneRailOwnsMenu",
@@ -15138,12 +15138,12 @@
         {
           "name": "syncPhoneWorkspaceName",
           "kind": "function",
-          "line": 114
+          "line": 119
         },
         {
           "name": "syncPhoneViewport",
           "kind": "function",
-          "line": 119
+          "line": 124
         }
       ]
     },
@@ -15483,7 +15483,7 @@
     },
     {
       "file": "static/js/core/routing.js",
-      "lines": 105,
+      "lines": 106,
       "symbols": [
         {
           "name": "reportViewRenderError",
@@ -15533,7 +15533,7 @@
         {
           "name": "hydratePrimaryWorkspace",
           "kind": "function",
-          "line": 48
+          "line": 49
         }
       ]
     },
@@ -15610,7 +15610,7 @@
     },
     {
       "file": "static/js/core/state.js",
-      "lines": 177,
+      "lines": 176,
       "symbols": []
     },
     {
@@ -16451,7 +16451,7 @@
     },
     {
       "file": "static/js/features/canvas/hierarchy.js",
-      "lines": 268,
+      "lines": 260,
       "symbols": [
         {
           "name": "restoreCanvasUIState",
@@ -16619,380 +16619,375 @@
           "line": 94
         },
         {
-          "name": "updateCanvasModeUI",
+          "name": "updateCanvasPanUI",
           "kind": "function",
           "line": 96
         },
         {
-          "name": "setCanvasMode",
-          "kind": "function",
-          "line": 103
-        },
-        {
           "name": "configuredCanvasTextSize",
           "kind": "function",
-          "line": 105
+          "line": 98
         },
         {
           "name": "normalizeCanvasTextSize",
           "kind": "function",
-          "line": 106
+          "line": 99
         },
         {
           "name": "applyCanvasTextSize",
           "kind": "function",
-          "line": 107
+          "line": 100
         },
         {
           "name": "applyCanvasFont",
           "kind": "function",
-          "line": 108
+          "line": 101
         },
         {
           "name": "syncCanvasSnapToggle",
           "kind": "function",
-          "line": 109
+          "line": 102
         },
         {
           "name": "setCanvasSnap",
           "kind": "function",
-          "line": 110
+          "line": 103
         },
         {
           "name": "clearCanvasSnapGuides",
           "kind": "function",
-          "line": 112
+          "line": 105
         },
         {
           "name": "showCanvasSnapGuides",
           "kind": "function",
-          "line": 113
+          "line": 106
         },
         {
           "name": "canvasBoundsForNodes",
           "kind": "function",
-          "line": 114
+          "line": 107
         },
         {
           "name": "nearestCanvasSnap",
           "kind": "function",
-          "line": 115
+          "line": 108
         },
         {
           "name": "positionCanvasViewPopover",
           "kind": "function",
-          "line": 123
+          "line": 116
         },
         {
           "name": "closeCanvasViewPopover",
           "kind": "function",
-          "line": 124
+          "line": 117
         },
         {
           "name": "toggleCanvasViewPopover",
           "kind": "function",
-          "line": 125
+          "line": 118
         },
         {
           "name": "clampCanvasZoom",
           "kind": "function",
-          "line": 126
+          "line": 119
         },
         {
           "name": "syncDevelopmentalDeskTileScale",
           "kind": "function",
-          "line": 127
+          "line": 120
         },
         {
           "name": "applyCanvasZoom",
           "kind": "function",
-          "line": 128
+          "line": 121
         },
         {
           "name": "cancelQueuedCanvasViewportPersist",
           "kind": "function",
-          "line": 137
+          "line": 130
         },
         {
           "name": "queueCanvasViewportPersist",
           "kind": "function",
-          "line": 138
+          "line": 131
         },
         {
           "name": "persistCurrentCanvasViewport",
           "kind": "function",
-          "line": 139
+          "line": 132
         },
         {
           "name": "applyPendingCanvasViewport",
           "kind": "function",
-          "line": 143
+          "line": 136
         },
         {
           "name": "restoreCanvasViewport",
           "kind": "function",
-          "line": 147
+          "line": 140
         },
         {
           "name": "canvasWorldMetrics",
           "kind": "function",
-          "line": 150
+          "line": 143
         },
         {
           "name": "canvasPointFromClient",
           "kind": "function",
-          "line": 151
+          "line": 144
         },
         {
           "name": "canvasDeltaFromClient",
           "kind": "function",
-          "line": 152
+          "line": 145
         },
         {
           "name": "isDevelopmentalStructureCard",
           "kind": "function",
-          "line": 153
+          "line": 146
         },
         {
           "name": "isDevelopmentalPlanningCard",
           "kind": "function",
-          "line": 154
+          "line": 147
         },
         {
           "name": "developmentalObjectVisible",
           "kind": "function",
-          "line": 155
+          "line": 148
         },
         {
           "name": "nodeInDevelopmentalLane",
           "kind": "function",
-          "line": 156
+          "line": 149
         },
         {
           "name": "developmentalPlacedCards",
           "kind": "function",
-          "line": 157
+          "line": 150
         },
         {
           "name": "developmentalUnplacedCards",
           "kind": "function",
-          "line": 158
+          "line": 151
         },
         {
           "name": "developmentalLaneCards",
           "kind": "function",
-          "line": 159
+          "line": 152
         },
         {
           "name": "developmentalCurrentEntityIds",
           "kind": "function",
-          "line": 160
+          "line": 153
         },
         {
           "name": "developmentalMissingItems",
           "kind": "function",
-          "line": 161
+          "line": 154
         },
         {
           "name": "developmentalMissingLanePositions",
           "kind": "function",
-          "line": 162
+          "line": 155
         },
         {
           "name": "assignDevelopmentalLanePositions",
           "kind": "function",
-          "line": 163
+          "line": 156
         },
         {
           "name": "developmentalLaneDropIndex",
           "kind": "function",
-          "line": 164
+          "line": 157
         },
         {
           "name": "developmentalLaneRects",
           "kind": "function",
-          "line": 165
+          "line": 158
         },
         {
           "name": "animateDevelopmentalLaneFrom",
           "kind": "function",
-          "line": 166
+          "line": 159
         },
         {
           "name": "createDevelopmentalDragProxy",
           "kind": "function",
-          "line": 167
+          "line": 160
         },
         {
           "name": "moveDevelopmentalDragProxy",
           "kind": "function",
-          "line": 168
+          "line": 161
         },
         {
           "name": "removeDevelopmentalDragProxy",
           "kind": "function",
-          "line": 169
+          "line": 162
         },
         {
           "name": "developmentalLaneAutoScroll",
           "kind": "function",
-          "line": 170
+          "line": 163
         },
         {
           "name": "syncDevelopmentalStructureToggle",
           "kind": "function",
-          "line": 171
+          "line": 164
         },
         {
           "name": "renderDevelopmentalLane",
           "kind": "function",
-          "line": 172
+          "line": 165
         },
         {
           "name": "addGap",
           "kind": "function",
-          "line": 178
+          "line": 171
         },
         {
           "name": "renderCanvasGuides",
           "kind": "function",
-          "line": 189
+          "line": 182
         },
         {
           "name": "canvasVersionDirty",
           "kind": "function",
-          "line": 190
+          "line": 183
         },
         {
           "name": "nextCanvasVersionName",
           "kind": "function",
-          "line": 191
+          "line": 184
         },
         {
           "name": "loadActiveCanvasVersion",
           "kind": "function",
-          "line": 192
+          "line": 185
         },
         {
           "name": "versionGeometryMatches",
           "kind": "function",
-          "line": 193
+          "line": 186
         },
         {
           "name": "same",
           "kind": "function",
-          "line": 205
+          "line": 198
         },
         {
           "name": "initializeCanvasVersions",
           "kind": "function",
-          "line": 213
+          "line": 206
         },
         {
           "name": "versionSwitchChoice",
           "kind": "function",
-          "line": 214
+          "line": 207
         },
         {
           "name": "refreshCanvasVersionState",
           "kind": "function",
-          "line": 215
+          "line": 208
         },
         {
           "name": "updateActiveCanvasVersion",
           "kind": "function",
-          "line": 216
+          "line": 209
         },
         {
           "name": "switchCanvasVersion",
           "kind": "function",
-          "line": 217
+          "line": 210
         },
         {
           "name": "createCanvasVersion",
           "kind": "function",
-          "line": 219
+          "line": 212
         },
         {
           "name": "renameCanvasVersion",
           "kind": "function",
-          "line": 220
+          "line": 213
         },
         {
           "name": "renameActiveCanvasVersion",
           "kind": "function",
-          "line": 221
+          "line": 214
         },
         {
           "name": "deleteCanvasVersion",
           "kind": "function",
-          "line": 222
+          "line": 215
         },
         {
           "name": "deleteActiveCanvasVersion",
           "kind": "function",
-          "line": 223
+          "line": 216
         },
         {
           "name": "removeMissingVersionItem",
           "kind": "function",
-          "line": 224
+          "line": 217
         },
         {
           "name": "canvasVersionMenuItems",
           "kind": "function",
-          "line": 225
+          "line": 218
         },
         {
           "name": "openCanvasVersionMenu",
           "kind": "function",
-          "line": 226
+          "line": 219
         },
         {
           "name": "structureVersionRows",
           "kind": "function",
-          "line": 227
+          "line": 220
         },
         {
           "name": "openCanvasVersionsPanel",
           "kind": "function",
-          "line": 228
+          "line": 221
         },
         {
           "name": "hideStructurePanelHover",
           "kind": "function",
-          "line": 230
+          "line": 223
         },
         {
           "name": "queueStructurePanelHover",
           "kind": "function",
-          "line": 231
+          "line": 224
         },
         {
           "name": "wireStructurePanelDescriptions",
           "kind": "function",
-          "line": 235
+          "line": 228
         },
         {
           "name": "openStructurePanel",
           "kind": "function",
-          "line": 238
+          "line": 231
         },
         {
           "name": "fitCanvasContents",
           "kind": "function",
-          "line": 251
+          "line": 244
         },
         {
           "name": "selectCanvas",
           "kind": "function",
-          "line": 261
+          "line": 253
         }
       ]
     },
     {
       "file": "static/js/features/canvas/nodes.js",
-      "lines": 388,
+      "lines": 437,
       "symbols": [
         {
           "name": "canvasShapeIcon",
@@ -17535,124 +17530,149 @@
           "line": 268
         },
         {
-          "name": "beginCanvasPan",
-          "kind": "function",
-          "line": 280
-        },
-        {
-          "name": "canvasEdgeFullyInsideRect",
+          "name": "cancelCanvasPan",
           "kind": "function",
           "line": 282
         },
         {
-          "name": "beginCanvasLasso",
+          "name": "beginCanvasPan",
+          "kind": "function",
+          "line": 283
+        },
+        {
+          "name": "capture",
           "kind": "function",
           "line": 287
         },
         {
-          "name": "updateSelection",
+          "name": "move",
           "kind": "function",
-          "line": 291
+          "line": 289
         },
         {
-          "name": "scrollDelta",
+          "name": "finish",
           "kind": "function",
-          "line": 292
+          "line": 295
         },
         {
-          "name": "autoScroll",
+          "name": "canvasEdgeFullyInsideRect",
           "kind": "function",
-          "line": 293
+          "line": 311
         },
         {
-          "name": "restoreCanvasSpaceTypingSnapshot",
-          "kind": "function",
-          "line": 308
-        },
-        {
-          "name": "canvasPopulateCatalog",
-          "kind": "function",
-          "line": 315
-        },
-        {
-          "name": "canvasPopulateMenuItems",
+          "name": "beginCanvasLasso",
           "kind": "function",
           "line": 316
         },
         {
-          "name": "afterCanvasPaint",
+          "name": "updateSelection",
           "kind": "function",
-          "line": 317
+          "line": 320
         },
         {
-          "name": "settlePopulatedRows",
+          "name": "scrollDelta",
           "kind": "function",
-          "line": 318
+          "line": 321
         },
         {
-          "name": "populateCanvas",
+          "name": "autoScroll",
           "kind": "function",
-          "line": 328
+          "line": 322
         },
         {
-          "name": "quickCreateNode",
-          "kind": "function",
-          "line": 330
-        },
-        {
-          "name": "quickCreateFigure",
-          "kind": "function",
-          "line": 331
-        },
-        {
-          "name": "releaseCanvasSpacePan",
-          "kind": "function",
-          "line": 332
-        },
-        {
-          "name": "normalizeColor",
+          "name": "restoreCanvasSpaceTypingSnapshot",
           "kind": "function",
           "line": 337
         },
         {
+          "name": "canvasPopulateCatalog",
+          "kind": "function",
+          "line": 363
+        },
+        {
+          "name": "canvasPopulateMenuItems",
+          "kind": "function",
+          "line": 364
+        },
+        {
+          "name": "afterCanvasPaint",
+          "kind": "function",
+          "line": 365
+        },
+        {
+          "name": "settlePopulatedRows",
+          "kind": "function",
+          "line": 366
+        },
+        {
+          "name": "populateCanvas",
+          "kind": "function",
+          "line": 376
+        },
+        {
+          "name": "quickCreateNode",
+          "kind": "function",
+          "line": 378
+        },
+        {
+          "name": "quickCreateFigure",
+          "kind": "function",
+          "line": 379
+        },
+        {
+          "name": "releaseCanvasSpacePan",
+          "kind": "function",
+          "line": 380
+        },
+        {
+          "name": "resetCanvasPan",
+          "kind": "function",
+          "line": 384
+        },
+        {
+          "name": "normalizeColor",
+          "kind": "function",
+          "line": 386
+        },
+        {
           "name": "updateSelectionInspector",
           "kind": "function",
-          "line": 339
+          "line": 388
         },
         {
           "name": "applyNodePatch",
           "kind": "function",
-          "line": 340
+          "line": 389
         },
         {
           "name": "openNodeInspector",
           "kind": "function",
-          "line": 343
+          "line": 392
         },
         {
           "name": "mixedChoice",
           "kind": "function",
-          "line": 356
+          "line": 405
         },
         {
           "name": "mixedValue",
           "kind": "function",
-          "line": 357
+          "line": 406
         },
         {
           "name": "openMultiNodeInspector",
           "kind": "function",
-          "line": 358
+          "line": 407
         },
         {
           "name": "bulk",
           "kind": "function",
-          "line": 361
+          "line": 410
         },
         {
           "name": "deleteSelectedNodes",
           "kind": "function",
-          "line": 365
+          "line": 414
         }
       ]
     },

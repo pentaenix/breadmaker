@@ -38,9 +38,9 @@ def test_v422_static_canvas_contracts():
     html=(ROOT/'static/index.html').read_text(encoding='utf-8')
     js=frontend_source_from_app_path(ROOT/'static/app.js')
     css=frontend_styles_source_from_styles_path((ROOT/'static/styles.css'))
-    assert 'id="canvasHandMode"' in html and 'id="canvasPointerMode"' in html
+    assert 'id="canvasHandMode"' not in html and 'id="canvasPointerMode"' not in html
     assert 'id="canvasZoomFit"' in html and 'id="canvasWorld"' in html
-    assert "state.canvasMode" in js and "state.canvasSpaceHeld?'hand':state.canvasMode" in js and 'beginCanvasLasso' in js
+    assert 'beginCanvasPan' in js and 'beginCanvasLasso' in js
     assert 'event.shiftKey||event.ctrlKey||event.metaKey' in js
     assert "node_type:'routing'" in js and "node_type:'label'" in js
     assert "edge.route_style||'curved'" in js

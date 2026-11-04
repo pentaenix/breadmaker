@@ -22,7 +22,7 @@ def test_v724_quick_open_single_visible_entry(scene_live_server,scene_browser):
 def test_v724_undo_toast_offers_redo(scene_live_server,scene_browser):
     base=scene_live_server;_new_project(base,'7.2.4 redo toast');page,errors=_page(base,scene_browser)
     try:
-        ids=page.evaluate("""async()=>{const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Redo toast',canvas_type:'blank'})});const card=await api(`/api/canvases/${cv.id}/nodes`,{method:'POST',body:JSON.stringify({shape:'rect',x:100,y:100,w:220,h:120,title:'Delete redo'})});await refresh(false);setView('canvas');await selectCanvas(cv.id);setCanvasMode('pointer');selectOnlyNode(card.id);return{cv:cv.id,card:card.id}}""")
+        ids=page.evaluate("""async()=>{const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Redo toast',canvas_type:'blank'})});const card=await api(`/api/canvases/${cv.id}/nodes`,{method:'POST',body:JSON.stringify({shape:'rect',x:100,y:100,w:220,h:120,title:'Delete redo'})});await refresh(false);setView('canvas');await selectCanvas(cv.id);selectOnlyNode(card.id);return{cv:cv.id,card:card.id}}""")
         page.keyboard.press('Delete');page.wait_for_function("id=>!state.canvasNodes.some(n=>n.id===id)",arg=ids['card'])
         page.wait_for_function("()=>document.querySelector('#toast')?.textContent?.includes('Undo')")
         page.locator('#toast .toast-action').click();page.wait_for_function("id=>state.canvasNodes.some(n=>n.id===id)",arg=ids['card'])

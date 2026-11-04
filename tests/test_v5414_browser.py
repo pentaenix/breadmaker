@@ -19,7 +19,7 @@ def test_v5414_drawing_is_exclusive_and_cards_paste_at_mouse(scene_live_server, 
     try:
         canvas_id = page.evaluate("""async()=>{
           const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Copy canvas',canvas_type:'blank'})});
-          await refresh(false);setView('canvas');await selectCanvas(cv.id);await setCanvasMode('pointer');return cv.id;
+          await refresh(false);setView('canvas');await selectCanvas(cv.id);return cv.id;
         }""")
         page.wait_for_selector('#canvasView.active')
         stage = page.locator('#canvasStage')

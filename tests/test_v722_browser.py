@@ -45,7 +45,7 @@ def test_v722_shift_constrains_rectangle_and_oval_and_removes_circle_tool(scene_
     _new_project(base, '7.2.2 shift shapes')
     page, errors = _page(base, scene_browser)
     try:
-        page.evaluate("""async()=>{const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Shift Shapes',canvas_type:'blank'})});await refresh(false);setView('canvas');await selectCanvas(cv.id);await setCanvasMode('pointer')}""")
+        page.evaluate("""async()=>{const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Shift Shapes',canvas_type:'blank'})});await refresh(false);setView('canvas');await selectCanvas(cv.id);}""")
         page.wait_for_selector('#canvasView.active')
         page.locator('#addFigureBtn').click()
         page.wait_for_selector('#canvasFigurePalette:not(.hidden)')
@@ -72,7 +72,7 @@ def test_v722_line_draw_keeps_30_degrees_and_shift_snaps_to_45(scene_live_server
     _new_project(base, '7.2.2 line angles')
     page, errors = _page(base, scene_browser)
     try:
-        page.evaluate("""async()=>{const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Line Angles',canvas_type:'blank'})});await refresh(false);setView('canvas');await selectCanvas(cv.id);await setCanvasMode('pointer')}""")
+        page.evaluate("""async()=>{const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Line Angles',canvas_type:'blank'})});await refresh(false);setView('canvas');await selectCanvas(cv.id);}""")
         page.wait_for_selector('#canvasView.active')
         stage = page.locator('#canvasStage')
         box = stage.bounding_box()

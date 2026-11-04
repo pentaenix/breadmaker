@@ -954,9 +954,9 @@ def test_browser_v422_canvas_modes_multiselect_zoom_and_routing(live_server,brow
           }
         """)
         page.wait_for_selector('.canvas-node')
-        assert 'active' in (page.locator('#canvasHandMode').get_attribute('class') or '')
+        assert page.locator('#canvasHandMode,#canvasPointerMode').count()==0
 
-        # Modifier selection works in Hand mode and a group moves as one unit.
+        # Modifier selection and group movement need no mode switch.
         a=page.locator(f'.canvas-node[data-id="{created["a"]}"]')
         b=page.locator(f'.canvas-node[data-id="{created["b"]}"]')
         a.click();b.click(modifiers=['Meta'])
@@ -968,9 +968,7 @@ def test_browser_v422_canvas_modes_multiselect_zoom_and_routing(live_server,brow
         assert round(after[0][0]-before[0][0])==round(after[1][0]-before[1][0])
         assert round(after[0][1]-before[0][1])==round(after[1][1]-before[1][1])
 
-        # Pointer mode owns empty-space marquee selection.
-        page.locator('#canvasPointerMode').click()
-        assert 'active' in (page.locator('#canvasPointerMode').get_attribute('class') or '')
+        # Empty-space left drag always selects.
         stage=page.locator('#canvasStage');sb=stage.bounding_box();stage.evaluate('el=>{el.scrollLeft=0;el.scrollTop=0}')
         page.mouse.move(sb['x']+55,sb['y']+55);page.mouse.down();page.mouse.move(sb['x']+920,sb['y']+420,steps=8);page.mouse.up();page.wait_for_timeout(100)
         assert page.evaluate('state.selectedNodes.size')>=3
@@ -984,11 +982,11 @@ def test_browser_v422_canvas_modes_multiselect_zoom_and_routing(live_server,brow
         assert selected_colors and all(color=='#ddeeff' for color in selected_colors)
         assert all(marker is None for marker in selected_markers)
 
-        # Space temporarily invokes Hand without changing persistent Pointer mode.
+        # Space temporarily pans; releasing it restores selection.
         stage.focus();page.keyboard.down('Space')
-        assert 'active' in (page.locator('#canvasHandMode').get_attribute('class') or '')
+        assert page.evaluate('()=>state.canvasSpaceHeld')
         page.keyboard.up('Space')
-        assert 'active' in (page.locator('#canvasPointerMode').get_attribute('class') or '')
+        assert not page.evaluate('()=>state.canvasSpaceHeld')
 
         # Zoom is viewport-only: it never mutates world-space node geometry.
         coords=page.evaluate('(id)=>{const n=state.canvasNodes.find(x=>x.id===id);return [n.x,n.y,n.w,n.h]}',created['a'])
@@ -1000,13 +998,13 @@ def test_browser_v422_canvas_modes_multiselect_zoom_and_routing(live_server,brow
         coords2=page.evaluate('(id)=>{const n=state.canvasNodes.find(x=>x.id===id);return [n.x,n.y,n.w,n.h]}',created['a'])
         assert coords==coords2
 
-        # Each canvas remembers its own zoom, viewport and tool mode.
+        # Each canvas remembers its zoom and viewport; selection stays the default.
         page.locator('#canvasZoomOut').click();page.wait_for_timeout(80);remembered_zoom=page.evaluate('state.canvasZoom')
         stage.evaluate('el=>{el.scrollLeft=230;el.scrollTop=140}');page.evaluate('()=>persistCurrentCanvasViewport()')
         page.evaluate("async()=>{const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Viewport Other',canvas_type:'blank'})});await refresh(false);await selectCanvas(cv.id)}")
-        assert page.evaluate('state.canvasMode')=='hand'
+        assert not page.evaluate('()=>state.canvasSpaceHeld')
         page.evaluate('(id)=>selectCanvas(id)',created['canvas']);page.wait_for_timeout(180)
-        assert page.evaluate('state.canvasMode')=='pointer'
+        assert not page.evaluate('()=>state.canvasSpaceHeld')
         assert abs(page.evaluate('state.canvasZoom')-remembered_zoom)<0.001
         restored_scroll=stage.evaluate('el=>[el.scrollLeft,el.scrollTop]')
         assert restored_scroll[0]>=200 and restored_scroll[1]>=110
@@ -1385,11 +1383,8 @@ def test_browser_v433_free_images_card_text_and_arrow_direction(live_server,brow
         }""",asset)
         page.wait_for_selector(f'.canvas-node[data-id="{created["image"]}"]')
 
-        # Hand/Pointer lives over the upper-left of the canvas rather than consuming toolbar space.
-        stage=page.locator('#canvasStage').bounding_box();overlay=page.locator('.canvas-mode-overlay').bounding_box()
-        assert overlay['x']>=stage['x'] and overlay['x']<stage['x']+40
-        assert overlay['y']>=stage['y'] and overlay['y']<stage['y']+40
-        assert page.locator('.canvas-toolbar #canvasHandMode').count()==0
+        # Direct selection has no floating mode toggle obscuring objects.
+        assert page.locator('.canvas-mode-overlay,#canvasHandMode,#canvasPointerMode').count()==0
 
         # Image is a free object: no card interior/drag strip, but it has selection,
         # eight arrow anchors, direct dragging, and a resize knob.
