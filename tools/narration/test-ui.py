@@ -65,9 +65,16 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             assert browser_name in ('chromium','firefox','webkit')
             browser=getattr(pw,browser_name).launch(headless=True,**({'args':['--autoplay-policy=no-user-gesture-required']} if browser_name=='chromium' else {}))
             page=browser.new_page();errors=[];saves=[]
+            print('NARRATION_UI_PHASE 68 Exercise the four-thread settings contract independently of runner CPU count.',flush=True)
             # Exercise the four-thread settings contract independently of runner CPU count.
             page.add_init_script("Object.defineProperty(navigator,'hardwareConcurrency',{get:()=>8})")
-            page.on('pageerror',lambda error:errors.append(str(error)))
+            def record_error(error):
+                errors.append(str(error))
+                print('NARRATION_UI_PAGEERROR',json.dumps({'time':time.monotonic(),'message':str(error),'stack':getattr(error,'stack','')}),flush=True)
+            page.on('pageerror',record_error)
+            page.on('requestfailed',lambda request:print('NARRATION_UI_REQUEST_FAILED',json.dumps({'time':time.monotonic(),'url':request.url,'type':request.resource_type,'failure':request.failure}),flush=True) if request.url.startswith(base+'/api/narrations/') else None)
+            page.on('response',lambda response:print('NARRATION_UI_AUDIO_RESPONSE',json.dumps({'time':time.monotonic(),'url':response.url,'status':response.status}),flush=True) if response.url.startswith(base+'/api/narrations/') and response.url.endswith('/audio') else None)
+            page.on('framenavigated',lambda frame:print('NARRATION_UI_NAVIGATION',json.dumps({'time':time.monotonic(),'url':frame.url}),flush=True) if frame==page.main_frame else None)
             page.on('request',lambda request:saves.append(request.url) if request.method=='POST' and request.url==base+'/api/narrations' else None)
             page.route('**/narration-engine.js?*',lambda route:route.fulfill(status=200,content_type='text/javascript',body=STUB))
             page.goto(base+'/p/'+project['id']);page.locator('#app:not([inert])').wait_for(state='visible')
@@ -95,6 +102,7 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
                 assert page.locator('#'+options).evaluate('(button)=>getComputedStyle(button).borderInlineStartWidth')=='0px'
             assert page.locator('#narrationPlayBook,#narrationPlayChapter').count()==0
             assert page.locator('#narrationContinue').count()==0
+            print('NARRATION_UI_PHASE 104 Hidden/collapsed prose still belongs to the complete-book job.',flush=True)
             # Hidden/collapsed prose still belongs to the complete-book job.
             page.evaluate('(id)=>document.querySelector(`[data-block-id="${id}"]`).style.display="none"',night[1]['id'])
             page.locator('#narrationVoice').select_option('bm_george')
@@ -112,6 +120,7 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             assert page.evaluate('()=>narration.queue.map(record=>record.text)')==expected
             assert len(saves)==5 and page.evaluate('()=>window.testGenerations')==5
             page.locator('#narrationPlay').click()
+            print('NARRATION_UI_PHASE 121 A chapter-only queue must not include the next chapter by default.',flush=True)
             # A chapter-only queue must not include the next chapter by default.
             page.evaluate('(id)=>selectChapter(id)',second['id']);expect(page.locator('#narrationChapter')).to_have_text('Narrate chapter')
             page.locator('#narrationChapter').click();expect(page.locator('#narrationPlay')).to_have_attribute('aria-label','Pause narration')
@@ -129,7 +138,9 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             assert page.evaluate('()=>narration.queue.map(record=>record.text)')==expected;assert len(saves)==5
             page.locator('#narrationNext').click();expect(page.locator('#narrationPreviewExcerpt')).to_have_text('Last one.')
             page.locator('#narrationPlay').click()
+            print('NARRATION_UI_PHASE 138 A completed early stream still shares the inference AudioContext.',flush=True)
             # A completed early stream still shares the inference AudioContext.
+            print('NARRATION_UI_PHASE 139 GPU changes must detach it before that context is retired.',flush=True)
             # GPU changes must detach it before that context is retired.
             page.evaluate('()=>{const context=new AudioContext({sampleRate:24000});narration.engine.context=context;narration.audio.startStream(context);narration.audio.appendStream(context.createBuffer(1,24000,24000));narration.audio.finishStream()}')
             def settings():
@@ -147,6 +158,7 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
                 assert geometry['path']==page.locator('#viewBtn .view-menu-chevron path').get_attribute('d')
             for identifier in ['narrationSettingsVoice','narrationSettingsSpeed','narrationSettingsPitch','narrationSettingsPace']:check_selector_insets('#'+identifier)
             export_spacing=page.locator('#narrationSettingsExport').evaluate('''button=>{const box=button.getBoundingClientRect();return {above:box.top-button.previousElementSibling.getBoundingClientRect().bottom,below:button.closest('section').getBoundingClientRect().bottom-box.bottom}}''')
+            print('NARRATION_UI_PHASE 156 Engines represent fractional CSS pixels differently; tolerate <.05px.',flush=True)
             # Engines represent fractional CSS pixels differently; tolerate <.05px.
             assert export_spacing['above']>=11.95 and export_spacing['below']>=17.95,export_spacing
             expect(page.locator('[data-narration-setting="punctuationPauses"]')).to_have_attribute('aria-checked','true')
@@ -170,6 +182,7 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             settings();expect(page.locator('[data-narration-setting="gpu"]')).to_have_attribute('aria-checked','false')
             assert 'Nothing is generated' not in page.locator('#modalBody').inner_text()
             page.locator('#modalClose').click();expect(page.locator('#settingsNarration')).to_be_visible();page.locator('#modalClose').click()
+            print('NARRATION_UI_PHASE 179 Generation with both early preview and autoplay disabled stays paused.',flush=True)
             # Generation with both early preview and autoplay disabled stays paused.
             page.evaluate('(id)=>selectChapter(id)',first['id']);page.locator('.narration-recording .bare-button').first.click()
             page.get_by_role('button',name='Recreate recording',exact=True).click()
@@ -181,12 +194,16 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             assert page.evaluate('()=>window.testPace')==.95
             assert page.evaluate('()=>window.testPunctuation') is False
             assert any(record.get('generation_pace')==.95 for record in requests.get(base+'/api/narrations').json()['records'])
+            print('NARRATION_UI_PHASE 190 Resume a longer unattended job outside the displayed chapter.',flush=True)
             # Resume a longer unattended job outside the displayed chapter.
+            print('NARRATION_UI_PHASE 191 Audio stays paused: generation must not depend on audio ending.',flush=True)
             # Audio stays paused: generation must not depend on audio ending.
             headers={'X-Breadmaker-Project':project['id'],'X-Breadmaker-Client':page.evaluate('()=>CLIENT_ID')}
             response=requests.post(base+'/api/chapters',json={'title':'Overnight','tab_id':first['tab_id']},headers=headers);response.raise_for_status();overnight=response.json()
             blocks(overnight,[f'Night passage {i}.' for i in range(1,9)],headers)
+            print('NARRATION_UI_PHASE 195 A persisted Continue playback setting must not generate later',flush=True)
             # A persisted Continue playback setting must not generate later
+            print('NARRATION_UI_PHASE 196 chapters from either the main chapter button or its menu.',flush=True)
             # chapters from either the main chapter button or its menu.
             page.locator('#narrationChapter').click();expect(page.locator('#narrationChapter')).to_be_enabled(timeout=10000)
             assert len(saves)==6 and page.evaluate('()=>window.testGenerations')==1
@@ -202,7 +219,9 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             assert page.evaluate('()=>narration.queue.map(record=>record.text)')==expected+['Overnight']+[f'Night passage {i}.' for i in range(1,9)]
             assert page.evaluate('()=>narration.audio.paused')
             page.evaluate('(id)=>selectChapter(id)',first['id']);expect(page.locator('#narrationChapter')).to_have_text('Narrate chapter')
+            print('NARRATION_UI_PHASE 211 Both entry points preserve an exact text selection; Generate only',flush=True)
             # Both entry points preserve an exact text selection; Generate only
+            print('NARRATION_UI_PHASE 212 must override enabled autoplay/early-preview without changing them.',flush=True)
             # must override enabled autoplay/early-preview without changing them.
             settings()
             for key in ['autoplay','earlyPlayback','punctuationPauses']:
@@ -218,7 +237,9 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             assert page.evaluate('()=>window.testPunctuation') is True
             assert page.evaluate('()=>narration.audio.paused&&narration.audio.stream===null')
             assert page.evaluate('()=>narrationPreferences.value.autoplay&&narrationPreferences.value.earlyPlayback')
+            print('NARRATION_UI_PHASE 227 Regression: Generate chapter must ignore persisted continuation,',flush=True)
             # Regression: Generate chapter must ignore persisted continuation,
+            print('NARRATION_UI_PHASE 228 even with a wholly unrecorded chapter after the focused chapter.',flush=True)
             # even with a wholly unrecorded chapter after the focused chapter.
             response=requests.post(base+'/api/chapters',json={'title':'Do not generate','tab_id':first['tab_id']},headers=headers);response.raise_for_status();excluded=response.json()
             blocks(excluded,['Outside requested chapter.'],headers)
@@ -230,7 +251,9 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             expect(page.get_by_test_id('narration-generate-only')).to_have_text('Generate chapter')
             page.get_by_test_id('narration-generate-only').click();expect(page.locator('#narrationChapter')).to_be_enabled(timeout=10000)
             assert len(saves)==16 and page.evaluate('()=>!window.testInputs.includes("Do not generate")&&!window.testInputs.includes("Outside requested chapter.")')
+            print('NARRATION_UI_PHASE 239 Regenerate chapter replaces complete recordings in this chapter,',flush=True)
             # Regenerate chapter replaces complete recordings in this chapter,
+            print('NARRATION_UI_PHASE 240 including its title, without duplicating audio or continuing onward.',flush=True)
             # including its title, without duplicating audio or continuing onward.
             before=requests.get(base+'/api/narrations',headers=headers).json()['records']
             page.locator('#narrationScopeOptions').click()
@@ -245,7 +268,9 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             page.get_by_test_id('narration-regenerate').click();expect(page.locator('#narrationSelection')).to_be_enabled(timeout=10000)
             assert len(saves)==21 and page.evaluate('()=>window.testInputs.at(-1)')=='First'
             after=requests.get(base+'/api/narrations',headers=headers).json()['records'];assert len(after)==len(before)
+            print("NARRATION_UI_PHASE 254 Show only the focused chapter's six recordings, but every active",flush=True)
             # Show only the focused chapter's six recordings, but every active
+            print('NARRATION_UI_PHASE 255 document recording in Full Text. Menus must track the same context.',flush=True)
             # document recording in Full Text. Menus must track the same context.
             expect(page.locator('.narration-recording')).to_have_count(6)
             page.evaluate('()=>openWholeBook(false,true,{force:true})');expect(page.locator('.narration-recording')).to_have_count(len(after))
@@ -262,9 +287,13 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             page.locator('#toast').get_by_role('button',name='Undo',exact=True).click()
             expect(page.locator('.narration-recording')).to_have_count(6,timeout=10000)
             assert len(requests.get(base+'/api/narrations',headers=headers).json()['records'])==len(after)
+            print('NARRATION_UI_PHASE 271 Settings-only export: retain the exact selection, export full chapter',flush=True)
             # Settings-only export: retain the exact selection, export full chapter
+            print('NARRATION_UI_PHASE 272 losslessly including title, and reject incomplete book silently (no inference).',flush=True)
             # losslessly including title, and reject incomplete book silently (no inference).
+            print('NARRATION_UI_PHASE 273 Establish a current selection rather than relying on browser-specific',flush=True)
             # Establish a current selection rather than relying on browser-specific
+            print('NARRATION_UI_PHASE 274 retention of a range from earlier chapter switches and Delete/Undo.',flush=True)
             # retention of a range from earlier chapter switches and Delete/Undo.
             page.evaluate('''()=>{const prose=document.querySelector('.manuscript-block'),range=document.createRange();range.selectNodeContents(prose);getSelection().removeAllRanges();getSelection().addRange(range);captureNarrationSelection()}''')
             assert page.evaluate('()=>narration.selection.length')==1
@@ -282,7 +311,9 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             page.locator('#narrationExportScope').select_option('book');page.locator('#narrationExportDownload').click()
             expect(page.locator('#narrationExportStatus')).to_contain_text('no current recording')
             assert page.evaluate('()=>window.testGenerations')==generated_before and len(saves)==21
+            print("NARRATION_UI_PHASE 291 Supply just the intentionally missing chapter's cached fixture audio;",flush=True)
             # Supply just the intentionally missing chapter's cached fixture audio;
+            print('NARRATION_UI_PHASE 292 the same export now downloads one full-book WAV, still without inference.',flush=True)
             # the same export now downloads one full-book WAV, still without inference.
             excluded_blocks=requests.get(base+f"/api/chapters/{excluded['id']}",headers=headers).json()['blocks']
             fixture_sources=[{'block_id':f"chapter-title:{excluded['id']}",'chapter_id':str(excluded['id']),'target_type':'chapter_title','text':excluded['title']},*({'block_id':block['id'],'text':block['text_content']} for block in excluded_blocks)]
@@ -295,7 +326,9 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             assert page.evaluate('()=>window.testGenerations')==generated_before and len(saves)==21
             page.locator('#modalClose').click();expect(page.locator('#narrationSettingsPace')).to_have_value('0.95')
             page.locator('#modalClose').click();page.locator('#modalClose').click()
+            print('NARRATION_UI_PHASE 304 Main Narrate chapter must also stay scoped when the current',flush=True)
             # Main Narrate chapter must also stay scoped when the current
+            print('NARRATION_UI_PHASE 305 chapter needs real generation, not just when it is fully cached.',flush=True)
             # chapter needs real generation, not just when it is fully cached.
             response=requests.post(base+'/api/chapters',json={'title':'Never synthesize from chapter view','tab_id':first['tab_id']},headers=headers);response.raise_for_status();untouched=response.json()
             blocks(untouched,['Do not synthesize this later paragraph.'],headers)
@@ -310,7 +343,9 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             expect(page.locator('#settingsNarration')).to_be_visible();page.locator('#modalClose').click()
             page.reload();page.locator('#app:not([inert])').wait_for(state='visible');page.locator('#narrationBtn').click()
             expect(page.locator('#narrationSpeed')).to_have_value('2');assert page.evaluate('()=>narration.audio.playbackRate')==2
+            print('NARRATION_UI_PHASE 319 The Settings library uses searchable rows, real preview controls,',flush=True)
             # The Settings library uses searchable rows, real preview controls,
+            print('NARRATION_UI_PHASE 320 individual downloads and language packs, not a long dropdown.',flush=True)
             # individual downloads and language packs, not a long dropdown.
             voice_catalog=requests.get(base+'/api/narration-voices',headers=headers).json()
             voice_data={voice['id']:voice for voice in voice_catalog['voices']}
@@ -355,7 +390,9 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             row('af_nicole').locator('[data-voice-download]').click()
             expect(row('af_nicole').locator('[data-voice-use]')).to_be_enabled()
             expect(row('af_nicole').locator('input')).to_be_checked()
+            print('NARRATION_UI_PHASE 364 A pack only downloads missing files. Failure preserves completed',flush=True)
             # A pack only downloads missing files. Failure preserves completed
+            print('NARRATION_UI_PHASE 365 downloads; retry does not download them again or switch narrator.',flush=True)
             # downloads; retry does not download them again or switch narrator.
             page.locator('#narrationVoiceSearch').fill('')
             page.locator('#narrationVoicePack').click()
@@ -368,6 +405,7 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             expect(page.locator('#narrationVoiceStatus')).to_have_text('Download complete.')
             assert download_calls==['af_nicole','af_sky','am_echo','am_echo']
             expect(row('af_sky').locator('input')).not_to_be_checked()
+            print('NARRATION_UI_PHASE 377 Stop finishes the current file, then leaves the rest untouched.',flush=True)
             # Stop finishes the current file, then leaves the rest untouched.
             page.locator('#narrationVoiceDone').click();expect(page.locator('#narrationSettingsMoreVoices')).to_be_visible()
             voice_data['af_river']['installed']=False;voice_data['am_puck']['installed']=False;hold_downloads=True
@@ -378,6 +416,7 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             held_voice=held[0].request.url.split('/')[-2];voice_data[held_voice]['installed']=True;held[0].fulfill(json=voice_data[held_voice])
             expect(page.locator('#narrationVoiceStatus')).to_have_text('Downloads stopped.')
             assert len(held)==1 and not voice_data['am_puck']['installed'];hold_downloads=False
+            print('NARRATION_UI_PHASE 387 Use selects in the parent draft; Save applies it, preserving other edits.',flush=True)
             # Use selects in the parent draft; Save applies it, preserving other edits.
             page.locator('#narrationVoiceSearch').fill('Bella');row('af_bella').locator('[data-voice-use]').click()
             expect(page.locator('#narrationSettingsVoice')).to_have_value('af_bella')
@@ -386,6 +425,7 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             page.locator('#narrationSettingsSave').click();expect(page.locator('#settingsNarration')).to_be_visible();page.locator('#modalClose').click()
             expect(page.locator('#narrationVoice')).to_have_value('af_bella')
             assert len(saves)==saved,'Settings and previews never publish recordings'
+            print('NARRATION_UI_PHASE 395 Live locale filtering applies to both selectors and the voice browser.',flush=True)
             # Live locale filtering applies to both selectors and the voice browser.
             for locale,count,prefix in [('es',3,'e'),('fr',1,'f'),('it',2,'i'),('ja',3,'j'),('pt-BR',3,'p'),('zh-CN',4,'z')]:
                 page.evaluate('(locale)=>switchLocale(locale)',locale)
