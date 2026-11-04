@@ -16,7 +16,7 @@ def test_v8192_manuscript_toolbar_order_bookmark_navigation_and_marker_name_cont
     toolbar = soup.select_one('.document-toolbar')
     direct_ids = [node.get('id') for node in toolbar.find_all(recursive=False) if node.get('id')]
     assert direct_ids == [
-        'phoneBookNavBtn',
+        'phoneBookNavBtn', 'phoneManuscriptToolsBtn',
         'commentsBtn', 'markupBtn', 'manuscriptImageBtn', 'checkpointBtn',
         'manuscriptReviewsBtn', 'cutsBtn', 'narrationBtn', 'editorsEyeBtn',
     ]

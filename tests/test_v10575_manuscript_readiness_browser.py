@@ -70,9 +70,10 @@ def phone_navigation_writing_toolbar_and_panel_geometry(tmp_path, local):
             prose.fill(f'Phone writing at {width}.')
             page.wait_for_function('()=>!state.dirty&&!state.saveInFlight')
             for button,panel in (('#markupBtn','#markupPanel'),('#narrationBtn','#narrationPanel')):
-                page.locator(button).scroll_into_view_if_needed()
-                before=page.locator(button).bounding_box()['width']
-                page.locator(button).click()
+                opener=page.locator('#phoneManuscriptToolsBtn')
+                before=opener.bounding_box()['width']
+                opener.click()
+                page.locator('#contextMenu').get_by_role('menuitem',name=page.locator(button).get_attribute('aria-label'),exact=True).click()
                 expect(page.locator(panel)).to_be_visible()
                 if panel=='#narrationPanel':
                     page.wait_for_function('()=>!narration.loading')
@@ -80,7 +81,9 @@ def phone_navigation_writing_toolbar_and_panel_geometry(tmp_path, local):
                     expect(page.locator('#narrationSelection')).to_be_disabled()
                 box=page.locator(panel).bounding_box()
                 assert box['x']>=0 and box['x']+box['width']<=width
-                assert page.locator(button).bounding_box()['width']==before
+                assert opener.bounding_box()['width']==before
+                view=page.locator('#manuscriptView').bounding_box()
+                assert box['height']<=view['height']*.51 and abs(box['y']+box['height']-view['y']-view['height'])<=1
                 expect(page.locator(panel+' .panel-head button').last).to_be_visible()
                 page.locator(panel+' .panel-head button').last.click()
                 expect(page.locator(panel)).to_be_hidden()

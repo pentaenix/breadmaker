@@ -3607,7 +3607,8 @@
     "auth.recovery.continue": "Continue",
     "auth.recovery.back": "Back to login",
     "auth.privacy_policy": "Privacy Policy",
-    "auth.login.error_generic": "Unable to sign in with those details. Check your email and password or use account recovery."
+    "auth.login.error_generic": "Unable to sign in with those details. Check your email and password or use account recovery.",
+    "phone.manuscript_tools": "Manuscript tools"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

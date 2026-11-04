@@ -13,6 +13,11 @@ jobs:
     timeout-minutes: 55
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Use the same reviewed Node toolchain as narration-artifacts instead of
+      # the runner's rolling default for the early Node subprocess contracts.
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
@@ -30,9 +35,9 @@ jobs:
           tests/test_v10569_narration_recordings.py::test_atomic_editor_save_without_redundant_tab_field_can_publish
           tests/test_v10569_editing_hosted.py::test_unicode_expanded_vocabulary_publishes_canonical_ranges_and_supports_undo_redo
       - name: Install Linux browser dependencies
-        run: python -m playwright install-deps chromium
-      - name: Install pinned Playwright Chromium
-        run: python -m playwright install chromium
+        run: python -m playwright install-deps chromium webkit
+      - name: Install pinned Playwright Chromium and WebKit
+        run: python -m playwright install chromium webkit
       # Exercise the real navigation boundary before spending time on the full
       # core stage. Keep the verifier's existing discovery, watchdog and accounting.
       - name: Check startup modal and first-project navigation

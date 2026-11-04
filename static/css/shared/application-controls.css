@@ -145,3 +145,44 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .canvas-name::placeholder,.map-current-name.map-title-placeholder{color:var(--muted)!important;opacity:1}
 .map-current-name:empty + .toolbar-title-pencil{visibility:hidden}
 
+
+/* Phone shell uses the existing toolbar/menu/panel language. Desktop is unchanged. */
+.phone-workspace-button,.phone-manuscript-tools{display:none}
+@media(max-width:640px){
+  html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+  body{position:fixed;inset:0}
+  .app-shell{position:absolute;top:var(--phone-viewport-top,0px);width:100%;height:var(--phone-viewport-height,100dvh);max-height:100dvh;min-width:0;overflow:hidden;padding-bottom:env(safe-area-inset-bottom)}
+  .topbar{height:calc(var(--top) + env(safe-area-inset-top));min-height:calc(var(--top) + env(safe-area-inset-top));padding-top:env(safe-area-inset-top);padding-left:max(4px,env(safe-area-inset-left));padding-right:max(4px,env(safe-area-inset-right));flex-shrink:0}
+  .topbar nav.main-tabs{display:none}
+  .phone-workspace-button{display:flex;align-items:center;gap:8px;min-width:0;min-height:40px;font-weight:bold}
+  #phoneWorkspaceName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .topbar .top-actions{margin-left:auto}
+  .view,.document-area,.document-scroller{min-width:0;min-height:0;overscroll-behavior:contain}
+  .document-scroller,.right-panel,.chapter-tree,.document-list{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  #manuscriptPrimaryPane>.document-toolbar{overflow:visible;flex-shrink:0;gap:4px;padding-inline:6px}
+  #manuscriptPrimaryPane>.document-toolbar>.toolbar-title-group{min-width:0;flex:1;overflow:hidden}
+  #manuscriptPrimaryPane>.document-toolbar>.toolbar-spacer{display:none}
+  #manuscriptPrimaryPane>.document-toolbar>.tool-icon-button,#manuscriptPrimaryPane>.document-toolbar>.editors-eye-button,#manuscriptPrimaryPane>.document-toolbar>.checkpoint-button{display:none!important}
+  #manuscriptPrimaryPane .phone-manuscript-tools{display:block;min-width:40px;min-height:40px;order:5}
+  #manuscriptPrimaryPane .active-document-title{max-width:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #manuscriptPrimaryPane{height:100%;align-self:flex-start}
+  #manuscriptView:has(>.right-panel:not(.hidden))>#manuscriptPrimaryPane{height:50%}
+  #manuscriptView>.right-panel{position:absolute;left:0;right:0;top:auto;bottom:0;flex:none;width:100%;min-width:0;height:50%;max-height:50%;min-height:0;border-left:0;border-top:1px solid var(--line2);border-radius:10px 10px 0 0;box-shadow:var(--shadow);z-index:35;overscroll-behavior:contain}
+  #manuscriptView>.right-panel .panel-head{position:sticky;top:0;flex-shrink:0;background:var(--surface);z-index:2}
+  /* A selected note uses the sheet as one scroller; desktop list minimums
+     otherwise squeeze its editor to a few pixels when the keyboard opens. */
+  #commentsPanel:not(.detail-hidden){display:block;overflow-y:auto}
+  #commentsPanel:not(.detail-hidden) .comments-list{min-height:0;max-height:110px}
+  #commentsPanel:not(.detail-hidden) .comments-detail{overflow:visible;min-height:44px}
+  .modal,.project-overlay{top:var(--phone-viewport-top,0px);bottom:auto;height:var(--phone-viewport-height,100dvh)}
+  .modal-card,.project-card{max-height:calc(100% - 16px)}
+  .modal-head,.modal-actions{position:sticky;background:var(--surface);z-index:2}
+  .modal-head{top:0}.modal-actions{bottom:0}
+  #findPopover{left:8px;right:8px;width:auto;max-width:calc(100% - 16px);max-height:calc(100% - 56px);overflow:auto}
+  .find-options,.replace-row{flex-wrap:wrap}.replace-row input{flex-basis:100%}
+  .phone-command-menu{max-width:calc(100vw - 12px);max-height:calc(var(--phone-viewport-height,100dvh) - 80px);overflow:auto;overscroll-behavior:contain}
+  .phone-command-menu button{min-height:44px}
+  :is(#app,#modal,.project-overlay,.quick-open) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select){font-size:16px}
+}
+
+@media(max-width:640px){.phone-command-menu button[aria-current="page"]{background:var(--accent-soft);font-weight:bold}}

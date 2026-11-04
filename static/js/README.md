@@ -116,3 +116,5 @@ The script order declared by `static/index.html` is part of the runtime contract
 - When source-contract tests need frontend implementation text, use `frontend_source()` / `frontend_source_from_app_path()`.
 
 CSS ownership is now separate from JavaScript ownership. As of 10.3.6 use the ordered boundary under `static/css/` documented in `static/css/README.md`; 10.3.7 keeps that order stable and removes only provably redundant declarations; do not add feature CSS to `static/styles.css` or infer the complete CSS boundary from that one file.
+
+Phone layouts reuse `core/collections.js` for workspace-command menus and visual-viewport containment. Menus call the existing primary navigation handlers; desktop preferences and authorization/Undo owners remain unchanged. `features/manuscript/workspace.js` maps its phone Tools menu to the existing panel controls.

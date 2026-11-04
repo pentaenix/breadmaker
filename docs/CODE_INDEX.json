@@ -14997,7 +14997,7 @@
     },
     {
       "file": "static/js/core/boot.js",
-      "lines": 286,
+      "lines": 305,
       "symbols": [
         {
           "name": "applyRuntimeImageInputPolicy",
@@ -15032,48 +15032,58 @@
         {
           "name": "heartbeatLease",
           "kind": "function",
-          "line": 74
+          "line": 75
+        },
+        {
+          "name": "suspendLeaseHeartbeatForNavigation",
+          "kind": "function",
+          "line": 82
+        },
+        {
+          "name": "resumeLeaseHeartbeatAfterNavigation",
+          "kind": "function",
+          "line": 83
         },
         {
           "name": "loadBootUIState",
           "kind": "function",
-          "line": 84
+          "line": 103
         },
         {
           "name": "loadRuntimeBootstrap",
           "kind": "function",
-          "line": 97
+          "line": 116
         },
         {
           "name": "boot",
           "kind": "function",
-          "line": 113
+          "line": 132
         },
         {
           "name": "openRecoveryBoot",
           "kind": "function",
-          "line": 236
+          "line": 255
         },
         {
           "name": "applyCanvasConfig",
           "kind": "function",
-          "line": 247
+          "line": 266
         },
         {
           "name": "applyBootstrapData",
           "kind": "function",
-          "line": 253
+          "line": 272
         },
         {
           "name": "refresh",
           "kind": "function",
-          "line": 262
+          "line": 281
         }
       ]
     },
     {
       "file": "static/js/core/collections.js",
-      "lines": 80,
+      "lines": 127,
       "symbols": [
         {
           "name": "phoneRailOwnsMenu",
@@ -15109,6 +15119,31 @@
           "name": "appendCollectionQuickAdd",
           "kind": "function",
           "line": 77
+        },
+        {
+          "name": "ownsPhoneCommandMenu",
+          "kind": "function",
+          "line": 84
+        },
+        {
+          "name": "resetPhoneCommandMenu",
+          "kind": "function",
+          "line": 85
+        },
+        {
+          "name": "openPhoneCommandMenu",
+          "kind": "function",
+          "line": 93
+        },
+        {
+          "name": "syncPhoneWorkspaceName",
+          "kind": "function",
+          "line": 114
+        },
+        {
+          "name": "syncPhoneViewport",
+          "kind": "function",
+          "line": 119
         }
       ]
     },
@@ -21019,7 +21054,7 @@
     },
     {
       "file": "static/js/features/manuscript/workspace.js",
-      "lines": 136,
+      "lines": 141,
       "symbols": [
         {
           "name": "syncFocusModeControl",

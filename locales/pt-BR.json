@@ -3607,7 +3607,8 @@
     "auth.recovery.continue": "Continuar",
     "auth.recovery.back": "Voltar para entrar",
     "auth.privacy_policy": "Política de Privacidade",
-    "auth.login.error_generic": "Não foi possível entrar com esses dados. Confira seu e-mail e senha ou use a recuperação da conta."
+    "auth.login.error_generic": "Não foi possível entrar com esses dados. Confira seu e-mail e senha ou use a recuperação da conta.",
+    "phone.manuscript_tools": "Ferramentas do manuscrito"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

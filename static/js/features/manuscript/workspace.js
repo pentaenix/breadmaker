@@ -134,3 +134,8 @@ window.addEventListener('resize',positionEditorsEyeTooltip);
 window.addEventListener('scroll',positionEditorsEyeTooltip,true);
 syncEditorsEyeButton();
 
+
+$('#phoneManuscriptToolsBtn').onclick=()=>{
+  const ids=['commentsBtn','markupBtn','manuscriptImageBtn','checkpointBtn','manuscriptReviewsBtn','cutsBtn','narrationBtn','editorsEyeBtn'];
+  openPhoneCommandMenu($('#phoneManuscriptToolsBtn'),ids.map(id=>$('#'+id)).filter(button=>button&&!button.classList.contains('hidden')).map(button=>({label:button.getAttribute('aria-label')||button.textContent.trim(),disabled:button.disabled,action:()=>button.click()})));
+};

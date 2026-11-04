@@ -63,3 +63,5 @@ Some features intentionally have more than one stylesheet because later historic
 - Do not duplicate a selector merely to avoid choosing an owner.
 - Do not add feature CSS back to `static/styles.css`.
 - Prefer mechanically provable redundancy removal over heuristic dead-selector or specificity cleanup.
+
+Phone viewport containment, safe-area spacing, compact command-menu sizing and Manuscript bottom sheets extend `shared/application-controls.css`. The existing stylesheet order and canonical buttons/menu/panel classes are retained; no new stylesheet boundary. Phone controls apply at640px and below. Desktop panels retain their current push layout.

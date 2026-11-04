@@ -21,7 +21,11 @@ def setup(page):
 
 
 def navigate(page,view):
-    tab=page.locator(f'.main-tab[data-view="{view}"]');tab.scroll_into_view_if_needed();tab.click()
+    tab=page.locator(f'.main-tab[data-view="{view}"]')
+    if page.locator('#phoneWorkspaceBtn').is_visible():
+        page.locator('#phoneWorkspaceBtn').click()
+        page.locator('#contextMenu').get_by_role('menuitem',name=tab.inner_text(),exact=True).click()
+    else:tab.scroll_into_view_if_needed();tab.click()
     page.wait_for_function('(view)=>currentView()===view',arg=view)
 
 
