@@ -1,15 +1,11 @@
 """Additional phone review coverage; no voice or audio actions."""
-import pytest
 from playwright.sync_api import expect
 from tests.test_v10569_narration_browser import browser
 
 PHONE={'viewport':{'width':390,'height':640},'is_mobile':True,'has_touch':True}
-PANELS=[('Markers','markupPanel'),('Images','manuscriptImagePanel'),('Checkpoints','checkpointPanel'),('Reviews','manuscriptReviewsPanel'),('Cuts','cutsPanel')]
 
 
-@pytest.mark.parametrize('engine',['chromium','webkit'])
-@pytest.mark.parametrize('label,panel_id',PANELS)
-def test_phone_tool_sheets_keep_close_control_and_editor_accessible(tmp_path,engine,label,panel_id):
+def _exercise_phone_tool_sheets_keep_close_control_and_editor_accessible(tmp_path,engine,label,panel_id):
     with browser(tmp_path,page_options=PHONE,engine=engine) as (_,page,_):
         errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
         page.locator('#phoneManuscriptToolsBtn').tap();page.get_by_role('menuitem',name=label,exact=True).tap()
@@ -38,8 +34,7 @@ def test_replacement_menu_preserves_its_own_accessibility_metadata(tmp_path):
         expect(page.locator('#contextMenu')).to_have_attribute('aria-label','Replacement menu')
 
 
-@pytest.mark.parametrize('engine',['chromium','webkit'])
-def test_selected_note_stays_editable_in_short_phone_sheet(tmp_path,engine):
+def _exercise_selected_note_stays_editable_in_short_phone_sheet(tmp_path,engine):
     with browser(tmp_path,page_options=PHONE,engine=engine) as (_,page,_):
         page.locator('.manuscript-block').first.dblclick()
         page.get_by_role('button',name='Note',exact=True).tap()
@@ -58,3 +53,42 @@ def test_selected_note_stays_editable_in_short_phone_sheet(tmp_path,engine):
         box=page.get_by_role('button',name='Close Notes',exact=True).bounding_box()
         assert box['y']>=0 and box['y']+box['height']<=420
         assert page.evaluate('()=>scrollX===0&&scrollY===0&&document.documentElement.scrollWidth<=innerWidth')
+
+
+# Explicit cases match the release verifier's one-item browser jobs.
+
+def test_phone_tool_sheets_keep_close_control_and_editor_accessible_chromium_markers(tmp_path):
+    _exercise_phone_tool_sheets_keep_close_control_and_editor_accessible(tmp_path,'chromium','Markers','markupPanel')
+
+def test_phone_tool_sheets_keep_close_control_and_editor_accessible_webkit_markers(tmp_path):
+    _exercise_phone_tool_sheets_keep_close_control_and_editor_accessible(tmp_path,'webkit','Markers','markupPanel')
+
+def test_phone_tool_sheets_keep_close_control_and_editor_accessible_chromium_images(tmp_path):
+    _exercise_phone_tool_sheets_keep_close_control_and_editor_accessible(tmp_path,'chromium','Images','manuscriptImagePanel')
+
+def test_phone_tool_sheets_keep_close_control_and_editor_accessible_webkit_images(tmp_path):
+    _exercise_phone_tool_sheets_keep_close_control_and_editor_accessible(tmp_path,'webkit','Images','manuscriptImagePanel')
+
+def test_phone_tool_sheets_keep_close_control_and_editor_accessible_chromium_checkpoints(tmp_path):
+    _exercise_phone_tool_sheets_keep_close_control_and_editor_accessible(tmp_path,'chromium','Checkpoints','checkpointPanel')
+
+def test_phone_tool_sheets_keep_close_control_and_editor_accessible_webkit_checkpoints(tmp_path):
+    _exercise_phone_tool_sheets_keep_close_control_and_editor_accessible(tmp_path,'webkit','Checkpoints','checkpointPanel')
+
+def test_phone_tool_sheets_keep_close_control_and_editor_accessible_chromium_reviews(tmp_path):
+    _exercise_phone_tool_sheets_keep_close_control_and_editor_accessible(tmp_path,'chromium','Reviews','manuscriptReviewsPanel')
+
+def test_phone_tool_sheets_keep_close_control_and_editor_accessible_webkit_reviews(tmp_path):
+    _exercise_phone_tool_sheets_keep_close_control_and_editor_accessible(tmp_path,'webkit','Reviews','manuscriptReviewsPanel')
+
+def test_phone_tool_sheets_keep_close_control_and_editor_accessible_chromium_cuts(tmp_path):
+    _exercise_phone_tool_sheets_keep_close_control_and_editor_accessible(tmp_path,'chromium','Cuts','cutsPanel')
+
+def test_phone_tool_sheets_keep_close_control_and_editor_accessible_webkit_cuts(tmp_path):
+    _exercise_phone_tool_sheets_keep_close_control_and_editor_accessible(tmp_path,'webkit','Cuts','cutsPanel')
+
+def test_selected_note_stays_editable_in_short_phone_sheet_chromium(tmp_path):
+    _exercise_selected_note_stays_editable_in_short_phone_sheet(tmp_path,'chromium')
+
+def test_selected_note_stays_editable_in_short_phone_sheet_webkit(tmp_path):
+    _exercise_selected_note_stays_editable_in_short_phone_sheet(tmp_path,'webkit')

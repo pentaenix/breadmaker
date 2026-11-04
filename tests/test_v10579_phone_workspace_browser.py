@@ -1,5 +1,4 @@
 """Silent phone layout/menus/panels; never opens or generates narration."""
-import pytest
 from playwright.sync_api import expect
 from tests.test_v10569_narration_browser import browser
 
@@ -54,16 +53,12 @@ def phone(home,local,size,engine='chromium'):
         exercise(page,base,pid,size)
 
 
-@pytest.mark.parametrize("size",[(390,844),(360,740),(390,420)])
-def test_local_phone_viewport_menus_and_bottom_sheets(tmp_path,size):phone(tmp_path,True,size)
-@pytest.mark.parametrize("size",[(390,844),(360,740),(390,420)])
-def test_hosted_phone_viewport_menus_and_bottom_sheets(tmp_path,size):phone(tmp_path,False,size)
-@pytest.mark.parametrize("size",[(390,844),(360,740),(390,420)])
-def test_webkit_phone_viewport_menus_and_bottom_sheets(tmp_path,size):phone(tmp_path,False,size,'webkit')
+def _exercise_local_phone_viewport_menus_and_bottom_sheets(tmp_path,size):phone(tmp_path,True,size)
+def _exercise_hosted_phone_viewport_menus_and_bottom_sheets(tmp_path,size):phone(tmp_path,False,size)
+def _exercise_webkit_phone_viewport_menus_and_bottom_sheets(tmp_path,size):phone(tmp_path,False,size,'webkit')
 
 
-@pytest.mark.parametrize("local",[True,False])
-def test_phone_workspace_menu_routes_every_view_without_root_scroll(tmp_path,local):
+def _exercise_phone_workspace_menu_routes_every_view_without_root_scroll(tmp_path,local):
     with browser(tmp_path,local=local,page_options={'viewport':{'width':390,'height':844},'is_mobile':True,'has_touch':True}) as (_,page,_):
         page.set_viewport_size({'width':390,'height':844})
         for name,view in (('Canvas','canvas'),('Maps','maps'),('Reviews','reviews'),('Tasks','tasks'),('Manuscript','manuscript')):
@@ -73,8 +68,7 @@ def test_phone_workspace_menu_routes_every_view_without_root_scroll(tmp_path,loc
             assert page.evaluate('()=>document.documentElement.scrollWidth<=innerWidth&&scrollY===0')
 
 
-@pytest.mark.parametrize('local',[True,False])
-def test_phone_find_and_keyboard_height_dialog_keep_controls_inside_viewport(tmp_path,local):
+def _exercise_phone_find_and_keyboard_height_dialog_keep_controls_inside_viewport(tmp_path,local):
     options={'viewport':{'width':390,'height':420},'is_mobile':True,'has_touch':True}
     with browser(tmp_path,local=local,page_options=options) as (_,page,_):
         page.locator('#viewBtn').tap();page.locator('#viewFindReplaceBtn').tap()
@@ -87,3 +81,45 @@ def test_phone_find_and_keyboard_height_dialog_keep_controls_inside_viewport(tmp
         box=page.locator('.modal-card').bounding_box();assert box['y']>=0 and box['y']+box['height']<=420
         confirm=page.locator('#dialogConfirm').bounding_box();assert confirm['y']+confirm['height']<=420
         page.keyboard.press('Escape');expect(page.locator('#modal')).to_be_hidden()
+
+
+# Explicit cases match the release verifier's one-item browser jobs.
+
+def test_local_phone_viewport_menus_and_bottom_sheets_390x844(tmp_path):
+    _exercise_local_phone_viewport_menus_and_bottom_sheets(tmp_path,(390,844))
+
+def test_local_phone_viewport_menus_and_bottom_sheets_360x740(tmp_path):
+    _exercise_local_phone_viewport_menus_and_bottom_sheets(tmp_path,(360,740))
+
+def test_local_phone_viewport_menus_and_bottom_sheets_390x420(tmp_path):
+    _exercise_local_phone_viewport_menus_and_bottom_sheets(tmp_path,(390,420))
+
+def test_hosted_phone_viewport_menus_and_bottom_sheets_390x844(tmp_path):
+    _exercise_hosted_phone_viewport_menus_and_bottom_sheets(tmp_path,(390,844))
+
+def test_hosted_phone_viewport_menus_and_bottom_sheets_360x740(tmp_path):
+    _exercise_hosted_phone_viewport_menus_and_bottom_sheets(tmp_path,(360,740))
+
+def test_hosted_phone_viewport_menus_and_bottom_sheets_390x420(tmp_path):
+    _exercise_hosted_phone_viewport_menus_and_bottom_sheets(tmp_path,(390,420))
+
+def test_webkit_phone_viewport_menus_and_bottom_sheets_390x844(tmp_path):
+    _exercise_webkit_phone_viewport_menus_and_bottom_sheets(tmp_path,(390,844))
+
+def test_webkit_phone_viewport_menus_and_bottom_sheets_360x740(tmp_path):
+    _exercise_webkit_phone_viewport_menus_and_bottom_sheets(tmp_path,(360,740))
+
+def test_webkit_phone_viewport_menus_and_bottom_sheets_390x420(tmp_path):
+    _exercise_webkit_phone_viewport_menus_and_bottom_sheets(tmp_path,(390,420))
+
+def test_phone_workspace_menu_routes_every_view_without_root_scroll_local(tmp_path):
+    _exercise_phone_workspace_menu_routes_every_view_without_root_scroll(tmp_path,True)
+
+def test_phone_workspace_menu_routes_every_view_without_root_scroll_hosted(tmp_path):
+    _exercise_phone_workspace_menu_routes_every_view_without_root_scroll(tmp_path,False)
+
+def test_phone_find_and_keyboard_height_dialog_keep_controls_inside_viewport_local(tmp_path):
+    _exercise_phone_find_and_keyboard_height_dialog_keep_controls_inside_viewport(tmp_path,True)
+
+def test_phone_find_and_keyboard_height_dialog_keep_controls_inside_viewport_hosted(tmp_path):
+    _exercise_phone_find_and_keyboard_height_dialog_keep_controls_inside_viewport(tmp_path,False)

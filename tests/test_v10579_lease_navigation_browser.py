@@ -1,12 +1,9 @@
 """Silent lease navigation checks; no narration or audio actions."""
-import pytest
 from playwright.sync_api import expect
 from tests.test_v10569_narration_browser import browser
 
 
-@pytest.mark.parametrize('local',[True,False])
-@pytest.mark.parametrize('engine',['chromium','webkit'])
-def test_departing_document_cannot_start_lease_heartbeat(tmp_path,local,engine):
+def _exercise_departing_document_cannot_start_lease_heartbeat(tmp_path,local,engine):
     with browser(tmp_path,local=local,engine=engine) as (base,page,pid):
         errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
         page.evaluate('''()=>{window.testLeaseNavCalls=0;const original=fetch;
@@ -24,8 +21,7 @@ def test_departing_document_cannot_start_lease_heartbeat(tmp_path,local,engine):
         assert not errors,errors
 
 
-@pytest.mark.parametrize('engine',['chromium','webkit'])
-def test_cancelled_navigation_resumes_lease_and_retains_conflict_fence(tmp_path,engine):
+def _exercise_cancelled_navigation_resumes_lease_and_retains_conflict_fence(tmp_path,engine):
     with browser(tmp_path,local=True,engine=engine) as (base,page,_):
         page.evaluate('''()=>{window.testLeaseNavCalls=0;const original=fetch;
           window.fetch=(url,...args)=>{if(url==='/api/lease')testLeaseNavCalls++;return original(url,...args)};
@@ -43,8 +39,7 @@ def test_cancelled_navigation_resumes_lease_and_retains_conflict_fence(tmp_path,
         assert page.locator('#editor').get_attribute('contenteditable')=='false'
 
 
-@pytest.mark.parametrize('engine',['chromium','webkit'])
-def test_navigation_aborts_inflight_lease_without_unhandled_error(tmp_path,engine):
+def _exercise_navigation_aborts_inflight_lease_without_unhandled_error(tmp_path,engine):
     with browser(tmp_path,local=True,engine=engine) as (base,page,_):
         errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
         held=[];page.route('**/api/lease',lambda route:held.append(route))
@@ -55,3 +50,30 @@ def test_navigation_aborts_inflight_lease_without_unhandled_error(tmp_path,engin
         assert page.evaluate('()=>previousLeaseController.signal.aborted&&leaseHeartbeatController===null')
         assert held
         assert not errors,errors
+
+
+# Explicit cases match the release verifier's one-item browser jobs.
+
+def test_departing_document_cannot_start_lease_heartbeat_chromium_local(tmp_path):
+    _exercise_departing_document_cannot_start_lease_heartbeat(tmp_path,True,'chromium')
+
+def test_departing_document_cannot_start_lease_heartbeat_chromium_hosted(tmp_path):
+    _exercise_departing_document_cannot_start_lease_heartbeat(tmp_path,False,'chromium')
+
+def test_departing_document_cannot_start_lease_heartbeat_webkit_local(tmp_path):
+    _exercise_departing_document_cannot_start_lease_heartbeat(tmp_path,True,'webkit')
+
+def test_departing_document_cannot_start_lease_heartbeat_webkit_hosted(tmp_path):
+    _exercise_departing_document_cannot_start_lease_heartbeat(tmp_path,False,'webkit')
+
+def test_cancelled_navigation_resumes_lease_and_retains_conflict_fence_chromium(tmp_path):
+    _exercise_cancelled_navigation_resumes_lease_and_retains_conflict_fence(tmp_path,'chromium')
+
+def test_cancelled_navigation_resumes_lease_and_retains_conflict_fence_webkit(tmp_path):
+    _exercise_cancelled_navigation_resumes_lease_and_retains_conflict_fence(tmp_path,'webkit')
+
+def test_navigation_aborts_inflight_lease_without_unhandled_error_chromium(tmp_path):
+    _exercise_navigation_aborts_inflight_lease_without_unhandled_error(tmp_path,'chromium')
+
+def test_navigation_aborts_inflight_lease_without_unhandled_error_webkit(tmp_path):
+    _exercise_navigation_aborts_inflight_lease_without_unhandled_error(tmp_path,'webkit')
