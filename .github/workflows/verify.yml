@@ -12,21 +12,20 @@ jobs:
         with:
           python-version: '3.14'
       - run: python -m pip install playwright==1.57.0
-      - name: Select canonical Ubuntu archive without changing trust or suites
+      - name: Prefer existing HTTPS archive mirror without changing trust or suites
         run: |
-          sudo python3 - <<'PY'
+          sudo python3 - <<'PYCODE'
           from pathlib import Path
-          path=Path('/etc/apt/sources.list.d/ubuntu.sources')
+          path=Path('/etc/apt/apt-mirrors.txt')
           original=path.read_text()
-          updated=original
-          for scheme in ('http','https'):
-              updated=updated.replace(scheme+'://azure.archive.ubuntu.com/ubuntu','https://archive.ubuntu.com/ubuntu')
-          assert updated!=original,'Expected GitHub runner Azure Ubuntu mirror not found'
-          assert [line for line in original.splitlines() if not line.startswith('URIs:')]==[line for line in updated.splitlines() if not line.startswith('URIs:')]
-          assert 'Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg' in updated
+          azure='http://azure.archive.ubuntu.com/ubuntu/\tpriority:1'
+          archive='https://archive.ubuntu.com/ubuntu/\tpriority:2'
+          assert original.splitlines().count(azure)==1 and original.splitlines().count(archive)==1
+          updated=original.replace(azure,azure.replace('priority:1','priority:2')).replace(archive,archive.replace('priority:2','priority:1'))
+          assert sorted(line.split()[0] for line in original.splitlines())==sorted(line.split()[0] for line in updated.splitlines())
           path.write_text(updated)
           print(updated)
-          PY
+          PYCODE
       - name: Measure unchanged browser and signed OS dependency installation
         run: /usr/bin/time -p python -m playwright install --with-deps chromium firefox webkit
       - name: Verify all three managed browsers launch and close
