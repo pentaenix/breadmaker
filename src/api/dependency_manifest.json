@@ -2683,6 +2683,26 @@
           "local": "commit"
         },
         {
+          "module": "runtime.ui_state_revision",
+          "symbol": "is_targets_key",
+          "local": "is_targets_key"
+        },
+        {
+          "module": "runtime.ui_state_revision",
+          "symbol": "targets_value_size",
+          "local": "targets_value_size"
+        },
+        {
+          "module": "runtime.ui_state_revision",
+          "symbol": "valid_revision",
+          "local": "valid_revision"
+        },
+        {
+          "module": "runtime.ui_state_revision",
+          "symbol": "value_revision",
+          "local": "value_revision"
+        },
+        {
           "module": "storage",
           "symbol": "database",
           "local": "storage_database"

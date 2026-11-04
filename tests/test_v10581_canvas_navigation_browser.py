@@ -1,4 +1,5 @@
 """Direct Canvas navigation in the real shell, with disposable local/hosted stores."""
+import re
 from playwright.sync_api import expect
 from tests.test_v10569_narration_browser import browser
 
@@ -132,7 +133,12 @@ def _touch(home,engine):
         expect(page.locator('#canvasHandMode,#canvasPointerMode')).to_have_count(0)
         # A normal touch tap can still select and edit a card after panning.
         page.evaluate("()=>{const s=$('#canvasStage');s.scrollLeft=240;s.scrollTop=200}")
-        page.locator(f'.canvas-node[data-id="{ids["a"]}"] .node-title').tap()
+        card=page.locator(f'.canvas-node[data-id="{ids["a"]}"]')
+        title=card.locator('.node-title');title.tap()
+        # Native touch focus follows pointerup in a later task. Observe the
+        # completed selection/focus before checking the model; never sleep.
+        expect(card).to_have_class(re.compile(r'\bselected\b'),timeout=1500)
+        expect(title).to_be_focused(timeout=1500)
         assert page.evaluate('(id)=>state.selectedNodes.has(id)',ids['a'])
         assert page.evaluate('()=>document.documentElement.scrollWidth<=innerWidth')
         assert not errors,errors

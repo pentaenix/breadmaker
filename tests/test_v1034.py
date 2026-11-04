@@ -21,6 +21,9 @@ def test_v1034_release_identity_and_final_javascript_load_order():
         '/static/js/features/durability/history.js',
         '/static/js/features/notes/comments.js',
         '/static/js/core/quick_open.js',
+        '/static/js/features/projects/targets-model.js',
+        '/static/js/features/projects/targets-journal.js',
+        '/static/js/features/projects/targets.js',
         '/static/app.js',
     ]
     loaded=re.findall(r'<script[^>]+src="([^"?]+)',html)
