@@ -12,6 +12,7 @@ from pathlib import Path
 
 import requests
 from playwright.sync_api import sync_playwright, expect
+from navigation_ui import check_navigation_lifecycle
 
 ROOT=Path(__file__).resolve().parents[2]
 STUB="""window.BreadmakerKokoroEngine=class {
@@ -407,36 +408,7 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             page.locator('[data-narration-setting="showAllLanguages"]').click();page.locator('#narrationSettingsSave').click();expect(page.locator('#settingsNarration')).to_be_visible();page.locator('#modalClose').click()
             assert page.locator('#narrationVoice').evaluate('(select)=>[...select.options].every(option=>/^[ab]/.test(option.value))')
             assert len(saves)==saved,'Language filtering and settings must not create/regenerate recordings'
-            # Deliver an already-queued media event across the navigation fence.
-            # Reads still use the actual audio endpoint; no network errors are filtered.
-            page.evaluate("""async()=>{
-              window.testNavigationAudioReads=[];const audio=narrationStore.audio;
-              narrationStore.audio=function(...args){testNavigationAudioReads.push(args[1]);return audio.apply(this,args)};
-              const records=narration.records.filter(record=>record.duration>0);if(records.length<3)throw Error('Navigation fixture requires three saved recordings');
-              await playNarration(records[0],records);narration.audio.pause();
-            }""")
-            queued=page.evaluate('()=>narration.queue.map(record=>record.id)')
-            paused=page.evaluate("""()=>{
-              dispatchEvent(new Event('beforeunload'));narration.audio.onended();
-              return {paused:narration.audio.paused,reads:testNavigationAudioReads.length,queue:narration.queue.map(record=>record.id)};
-            }""")
-            assert paused=={'paused':True,'reads':1,'queue':queued},paused
-            # A cancelled navigation keeps the selected recording/queue usable.
-            page.locator('#narrationPlay').click();expect(page.locator('#narrationPlay')).to_have_attribute('aria-label','Pause narration')
-            page.evaluate('()=>narration.audio.onended()')
-            page.wait_for_function('(id)=>narration.selected?.id===id',arg=queued[1])
-            page.evaluate('()=>narration.audio.pause()')
-            reads=page.evaluate('()=>testNavigationAudioReads.length')
-            document=page.evaluate_handle('document')
-            def deliver_queued_end(route):
-                try:
-                    result=document.evaluate("""d=>d.defaultView.eval(`(()=>{narration.audio.onended();return {paused:narration.audio.paused,reads:testNavigationAudioReads.length}})()`)""")
-                    assert result=={'paused':True,'reads':reads},result
-                finally:route.continue_()
-            held=base+'/p/'+project['id']+'?narration-navigation-fixture=1'
-            page.route(held,deliver_queued_end)
-            page.goto(held);page.locator('#app:not([inert])').wait_for(state='visible')
-            page.unroute(held,deliver_queued_end)
+            check_navigation_lifecycle(page,base,project['id'],browser_name)
             assert not errors,errors
             print('PASS: ellipsis/right-click menus on both actions, exact Generate-only selection with autoplay enabled, silent cached scopes, persisted continuation, grouped View, settings/GPU disposal, ordered whole-book generation, stop/save/resume and unattended paused-audio generation.',flush=True)
             browser.close()

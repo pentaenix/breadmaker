@@ -156,6 +156,14 @@ Finer playback steps include 0.9, 0.95, 1.05 and 1.1×. They adjust playback onl
 
 Regressions: `test-preferences.mjs`, `test-playback.mjs`, `test-progress.mjs`, and `.venv/bin/python tools/narration/test-ui.py`. The UI test uses deterministic inference with real cache/API/WAVs and verifies the grouped View menu, context labels, reordered chapters, partial/full/stale/voice-aware reuse, collapsed/offscreen paragraphs, stop/save/resume, cached replay with no inference/POST, and continued unattended generation while audio is paused. It complements, not replaces, the separate real-model voice smoke.
 
+Navigation pauses playback before queued media events can fetch another recording
+from a departing document. Cancelling navigation preserves the queue for explicit
+Play/Narrate resume. The full UI test shares this regression with the focused
+`BREADMAKER_NARRATION_BROWSER=webkit python tools/narration/test-navigation.py`
+command. It uses synthetic saved WAVs, checks actual media play events and audio
+reads, and delivers an ended callback while WebKit holds a replacement document.
+Chromium/Firefox retain the shared suspension, resume, queue and reload checks.
+
 ## Chapter generation scope and chapter-title records (October 29, 2026)
 
 The generate-only menu labels are now **Generate selection**, **Generate chapter**, or **Generate book**, in all seven locales. The menu captures its document/chapter/scope when opened. Generate chapter is strictly limited to that chapter, even if the saved Continue chapters preference is on; the normal Narrate chapter action also generates only that chapter; its optional continuation is saved playback only. Invalid/missing chapter identity aborts instead of falling back to the full book.
