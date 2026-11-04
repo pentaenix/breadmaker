@@ -2,13 +2,16 @@
 // Manuscript's modal, switches and delayed hover; never changes manuscript data.
 const targetsModel=window.BreadmakerTargetsModel;
 const targets={context:'',pid:'',user:'',doc:targetsModel.defaults(),pending:[],ready:false,loading:null,saving:null,lastTick:Date.now(),lastActivity:0,active:false,signature:'',audio:null,revision:0};
-let targetsSession;
-try{targetsSession=sessionStorage.getItem('breadmaker-targets-session')||uid();sessionStorage.setItem('breadmaker-targets-session',targetsSession)}catch{targetsSession=uid()}
+const targetsJournal=window.BreadmakerTargetsJournal;
 const targetText=(key,vars={})=>i18nText(`targets.${key}`,vars);
 const targetHtml=(key,vars={})=>escapeHtml(targetText(key,vars));
 function targetsContext(){return currentProjectIdentity()&&!state.reviewerSession?`${currentProjectIdentity()}:${currentUserIdentity()}`:''}
-function targetsCacheKey(){return `breadmaker-targets-outbox:${targets.context}:${targetsSession}`}
-function targetsCache(){try{if(targets.pending.length)localStorage.setItem(targetsCacheKey(),JSON.stringify(targets.pending));else localStorage.removeItem(targetsCacheKey())}catch{/* Quota/private-mode failure never prevents writing. */}}
+function targetsAcknowledged(doc,operation){return operation.stream&&(doc.receipts[operation.stream]||0)>=operation.sequence}
+function targetsMergePending(records,doc=targets.doc){
+  const byId=new Map(targets.pending.map(op=>[op.id,op]));for(const op of records)byId.set(op.id,op);
+  targets.pending=[...byId.values()].filter(op=>!targetsAcknowledged(doc,op));
+}
+function targetsPreviewPending(){for(const op of targets.pending){const {stream,sequence,...preview}=op;targetsModel.apply(targets.doc,preview)}}
 async function targetsRequest(options={}){
   const hosted=runtimeSupports('hosted_persistence');
   try{return await api(`/api/ui-state/${hosted?'targets-v1':`targets-v1-${targets.user}`}`,{...options,headers:{'X-Breadmaker-Project':targets.pid,...(hosted?{'X-Breadmaker-Targets-Account':targets.user}:{'X-Breadmaker-User':targets.user})}})}
@@ -16,7 +19,7 @@ async function targetsRequest(options={}){
 }
 function targetsHideTips(){for(const id of ['targetsTopTip','targetsFooterTip','targetsFocusTip'])$(`#${id}`)?.classList.add('hidden')}
 async function loadTargets(){
-  const context=targetsContext();if(!context){targetsCache();targets.context='';targets.ready=false;targets.revision++;targetsStopSound();renderTargets();return false}
+  const context=targetsContext();if(!context){targets.context='';targets.ready=false;targets.revision++;targetsStopSound();renderTargets();return false}
   if(targets.context===context&&targets.ready)return true;
   if(targets.context===context&&targets.loading)return targets.loading;
   targetsStopSound();targetsHideTips();targets.context=context;targets.pid=currentProjectIdentity();targets.user=currentUserIdentity();targets.ready=false;targets.pending=[];targets.doc=targetsModel.defaults();targets.lastTick=Date.now();targets.lastActivity=0;renderTargets();
@@ -26,53 +29,54 @@ async function loadTargets(){
       const response=await targetsRequest();if(revision!==targets.revision||context!==targetsContext())return false;
       if(response.value&&response.value.version!==1)throw new Error('TARGETS_VERSION_UNSUPPORTED');
       targets.doc=targetsModel.normalize(response.value);
-      // Recover only unacknowledged operations from this tab, including refresh.
-      try{const cached=JSON.parse(localStorage.getItem(targetsCacheKey())||'[]');if(Array.isArray(cached))targets.pending=cached.filter(op=>op&&typeof op.id==='string'&&Number.isFinite(op.at)&&op.at<=Date.now()+60000)}catch{}
-      for(const operation of targets.pending)targetsModel.apply(targets.doc,operation);
+      const recovered=await targetsJournal.read(context);if(revision!==targets.revision||context!==targetsContext())return false;
+      targetsMergePending(recovered);targetsPreviewPending();
       targets.ready=true;renderTargets();if(targets.pending.length)flushTargets().catch(()=>{});return true;
     }catch(error){if(revision===targets.revision){targets.ready=false;targets.error=error}return false}
     finally{if(revision===targets.revision)targets.loading=null}
   })();targets.loading=loading;return loading;
 }
-function targetsEnqueue(delta={},at=Date.now(),settings=null){
+function targetsEnqueue(delta={},at=Date.now(),settings=null,intervals=null){
   if(!targets.ready||targets.context!==targetsContext())return;
   if(!settings&&!targets.doc.goals.some(goal=>Number(delta[goal.metric])))return;
-  const tail=targets.pending.at(-1),day=targetsModel.period('daily',at).key;
-  // Coalesce quiet timer ticks; in-flight operation IDs remain immutable.
-  const combine=!settings&&tail&&!tail.settings&&!tail.sealed&&!targets.savingIds?.has(tail.id)&&targetsModel.period('daily',tail.at).key===day;
-  const operation=combine?tail:{id:uid(),at,delta:{},...(settings?{settings}:{} )};
-  if(combine){for(const [key,value] of Object.entries(delta))tail.delta[key]=(tail.delta[key]||0)+value}
-  else{operation.delta={...delta};targets.pending.push(operation)}
-  // Apply just this increment, independent of the coalesced transport operation.
-  const local={id:uid(),at,delta,...(settings?{settings}:{} )};
-  const achieved=targetsModel.apply(targets.doc,local);targetsCache();renderTargets();
+  const operation={id:uid(),at,delta:{...delta},sealed:true,...(intervals?{intervals}:{}),...(settings?{settings}:{goals:structuredClone(targets.doc.goals),calendar:Object.fromEntries(targets.doc.goals.map(goal=>[goal.id,targetsModel.period(goal.period,at)]))})};
+  const context=targets.context;targets.pending.push(operation);
+  // enqueue writes the synchronous pre-journal before returning its IDB promise.
+  targetsJournal.enqueue(context,operation).then(stored=>{if(context===targets.context){const pending=targets.pending.find(op=>op.id===stored.id);if(pending)Object.assign(pending,stored)}}).catch(error=>{targets.journalError=error});
+  const achieved=targetsModel.apply(targets.doc,operation);renderTargets();
   if(achieved.length)targetsCelebrate(achieved);
 }
-async function flushTargets(throughId=null){
-  if(!targets.ready||targets.context!==targetsContext()||!targets.pending.length)return;
-  throughId=throughId||targets.pending.at(-1).id;
-  if(targets.saving){await targets.saving;if(targets.pending.some(op=>op.id===throughId))return flushTargets(throughId);return}
-  const revision=targets.revision,context=targets.context,batch=structuredClone(targets.pending.slice(0,40)),ids=new Set(batch.map(op=>op.id));targets.savingIds=ids;
+async function flushTargets(){
+  if(!targets.ready||targets.context!==targetsContext())return;
+  if(targets.saving){await targets.saving;return flushTargets()}
+  const revision=targets.revision,context=targets.context,current=()=>revision===targets.revision&&context===targetsContext();
   const save=async()=>{
-    if(revision!==targets.revision||context!==targetsContext())return;
-    // Merge into the latest personal record. Web Locks serialize tabs in this
-    // browser; operation IDs make a successful-response-loss retry idempotent.
-    const response=await targetsRequest();if(revision!==targets.revision||context!==targetsContext())return;
-    if(response.value&&response.value.version!==1)throw new Error('TARGETS_VERSION_UNSUPPORTED');
-    const doc=targetsModel.normalize(response.value);for(const operation of batch)targetsModel.apply(doc,operation);
-    // A response can be lost after commit: never grow an operation once it may
-    // have reached the store, or its stable ID would mask subsequent writing.
-    for(const operation of targets.pending)if(ids.has(operation.id))operation.sealed=true;
-    targetsCache();
-    await targetsRequest({method:'PUT',body:JSON.stringify({value:doc}),keepalive:true});
-    if(revision!==targets.revision||context!==targetsContext())return;
-    targets.pending=targets.pending.filter(op=>!ids.has(op.id));targets.doc=doc;
-    for(const operation of targets.pending)targetsModel.apply(targets.doc,operation);
-    targetsCache();renderTargets();
+    const records=await targetsJournal.read(context);if(!current())return;
+    targetsMergePending(records);
+    // A fixed snapshot avoids chasing continuously arriving timer operations.
+    const batches=records.length?Array.from({length:Math.ceil(records.length/40)},(_,i)=>records.slice(i*40,i*40+40)):[[]];
+    for(const batch of batches){
+      let committed=null;
+      for(let attempt=0;attempt<8;attempt++){
+        const response=await targetsRequest();if(!current())return;
+        if(response.value&&response.value.version!==1)throw new Error('TARGETS_VERSION_UNSUPPORTED');
+        if(typeof response.revision!=='string')throw new Error('TARGETS_REVISION_REQUIRED');
+        const doc=targetsModel.normalize(response.value),unapplied=batch.filter(op=>!targetsAcknowledged(doc,op));
+        for(const operation of unapplied)targetsModel.apply(doc,operation);
+        if(unapplied.length){
+          try{await targetsRequest({method:'PUT',body:JSON.stringify({value:doc,expected_revision:response.revision}),keepalive:true})}
+          catch(error){if(error?.status===409&&String(error.message).includes('TARGETS_REVISION_CONFLICT'))continue;throw error}
+        }
+        committed=doc;break;
+      }
+      if(!committed)throw new Error('TARGETS_REVISION_CONFLICT');
+      if(!current())return;
+      await targetsJournal.acknowledge(context,committed.receipts);if(!current())return;
+      targetsMergePending([],committed);targets.doc=committed;targetsPreviewPending();renderTargets();
+    }
   };
-  const promise=(navigator.locks?navigator.locks.request(`breadmaker-targets:${context}`,save):save());targets.saving=promise;
-  try{await promise}finally{if(targets.saving===promise){targets.saving=null;targets.savingIds=null}}
-  if(targets.pending.some(op=>op.id===throughId)&&revision===targets.revision)return flushTargets(throughId);
+  const promise=save();targets.saving=promise;
+  try{await promise}finally{if(targets.saving===promise)targets.saving=null}
 }
 function targetsClock(now=Date.now()){
   const previous=targets.lastTick;targets.lastTick=now;
@@ -84,7 +88,7 @@ function targetsClock(now=Date.now()){
   for(const [from,to] of chunks){
     if(now-previous>10000)continue;
     const delta=targetsModel.elapsed(from,to,{visible,focused,lastActivity:targets.lastActivity});
-    if(delta.time||delta.active)targetsEnqueue(delta,to===boundary?to-1:to);
+    if(delta.time||delta.active)targetsEnqueue(delta,to===boundary?to-1:to,null,{...(delta.time?{time:[from,to]}:{}),...(delta.active?{active:[from,Math.min(to,targets.lastActivity+45000)]}:{})});
   }
   const active=visible&&focused&&now-targets.lastActivity<45000;
   if(active!==targets.active){targets.active=active;renderTargets()}
@@ -224,9 +228,9 @@ for(const [button,tip] of [['targetsTop','targetsTopTip'],['targetsFooter','targ
   $(`#${button}`).onclick=()=>{targetsHideTips();openTargets()};attachManuscriptToolTooltip(button,tip,{delay:300});
 }
 window.addEventListener('blur',()=>{targetsClock();targets.lastActivity=0;targetsStopSound();targetsHideTips();flushTargets().catch(()=>{})});
-window.addEventListener('focus',()=>{targets.lastTick=Date.now();renderTargets()});
+window.addEventListener('focus',()=>{targets.lastTick=Date.now();renderTargets();if(targets.ready)flushTargets().catch(()=>{})});
 document.addEventListener('visibilitychange',()=>{targetsClock();targets.lastActivity=0;targets.lastTick=Date.now();if(document.hidden){targetsStopSound();targetsHideTips();flushTargets().catch(()=>{})}});
-window.addEventListener('pagehide',()=>{targetsClock();targetsCache();flushTargets().catch(()=>{})});
+window.addEventListener('pagehide',()=>{targetsClock();flushTargets().catch(()=>{})});
 window.addEventListener('online',()=>{if(!targets.ready)loadTargets();else flushTargets().catch(()=>{})});
 let targetsHeartbeat=0;
 setInterval(()=>{
@@ -234,5 +238,5 @@ setInterval(()=>{
   if(targets.context!==targetsContext()){targetsHideTips();loadTargets();return}
   if(!targets.ready)return;
   targetsClock();renderTargets();
-  if(++targetsHeartbeat%15===0)flushTargets().catch(()=>{});
+  if(++targetsHeartbeat%15===0&&(targets.doc.enabled||targets.pending.length))flushTargets().catch(()=>{});
 },1000);

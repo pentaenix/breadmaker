@@ -149,7 +149,7 @@ def test_targets_activity_uses_workspaces_thinking_grace_and_window_focus(tmp_pa
         page.locator('.main-tab[data-view="canvas"]').click()
         assert page.evaluate('()=>Date.now()-targets.lastActivity<1000')
         def tick(activity):
-            return page.evaluate('''activity=>{const values=()=>targetsModel.progress(targets.doc).map(p=>p.value),before=values(),now=Date.now();targets.lastTick=now-1000;targets.lastActivity=now-activity;targetsClock(now);return values().map((v,i)=>v-before[i])}''',activity)
+            return page.evaluate('''activity=>{const values=()=>targetsModel.progress(targets.doc).map(p=>p.value),before=values(),now=(window.targetsTestNow||Date.now())+1000;window.targetsTestNow=now;targets.lastTick=now-1000;targets.lastActivity=now-activity;targetsClock(now);return values().map((v,i)=>v-before[i])}''',activity)
         assert tick(5000)==pytest.approx([1,1]),'short thinking pause counts as active work'
         assert tick(60000)==pytest.approx([1,0]),'long pause counts only foreground time'
         # Headless Chromium can report focus in multiple offscreen windows.

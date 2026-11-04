@@ -9,7 +9,9 @@ class ReferenceCreate(BaseModel):
     start_block_id:Optional[str]=None; end_block_id:Optional[str]=None
     start_offset:int=0; end_offset:int=0; excerpt:str=""; relationship:str=""
 
-class UIStateIn(BaseModel): value:object
+class UIStateIn(BaseModel):
+    value:object
+    expected_revision:Optional[str]=None
 
 class BookmarkSet(BaseModel):
     target_type:str

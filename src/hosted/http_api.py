@@ -29,6 +29,7 @@ from auth.sessions import AuthenticationError
 from backend.environment import APP_VERSION, LOCALES, STATIC, runtime, _HOSTED_LIMITS
 from backend.configuration import _canvas_config_raw, _feature_flags_raw, _metro_view_config_raw
 from hosted.firestore.contracts import DocumentAlreadyExists, DocumentConflict, DocumentNotFound, HostedAuthorizationError, HostedValidationError, ProjectUnavailable
+from runtime.ui_state_revision import is_targets_key, value_revision, valid_revision
 from hosted.firestore.ids import require_opaque_id, require_project_id, require_user_id
 from hosted.packages import HostedProjectPackageService
 from hosted.idempotency import bind_operations, operation_for, request_scope_key, stable_entity_id
@@ -783,7 +784,9 @@ def hosted_ui_state_batch(request:Request,keys:str=''):
 
 @product_router.get('/api/ui-state/{key}')
 def hosted_ui_state_get(key:str,request:Request):
-    key=require_opaque_id(key,label='key');return runtime.projects.member_state(_pid(request),key=key,user_id=_uid()) or {'key':key,'value':None}
+    key=require_opaque_id(key,label='key');result=runtime.projects.member_state(_pid(request),key=key,user_id=_uid()) or {'key':key,'value':None}
+    if is_targets_key(key):result={**result,'revision':value_revision(result.get('value'))}
+    return result
 @product_router.put('/api/ui-state/{key}')
 async def hosted_ui_state_put(key:str,request:Request):
     key=require_opaque_id(key,label='key');uid=_uid()
@@ -795,7 +798,10 @@ async def hosted_ui_state_put(key:str,request:Request):
     if key=='targets-v1' and 'x-breadmaker-targets-account' in request.headers:
         claimed=request.headers.getlist('x-breadmaker-targets-account')
         if len(claimed)!=1 or claimed[0]!=uid:raise HTTPException(409,'TARGETS_ACCOUNT_CONTEXT_CHANGED')
-    return await run_in_threadpool(runtime.projects.put_member_state,_pid(request),await _body(request),key=key,user_id=uid)
+    payload=await _body(request)
+    revision=payload.pop('expected_revision',None) if is_targets_key(key) else None
+    if is_targets_key(key) and not valid_revision(revision):raise HTTPException(428,'TARGETS_REVISION_REQUIRED')
+    return await run_in_threadpool(runtime.projects.put_member_state,_pid(request),payload,key=key,user_id=uid,**({'expected_value_revision':revision} if is_targets_key(key) else {}))
 
 # Tasks
 @product_router.get('/api/tasks')

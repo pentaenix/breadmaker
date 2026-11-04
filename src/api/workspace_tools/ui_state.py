@@ -7,6 +7,7 @@ from storage import values as storage_values
 from backend.data_access import project
 from backend.environment import runtime
 from api.workspace_tools.contracts import UIStateIn
+from runtime.ui_state_revision import is_targets_key, value_revision, valid_revision, targets_value_size
 
 router=APIRouter()
 
@@ -56,16 +57,24 @@ def get_ui_state(key:str):
     storage_key=_ui_state_storage_key(key)
     with storage_database.read_tx() as con:
         p=project(con); row=con.execute("SELECT value_json FROM ui_state WHERE project_id=? AND key=?",(p['id'],storage_key)).fetchone()
-        if not row: return {"value":None}
+        if not row: return {"value":None,**({'revision':value_revision(None)} if is_targets_key(key) else {})}
         try: value=json.loads(row[0])
         except Exception: value=None
-        return {"value":value}
+        return {"value":value,**({'revision':value_revision(value)} if is_targets_key(key) else {})}
 
 @router.put("/api/ui-state/{key}")
 def put_ui_state(key:str, body:UIStateIn):
     storage_key=_ui_state_storage_key(key)
+    if is_targets_key(key) and not valid_revision(body.expected_revision):
+        raise HTTPException(428,detail='TARGETS_REVISION_REQUIRED')
     raw=json.dumps(body.value,ensure_ascii=False,separators=(',',':'))
-    if len(raw)>100000: raise HTTPException(413,detail="UI_STATE_001: UI state is too large.")
+    if (targets_value_size(body.value)>256*1024 if is_targets_key(key) else len(raw)>100000): raise HTTPException(413,detail="UI_STATE_001: UI state is too large.")
     with storage_mutations.tx() as con:
-        p=project(con); con.execute("INSERT INTO ui_state(project_id,key,value_json,updated_at) VALUES(?,?,?,?) ON CONFLICT(project_id,key) DO UPDATE SET value_json=excluded.value_json,updated_at=excluded.updated_at",(p['id'],storage_key,raw,storage_values.now()))
+        p=project(con)
+        if is_targets_key(key):
+            old=con.execute('SELECT value_json FROM ui_state WHERE project_id=? AND key=?',(p['id'],storage_key)).fetchone()
+            try:previous=json.loads(old[0]) if old else None
+            except (TypeError,ValueError):previous=None
+            if value_revision(previous)!=body.expected_revision:raise HTTPException(409,detail='TARGETS_REVISION_CONFLICT')
+        con.execute("INSERT INTO ui_state(project_id,key,value_json,updated_at) VALUES(?,?,?,?) ON CONFLICT(project_id,key) DO UPDATE SET value_json=excluded.value_json,updated_at=excluded.updated_at",(p['id'],storage_key,raw,storage_values.now()))
     return {"ok":True}

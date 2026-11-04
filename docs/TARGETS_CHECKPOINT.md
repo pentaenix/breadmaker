@@ -29,6 +29,9 @@ current release branch before assigning the next version/cache identity.
   dragging in an app workspace. It includes a 45-second thinking pause. Hovering
   alone does not keep it alive. Switching away pauses both; sleep/scheduler gaps
   over ten seconds are not counted. Timer heartbeats split midnight correctly.
+  Overlapping clock intervals from multiple devices are unioned, so the same
+  elapsed second is not counted twice. Completed time goals stop collecting
+  intervals and retain their achieved total.
 - The top Saved area has one quiet aggregate ring and a status hover. The
   Manuscript footer has compact individual progress, with horizontal scrolling
   under constraint. Achieved goals become green checks, then the text contracts.
@@ -45,19 +48,51 @@ current release branch before assigning the next version/cache identity.
 ## Ownership and durability
 
 `static/js/features/projects/targets-model.js` owns pure recurrence/counting rules;
-`targets.js` owns the feature lifecycle. The shared Manuscript modal, structure
-switch, delayed hover, toast and theme variables are reused. The four additions
+`targets-journal.js` owns the shared durable outbox; `targets.js` owns the feature
+lifecycle. The shared Manuscript modal, structure switch, delayed hover, toast and
+theme variables are reused. The four additions
 in `core/history.js` publish successful prose Undo/Redo snapshots; Targets never
 writes manuscript content. The existing collaborator UI-state store is canonical.
 Local keys additionally include the local profile identity.
+The existing local schema contract excludes `ui_state` from manuscript generation
+and History restore; hosted member-state generations also remain separate from the
+project generation. Tests verify that successful/rejected Targets writes leave the
+project generation unchanged.
 
-Pending operations are journaled in a tab-specific browser outbox and retried in
-bounded batches. Browser Web Locks serialize tab writes. Stable operation IDs and
-immutable attempted operations protect response-loss retries. Ordinary updates
-flush every 15 seconds; Save, blur and pagehide also request a flush. Disabled or
-word-only idle goals do not generate unnecessary timer writes. Hosted writes carry
-a negative account precondition, so an account switch cannot redirect an older
-Targets draft into the replacement account.
+Pending operations enter a synchronous localStorage pre-journal, then a shared
+IndexedDB outbox. One IDB transaction allocates a persistent per-device/project/
+profile sequence and stores its immutable operation. A newly opened tab recovers
+both committed IDB records and interrupted pre-journal records; recovery does not
+depend on the original tab successfully sending a pagehide or blur request.
+Acknowledgment removes the pre-journal before its IDB identity. If cleanup fails,
+the identity is retained to prevent an old pre-journal from becoming a new write.
+
+The canonical document retains per-stream sequence receipts independently of its
+bounded 80-ID legacy/preview window. Replaying an older recovered operation cannot
+increase progress again. Stream gaps fail closed rather than discard missing work.
+Captured goals and calendar windows travel with each contribution: late writing
+for a retired goal updates that goal's historical period, never a replacement goal.
+Explicit settings saves use last-accepted-save semantics while retaining progress
+and history from other streams.
+
+Targets GET responses include a value revision. PUT requires the expected revision;
+missing tokens return 428 and stale tokens return 409. Local SQLite checks inside
+the existing `BEGIN IMMEDIATE` transaction. Hosted Firestore checks in the member
+state transaction; encrypted mode also rechecks after outside-transaction sealing.
+On conflict the browser rereads, reapplies unacknowledged operations, and retries
+up to eight times. It cannot overwrite another tab/device's intervening progress.
+Ordinary UI preference routes retain their previous replacement behavior. Targets
+alone has a 256 KiB value ceiling for compact interval unions; oversized records
+are rejected before mutation. No storage schema or manuscript transaction changes.
+
+Enabled progress syncs every 15 seconds; Save, focus, blur and pagehide also request
+a sync. Disabled goals do not poll in the background. Idle word-only goals do not
+generate clock writes. The existing hosted negative
+account precondition prevents redirecting an old draft into a replacement account.
+Recovery assumes the browser retains usable site storage. Clearing site data or
+closing a private browser context discards that browser's unacknowledged outbox.
+Time after the last recorded heartbeat (at most roughly one second under normal
+scheduling) cannot be reconstructed safely and is not invented on reopening.
 
 ## Verification and release follow-up
 
@@ -70,6 +105,15 @@ Monday/month rollovers, Unicode and bounded history. Light desktop and light/dar
 release identity preflight pass. Audio was never played aloud during development;
 browser audio tests replace playback with a silent stub.
 
+The durability follow-up passed 32 focused checks: 28 model/UI/integrity/encrypted
+member-state cases together, two WebKit pre-journal recovery cases, and two
+simultaneous-tab cases sharing one atomic IDB sequence. A forced
+cross-device race with overlapping timer intervals passed in both runtimes. The
+existing integrated feature smoke passed all 21 local/hosted cases with no skips
+or recovered failures; report: `/tmp/breadmaker-targets-feature-smoke.json`.
+These tests use synthetic hosted Firestore/GCS adapters and disposable local
+projects. They do not establish live provider/deployment or real iPhone acceptance.
+
 Before release:
 
 1. Run the full `./verify-release` gate after integration; the focused checks do
@@ -77,14 +121,7 @@ Before release:
 2. Check actual iPhone Safari focus/background/keyboard behavior and chime permission.
    Headless Chromium can report focus in multiple offscreen windows, so that test
    drives the real blur handler while controlling `document.hasFocus()` explicitly.
-3. Simultaneous **different-device** writes are not atomic: the current generic
-   UI-state endpoint has no compare-and-set contract. Web Locks protect tabs in
-   one browser, not different devices. If multi-device simultaneous tracking is a
-   release requirement, add a server-side atomic merge/CAS before shipping.
-4. The browser outbox survives refresh in the same tab. An abruptly destroyed tab
-   can lose the final unflushed interval; outbox recovery by a new tab is not yet
-   implemented. Saved project data and manuscript recovery are independent.
-5. Structural History/Cuts restore and Find/Replace are not credited as writing
+3. Structural History/Cuts restore and Find/Replace are not credited as writing
    goals; ordinary prose Undo/Redo is. Confirm whether those bulk operations should
    affect net writing totals before expanding their activity accounting.
 
