@@ -17,7 +17,7 @@ def test_v5419_developmental_version_switch_restores_lower_canvas_content_and_me
         a2 = requests.post(base + '/api/assets', headers={'X-Breadmaker-Client': 'v41812-browser'}, files={'file': ('two.png', tiny + b'2', 'image/png')}, timeout=5).json()['path']
         ids = page.evaluate("""async assets=>{
           const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Development',canvas_type:'developmental'})});
-          await refresh(false);setView('canvas');await selectCanvas(cv.id);await setCanvasMode('pointer');
+          await refresh(false);setView('canvas');await selectCanvas(cv.id);
           const v1=state.canvasVersions[0];
           const card=await api(`/api/canvases/${cv.id}/nodes`,{method:'POST',body:JSON.stringify({node_type:'free',shape:'rect',x:260,y:430,w:260,h:150,title:'Version one',body:'First body'})});card.developmental_hidden=0;state.canvasNodes.push(card);
           const image=await api(`/api/canvases/${cv.id}/nodes`,{method:'POST',body:JSON.stringify({node_type:'image',shape:'rect',x:650,y:430,w:280,h:200,image_path:assets.a1})});image.developmental_hidden=0;state.canvasNodes.push(image);renderNodes();
@@ -60,7 +60,7 @@ def test_v5420_card_created_in_one_version_is_absent_from_other_version(scene_li
     try:
         ids = page.evaluate("""async()=>{
           const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Development',canvas_type:'developmental'})});
-          await refresh(false);setView('canvas');await selectCanvas(cv.id);await setCanvasMode('pointer');
+          await refresh(false);setView('canvas');await selectCanvas(cv.id);
           const v1=state.canvasVersions[0];
           const v2=await api(`/api/canvases/${cv.id}/versions`,{method:'POST',body:JSON.stringify({name:'Version 2',from_version_id:v1.id})});
           await api(`/api/canvases/${cv.id}/versions/${v2.id}/activate`,{method:'POST'});

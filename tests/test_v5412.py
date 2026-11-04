@@ -12,7 +12,7 @@ def test_v5412_canvas_interaction_cleanup_static_contract():
     assert 'canvas-card-draw-preview ${shape} hidden' in draw
     assert 'paint(start)' not in draw
     assert "preview.classList.remove('hidden')" in draw
-    assert "cancelCanvasCardTool();setCanvasMode('pointer')" in draw
+    assert "cancelCanvasCardTool();" in draw
     assert '.node-title`)?.focus()' not in draw
 
     # Empty-canvas connector drops no longer auto-create Cards.

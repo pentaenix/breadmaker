@@ -16,7 +16,7 @@ def test_v560_routing_and_connector_ui_are_direct_and_compact(scene_live_server,
     try:
         ids=page.evaluate("""async()=>{
           const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Routing',canvas_type:'blank'})});
-          await refresh(false);setView('canvas');await selectCanvas(cv.id);await setCanvasMode('pointer');
+          await refresh(false);setView('canvas');await selectCanvas(cv.id);
           const a=await createNodeAt('rect',180,180,{node_type:'free',w:220,h:120,title:'Source',body:'Body A'},{inspect:false});
           const r=await createRoutingPoint(520,250);
           const b=await createNodeAt('rect',760,180,{node_type:'free',w:220,h:120,title:'Target',body:'Body B'},{inspect:false});

@@ -5838,7 +5838,7 @@
     },
     {
       "file": "src/api/workspace_tools/contracts.py",
-      "lines": 28,
+      "lines": 30,
       "symbols": [
         {
           "name": "ReferenceCreate",
@@ -5853,17 +5853,17 @@
         {
           "name": "BookmarkSet",
           "kind": "class",
-          "line": 14
+          "line": 16
         },
         {
           "name": "DocumentCreate",
           "kind": "class",
-          "line": 23
+          "line": 25
         },
         {
           "name": "DocumentUpdate",
           "kind": "class",
-          "line": 26
+          "line": 28
         }
       ]
     },
@@ -5968,17 +5968,17 @@
     },
     {
       "file": "src/api/workspace_tools/ui_state.py",
-      "lines": 71,
+      "lines": 80,
       "symbols": [
         {
           "name": "_ui_state_storage_key",
           "kind": "function",
-          "line": 13
+          "line": 14
         },
         {
           "name": "get_ui_state_batch",
           "kind": "function",
-          "line": 26,
+          "line": 27,
           "routes": [
             {
               "method": "GET",
@@ -5989,7 +5989,7 @@
         {
           "name": "get_ui_state",
           "kind": "function",
-          "line": 55,
+          "line": 56,
           "routes": [
             {
               "method": "GET",
@@ -6000,7 +6000,7 @@
         {
           "name": "put_ui_state",
           "kind": "function",
-          "line": 65,
+          "line": 66,
           "routes": [
             {
               "method": "PUT",
@@ -8528,602 +8528,602 @@
     },
     {
       "file": "src/hosted/http_api.py",
-      "lines": 939,
+      "lines": 948,
       "symbols": [
         {
           "name": "_projects",
           "kind": "function",
-          "line": 49
+          "line": 50
         },
         {
           "name": "_domain",
           "kind": "function",
-          "line": 53
+          "line": 54
         },
         {
           "name": "_documents",
           "kind": "function",
-          "line": 59
+          "line": 60
         },
         {
           "name": "_uid",
           "kind": "function",
-          "line": 65
+          "line": 66
         },
         {
           "name": "_pid",
           "kind": "function",
-          "line": 69
+          "line": 70
         },
         {
           "name": "_json_public",
           "kind": "function",
-          "line": 80
+          "line": 81
         },
         {
           "name": "_login_redirect",
           "kind": "function",
-          "line": 86
+          "line": 87
         },
         {
           "name": "_error",
           "kind": "function",
-          "line": 94
+          "line": 95
         },
         {
           "name": "_provider_binding",
           "kind": "async_function",
-          "line": 105
+          "line": 106
         },
         {
           "name": "hosted_request_boundary",
           "kind": "async_function",
-          "line": 115
+          "line": 116
         },
         {
           "name": "install_request_boundary",
           "kind": "function",
-          "line": 215
+          "line": 216
         },
         {
           "name": "hosted_shell",
           "kind": "function",
-          "line": 233
+          "line": 234
         },
         {
           "name": "hosted_health",
           "kind": "function",
-          "line": 247
+          "line": 248
         },
         {
           "name": "hosted_locales",
           "kind": "function",
-          "line": 252
+          "line": 253
         },
         {
           "name": "hosted_locale_file",
           "kind": "function",
-          "line": 268
+          "line": 269
         },
         {
           "name": "hosted_auth_session",
           "kind": "function",
-          "line": 276
+          "line": 277
         },
         {
           "name": "hosted_auth_logout",
           "kind": "function",
-          "line": 287
+          "line": 288
         },
         {
           "name": "hosted_editor_lease",
           "kind": "function",
-          "line": 296
+          "line": 297
         },
         {
           "name": "hosted_editor_lease_release",
           "kind": "function",
-          "line": 303
+          "line": 304
         },
         {
           "name": "hosted_workspace",
           "kind": "function",
-          "line": 308
+          "line": 309
         },
         {
           "name": "hosted_identity_current",
           "kind": "function",
-          "line": 318
+          "line": 319
         },
         {
           "name": "hosted_profile",
           "kind": "function",
-          "line": 321
+          "line": 322
         },
         {
           "name": "hosted_profiles",
           "kind": "function",
-          "line": 324
+          "line": 325
         },
         {
           "name": "hosted_profile_update",
           "kind": "async_function",
-          "line": 327
+          "line": 328
         },
         {
           "name": "hosted_avatar",
           "kind": "function",
-          "line": 331
+          "line": 332
         },
         {
           "name": "hosted_avatar_save",
           "kind": "async_function",
-          "line": 338
+          "line": 339
         },
         {
           "name": "hosted_avatar_delete",
           "kind": "function",
-          "line": 342
+          "line": 343
         },
         {
           "name": "hosted_project_create",
           "kind": "async_function",
-          "line": 346
+          "line": 347
         },
         {
           "name": "hosted_project_activate",
           "kind": "function",
-          "line": 354
+          "line": 355
         },
         {
           "name": "hosted_project_rename",
           "kind": "async_function",
-          "line": 359
+          "line": 360
         },
         {
           "name": "hosted_project_delete",
           "kind": "function",
-          "line": 365
+          "line": 366
         },
         {
           "name": "hosted_project_members",
           "kind": "function",
-          "line": 370
+          "line": 371
         },
         {
           "name": "hosted_project_add_member",
           "kind": "async_function",
-          "line": 375
+          "line": 376
         },
         {
           "name": "hosted_project_remove_member",
           "kind": "function",
-          "line": 381
+          "line": 382
         },
         {
           "name": "hosted_restore_project",
           "kind": "function",
-          "line": 386
+          "line": 387
         },
         {
           "name": "hosted_project_export",
           "kind": "function",
-          "line": 391
+          "line": 392
         },
         {
           "name": "hosted_project_import",
           "kind": "async_function",
-          "line": 398
+          "line": 399
         },
         {
           "name": "hosted_data_export",
           "kind": "function",
-          "line": 409
+          "line": 410
         },
         {
           "name": "hosted_project_metadata",
           "kind": "function",
-          "line": 416
+          "line": 417
         },
         {
           "name": "hosted_project_health",
           "kind": "function",
-          "line": 420
+          "line": 421
         },
         {
           "name": "hosted_asset_upload",
           "kind": "async_function",
-          "line": 425
+          "line": 426
         },
         {
           "name": "hosted_asset_read",
           "kind": "function",
-          "line": 433
+          "line": 434
         },
         {
           "name": "hosted_integrity_deep",
           "kind": "function",
-          "line": 441
+          "line": 442
         },
         {
           "name": "_body",
           "kind": "async_function",
-          "line": 455
+          "line": 456
         },
         {
           "name": "_bounded_upload",
           "kind": "async_function",
-          "line": 462
+          "line": 463
         },
         {
           "name": "_create",
           "kind": "function",
-          "line": 479
+          "line": 480
         },
         {
           "name": "_list",
           "kind": "function",
-          "line": 494
+          "line": 495
         },
         {
           "name": "_get",
           "kind": "function",
-          "line": 498
+          "line": 499
         },
         {
           "name": "_update",
           "kind": "function",
-          "line": 502
+          "line": 503
         },
         {
           "name": "_delete",
           "kind": "function",
-          "line": 508
+          "line": 509
         },
         {
           "name": "_project_snapshot",
           "kind": "function",
-          "line": 515
+          "line": 516
         },
         {
           "name": "hosted_bootstrap",
           "kind": "function",
-          "line": 571
+          "line": 572
         },
         {
           "name": "hosted_book",
           "kind": "function",
-          "line": 576
+          "line": 577
         },
         {
           "name": "hosted_document_create",
           "kind": "async_function",
-          "line": 631
+          "line": 632
         },
         {
           "name": "hosted_document_update",
           "kind": "async_function",
-          "line": 633
+          "line": 634
         },
         {
           "name": "hosted_document_delete",
           "kind": "function",
-          "line": 635
+          "line": 636
         },
         {
           "name": "hosted_chapter_create",
           "kind": "async_function",
-          "line": 639
+          "line": 640
         },
         {
           "name": "hosted_chapter_get",
           "kind": "function",
-          "line": 641
+          "line": 642
         },
         {
           "name": "hosted_chapter_read_cache",
           "kind": "async_function",
-          "line": 673
+          "line": 674
         },
         {
           "name": "hosted_chapter_update",
           "kind": "async_function",
-          "line": 682
+          "line": 683
         },
         {
           "name": "hosted_chapter_delete",
           "kind": "function",
-          "line": 693
+          "line": 694
         },
         {
           "name": "hosted_chapter_blocks",
           "kind": "async_function",
-          "line": 695
+          "line": 696
         },
         {
           "name": "hosted_scene_create",
           "kind": "async_function",
-          "line": 707
+          "line": 708
         },
         {
           "name": "hosted_scene_update",
           "kind": "async_function",
-          "line": 709
+          "line": 710
         },
         {
           "name": "hosted_scene_delete",
           "kind": "function",
-          "line": 711
+          "line": 712
         },
         {
           "name": "hosted_scene_manuscript",
           "kind": "function",
-          "line": 713
+          "line": 714
         },
         {
           "name": "hosted_annotations",
           "kind": "function",
-          "line": 718
+          "line": 719
         },
         {
           "name": "hosted_annotations_batch",
           "kind": "async_function",
-          "line": 725
+          "line": 726
         },
         {
           "name": "hosted_annotation_update",
           "kind": "async_function",
-          "line": 738
+          "line": 739
         },
         {
           "name": "hosted_label_create",
           "kind": "async_function",
-          "line": 740
+          "line": 741
         },
         {
           "name": "_notes_call",
           "kind": "function",
-          "line": 744
+          "line": 745
         },
         {
           "name": "hosted_comments",
           "kind": "function",
-          "line": 751
+          "line": 752
         },
         {
           "name": "hosted_comment_create",
           "kind": "async_function",
-          "line": 754
+          "line": 755
         },
         {
           "name": "hosted_comment_update",
           "kind": "async_function",
-          "line": 756
+          "line": 757
         },
         {
           "name": "hosted_comment_delete",
           "kind": "function",
-          "line": 758
+          "line": 759
         },
         {
           "name": "hosted_comment_message",
           "kind": "async_function",
-          "line": 760
+          "line": 761
         },
         {
           "name": "hosted_bookmark_get",
           "kind": "function",
-          "line": 765
+          "line": 766
         },
         {
           "name": "hosted_bookmark_put",
           "kind": "async_function",
-          "line": 768
+          "line": 769
         },
         {
           "name": "hosted_bookmark_delete",
           "kind": "function",
-          "line": 771
+          "line": 772
         },
         {
           "name": "hosted_ui_state_batch",
           "kind": "function",
-          "line": 774
+          "line": 775
         },
         {
           "name": "hosted_ui_state_get",
           "kind": "function",
-          "line": 785
+          "line": 786
         },
         {
           "name": "hosted_ui_state_put",
           "kind": "async_function",
-          "line": 788
+          "line": 791
         },
         {
           "name": "hosted_tasks",
           "kind": "function",
-          "line": 799
+          "line": 808
         },
         {
           "name": "hosted_task_create",
           "kind": "async_function",
-          "line": 801
+          "line": 810
         },
         {
           "name": "hosted_task_update",
           "kind": "async_function",
-          "line": 803
+          "line": 812
         },
         {
           "name": "hosted_task_delete",
           "kind": "function",
-          "line": 805
+          "line": 814
         },
         {
           "name": "hosted_milestones",
           "kind": "function",
-          "line": 807
+          "line": 816
         },
         {
           "name": "hosted_milestone_create",
           "kind": "async_function",
-          "line": 809
+          "line": 818
         },
         {
           "name": "hosted_canvas_create",
           "kind": "async_function",
-          "line": 813
+          "line": 822
         },
         {
           "name": "hosted_canvas_get",
           "kind": "function",
-          "line": 815
+          "line": 824
         },
         {
           "name": "hosted_canvas_update",
           "kind": "async_function",
-          "line": 818
+          "line": 827
         },
         {
           "name": "hosted_canvas_delete",
           "kind": "function",
-          "line": 820
+          "line": 829
         },
         {
           "name": "hosted_canvas_node",
           "kind": "async_function",
-          "line": 822
+          "line": 831
         },
         {
           "name": "hosted_canvas_edge",
           "kind": "async_function",
-          "line": 824
+          "line": 833
         },
         {
           "name": "hosted_maps",
           "kind": "function",
-          "line": 831
+          "line": 840
         },
         {
           "name": "hosted_map_create",
           "kind": "async_function",
-          "line": 833
+          "line": 842
         },
         {
           "name": "hosted_map_get",
           "kind": "function",
-          "line": 835
+          "line": 844
         },
         {
           "name": "hosted_map_update",
           "kind": "async_function",
-          "line": 843
+          "line": 852
         },
         {
           "name": "hosted_map_delete",
           "kind": "function",
-          "line": 845
+          "line": 854
         },
         {
           "name": "hosted_map_line",
           "kind": "async_function",
-          "line": 847
+          "line": 856
         },
         {
           "name": "hosted_map_item",
           "kind": "async_function",
-          "line": 849
+          "line": 858
         },
         {
           "name": "hosted_map_junction",
           "kind": "async_function",
-          "line": 852
+          "line": 861
         },
         {
           "name": "hosted_reviews",
           "kind": "function",
-          "line": 856
+          "line": 865
         },
         {
           "name": "hosted_review_create",
           "kind": "async_function",
-          "line": 858
+          "line": 867
         },
         {
           "name": "hosted_review_get",
           "kind": "function",
-          "line": 860
+          "line": 869
         },
         {
           "name": "hosted_review_update",
           "kind": "async_function",
-          "line": 863
+          "line": 872
         },
         {
           "name": "hosted_review_delete",
           "kind": "function",
-          "line": 865
+          "line": 874
         },
         {
           "name": "hosted_review_participant",
           "kind": "async_function",
-          "line": 867
+          "line": 876
         },
         {
           "name": "hosted_questionnaires",
           "kind": "function",
-          "line": 869
+          "line": 878
         },
         {
           "name": "hosted_questionnaire_create",
           "kind": "async_function",
-          "line": 871
+          "line": 880
         },
         {
           "name": "_checkpoint_ui",
           "kind": "function",
-          "line": 874
+          "line": 883
         },
         {
           "name": "hosted_checkpoints",
           "kind": "function",
-          "line": 879
+          "line": 888
         },
         {
           "name": "hosted_checkpoint_create",
           "kind": "async_function",
-          "line": 884
+          "line": 893
         },
         {
           "name": "hosted_checkpoint_get",
           "kind": "function",
-          "line": 893
+          "line": 902
         },
         {
           "name": "hosted_history_list",
           "kind": "function",
-          "line": 898
+          "line": 907
         },
         {
           "name": "hosted_autocommit",
           "kind": "async_function",
-          "line": 900
+          "line": 909
         },
         {
           "name": "_commit_history_snapshot",
           "kind": "function",
-          "line": 905
+          "line": 914
         },
         {
           "name": "hosted_local_backup_unavailable",
           "kind": "function",
-          "line": 927
+          "line": 936
         },
         {
           "name": "hosted_unported_bulk_mutation",
           "kind": "function",
-          "line": 938
+          "line": 947
         }
       ]
     },
@@ -12582,77 +12582,77 @@
     },
     {
       "file": "src/hosted/runtime_services.py",
-      "lines": 1101,
+      "lines": 1111,
       "symbols": [
         {
           "name": "_clean_public",
           "kind": "function",
-          "line": 47
+          "line": 48
         },
         {
           "name": "_project_public",
           "kind": "function",
-          "line": 51
+          "line": 52
         },
         {
           "name": "HostedCloudAccountIdentityService",
           "kind": "class",
-          "line": 67
+          "line": 68
         },
         {
           "name": "_iso_now",
           "kind": "function",
-          "line": 262
+          "line": 263
         },
         {
           "name": "HostedProjectContextProvider",
           "kind": "class",
-          "line": 267
+          "line": 268
         },
         {
           "name": "HostedIdentityProvider",
           "kind": "class",
-          "line": 335
+          "line": 336
         },
         {
           "name": "HostedAuthorizationService",
           "kind": "class",
-          "line": 462
+          "line": 463
         },
         {
           "name": "HostedCloudProjectRepository",
           "kind": "class",
-          "line": 479
+          "line": 480
         },
         {
           "name": "HostedCommittedAssetStore",
           "kind": "class",
-          "line": 804
+          "line": 814
         },
         {
           "name": "HostedHistoryStore",
           "kind": "class",
-          "line": 955
+          "line": 965
         },
         {
           "name": "HostedBackupStore",
           "kind": "class",
-          "line": 1045
+          "line": 1055
         },
         {
           "name": "HostedProjectUsageService",
           "kind": "class",
-          "line": 1057
+          "line": 1067
         },
         {
           "name": "HostedCapabilityProvider",
           "kind": "class",
-          "line": 1082
+          "line": 1092
         },
         {
           "name": "ensure_hosted_user",
           "kind": "function",
-          "line": 1090
+          "line": 1100
         }
       ]
     },
@@ -13737,6 +13737,32 @@
           "name": "require_native_backups",
           "kind": "function",
           "line": 31
+        }
+      ]
+    },
+    {
+      "file": "src/runtime/ui_state_revision.py",
+      "lines": 23,
+      "symbols": [
+        {
+          "name": "is_targets_key",
+          "kind": "function",
+          "line": 9
+        },
+        {
+          "name": "value_revision",
+          "kind": "function",
+          "line": 13
+        },
+        {
+          "name": "valid_revision",
+          "kind": "function",
+          "line": 18
+        },
+        {
+          "name": "targets_value_size",
+          "kind": "function",
+          "line": 22
         }
       ]
     },
@@ -15083,7 +15109,7 @@
     },
     {
       "file": "static/js/core/collections.js",
-      "lines": 127,
+      "lines": 132,
       "symbols": [
         {
           "name": "phoneRailOwnsMenu",
@@ -15138,12 +15164,12 @@
         {
           "name": "syncPhoneWorkspaceName",
           "kind": "function",
-          "line": 114
+          "line": 119
         },
         {
           "name": "syncPhoneViewport",
           "kind": "function",
-          "line": 119
+          "line": 124
         }
       ]
     },
@@ -15483,7 +15509,7 @@
     },
     {
       "file": "static/js/core/routing.js",
-      "lines": 105,
+      "lines": 106,
       "symbols": [
         {
           "name": "reportViewRenderError",
@@ -15533,7 +15559,7 @@
         {
           "name": "hydratePrimaryWorkspace",
           "kind": "function",
-          "line": 48
+          "line": 49
         }
       ]
     },
@@ -15610,7 +15636,7 @@
     },
     {
       "file": "static/js/core/state.js",
-      "lines": 177,
+      "lines": 176,
       "symbols": []
     },
     {
@@ -16451,7 +16477,7 @@
     },
     {
       "file": "static/js/features/canvas/hierarchy.js",
-      "lines": 268,
+      "lines": 260,
       "symbols": [
         {
           "name": "restoreCanvasUIState",
@@ -16619,380 +16645,375 @@
           "line": 94
         },
         {
-          "name": "updateCanvasModeUI",
+          "name": "updateCanvasPanUI",
           "kind": "function",
           "line": 96
         },
         {
-          "name": "setCanvasMode",
-          "kind": "function",
-          "line": 103
-        },
-        {
           "name": "configuredCanvasTextSize",
           "kind": "function",
-          "line": 105
+          "line": 98
         },
         {
           "name": "normalizeCanvasTextSize",
           "kind": "function",
-          "line": 106
+          "line": 99
         },
         {
           "name": "applyCanvasTextSize",
           "kind": "function",
-          "line": 107
+          "line": 100
         },
         {
           "name": "applyCanvasFont",
           "kind": "function",
-          "line": 108
+          "line": 101
         },
         {
           "name": "syncCanvasSnapToggle",
           "kind": "function",
-          "line": 109
+          "line": 102
         },
         {
           "name": "setCanvasSnap",
           "kind": "function",
-          "line": 110
+          "line": 103
         },
         {
           "name": "clearCanvasSnapGuides",
           "kind": "function",
-          "line": 112
+          "line": 105
         },
         {
           "name": "showCanvasSnapGuides",
           "kind": "function",
-          "line": 113
+          "line": 106
         },
         {
           "name": "canvasBoundsForNodes",
           "kind": "function",
-          "line": 114
+          "line": 107
         },
         {
           "name": "nearestCanvasSnap",
           "kind": "function",
-          "line": 115
+          "line": 108
         },
         {
           "name": "positionCanvasViewPopover",
           "kind": "function",
-          "line": 123
+          "line": 116
         },
         {
           "name": "closeCanvasViewPopover",
           "kind": "function",
-          "line": 124
+          "line": 117
         },
         {
           "name": "toggleCanvasViewPopover",
           "kind": "function",
-          "line": 125
+          "line": 118
         },
         {
           "name": "clampCanvasZoom",
           "kind": "function",
-          "line": 126
+          "line": 119
         },
         {
           "name": "syncDevelopmentalDeskTileScale",
           "kind": "function",
-          "line": 127
+          "line": 120
         },
         {
           "name": "applyCanvasZoom",
           "kind": "function",
-          "line": 128
+          "line": 121
         },
         {
           "name": "cancelQueuedCanvasViewportPersist",
           "kind": "function",
-          "line": 137
+          "line": 130
         },
         {
           "name": "queueCanvasViewportPersist",
           "kind": "function",
-          "line": 138
+          "line": 131
         },
         {
           "name": "persistCurrentCanvasViewport",
           "kind": "function",
-          "line": 139
+          "line": 132
         },
         {
           "name": "applyPendingCanvasViewport",
           "kind": "function",
-          "line": 143
+          "line": 136
         },
         {
           "name": "restoreCanvasViewport",
           "kind": "function",
-          "line": 147
+          "line": 140
         },
         {
           "name": "canvasWorldMetrics",
           "kind": "function",
-          "line": 150
+          "line": 143
         },
         {
           "name": "canvasPointFromClient",
           "kind": "function",
-          "line": 151
+          "line": 144
         },
         {
           "name": "canvasDeltaFromClient",
           "kind": "function",
-          "line": 152
+          "line": 145
         },
         {
           "name": "isDevelopmentalStructureCard",
           "kind": "function",
-          "line": 153
+          "line": 146
         },
         {
           "name": "isDevelopmentalPlanningCard",
           "kind": "function",
-          "line": 154
+          "line": 147
         },
         {
           "name": "developmentalObjectVisible",
           "kind": "function",
-          "line": 155
+          "line": 148
         },
         {
           "name": "nodeInDevelopmentalLane",
           "kind": "function",
-          "line": 156
+          "line": 149
         },
         {
           "name": "developmentalPlacedCards",
           "kind": "function",
-          "line": 157
+          "line": 150
         },
         {
           "name": "developmentalUnplacedCards",
           "kind": "function",
-          "line": 158
+          "line": 151
         },
         {
           "name": "developmentalLaneCards",
           "kind": "function",
-          "line": 159
+          "line": 152
         },
         {
           "name": "developmentalCurrentEntityIds",
           "kind": "function",
-          "line": 160
+          "line": 153
         },
         {
           "name": "developmentalMissingItems",
           "kind": "function",
-          "line": 161
+          "line": 154
         },
         {
           "name": "developmentalMissingLanePositions",
           "kind": "function",
-          "line": 162
+          "line": 155
         },
         {
           "name": "assignDevelopmentalLanePositions",
           "kind": "function",
-          "line": 163
+          "line": 156
         },
         {
           "name": "developmentalLaneDropIndex",
           "kind": "function",
-          "line": 164
+          "line": 157
         },
         {
           "name": "developmentalLaneRects",
           "kind": "function",
-          "line": 165
+          "line": 158
         },
         {
           "name": "animateDevelopmentalLaneFrom",
           "kind": "function",
-          "line": 166
+          "line": 159
         },
         {
           "name": "createDevelopmentalDragProxy",
           "kind": "function",
-          "line": 167
+          "line": 160
         },
         {
           "name": "moveDevelopmentalDragProxy",
           "kind": "function",
-          "line": 168
+          "line": 161
         },
         {
           "name": "removeDevelopmentalDragProxy",
           "kind": "function",
-          "line": 169
+          "line": 162
         },
         {
           "name": "developmentalLaneAutoScroll",
           "kind": "function",
-          "line": 170
+          "line": 163
         },
         {
           "name": "syncDevelopmentalStructureToggle",
           "kind": "function",
-          "line": 171
+          "line": 164
         },
         {
           "name": "renderDevelopmentalLane",
           "kind": "function",
-          "line": 172
+          "line": 165
         },
         {
           "name": "addGap",
           "kind": "function",
-          "line": 178
+          "line": 171
         },
         {
           "name": "renderCanvasGuides",
           "kind": "function",
-          "line": 189
+          "line": 182
         },
         {
           "name": "canvasVersionDirty",
           "kind": "function",
-          "line": 190
+          "line": 183
         },
         {
           "name": "nextCanvasVersionName",
           "kind": "function",
-          "line": 191
+          "line": 184
         },
         {
           "name": "loadActiveCanvasVersion",
           "kind": "function",
-          "line": 192
+          "line": 185
         },
         {
           "name": "versionGeometryMatches",
           "kind": "function",
-          "line": 193
+          "line": 186
         },
         {
           "name": "same",
           "kind": "function",
-          "line": 205
+          "line": 198
         },
         {
           "name": "initializeCanvasVersions",
           "kind": "function",
-          "line": 213
+          "line": 206
         },
         {
           "name": "versionSwitchChoice",
           "kind": "function",
-          "line": 214
+          "line": 207
         },
         {
           "name": "refreshCanvasVersionState",
           "kind": "function",
-          "line": 215
+          "line": 208
         },
         {
           "name": "updateActiveCanvasVersion",
           "kind": "function",
-          "line": 216
+          "line": 209
         },
         {
           "name": "switchCanvasVersion",
           "kind": "function",
-          "line": 217
+          "line": 210
         },
         {
           "name": "createCanvasVersion",
           "kind": "function",
-          "line": 219
+          "line": 212
         },
         {
           "name": "renameCanvasVersion",
           "kind": "function",
-          "line": 220
+          "line": 213
         },
         {
           "name": "renameActiveCanvasVersion",
           "kind": "function",
-          "line": 221
+          "line": 214
         },
         {
           "name": "deleteCanvasVersion",
           "kind": "function",
-          "line": 222
+          "line": 215
         },
         {
           "name": "deleteActiveCanvasVersion",
           "kind": "function",
-          "line": 223
+          "line": 216
         },
         {
           "name": "removeMissingVersionItem",
           "kind": "function",
-          "line": 224
+          "line": 217
         },
         {
           "name": "canvasVersionMenuItems",
           "kind": "function",
-          "line": 225
+          "line": 218
         },
         {
           "name": "openCanvasVersionMenu",
           "kind": "function",
-          "line": 226
+          "line": 219
         },
         {
           "name": "structureVersionRows",
           "kind": "function",
-          "line": 227
+          "line": 220
         },
         {
           "name": "openCanvasVersionsPanel",
           "kind": "function",
-          "line": 228
+          "line": 221
         },
         {
           "name": "hideStructurePanelHover",
           "kind": "function",
-          "line": 230
+          "line": 223
         },
         {
           "name": "queueStructurePanelHover",
           "kind": "function",
-          "line": 231
+          "line": 224
         },
         {
           "name": "wireStructurePanelDescriptions",
           "kind": "function",
-          "line": 235
+          "line": 228
         },
         {
           "name": "openStructurePanel",
           "kind": "function",
-          "line": 238
+          "line": 231
         },
         {
           "name": "fitCanvasContents",
           "kind": "function",
-          "line": 251
+          "line": 244
         },
         {
           "name": "selectCanvas",
           "kind": "function",
-          "line": 261
+          "line": 253
         }
       ]
     },
     {
       "file": "static/js/features/canvas/nodes.js",
-      "lines": 388,
+      "lines": 439,
       "symbols": [
         {
           "name": "canvasShapeIcon",
@@ -17437,222 +17458,247 @@
         {
           "name": "developmentalLaneContains",
           "kind": "function",
-          "line": 186
+          "line": 188
         },
         {
           "name": "developmentalStageContains",
           "kind": "function",
-          "line": 187
+          "line": 189
         },
         {
           "name": "refreshDevelopmentalDirtyState",
           "kind": "function",
-          "line": 188
+          "line": 190
         },
         {
           "name": "persistDevelopmentalLayout",
           "kind": "function",
-          "line": 189
+          "line": 191
         },
         {
           "name": "startDevelopmentalLaneDrag",
           "kind": "function",
-          "line": 190
+          "line": 192
         },
         {
           "name": "restore",
           "kind": "function",
-          "line": 193
+          "line": 195
         },
         {
           "name": "clearVisual",
           "kind": "function",
-          "line": 195
+          "line": 197
         },
         {
           "name": "startDevelopmentalDeskStructuralDrag",
           "kind": "function",
-          "line": 200
+          "line": 202
         },
         {
           "name": "chooseDevelopmentalSceneChapter",
           "kind": "function",
-          "line": 209
+          "line": 211
         },
         {
           "name": "promoteDevelopmentalPlanningCard",
           "kind": "function",
-          "line": 210
+          "line": 212
         },
         {
           "name": "startNodeGroupDrag",
           "kind": "function",
-          "line": 211
+          "line": 213
         },
         {
           "name": "startFigureLineEndpointDrag",
           "kind": "function",
-          "line": 218
+          "line": 220
         },
         {
           "name": "startNodeResize",
           "kind": "function",
-          "line": 225
+          "line": 227
         },
         {
           "name": "persistCanvasNodeContent",
           "kind": "function",
-          "line": 231
+          "line": 233
         },
         {
           "name": "queueNodeSave",
           "kind": "function",
-          "line": 238
+          "line": 240
         },
         {
           "name": "flushPendingCanvasNodeSaves",
           "kind": "function",
-          "line": 247
+          "line": 249
         },
         {
           "name": "canvasCopyEligibleNodes",
           "kind": "function",
-          "line": 252
+          "line": 254
         },
         {
           "name": "copyCanvasCards",
           "kind": "function",
-          "line": 254
+          "line": 256
         },
         {
           "name": "canvasPasteAnchor",
           "kind": "function",
-          "line": 263
+          "line": 265
         },
         {
           "name": "pasteCanvasCards",
           "kind": "function",
-          "line": 268
+          "line": 270
+        },
+        {
+          "name": "cancelCanvasPan",
+          "kind": "function",
+          "line": 284
         },
         {
           "name": "beginCanvasPan",
           "kind": "function",
-          "line": 280
+          "line": 285
         },
         {
-          "name": "canvasEdgeFullyInsideRect",
+          "name": "capture",
           "kind": "function",
-          "line": 282
+          "line": 289
         },
         {
-          "name": "beginCanvasLasso",
-          "kind": "function",
-          "line": 287
-        },
-        {
-          "name": "updateSelection",
+          "name": "move",
           "kind": "function",
           "line": 291
         },
         {
-          "name": "scrollDelta",
+          "name": "finish",
           "kind": "function",
-          "line": 292
+          "line": 297
         },
         {
-          "name": "autoScroll",
+          "name": "canvasEdgeFullyInsideRect",
           "kind": "function",
-          "line": 293
+          "line": 313
         },
         {
-          "name": "restoreCanvasSpaceTypingSnapshot",
-          "kind": "function",
-          "line": 308
-        },
-        {
-          "name": "canvasPopulateCatalog",
-          "kind": "function",
-          "line": 315
-        },
-        {
-          "name": "canvasPopulateMenuItems",
-          "kind": "function",
-          "line": 316
-        },
-        {
-          "name": "afterCanvasPaint",
-          "kind": "function",
-          "line": 317
-        },
-        {
-          "name": "settlePopulatedRows",
+          "name": "beginCanvasLasso",
           "kind": "function",
           "line": 318
         },
         {
-          "name": "populateCanvas",
+          "name": "updateSelection",
           "kind": "function",
-          "line": 328
+          "line": 322
         },
         {
-          "name": "quickCreateNode",
+          "name": "scrollDelta",
           "kind": "function",
-          "line": 330
+          "line": 323
         },
         {
-          "name": "quickCreateFigure",
+          "name": "autoScroll",
           "kind": "function",
-          "line": 331
+          "line": 324
         },
         {
-          "name": "releaseCanvasSpacePan",
-          "kind": "function",
-          "line": 332
-        },
-        {
-          "name": "normalizeColor",
-          "kind": "function",
-          "line": 337
-        },
-        {
-          "name": "updateSelectionInspector",
+          "name": "restoreCanvasSpaceTypingSnapshot",
           "kind": "function",
           "line": 339
         },
         {
+          "name": "canvasPopulateCatalog",
+          "kind": "function",
+          "line": 365
+        },
+        {
+          "name": "canvasPopulateMenuItems",
+          "kind": "function",
+          "line": 366
+        },
+        {
+          "name": "afterCanvasPaint",
+          "kind": "function",
+          "line": 367
+        },
+        {
+          "name": "settlePopulatedRows",
+          "kind": "function",
+          "line": 368
+        },
+        {
+          "name": "populateCanvas",
+          "kind": "function",
+          "line": 378
+        },
+        {
+          "name": "quickCreateNode",
+          "kind": "function",
+          "line": 380
+        },
+        {
+          "name": "quickCreateFigure",
+          "kind": "function",
+          "line": 381
+        },
+        {
+          "name": "releaseCanvasSpacePan",
+          "kind": "function",
+          "line": 382
+        },
+        {
+          "name": "resetCanvasPan",
+          "kind": "function",
+          "line": 386
+        },
+        {
+          "name": "normalizeColor",
+          "kind": "function",
+          "line": 388
+        },
+        {
+          "name": "updateSelectionInspector",
+          "kind": "function",
+          "line": 390
+        },
+        {
           "name": "applyNodePatch",
           "kind": "function",
-          "line": 340
+          "line": 391
         },
         {
           "name": "openNodeInspector",
           "kind": "function",
-          "line": 343
+          "line": 394
         },
         {
           "name": "mixedChoice",
           "kind": "function",
-          "line": 356
+          "line": 407
         },
         {
           "name": "mixedValue",
           "kind": "function",
-          "line": 357
+          "line": 408
         },
         {
           "name": "openMultiNodeInspector",
           "kind": "function",
-          "line": 358
+          "line": 409
         },
         {
           "name": "bulk",
           "kind": "function",
-          "line": 361
+          "line": 412
         },
         {
           "name": "deleteSelectedNodes",
           "kind": "function",
-          "line": 365
+          "line": 416
         }
       ]
     },
@@ -23113,7 +23159,7 @@
     },
     {
       "file": "static/js/features/projects/menu.js",
-      "lines": 114,
+      "lines": 116,
       "symbols": [
         {
           "name": "hideProjectSubmenu",
@@ -23158,17 +23204,17 @@
         {
           "name": "wireProjectSubmenuButton",
           "kind": "function",
-          "line": 49
+          "line": 51
         },
         {
           "name": "showProjectSubmenu",
           "kind": "function",
-          "line": 59
+          "line": 61
         },
         {
           "name": "startProjectMenuRename",
           "kind": "function",
-          "line": 107
+          "line": 109
         }
       ]
     },
@@ -23281,6 +23327,254 @@
           "name": "returnToSettings",
           "kind": "function",
           "line": 89
+        }
+      ]
+    },
+    {
+      "file": "static/js/features/projects/targets-journal.js",
+      "lines": 51,
+      "symbols": [
+        {
+          "name": "uuid",
+          "kind": "function",
+          "line": 7
+        },
+        {
+          "name": "database",
+          "kind": "function",
+          "line": 8
+        },
+        {
+          "name": "stage",
+          "kind": "function",
+          "line": 17
+        },
+        {
+          "name": "enqueue",
+          "kind": "function",
+          "line": 31
+        },
+        {
+          "name": "read",
+          "kind": "function",
+          "line": 38
+        },
+        {
+          "name": "acknowledge",
+          "kind": "function",
+          "line": 46
+        }
+      ]
+    },
+    {
+      "file": "static/js/features/projects/targets-model.js",
+      "lines": 102,
+      "symbols": [
+        {
+          "name": "mergeIntervals",
+          "kind": "function",
+          "line": 6
+        },
+        {
+          "name": "period",
+          "kind": "function",
+          "line": 12
+        },
+        {
+          "name": "defaults",
+          "kind": "function",
+          "line": 20
+        },
+        {
+          "name": "normalize",
+          "kind": "function",
+          "line": 21
+        },
+        {
+          "name": "entry",
+          "kind": "function",
+          "line": 42
+        },
+        {
+          "name": "apply",
+          "kind": "function",
+          "line": 46
+        },
+        {
+          "name": "progress",
+          "kind": "function",
+          "line": 84
+        },
+        {
+          "name": "count",
+          "kind": "function",
+          "line": 87
+        },
+        {
+          "name": "elapsed",
+          "kind": "function",
+          "line": 95
+        }
+      ]
+    },
+    {
+      "file": "static/js/features/projects/targets.js",
+      "lines": 242,
+      "symbols": [
+        {
+          "name": "targetText",
+          "kind": "function",
+          "line": 6
+        },
+        {
+          "name": "targetHtml",
+          "kind": "function",
+          "line": 7
+        },
+        {
+          "name": "targetsContext",
+          "kind": "function",
+          "line": 8
+        },
+        {
+          "name": "targetsAcknowledged",
+          "kind": "function",
+          "line": 9
+        },
+        {
+          "name": "targetsMergePending",
+          "kind": "function",
+          "line": 10
+        },
+        {
+          "name": "targetsPreviewPending",
+          "kind": "function",
+          "line": 14
+        },
+        {
+          "name": "targetsRequest",
+          "kind": "function",
+          "line": 15
+        },
+        {
+          "name": "targetsHideTips",
+          "kind": "function",
+          "line": 20
+        },
+        {
+          "name": "loadTargets",
+          "kind": "function",
+          "line": 21
+        },
+        {
+          "name": "loading",
+          "kind": "function",
+          "line": 27
+        },
+        {
+          "name": "targetsEnqueue",
+          "kind": "function",
+          "line": 39
+        },
+        {
+          "name": "flushTargets",
+          "kind": "function",
+          "line": 49
+        },
+        {
+          "name": "save",
+          "kind": "function",
+          "line": 53
+        },
+        {
+          "name": "targetsClock",
+          "kind": "function",
+          "line": 81
+        },
+        {
+          "name": "targetsActivity",
+          "kind": "function",
+          "line": 96
+        },
+        {
+          "name": "targetsManuscriptText",
+          "kind": "function",
+          "line": 105
+        },
+        {
+          "name": "targetsCaptureWriting",
+          "kind": "function",
+          "line": 106
+        },
+        {
+          "name": "targetsFinishWriting",
+          "kind": "function",
+          "line": 111
+        },
+        {
+          "name": "targetsStopSound",
+          "kind": "function",
+          "line": 141
+        },
+        {
+          "name": "targetsPlaySound",
+          "kind": "function",
+          "line": 142
+        },
+        {
+          "name": "targetsCelebrate",
+          "kind": "function",
+          "line": 147
+        },
+        {
+          "name": "targetsAmount",
+          "kind": "function",
+          "line": 152
+        },
+        {
+          "name": "targetsProgressLabel",
+          "kind": "function",
+          "line": 158
+        },
+        {
+          "name": "targetsRing",
+          "kind": "function",
+          "line": 159
+        },
+        {
+          "name": "renderTargets",
+          "kind": "function",
+          "line": 160
+        },
+        {
+          "name": "targetsSwitch",
+          "kind": "function",
+          "line": 187
+        },
+        {
+          "name": "targetsGoalRow",
+          "kind": "function",
+          "line": 188
+        },
+        {
+          "name": "field",
+          "kind": "function",
+          "line": 189
+        },
+        {
+          "name": "openTargets",
+          "kind": "function",
+          "line": 192
+        },
+        {
+          "name": "readGoals",
+          "kind": "function",
+          "line": 199
+        },
+        {
+          "name": "wireRows",
+          "kind": "function",
+          "line": 200
         }
       ]
     },
@@ -26676,21 +26970,21 @@
       "method": "GET",
       "function": "get_ui_state_batch",
       "file": "src/api/workspace_tools/ui_state.py",
-      "line": 26,
+      "line": 27,
       "path": "/api/ui-state"
     },
     {
       "method": "GET",
       "function": "get_ui_state",
       "file": "src/api/workspace_tools/ui_state.py",
-      "line": 55,
+      "line": 56,
       "path": "/api/ui-state/{key}"
     },
     {
       "method": "PUT",
       "function": "put_ui_state",
       "file": "src/api/workspace_tools/ui_state.py",
-      "line": 65,
+      "line": 66,
       "path": "/api/ui-state/{key}"
     },
     {

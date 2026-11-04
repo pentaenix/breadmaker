@@ -19,7 +19,7 @@ def test_v5415_wheel_zooms_and_hidden_card_creation_paths_are_gone(scene_live_se
     try:
         page.evaluate("""async()=>{
           const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Input cleanup',canvas_type:'blank'})});
-          await refresh(false);setView('canvas');await selectCanvas(cv.id);await setCanvasMode('pointer');applyCanvasZoom(1);
+          await refresh(false);setView('canvas');await selectCanvas(cv.id);applyCanvasZoom(1);
           await createNodeAt('rect',160,150,{title:'Existing'},{inspect:false});
         }""")
         page.wait_for_selector('#canvasView.active')

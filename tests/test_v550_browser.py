@@ -54,7 +54,7 @@ def test_v550_snap_toggle_alignment_and_space_pan_over_objects(scene_live_server
     try:
         ids = page.evaluate("""async()=>{
           const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Snap',canvas_type:'blank'})});
-          await refresh(false);setView('canvas');await selectCanvas(cv.id);await setCanvasMode('pointer');
+          await refresh(false);setView('canvas');await selectCanvas(cv.id);
           const a=await createNodeAt('rect',200,300,{node_type:'figure',w:100,h:100,title:'',body:'',color:''},{inspect:false,label:'A'});
           const b=await createNodeAt('rect',500,304,{node_type:'figure',w:100,h:100,title:'',body:'',color:''},{inspect:false,label:'B'});
           return {a:a.id,b:b.id};

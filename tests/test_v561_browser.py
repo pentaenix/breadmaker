@@ -41,7 +41,7 @@ def test_v561_space_pan_over_card_text_never_selects_page_text(scene_live_server
     try:
         node_id=page.evaluate("""async()=>{
           const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Pan',canvas_type:'blank'})});
-          await refresh(false);setView('canvas');await selectCanvas(cv.id);await setCanvasMode('pointer');
+          await refresh(false);setView('canvas');await selectCanvas(cv.id);
           const n=await createNodeAt('rect',520,420,{title:'Drag across this title',body:'This body must never turn blue while Space is acting as the hand tool.',w:260,h:125},{inspect:false,label:'Pan Card'});
           const s=$('#canvasStage');s.scrollLeft=320;s.scrollTop=240;return n.id;
         }""")
@@ -71,7 +71,7 @@ def test_v561_space_pan_recovers_when_card_text_still_has_focus(scene_live_serve
     try:
         node_id=page.evaluate("""async()=>{
           const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Focused Pan',canvas_type:'blank'})});
-          await refresh(false);setView('canvas');await selectCanvas(cv.id);await setCanvasMode('pointer');
+          await refresh(false);setView('canvas');await selectCanvas(cv.id);
           const n=await createNodeAt('rect',540,440,{title:'Focused Card',body:'Keep this prose unchanged.',w:250,h:125},{inspect:false,label:'Focused Pan Card'});
           const s=$('#canvasStage');s.scrollLeft=360;s.scrollTop=250;return n.id;
         }""")

@@ -19,10 +19,10 @@ def test_v5412_drawing_is_smooth_switches_to_pointer_drag_is_immediate_and_empty
     try:
         canvas_id = page.evaluate("""async()=>{
           const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Interaction cleanup',canvas_type:'blank'})});
-          await refresh(false);setView('canvas');await selectCanvas(cv.id);await setCanvasMode('hand');return cv.id;
+          await refresh(false);setView('canvas');await selectCanvas(cv.id);return cv.id;
         }""")
         page.wait_for_selector('#canvasView.active')
-        assert page.locator('#canvasHandMode').get_attribute('aria-pressed') == 'true'
+        assert page.locator('#canvasHandMode,#canvasPointerMode').count() == 0
 
         # Arm Card drawing. Pointer-down alone must not flash a full default-sized preview.
         page.locator('#addNodePanelBtn').click()
@@ -52,8 +52,6 @@ def test_v5412_drawing_is_smooth_switches_to_pointer_drag_is_immediate_and_empty
         assert created['shape'] == 'rect'
 
         # Creation is one-shot and hands control to Pointer immediately; it does not force title editing.
-        assert page.locator('#canvasPointerMode').get_attribute('aria-pressed') == 'true'
-        assert page.evaluate("()=>state.canvasMode") == 'pointer'
         assert page.locator('#addNodePanelBtn').get_attribute('aria-pressed') == 'false'
         assert not page.evaluate("()=>document.activeElement?.classList?.contains('node-title')")
 

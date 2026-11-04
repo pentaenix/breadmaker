@@ -1,6 +1,6 @@
 {
   "schema": 3,
-  "generated_for": "10.5.77",
+  "generated_for": "10.5.80",
   "platform_domains": [
     {
       "module": "api.project_management",
@@ -1655,21 +1655,21 @@
           "method": "GET",
           "path": "/api/ui-state",
           "function": "get_ui_state_batch",
-          "line": 26,
+          "line": 27,
           "file": "src/api/workspace_tools/ui_state.py"
         },
         {
           "method": "GET",
           "path": "/api/ui-state/{key}",
           "function": "get_ui_state",
-          "line": 55,
+          "line": 56,
           "file": "src/api/workspace_tools/ui_state.py"
         },
         {
           "method": "PUT",
           "path": "/api/ui-state/{key}",
           "function": "put_ui_state",
-          "line": 65,
+          "line": 66,
           "file": "src/api/workspace_tools/ui_state.py"
         },
         {

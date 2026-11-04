@@ -81,7 +81,6 @@ const state = {
   canvasCollapsed: new Set(),
   dragCanvasId: null,
   canvasRailExpanded: true,
-  canvasMode: 'hand',
   canvasCardTool: null,
   canvasFigureTool: null,
   canvasClipboard: null,

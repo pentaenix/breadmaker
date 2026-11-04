@@ -60,7 +60,7 @@ def test_v433_canvas_ui_contract_is_single_background_single_icon_and_versioned(
     js=frontend_source_from_app_path(ROOT/'static/app.js')
     css=frontend_styles_source_from_styles_path((ROOT/'static/styles.css'))
     version=(ROOT/'VERSION').read_text(encoding='utf-8').strip()
-    assert 'class="canvas-mode-overlay"' in html
+    assert 'class="canvas-mode-overlay"' not in html
     assert 'image-object' in js and 'canvas-free-image' in js
     assert "node.node_type==='image'" in js
     assert "node.shape==='diamond'" not in js and 'edgeGeometry' in js and 'endTangent' in js

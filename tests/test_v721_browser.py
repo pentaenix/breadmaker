@@ -20,7 +20,7 @@ def test_v721_free_angle_line_handles_and_prompt_free_figure_delete(scene_live_s
         setup = page.evaluate("""async()=>{
           const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'7.2.1 Canvas',canvas_type:'blank'})});
           const fig=await api(`/api/canvases/${cv.id}/nodes`,{method:'POST',body:JSON.stringify({node_type:'figure',shape:'triangle',x:650,y:160,w:180,h:150})});
-          await refresh(false);setView('canvas');await selectCanvas(cv.id);await setCanvasMode('pointer');
+          await refresh(false);setView('canvas');await selectCanvas(cv.id);
           return {canvas:cv.id,fig:fig.id};
         }""")
         page.wait_for_selector('#canvasView.active')
@@ -81,7 +81,7 @@ def test_v721_figure_style_conventions_language_row_and_sibling_menus(scene_live
         fig = page.evaluate("""async()=>{
           const cv=await api('/api/canvases',{method:'POST',body:JSON.stringify({name:'Style conventions',canvas_type:'blank'})});
           const fig=await api(`/api/canvases/${cv.id}/nodes`,{method:'POST',body:JSON.stringify({node_type:'figure',shape:'oval',x:220,y:180,w:280,h:150})});
-          await refresh(false);setView('canvas');await selectCanvas(cv.id);await setCanvasMode('pointer');selectOnlyNode(fig.id);
+          await refresh(false);setView('canvas');await selectCanvas(cv.id);selectOnlyNode(fig.id);
           return fig.id;
         }""")
         page.wait_for_selector('#figureFillChoice')

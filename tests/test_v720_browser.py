@@ -19,7 +19,7 @@ def test_v720_canvas_alignment_connector_delete_and_figures(scene_live_server,sc
           const b=await api(`/api/canvases/${cv.id}/nodes`,{method:'POST',body:JSON.stringify({shape:'rect',x:560,y:170,w:220,h:130,title:'Target',body:''})});
           const edge=await api(`/api/canvases/${cv.id}/edges`,{method:'POST',body:JSON.stringify({from_node_id:a.id,to_node_id:b.id,from_port:'right',to_port:'left'})});
           const fig=await api(`/api/canvases/${cv.id}/nodes`,{method:'POST',body:JSON.stringify({node_type:'figure',shape:'triangle',x:120,y:110,w:380,h:280,figure_layer:'back'})});
-          await refresh(false);setView('canvas');await selectCanvas(cv.id);await setCanvasMode('pointer');
+          await refresh(false);setView('canvas');await selectCanvas(cv.id);
           return {canvas:cv.id,a:a.id,b:b.id,edge:edge.id,fig:fig.id};
         }""")
         page.wait_for_selector('#canvasView.active')

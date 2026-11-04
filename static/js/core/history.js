@@ -12,9 +12,9 @@ async function performUndo(){
   if(!state.undoStack.length){toast('Nothing to undo');return}clearTimeout(state.saveTimer);if(state.saveInFlight)await state.saveInFlight;const target=historyPeek('undo');
   if(!target)return;
   if(target.kind==='manuscript'){
-    const redo=await currentSnapshotForIds(target.chapters.map(c=>c.id));await flushPendingCanvasNodeSaves();await flushSave();await restoreEditSnapshot(target);historyPop('undo');historyPush('redo',redo);
+    const redo=await currentSnapshotForIds(target.chapters.map(c=>c.id));await flushPendingCanvasNodeSaves();await flushSave();await restoreEditSnapshot(target);historyPop('undo');historyPush('redo',redo);document.dispatchEvent(new CustomEvent('breadmaker-manuscript-history',{detail:{before:redo,after:target}}));
   }else if(target.kind==='scene_edit'){
-    const redo=await currentSceneEditSnapshot(target.scene.id);await flushPendingCanvasNodeSaves();await flushSave();await restoreSceneEditSnapshot(target);historyPop('undo');historyPush('redo',redo);
+    const redo=await currentSceneEditSnapshot(target.scene.id);await flushPendingCanvasNodeSaves();await flushSave();await restoreSceneEditSnapshot(target);historyPop('undo');historyPush('redo',redo);document.dispatchEvent(new CustomEvent('breadmaker-manuscript-history',{detail:{before:redo,after:target}}));
   }else if(target.kind==='structural'){
     await flushPendingCanvasNodeSaves();await flushSave();
     await api(`/api/undo/apply/${target.token}?direction=undo`,{method:'POST'});
@@ -26,9 +26,9 @@ async function performRedo(){
   if(!state.redoStack.length){toast('Nothing to redo');return}clearTimeout(state.saveTimer);if(state.saveInFlight)await state.saveInFlight;const target=historyPeek('redo');
   if(!target)return;
   if(target.kind==='manuscript'){
-    await flushPendingCanvasNodeSaves();const undo=await currentSnapshotForIds(target.chapters.map(c=>c.id));await restoreEditSnapshot(target);historyPop('redo');historyPush('undo',undo);
+    await flushPendingCanvasNodeSaves();const undo=await currentSnapshotForIds(target.chapters.map(c=>c.id));await restoreEditSnapshot(target);historyPop('redo');historyPush('undo',undo);document.dispatchEvent(new CustomEvent('breadmaker-manuscript-history',{detail:{before:undo,after:target}}));
   }else if(target.kind==='scene_edit'){
-    await flushPendingCanvasNodeSaves();const undo=await currentSceneEditSnapshot(target.scene.id);await restoreSceneEditSnapshot(target);historyPop('redo');historyPush('undo',undo);
+    await flushPendingCanvasNodeSaves();const undo=await currentSceneEditSnapshot(target.scene.id);await restoreSceneEditSnapshot(target);historyPop('redo');historyPush('undo',undo);document.dispatchEvent(new CustomEvent('breadmaker-manuscript-history',{detail:{before:undo,after:target}}));
   }else if(target.kind==='structural'){
     await flushPendingCanvasNodeSaves();
     await api(`/api/undo/apply/${target.token}?direction=redo`,{method:'POST'});

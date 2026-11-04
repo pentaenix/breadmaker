@@ -106,7 +106,6 @@
 .developmental-missing-tile .developmental-tile-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;font-size:11px;font-weight:650}
 .developmental-missing-tile .developmental-missing-remove{right:4px;top:13px}
 .developmental-lane-insert{flex:none;width:2px;height:46px;margin:0 -5px;border-radius:2px;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent)}
-.canvas-shell.developmental-active .canvas-mode-overlay{top:171px}
 .canvas-node.developmental-unplaced{width:143px!important;min-width:143px!important;min-height:52px!important;height:52px!important;border-radius:6px!important;padding:0!important;display:flex!important;align-items:center!important;cursor:grab;outline:1px dashed color-mix(in srgb,var(--muted) 48%,transparent);outline-offset:3px;overflow:visible}
 .canvas-node.developmental-unplaced .node-drag-strip,.canvas-node.developmental-unplaced .node-body,.canvas-node.developmental-unplaced .node-resize-handle{display:none!important}
 .canvas-node.developmental-unplaced .node-inner{padding:0 9px!important;width:100%;overflow:hidden!important}
@@ -172,8 +171,6 @@
 .developmental-structure-head{display:flex;align-items:center;gap:10px;min-width:0;padding:0 2px}
 .developmental-structure-head>b{flex:none;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .developmental-structure-count{margin-left:auto!important;flex:none;font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
-.canvas-shell.developmental-active .canvas-mode-overlay{top:53px}
-.canvas-shell.developmental-lane-open .canvas-mode-overlay{top:171px}
 
 /* One canonical compact size for structural tiles in both locations. */
 :root{--developmental-tile-width:143px;--developmental-tile-height:52px}
@@ -538,7 +535,6 @@ html[data-initial-view="reviews"] .main-tab[data-view="reviews"]{color:var(--tex
 .developmental-structural-tile .developmental-tile-title,.developmental-missing-tile .developmental-tile-title{font-size:var(--developmental-structure-title-size,12px)}
 .developmental-structural-tile .developmental-tile-kind{font-size:var(--developmental-structure-kind-size,9px);margin-right:var(--developmental-structure-kind-gap,8px)}
 .canvas-shell.developmental-active .developmental-structure-dock{height:var(--developmental-dock-height,118px)}
-.canvas-shell.developmental-lane-open .canvas-mode-overlay{top:var(--developmental-overlay-top,171px)}
 
 /* Developmental Canvas in Manuscript Split View. */
 .split-developmental-canvas{min-width:100%;min-height:100%;display:flex;flex-direction:column;background:var(--bg)}

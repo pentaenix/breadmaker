@@ -67,7 +67,7 @@ def test_v542_proposed_order_toggle_tooltip_and_structural_size_stays_constant(s
         page.locator('#canvasStructureBtn').click();page.wait_for_function("()=>document.querySelector('#canvasPanelTitle')?.textContent==='Structure'")
         page.locator('#structureOrderToggle').click()
         page.wait_for_function("()=>document.querySelector('#developmentalStructureDock').classList.contains('hidden')")
-        assert page.evaluate("()=>getComputedStyle(document.querySelector('.canvas-mode-overlay')).top") == '53px'
+        assert page.locator('.canvas-mode-overlay').count()==0
         page.locator('#structureOrderToggle').click()
         page.wait_for_function("()=>!document.querySelector('#developmentalStructureDock').classList.contains('hidden')")
         assert not errors, errors

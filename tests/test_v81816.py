@@ -16,7 +16,6 @@ def test_v81816_stable_browser_testids_cover_fragile_interaction_surfaces():
     soup = BeautifulSoup(html, "html.parser")
     expected = {
         "canvas-stage": "canvasStage",
-        "canvas-pointer-mode": "canvasPointerMode",
         "canvas-selection-rect": "selectionRect",
         "manuscript-selection-toolbar": "selectionToolbar",
         "manuscript-selection-highlight": None,

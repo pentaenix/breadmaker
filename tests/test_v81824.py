@@ -18,7 +18,6 @@ def test_v81824_marquee_contract_does_not_duplicate_top_level_canvas_navigation(
     frag = source.split('def test_v640_canvas_marquee_autoscrolls_while_pointer_is_held_at_viewport_edge', 1)[1]
     assert 'setView(\'canvas\',{historyMode:\'none\'})' in frag
     assert 'page.locator(\'[data-view="canvas"]\').click()' not in frag
-    assert "get_by_test_id('canvas-pointer-mode')" in frag
     assert "get_by_test_id('canvas-selection-rect')" in frag
 
 

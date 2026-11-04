@@ -23,7 +23,7 @@ def test_v564_lasso_selects_only_fully_enclosed_connectors_and_bulk_styles(scene
           const a=await make('A',100,100),b=await make('B',500,100),c=await make('C',100,300),d=await make('D',500,300);
           const e1=await api(`/api/canvases/${cv.id}/edges`,{method:'POST',body:JSON.stringify({from_node_id:a.id,to_node_id:b.id,from_port:'right',to_port:'left',route_style:'straight'})});
           const e2=await api(`/api/canvases/${cv.id}/edges`,{method:'POST',body:JSON.stringify({from_node_id:c.id,to_node_id:d.id,from_port:'right',to_port:'left',route_style:'straight'})});
-          state.canvasEdges.push(e1,e2);state.selectedNodes.clear();clearCanvasEdgeSelection();await setCanvasMode('pointer',{persist:false});renderNodeSelection();drawEdges();closeCanvasPanel();
+          state.canvasEdges.push(e1,e2);state.selectedNodes.clear();clearCanvasEdgeSelection();renderNodeSelection();drawEdges();closeCanvasPanel();
           return{e1:e1.id,e2:e2.id};
         }""")
         page.wait_for_selector('.edge-group')

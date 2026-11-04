@@ -32,6 +32,7 @@ function syncViewRoute(view,{replace=false}={}){
 }
 function setView(view,{historyMode='push'}={}) {
   closePhoneRails();
+  if(view!=='canvas'&&typeof resetCanvasPan==='function')resetCanvasPan();
   $$('.view').forEach(v => v.classList.remove('active'));
   const target=$(`#${view}View`);
   if(!target){reportViewRenderError(view,new Error(`Missing view shell #${view}View`));return}

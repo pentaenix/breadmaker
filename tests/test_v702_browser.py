@@ -12,7 +12,7 @@ def _release(base):
     except Exception: pass
 
 
-def test_v702_language_is_directly_below_project_settings_and_not_inside_settings(scene_live_server,scene_browser):
+def test_v702_language_follows_targets_and_project_settings_and_not_inside_settings(scene_live_server,scene_browser):
     base=scene_live_server
     _new_project(base,'Language Placement 7.0.2')
     page,errors=_page(base,scene_browser)
@@ -23,7 +23,8 @@ def test_v702_language_is_directly_below_project_settings_and_not_inside_setting
         language=page.locator('#projectMenuLanguage')
         assert settings.count()==1 and language.count()==1
         order=page.locator('#projectMenu > .project-menu-item').evaluate_all('(els)=>els.map(e=>e.id)')
-        assert order.index('projectMenuLanguage')==order.index('projectMenuSettings')+1
+        assert order.index('projectMenuTargets')==order.index('projectMenuSettings')+1
+        assert order.index('projectMenuLanguage')==order.index('projectMenuTargets')+1
         language.click()
         page.locator('#modal').wait_for(state='visible')
         assert page.locator('#languageSearch').count()==1

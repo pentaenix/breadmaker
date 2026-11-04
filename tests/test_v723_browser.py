@@ -51,7 +51,7 @@ def test_v723_map_context_and_canvas_promptless_delete_hitbox(scene_live_server,
         page.evaluate("async id=>await selectMap(id)",setup['b']);page.evaluate("async id=>await selectMap(id)",setup['a']);page.wait_for_timeout(100)
         restored=page.evaluate("()=>({zoom:state.mapZoom,left:document.querySelector('#mapStage').scrollLeft,top:document.querySelector('#mapStage').scrollTop,line:state.currentMapLineId})")
         assert abs(restored['zoom']-1.35)<.01 and restored['left']>=80 and restored['line']==setup['la']
-        page.evaluate("async id=>{setView('canvas');await selectCanvas(id);setCanvasMode('pointer')}",setup['cv']);page.evaluate("id=>selectOnlyNode(id)",setup['card'])
+        page.evaluate("async id=>{setView('canvas');await selectCanvas(id);}",setup['cv']);page.evaluate("id=>selectOnlyNode(id)",setup['card'])
         page.keyboard.press('Delete');page.wait_for_function("id=>!state.canvasNodes.some(n=>n.id===id)",arg=setup['card'])
         assert page.locator('#modal').evaluate("el=>el.classList.contains('hidden')")
         assert 'Undo' in page.locator('#toast').inner_text();page.locator('#toast .toast-action').click();page.wait_for_function("id=>state.canvasNodes.some(n=>n.id===id)",arg=setup['card'])

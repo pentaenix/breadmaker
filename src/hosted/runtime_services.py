@@ -36,6 +36,7 @@ from hosted.storage.contracts import ObjectStore
 from hosted.storage.keys import user_avatar_key
 from hosted.storage.publication import HostedHybridObjectPublisher, ImmutableObjectPublisher
 from runtime.contracts import ProjectRequestContext, StoredAsset
+from runtime.ui_state_revision import is_targets_key, value_revision, valid_revision, targets_value_size
 from security.image_security import HOSTED_DEFAULT_IMAGE_BYTES, UnsafeImage, inspect_hosted_image_bytes
 
 
@@ -689,7 +690,7 @@ class HostedCloudProjectRepository:
             public=_clean_public(data);values[key]=public.get('value',public)
         return values
 
-    def put_member_state(self, project_id: str, payload: Mapping[str, Any], *, key: str | None = None, user_id: str | None = None) -> dict[str, Any]:
+    def put_member_state(self, project_id: str, payload: Mapping[str, Any], *, key: str | None = None, user_id: str | None = None, expected_value_revision: str | None = None) -> dict[str, Any]:
         uid = self._uid(user_id); pid = require_project_id(project_id)
         # A supplied user_id is not a privilege escalation: private member
         # state is always scoped to the authenticated caller, never a project
@@ -707,6 +708,13 @@ class HostedCloudProjectRepository:
             raise HostedValidationError('HOSTED_PRIVATE_MEMBER_STATE_RESERVED_FIELD')
         clean = {str(k): v for k, v in dict(payload).items()
                  if not str(k).startswith('_bm_') and str(k) not in {'generation', 'created_at', 'updated_at'}}
+        if is_targets_key(key) and not valid_revision(expected_value_revision):
+            raise HostedValidationError('TARGETS_REVISION_REQUIRED')
+        if is_targets_key(key) and targets_value_size(clean.get('value'))>256*1024:
+            raise HostedValidationError('TARGETS_STATE_TOO_LARGE')
+        def check_revision(previous):
+            if is_targets_key(key) and value_revision(previous.get('value'))!=expected_value_revision:
+                raise DocumentConflict('TARGETS_REVISION_CONFLICT')
         model = self._member_state_model(key)
         ids = self._member_state_ids(pid, uid, key)
         identity = uid if key is None else ids['key']
@@ -718,6 +726,7 @@ class HostedCloudProjectRepository:
             for attempt in range(3):
                 old = self.documents.get(path)
                 previous = self._member_state_codec.open(model, ids, old.data) if old else {}
+                check_revision(previous)
                 content = {k: v for k, v in previous.items()
                            if k not in {'id', 'user_id', 'key', 'generation', 'created_at', 'updated_at'}}
                 content.update(clean)
@@ -753,6 +762,7 @@ class HostedCloudProjectRepository:
                 raise ProjectUnavailable('PROJECT_NOT_FOUND')
             row = tx.get(path)
             data = dict(row.data) if row else {'generation': 0, 'created_at': stamp}
+            check_revision(data)
             data.update(clean)
             data['generation'] = int(data.get('generation') or 0) + 1
             data['updated_at'] = stamp
