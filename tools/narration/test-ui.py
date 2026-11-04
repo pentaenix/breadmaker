@@ -1,5 +1,7 @@
 """Isolated local narration scope/settings regression; deterministic inference fixture."""
 import io
+import math
+import struct
 import json
 import os
 import socket
@@ -53,7 +55,7 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             return requests.get(base+f"/api/chapters/{chapter['id']}").json()['blocks']
         first_blocks=blocks(first,['First one.','Second one.','Missing audio.']);night=blocks(second,['Last one.','Night two.','Night three.']);last=night[0]
         audio=io.BytesIO()
-        with wave.open(audio,'wb') as out:out.setnchannels(1);out.setsampwidth(2);out.setframerate(24000);out.writeframes(b'\0\0'*24000*3)
+        with wave.open(audio,'wb') as out:out.setnchannels(1);out.setsampwidth(2);out.setframerate(24000);out.writeframes(b''.join(struct.pack('<h',int(5000*math.sin(i*2*math.pi*220/24000))) for i in range(24000*3)))
         for block in [*first_blocks[:2],last]:
             text=block['text_content'];metadata={'block_id':block['id'],'voice':'af_heart','source_text':text,'text':text,'start':0,'end':len(text),'timings':[]}
             requests.post(base+'/api/narrations',data={'metadata':json.dumps(metadata)},files={'file':('test.wav',audio.getvalue(),'audio/wav')}).raise_for_status()
