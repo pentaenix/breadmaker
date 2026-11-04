@@ -13,11 +13,25 @@ export class HostedNarrationDevice {
     const assets=await this.pending;this.check();return assets;
   }
   async authorize(){const assets=await this.open();await assets.reauthorize();this.check()}
+  gpuDeclineKey(){return 'breadmaker-narration-gpu-declined-v1-'+this.manifest}
+  resetGPUChoice(){
+    this.gpuChoice=null;
+    try{globalThis.sessionStorage?.removeItem(this.gpuDeclineKey())}catch{}
+  }
   async chooseGPU(){
     const assets=await this.open(),path=MODEL+'onnx/model.onnx';
     if(!assets.assets.has(path))return false;
     if(await assets.installed(path)){this.check();return true}
-    if(this.gpuChoice===null)this.gpuChoice=!!await this.consentGPU(assets.assets.get(path).size);
+    if(this.gpuChoice===null){
+      try{if(globalThis.sessionStorage?.getItem(this.gpuDeclineKey())==='1')this.gpuChoice=false}catch{}
+      if(this.gpuChoice===null){
+        this.gpuChoice=!!await this.consentGPU(assets.assets.get(path).size);
+        this.check();
+        // Remember only a refusal, never permission for a later download.
+        // This public manifest flag survives refresh, not the tab session.
+        if(!this.gpuChoice)try{globalThis.sessionStorage?.setItem(this.gpuDeclineKey(),'1')}catch{}
+      }
+    }
     this.check();return this.gpuChoice;
   }
   async voices(catalog){

@@ -88,3 +88,15 @@ run('resetNarrationPrivateUI()');releaseAudio();await new Promise(resolve=>setIm
 assert.equal(nativePlays,0,'A late output-device resume cannot restart audio after reset');
 assert.equal(posts,0,'Playback readiness never publishes or bypasses private storage');
 console.log('PASS: cached scope readiness survives pending audio resume; reset cancels delayed playback.');
+
+// The existing GPU setting is the explicit way to retry a refused download.
+run('syncNarrationVoiceChoices=()=>{};paintNarrationPreview=()=>{};narration.audio.setPitch=async()=>{};narration.engine=null;');
+let gpuResets=0;context.gpuReset=()=>gpuResets++;
+run('narration.device={resetGPUChoice:gpuReset};narrationPreferences.value={gpu:true};applyNarrationPreferences({gpu:true});');
+assert.equal(gpuResets,0,'loading an enabled preference must not clear a refusal after refresh');
+run('applyNarrationPreferences({gpu:false});applyNarrationPreferences({gpu:true});');
+assert.equal(gpuResets,0,'loading another project preference cannot clear a refusal');
+run('applyNarrationPreferences({gpu:false});applyNarrationPreferences({gpu:true},{retryGPU:true});');
+assert.equal(gpuResets,1,'explicit GPU off/on permits a fresh prompt');
+run('applyNarrationPreferences({gpu:true});');assert.equal(gpuResets,1);
+console.log('PASS: existing GPU preference toggle clears only an explicit refusal retry.');

@@ -7,19 +7,30 @@ const root='models/onnx-community/Kokoro-82M-v1.0-ONNX-timestamped/',payload=new
 const assets=[];for(const path of [root+'onnx/model.onnx',root+'voices/af_heart.bin'])assets.push({path,id:(await hash(new TextEncoder().encode(path))).slice(0,24),size:payload.length,sha256:await hash(payload),chunks:[{size:payload.length,sha256:await hash(payload)}]});
 const manifest={v:1,assets},digest=await hash(new TextEncoder().encode(canonical(manifest)));
 let permitted=true,consent=false,prompts=0,bodies=0,denied=false,invalidated=0;
+const session=new Map();
+globalThis.sessionStorage={getItem:key=>session.get(key)??null,setItem:(key,value)=>session.set(key,String(value)),removeItem:key=>session.delete(key)};
 const fetcher=async input=>{
   if(denied)return new Response('',{status:403});
   const url=new URL(input),headers={'X-Breadmaker-Narration-Actor':account,'X-Breadmaker-Narration-Project':project};
   if(url.pathname==='/api/narration-models')return new Response(JSON.stringify({...manifest,digest}),{headers});
   assert.match(url.pathname,/^\/api\/narration-models\/[a-f0-9]{24}$/);bodies++;return new Response(payload,{headers});
 };
-const device=new HostedNarrationDevice({project,account,manifest:digest,origin,fetcher,
+const deviceOptions={project,account,manifest:digest,origin,fetcher,
   check(){if(!permitted)throw Error('NARRATION_ACCOUNT_CONTEXT_CHANGED')},onContextLost(){invalidated++},
-  consentGPU(size){assert.equal(size,payload.length);prompts++;return consent}});
+  consentGPU(size){assert.equal(size,payload.length);prompts++;return consent}};
+const device=new HostedNarrationDevice(deviceOptions);
 assert.equal(bodies,0,'constructing a device must download no model');
 assert.equal(await device.chooseGPU(),false);assert.equal(prompts,1);assert.equal(bodies,0);
 assert.equal(await device.chooseGPU(),false);assert.equal(prompts,1,'do not repeatedly prompt after decline');
-consent=true;device.gpuChoice=null;assert.equal(await device.chooseGPU(),true);assert.equal(bodies,0,'model download belongs to explicit inference loader, not permission dialog');
+const reopened=new HostedNarrationDevice(deviceOptions);
+assert.equal(await reopened.chooseGPU(),false);assert.equal(prompts,1,'refresh must retain refusal for this public manifest');assert.equal(bodies,0);
+assert.deepEqual([...session.values()],['1'],'only a refusal flag is stored, no account/project or consent grant');
+consent=true;device.resetGPUChoice();assert.equal(await device.chooseGPU(),true);assert.equal(bodies,0,'model download belongs to explicit inference loader, not permission dialog');
+assert.equal(session.size,0,'explicit GPU off/on clears refusal; acceptance is not persisted');
+const acceptedReload=new HostedNarrationDevice(deviceOptions);assert.equal(await acceptedReload.chooseGPU(),true);assert.equal(prompts,3,'refresh cannot silently reuse accepted download consent');
+session.set(device.gpuDeclineKey(),'corrupt');assert.equal(await new HostedNarrationDevice(deviceOptions).chooseGPU(),true);assert.equal(prompts,4,'invalid stored flag is not an implied refusal or consent');
+globalThis.sessionStorage={getItem(){throw Error('blocked')},setItem(){throw Error('blocked')},removeItem(){throw Error('blocked')}};
+consent=false;const noStorage=new HostedNarrationDevice(deviceOptions);assert.equal(await noStorage.chooseGPU(),false);assert.equal(await noStorage.chooseGPU(),false);noStorage.resetGPUChoice();assert.equal(await noStorage.chooseGPU(),false);assert.equal(prompts,6,'blocked storage preserves per-device refusal and explicit retry');
 const voice={id:'af_heart',size:payload.length,sha256:assets[1].sha256};
 assert.equal((await device.voices({voices:[voice]})).voices[0].installed,false,'server model availability does not mean installed on this device');
 await assert.rejects(()=>device.downloadVoice({...voice,sha256:'0'.repeat(64)}),/PIN_MISMATCH/);assert.equal(bodies,0);
