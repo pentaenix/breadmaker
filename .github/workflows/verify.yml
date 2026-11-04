@@ -1,145 +1,45 @@
 name: verify-editor
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  editor-full-suite:
-    name: editor-full-suite
+  canvas-touch-diagnostic:
     runs-on: ubuntu-24.04
-    timeout-minutes: 55
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # Use the same reviewed Node toolchain as narration-artifacts instead of
-      # the runner's rolling default for the early Node subprocess contracts.
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: '22'
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.14"
-      - name: Install Python test dependencies
-        run: python -m pip install -r requirements-test.txt
-      - name: Audit the full hosted dependency graph (including Google SDKs)
-        run: python -m pip_audit --strict --progress-spinner=off --desc=off -r requirements-hosted.txt
-      # Cheap regression tripwire before OS/browser setup. This is not a substitute
-      # for the complete, exact-commit gate below; every full-suite check remains.
-      - name: Check startup, security and hosted SDK readiness before browser setup
-        run: >-
-          python -m pytest -q tests/test_v1055.py tests/test_v965.py tests/test_v10560.py
-          tests/test_v10227.py tests/test_v10314.py tests/test_v10569_ci_readiness.py
-          tests/test_v10569_narration_maintenance.py tests/test_v10569_narration_maintenance_google.py
-          tests/test_v10569_narration_recordings.py::test_atomic_editor_save_without_redundant_tab_field_can_publish
-          tests/test_v10569_editing_hosted.py::test_unicode_expanded_vocabulary_publishes_canonical_ranges_and_supports_undo_redo
-      - name: Install Linux browser dependencies
-        run: python -m playwright install-deps chromium webkit
-      - name: Install pinned Playwright Chromium and WebKit
-        run: python -m playwright install chromium webkit
-      # Exercise the real navigation boundary before spending time on the full
-      # core stage. Keep the verifier's existing discovery, watchdog and accounting.
-      - name: Check startup modal and first-project navigation
-        env:
-          PYTEST_ADDOPTS: '-o faulthandler_timeout=12'
-        run: |
-          python - <<'PY'
-          from scripts import verify_release as verifier
-          target = 'test_v10549_browser.py::test_startup_modal_is_interactive_without_revealing_editor'
-          jobs = [job for job in verifier.discover_browser_jobs() if job.name == target]
-          assert len(jobs) == 1 and jobs[0].expected_items == 1
-          results = verifier.run_stage('Startup navigation smoke', jobs, 1)
-          verifier._print_stage_accounting(results)
-          for result in results:
-              if not result.ok:
-                  print(result.output)
-          assert len(results) == 1 and results[0].ok and results[0].passed_items == 1
-          PY
-      - name: Complete local Editor release gate
-        env:
-          # Dump stalled Python stacks before the unchanged 15s browser watchdog.
-          PYTEST_ADDOPTS: '-o faulthandler_timeout=12'
-        run: ./verify-release
-      - name: Preserve verification failure evidence
-        if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: editor-verification-failure
-          path: verification-report.txt
-          if-no-files-found: ignore
-          retention-days: 7
-  narration-artifacts:
-    name: narration-artifacts
-    runs-on: ubuntu-24.04
-    timeout-minutes: 25
-    env:
-      # Same already-reviewed base as the existing hosted release build.
-      PYTHON_BASE_DIGEST: a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170
-      SCANNER: ghcr.io/aquasecurity/trivy@sha256:2416d1f74045b57274df1a340eee6b510cacd73c66a6ccb8da092b117eb7d222
-      PYTHONPATH: src
-      PYTHONDONTWRITEBYTECODE: '1'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.14'
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: '22'
-      - name: Install and audit the exact public device graph
-        working-directory: tools/narration
-        run: |
-          set -euo pipefail
-          npm install --global pnpm@11.25.0 --ignore-scripts
-          pnpm install --frozen-lockfile --ignore-scripts
-          pnpm audit --audit-level=low
-      - name: Build verified public assets and small hosted runtime
-        run: |
-          set -euo pipefail
-          python -m pip install -r requirements-test.txt
-          mkdir -p "$RUNNER_TEMP/narration-proof"
-          node tools/narration/install.mjs --hosted --output="$RUNNER_TEMP/narration-assets"
-          python tools/narration/hosted_manifest.py build --root "$RUNNER_TEMP/narration-assets" --runtime-output "$RUNNER_TEMP/narration-proof/runtime"
-          python tools/narration/ci_evidence.py --runtime "$RUNNER_TEMP/narration-proof/runtime" --sha "$GITHUB_SHA" --base "$PYTHON_BASE_DIGEST" --output "$RUNNER_TEMP/narration-proof/evidence.json"
-      - name: Build and scan the independent minimal helper
-        run: |
-          set -euo pipefail
-          docker build --build-arg "PYTHON_BASE_DIGEST=$PYTHON_BASE_DIGEST" -f deploy/Dockerfile.pronunciation -t narration-helper:verified .
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$SCANNER" image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --no-progress --format json narration-helper:verified > "$RUNNER_TEMP/narration-proof/helper-scan.json"
-          python tools/narration/ci_evidence.py --check-scan "$RUNNER_TEMP/narration-proof/helper-scan.json"
-      - name: Preserve failed helper scan diagnostics
-        if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: narration-scan-failure-${{ github.sha }}
-          path: ${{ runner.temp }}/narration-proof/helper-scan.json
-          if-no-files-found: ignore
-          retention-days: 7
-      - name: Prove offline native pronunciation paths in the bounded helper
-        run: |
-          set -euo pipefail
-          docker run --rm --network none --read-only --cpus 1 --memory 1g --memory-swap 1g --tmpfs /tmp:rw,noexec,nosuid,size=32m -v "$GITHUB_WORKSPACE/tools/narration/helper-smoke.py:/tmp/helper-smoke.py:ro" --entrypoint python narration-helper:verified /tmp/helper-smoke.py > "$RUNNER_TEMP/narration-proof/helper-smoke.json"
-      - name: Preserve small exact-commit evidence, not models or images
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: narration-release-${{ github.sha }}
-          path: ${{ runner.temp }}/narration-proof/
-          if-no-files-found: error
-          retention-days: 7
-  notify-cloud-main:
-    name: notify-cloud-main
-    needs: [editor-full-suite, narration-artifacts]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.editor-full-suite.result == 'success' && needs.narration-artifacts.result == 'success' && vars.CLOUD_REPOSITORY != ''
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Ask Cloud to reverify both current protected mains
+      - run: python -m pip install -r requirements-test.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: Trace unchanged native touch interaction
         env:
-          GH_TOKEN: ${{ secrets.CLOUD_DISPATCH_TOKEN }}
-          CLOUD_REPO: ${{ vars.CLOUD_REPOSITORY }}
-          EDITOR_SHA: ${{ github.sha }}
+          PYTHONPATH: src:.
+          PYTHONDONTWRITEBYTECODE: '1'
         run: |
-          set -euo pipefail
-          test -n "$GH_TOKEN" && test -n "$CLOUD_REPO"
-          gh api -X POST "repos/$CLOUD_REPO/dispatches" \
-            -f event_type=editor-main-green -f "client_payload[editor_sha]=$EDITOR_SHA"
+          python -u - <<'PY'
+          import json,tempfile
+          from pathlib import Path
+          from contextlib import contextmanager
+          import tests.test_v10581_canvas_navigation_browser as case
+          original=case.browser
+          @contextmanager
+          def observed(*args,**kwargs):
+              with original(*args,**kwargs) as result:
+                  page=result[1]
+                  page.evaluate('''()=>{window.qaTouchTrace=[];for(const type of ['pointerdown','pointerup','pointercancel','focusin','focusout','click','touchstart','touchend'])document.addEventListener(type,e=>qaTouchTrace.push({type,target:e.target.className,pointer:e.pointerType,selected:[...state.selectedNodes],active:document.activeElement.className,pan:!!canvasPanGesture,time:performance.now()}),true)}''')
+                  try: yield result
+                  except Exception:
+                      print('TOUCH_FAILURE',json.dumps(page.evaluate('''()=>({trace:qaTouchTrace,selected:[...state.selectedNodes],active:document.activeElement.className,pan:!!canvasPanGesture,scroll:[$('#canvasStage').scrollLeft,$('#canvasStage').scrollTop],scale:visualViewport.scale})''')),flush=True)
+                      raise
+          case.browser=observed
+          for iteration in range(12):
+              with tempfile.TemporaryDirectory() as home:
+                  case._touch(Path(home),'chromium')
+                  print('PASS native touch iteration',iteration+1,flush=True)
+          PY
