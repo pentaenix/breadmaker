@@ -18,6 +18,7 @@ def test_v8190_manuscript_toolbar_contract_reserves_room_without_losing_commands
     direct_ids = [node.get('id') for node in toolbar.find_all(recursive=False) if node.get('id')]
     assert 'findBtn' not in direct_ids and 'bookmarkBtn' not in direct_ids
     assert direct_ids == [
+        'phoneBookNavBtn',
         'commentsBtn', 'markupBtn', 'manuscriptImageBtn', 'checkpointBtn',
         'manuscriptReviewsBtn', 'cutsBtn', 'narrationBtn', 'editorsEyeBtn',
     ]

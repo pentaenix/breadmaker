@@ -173,4 +173,11 @@ class MemoryDocumentStore(DocumentStore):
                 shadow._next_revision = self._next_revision
                 fn(_MemoryTransaction(shadow))
                 self._retry_once = False
-            return fn(_MemoryTransaction(self))
+            # Match provider atomicity on callback failure too. A process lock
+            # serializes writers but does not roll back earlier callback writes.
+            before, revision = deepcopy(self._documents), self._next_revision
+            try:
+                return fn(_MemoryTransaction(self))
+            except BaseException:
+                self._documents, self._next_revision = before, revision
+                raise

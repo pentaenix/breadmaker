@@ -5,6 +5,10 @@ The Manuscript browser domain is split by responsibility while preserving Breadm
 - `view.js` — Manuscript text/font preferences, the Manuscript View popover, and Manuscript UI-state restoration.
 - `bookmarks.js` — project bookmark state, bookmark presentation, selection bookmarking, and bookmark navigation controls.
 - `navigation.js` — Documents, Chapter navigation/tree state, and document-level actions.
+  At phone widths the same chapter rail opens through `core/collections.js` as a temporary drawer; its
+  visibility is independent of the saved desktop collapse preference. Escape,
+  the backdrop and navigation choices close it, with keyboard focus returned
+  to the toolbar control. The writing pane is inert while the drawer is open.
 - `rendering.js` — Chapter/Book/Scene rendering, block wrappers, outline visibility, gutter presentation, view selection, and viewport/location state.
 - `history.js` — Manuscript/Scene working-session edit snapshots used by the application-wide history coordinator in `core/history.js`.
 - `workspace.js` — Focus Mode, Manuscript tooltips, Checkpoint toolbar presentation, and Editor's Eye.

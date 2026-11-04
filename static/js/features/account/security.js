@@ -12,7 +12,7 @@ function accountSecurityTime(value){const seconds=Number(value||0);if(!seconds)r
 
 let accountSecurityIdentityModulePromise=null;
 function accountSecurityIdentityModule(){
-  if(!accountSecurityIdentityModulePromise)accountSecurityIdentityModulePromise=import('/static/js/features/account/identity-platform-client.js?v=10.5.75');
+  if(!accountSecurityIdentityModulePromise)accountSecurityIdentityModulePromise=import('/static/js/features/account/identity-platform-client.js?v=10.5.76');
   return accountSecurityIdentityModulePromise;
 }
 function accountSecurityTotpCodeDialog(title='Two-step verification'){
@@ -26,7 +26,7 @@ async function accountSecurityFreshIdentityUser(snapshot,purpose){
     let result;
     if(method==='email_password'){
       const identity=(snapshot.identities||[]).find(item=>item.provider==='email_password');
-      const password=await textDialog('Verify your password',{label:'Password',confirmLabel:'Verify'});
+      const password=await passwordDialog('Verify your password',{confirmLabel:'Verify'});
       if(password===null)throw new Error('Security verification cancelled.');
       result=await client.freshReauthenticate('password',{email:identity?.email||'',password,getCode:accountSecurityTotpCodeDialog});
     }else if(method==='apple'){
@@ -83,7 +83,7 @@ async function accountSecurityIdentityLink(snapshot){
     const choice=await accountSecurityProviderChoice(snapshot);if(!choice)return false;
     if(choice==='email_password'){
       const email=await textDialog('Add email & password',{label:'Email',confirmLabel:'Continue'});if(email===null)return false;
-      const password=await textDialog('Choose password',{label:'Password',confirmLabel:'Link'});if(password===null)return false;
+      const password=await passwordDialog('Choose password',{confirmLabel:'Link',autocomplete:'new-password'});if(password===null)return false;
       await client.linkPassword(user,email,password);
       await accountSecurityVerifyLinkedEmail(client,user);
       // Password credentials cannot be left without the mandatory TOTP factor.
@@ -103,7 +103,7 @@ async function accountSecurityIdentityUnlink(snapshot,providerId){
 }
 async function accountSecurityIdentityPassword(snapshot){
   return accountSecurityWithIdentityProof(snapshot,'change_password',async(client,user)=>{
-    const password=await textDialog('Change password',{label:'New password',confirmLabel:'Change password'});if(password===null)return false;
+    const password=await passwordDialog('Change password',{label:'New password',confirmLabel:'Change password',autocomplete:'new-password'});if(password===null)return false;
     await client.changePassword(user,password);await client.syncSecuritySession(user,'change_password');return true;
   });
 }

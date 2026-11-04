@@ -266,7 +266,7 @@ async function finishChapterDrop(tree,siblings){
 }
 function renderChapterTree(){
   hideSceneGapHover();hideSceneDetailsHover();
-  $('#bookViewBtn').classList.toggle('active',state.viewMode==='book');$('#fullDocumentControl')?.classList.toggle('active',state.viewMode==='book');$('#collapsedFullTextBtn')?.classList.toggle('active',state.viewMode==='book');$('.book-nav').classList.toggle('collapsed',state.bookNavCollapsed);
+  $('#bookViewBtn').classList.toggle('active',state.viewMode==='book');$('#fullDocumentControl')?.classList.toggle('active',state.viewMode==='book');$('#collapsedFullTextBtn')?.classList.toggle('active',state.viewMode==='book');$('.book-nav').classList.toggle('collapsed',state.bookNavCollapsed&&!matchMedia('(max-width:640px)').matches);
   const visible=normalizeManuscriptNavMode(),modeControl=$('#manuscriptNavMode'),navToolbar=$('#manuscriptNavToolbar'),visibleCount=Number(visible.chapters)+Number(visible.scenes);
   if(modeControl){modeControl.classList.toggle('hidden',visibleCount<2);modeControl.classList.remove('single')}
   navToolbar?.classList.toggle('hidden',visibleCount<2);
@@ -312,7 +312,15 @@ $('#navigatorMenuBtn').oncontextmenu=openNavigatorMenu;
 $('#chapterTree').oncontextmenu=e=>{if(e.target.closest('.chapter-row,.scene-outline-row,.outline-nav,.scene-gap-row'))return;openNavigatorMenu(e)};
 
 $('#bookViewBtn').onclick=()=>openWholeBook().catch(error=>toast(error.message||'Full Text could not be loaded.',5000));$('#collapsedFullTextBtn').onclick=()=>openWholeBook().catch(error=>toast(error.message||'Full Text could not be loaded.',5000));
-$('#toggleBookNavBtn').onclick=e=>{e.stopPropagation();state.bookNavCollapsed=!state.bookNavCollapsed;renderChapterTree();api('/api/ui-state/book-nav-collapsed',{method:'PUT',body:JSON.stringify({value:state.bookNavCollapsed})}).catch(console.warn)};
+function setPhoneBookNav(open,{restoreFocus=false}={}){
+  setPhoneRail('manuscript',open,{restoreFocus});
+}
+$('#toggleBookNavBtn').onclick=e=>{e.stopPropagation();if(matchMedia('(max-width:640px)').matches){setPhoneBookNav(false,{restoreFocus:true});return}state.bookNavCollapsed=!state.bookNavCollapsed;renderChapterTree();api('/api/ui-state/book-nav-collapsed',{method:'PUT',body:JSON.stringify({value:state.bookNavCollapsed})}).catch(console.warn)};
+$('.book-nav').addEventListener('click',event=>{
+  if(!matchMedia('(max-width:640px)').matches||event.target.closest('.chapter-more,.scene-more,.chapter-outline-toggle,.manuscript-item-more'))return;
+  if(event.target.closest('.chapter-row,.scene-outline-row,.scene-gap-row,.outline-nav,#bookViewBtn'))setPhoneBookNav(false,{restoreFocus:true});
+});
+matchMedia('(max-width:640px)').addEventListener('change',()=>{setPhoneBookNav(false);renderChapterTree()});
 async function configureChapterDetails(chapter){
   const current=visibleChapterById(chapter.id)||chapter;showModal('Chapter Details',`<div class="field"><label>{{i18n:dynamic.html.text.label.d1ac14a8}}</label><textarea id="chapterDescription" rows="6" placeholder="{{i18n:dynamic.html.attr.placeholder.7d612628}}">${escapeHtml(current.description||'')}</textarea></div>`,'<button id="saveChapterDescription">{{i18n:dynamic.html.text.button.9faf5fce}}</button>');
   $('#saveChapterDescription').onclick=async()=>{await withStructuralUndo(`Edit chapter details: ${current.title}`,()=>api(`/api/chapters/${current.id}`,{method:'PATCH',body:JSON.stringify({description:$('#chapterDescription').value})}),{view:'manuscript',chapterId:current.id});closeModal();await refresh(false);renderChapterTree();toast('Chapter details saved')};

@@ -2,12 +2,13 @@
 
 // -------------------- projects --------------------
 const PROJECT_MENU_GAP=5;
+let projectSubmenuAnchor=null;
 $('#brandButton').addEventListener('click', e => { e.stopPropagation(); toggleProjectMenu(); });
 $('#projectImportInput').onchange = event=>importProjectPackage(event);
 $('#projectJsonImportInput').onchange = event=>importJson(event);
 $('#cutsImportInput').onchange = event=>importCutsPackage(event);
 
-function hideProjectSubmenu(){ const submenu=$('#projectSubmenu'); submenu.classList.add('hidden'); submenu.innerHTML=''; }
+function hideProjectSubmenu(){projectSubmenuAnchor?.setAttribute('aria-expanded','false');projectSubmenuAnchor=null;const submenu=$('#projectSubmenu');submenu.classList.add('hidden');submenu.innerHTML='';}
 function hideProjectMenu(){ $('#projectMenu').classList.add('hidden'); hideProjectSubmenu(); }
 function projectMenuIsOpen(){ return !$('#projectMenu').classList.contains('hidden'); }
 function activeWorkspaceProject(){ return state.workspace?.projects?.find(p=>p.id===state.workspace.active_project_id)||null; }
@@ -46,11 +47,22 @@ function renderProjectMenu(){
   $('#projectMenuLanguage').onclick=()=>{hideProjectMenu();openLanguageSettings()};
 }
 function wireProjectSubmenuButton(button,kind){
-  if(!button)return;const open=e=>{e?.preventDefault();showProjectSubmenu(kind,button)};
-  button.addEventListener('mouseenter',open);button.addEventListener('click',open);
+  if(!button)return;
+  button.setAttribute('aria-haspopup','menu');button.setAttribute('aria-controls','projectSubmenu');button.setAttribute('aria-expanded','false');
+  const open=focus=>{showProjectSubmenu(kind,button);if(focus)$('#projectSubmenu button:not(:disabled)')?.focus()};
+  // Compatibility mouseover from a touch tap must not move a submenu under
+  // the finger before the tap's click has reached its intended root item.
+  button.addEventListener('pointerenter',event=>{if(event.pointerType==='mouse'&&!event.buttons)open(false)});
+  button.addEventListener('click',event=>{event.preventDefault();open(event.detail===0)});
+  button.addEventListener('keydown',event=>{if(event.key==='ArrowRight'){event.preventDefault();open(true)}});
 }
 function showProjectSubmenu(kind,anchor){
-  const submenu=$('#projectSubmenu'),active=activeWorkspaceProject(),projects=state.workspace?.projects||[];let html='';
+  const submenu=$('#projectSubmenu');
+  // A menu revealed under a stationary mouse can receive pointerenter after
+  // ArrowRight focused its item. Keep that live DOM instead of detaching focus.
+  if(projectSubmenuAnchor===anchor&&!submenu.classList.contains('hidden')&&submenu.contains(document.activeElement))return;
+  projectSubmenuAnchor?.setAttribute('aria-expanded','false');projectSubmenuAnchor=anchor;anchor.setAttribute('aria-expanded','true');
+  const active=activeWorkspaceProject(),projects=state.workspace?.projects||[];let html='';
   if(kind==='switch'){
     const others=projects.filter(p=>p.id!==state.workspace.active_project_id).slice(0,8);
     html=others.map(p=>`<button class="project-menu-item" type="button" data-switch-project="${p.id}"><span class="project-menu-project-label">${escapeHtml(p.name)}</span></button>`).join('');
@@ -80,6 +92,18 @@ function showProjectSubmenu(kind,anchor){
     $('#projectMenuExportCuts').onclick=()=>{hideProjectMenu();location.href=projectScopedUrl('/api/cuts/export')};
   }
 }
+for(const menu of [$('#projectMenu'),$('#projectSubmenu')])menu.addEventListener('keydown',event=>{
+  if(event.key==='Escape'||(event.key==='ArrowLeft'&&menu.id==='projectSubmenu')){
+    event.preventDefault();event.stopPropagation();
+    if(menu.id==='projectSubmenu'){const anchor=projectSubmenuAnchor;hideProjectSubmenu();anchor?.focus()}
+    else{hideProjectMenu();$('#brandButton').focus()}
+    return;
+  }
+  if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
+  event.preventDefault();const buttons=[...menu.querySelectorAll('button:not(:disabled)')],index=buttons.indexOf(document.activeElement);
+  const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:(index+(event.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length;
+  buttons[next]?.focus();
+});
 async function startProjectMenuRename(){
   const active=activeWorkspaceProject(),holder=$('.project-menu-current-copy');if(!active||!holder)return;
   const original=active.name;holder.innerHTML=`<small>{{i18n:dynamic.html.text.small.4f798f98}}</small><input id="projectMenuRenameInput" class="project-menu-rename-input" value="${escapeHtml(original)}" aria-label="{{i18n:dynamic.html.attr.aria.label.ac5d3eaf}}">`;

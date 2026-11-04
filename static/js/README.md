@@ -16,6 +16,13 @@ JavaScript ownership remains unchanged. CSS has an ordered ownership tree under 
 - `features/manuscript/history.js` — Manuscript/Scene edit snapshots only; it supplies snapshot capture/restoration to the shared history coordinator.
 - `core/routing.js` — primary-view routing plus `currentView()`.
 - `core/collections.js` — generic compact collection-rail labels and collection quick-add construction.
+  It also owns the shared transient phone drawer lifecycle for Manuscript,
+  Canvas, Maps and Reviews: focus, Escape/backdrop dismissal, view-switch
+  cleanup and temporary workspace isolation. Feature owners retain their
+  persisted desktop rail preferences and selection/creation behavior.
+  A popup belongs to a drawer only while its live opener remains in that open
+  rail. Its actions join Tab traversal; Escape returns to the opener before a
+  subsequent Escape dismisses the drawer.
 - `features/manuscript/view.js` — Manuscript view preferences and Manuscript UI-state restoration.
 - `features/durability/history.js` — History/Cuts workspace plus Cuts synchronization.
 - Canvas and Maps keep only their own rail-label wrappers.
@@ -28,6 +35,12 @@ The frontend is now **architecture-frozen**. Do not split files merely because t
 
 - `core/typography.js` owns the shared font/size primitives consumed by Manuscript, Reviews, Canvas, and Maps.
 - `core/ui.js` is shared UI infrastructure only: toast/modal/context-menu infrastructure, transient UI coordination, local-profile presentation, theme/save-state presentation, and runtime localization refresh.
+  Dialogs contain keyboard focus, restore nested content and opener focus,
+  respect busy dismissal guards and allow only popup menus owned by the live
+  dialog into their focus scope. `passwordDialog()` masks transient credentials
+  and clears its input on completion/cancellation; ordinary text dialogs retain
+  their existing text/multiline behavior. The startup shim preserves dialog
+  isolation when boot completes while a decision dialog is still open.
 - `features/reviews/` replaces the former `features/reviews.js` monolith with `view.js`, `reader.js`, `workspace.js`, `details.js`, `panels.js`, and `lifecycle.js`.
 - `features/projects/` replaces the former `features/projects.js` monolith with `menu.js`, `settings.js`, `backups.js`, `lifecycle.js`, and `export_recovery.js`.
 - `features/manuscript/` now owns `view.js` and `bookmarks.js`; `rendering.js` no longer owns browser history, workspace presentation, or persistence, which live in `history.js`, `workspace.js`, and `persistence.js`.

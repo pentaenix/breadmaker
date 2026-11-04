@@ -2930,6 +2930,36 @@
           "local": "commit"
         },
         {
+          "module": "formats.checkpoint_comparison",
+          "symbol": "_checkpoint_compare_rows",
+          "local": "_checkpoint_compare_rows"
+        },
+        {
+          "module": "formats.checkpoint_comparison",
+          "symbol": "_checkpoint_image_unit",
+          "local": "_checkpoint_image_unit"
+        },
+        {
+          "module": "formats.checkpoint_comparison",
+          "symbol": "_checkpoint_image_width",
+          "local": "_checkpoint_image_width"
+        },
+        {
+          "module": "formats.checkpoint_comparison",
+          "symbol": "_checkpoint_unit_render",
+          "local": "_checkpoint_unit_render"
+        },
+        {
+          "module": "formats.checkpoint_comparison",
+          "symbol": "_checkpoint_units",
+          "local": "_checkpoint_units"
+        },
+        {
+          "module": "formats.checkpoint_comparison",
+          "symbol": "_word_diff_pair",
+          "local": "_word_diff_pair"
+        },
+        {
           "module": "security",
           "symbol": "content_security",
           "local": "content_security"

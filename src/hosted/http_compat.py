@@ -249,12 +249,20 @@ async def hosted_clear_highlights(request:Request):
 
 @router.get('/api/comments/{tid}')
 def hosted_comment_get(tid:str,request:Request):
-    pid=_pid(request);return {'thread':_get('comment_thread',{'project_id':pid,'thread_id':tid}),'messages':_list('comment_message',{'project_id':pid,'thread_id':tid})}
+    from hosted.http_api import _notes_call
+    return _notes_call(request,'get',tid)
 @router.post('/api/comments/{tid}/delete')
-def hosted_comment_delete_action(tid:str,request:Request):return _delete('comment_thread',{'project_id':_pid(request),'thread_id':tid})
+def hosted_comment_delete_action(tid:str,request:Request):
+    from hosted.http_api import _notes_call
+    return _notes_call(request,'delete',tid)
 @router.patch('/api/comment-messages/{mid}')
 async def hosted_comment_message_update(mid:str,request:Request):
-    pid=_pid(request);ids=_locate('comment_message',pid,mid);return _update('comment_message',ids,await _body(request))
+    from hosted.http_api import _notes_call
+    body=await _body(request)
+    tid=request.query_params.get('thread_id')
+    if tid:return _notes_call(request,'edit',tid,mid,body)
+    return _notes_call(request,'edit_message',mid,body)
+
 
 @router.get('/api/references')
 def hosted_references(request:Request,source_type:str|None=None,source_id:str|None=None,target_type:str|None=None,target_id:str|None=None):
@@ -480,7 +488,11 @@ def hosted_checkpoint_delete(cid:str,request:Request):
     except Exception as exc:raise _error(exc)
     return {'ok':True,'checkpoint_id':cid,'object_disposition':'orphan_retention_candidate'}
 @router.get('/api/checkpoints/compare/versions')
-def hosted_checkpoint_compare(request:Request):return {'checkpoints':_list('checkpoint',{'project_id':_pid(request)})}
+def hosted_checkpoint_compare(request:Request):
+    from hosted.http_api import _checkpoint_ui
+    try:return _checkpoint_ui(request).compare(str(request.query_params.get('left') or ''),str(request.query_params.get('right') or ''))
+    except HTTPException:raise
+    except Exception as exc:raise _error(exc)
 @router.post('/api/checkpoints/{cid}/preflight')
 def hosted_checkpoint_preflight(cid:str,request:Request):return {'ok':True,'checkpoint':_get('checkpoint',{'project_id':_pid(request),'checkpoint_id':cid})}
 @router.post('/api/checkpoints/{cid}/apply')

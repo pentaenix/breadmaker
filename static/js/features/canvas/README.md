@@ -3,6 +3,8 @@
 Canvas browser behavior is split by UI responsibility while preserving classic-script load order and shared global runtime semantics.
 
 - `hierarchy.js` — Canvas hierarchy, selection, Structure Versions, Populate, Canvas-level UI state, and the Canvas-specific compact rail label wrapper.
+  Phone navigation uses the shared `core/collections.js` drawer; selecting a
+  Canvas dismisses it. Phone visibility never persists a desktop collapse change.
 - `nodes.js` — Canvas node/card creation, editing, positioning, rendering, and interactions.
 - `connectors.js` — Canvas connector creation, editing, routing, rendering, and interactions.
 

@@ -723,7 +723,11 @@ def hosted_annotations(request:Request):
 async def hosted_annotations_batch(request:Request):
     pid=_pid(request);body=await _body(request)
     rows=body.get('annotations') if isinstance(body.get('annotations'),list) else body.get('items') if isinstance(body.get('items'),list) else []
-    payloads=[dict(row) for row in rows if isinstance(row,dict)]
+    # Native selection batches carry marker/type fields beside the selected ranges.
+    common={key:body[key] for key in ('annotation_type','label_id','body') if key in body}
+    if common.get('label_id') is not None:
+        _get('markup_label',{'project_id':pid,'label_id':str(common['label_id'])})
+    payloads=[{'status':'open',**row,**common} for row in rows if isinstance(row,dict)]
     try:
         created=_domain().create_batch_atomic('annotation',{'project_id':pid},payloads,user_id=_uid(),operation=operation_for('annotation_batch'))
     except Exception as exc:raise _error(exc)
@@ -734,16 +738,24 @@ async def hosted_annotation_update(aid:str,request:Request):return _update('anno
 async def hosted_label_create(request:Request):return _create('markup_label',{'project_id':_pid(request)},await _body(request))
 
 # Comments
+
+def _notes_call(request,method,*args):
+    from hosted.notes import HostedNotes
+    try:return getattr(HostedNotes(_domain(),_pid(request),_uid()),method)(*args)
+    except HTTPException:raise
+    except Exception as exc:raise _error(exc)
+
 @product_router.get('/api/comments')
-def hosted_comments(request:Request):return {'threads':_list('comment_thread',{'project_id':_pid(request)})}
+def hosted_comments(request:Request):
+    return {'threads':_notes_call(request,'list',request.query_params.get('status','open'),request.query_params.get('q',''))}
 @product_router.post('/api/comments')
-async def hosted_comment_create(request:Request):return _create('comment_thread',{'project_id':_pid(request)},await _body(request))
+async def hosted_comment_create(request:Request):return _notes_call(request,'create',await _body(request))
 @product_router.patch('/api/comments/{tid}')
-async def hosted_comment_update(tid:str,request:Request):return _update('comment_thread',{'project_id':_pid(request),'thread_id':tid},await _body(request))
+async def hosted_comment_update(tid:str,request:Request):return _notes_call(request,'update',tid,await _body(request))
 @product_router.delete('/api/comments/{tid}')
-def hosted_comment_delete(tid:str,request:Request):return _delete('comment_thread',{'project_id':_pid(request),'thread_id':tid})
+def hosted_comment_delete(tid:str,request:Request):return _notes_call(request,'delete',tid)
 @product_router.post('/api/comments/{tid}/messages')
-async def hosted_comment_message(tid:str,request:Request):return _create('comment_message',{'project_id':_pid(request),'thread_id':tid},await _body(request))
+async def hosted_comment_message(tid:str,request:Request):return _notes_call(request,'reply',tid,await _body(request))
 
 # Per-member bookmark / UI state
 
@@ -857,17 +869,29 @@ def hosted_questionnaires(request:Request):return {'questionnaires':_list('quest
 async def hosted_questionnaire_create(request:Request):return _create('questionnaire',{'project_id':_pid(request)},await _body(request))
 
 # Checkpoints / revisions
+def _checkpoint_ui(request):
+    from hosted.checkpoint_ui import HostedCheckpointUI
+    return HostedCheckpointUI(_domain(),_pid(request),_uid(),_project_snapshot)
+
 @product_router.get('/api/checkpoints')
-def hosted_checkpoints(request:Request):return {'checkpoints':_list('checkpoint',{'project_id':_pid(request)})}
+def hosted_checkpoints(request:Request):
+    try:return {'checkpoints':_checkpoint_ui(request).list(request.query_params)}
+    except HTTPException:raise
+    except Exception as exc:raise _error(exc)
 @product_router.post('/api/checkpoints')
 async def hosted_checkpoint_create(request:Request):
     body=await _body(request)
-    if 'snapshot' not in body:
-        try:body['snapshot']=_project_snapshot(_pid(request))
-        except Exception as exc:raise _error(exc)
-    return _create('checkpoint',{'project_id':_pid(request)},body)
+    service=_checkpoint_ui(request)
+    try:
+        row=_create('checkpoint',{'project_id':_pid(request)},service.create_payload(body))
+        return service.get(row['id'])['checkpoint']
+    except HTTPException:raise
+    except Exception as exc:raise _error(exc)
 @product_router.get('/api/checkpoints/{cid}')
-def hosted_checkpoint_get(cid:str,request:Request):return _get('checkpoint',{'project_id':_pid(request),'checkpoint_id':cid})
+def hosted_checkpoint_get(cid:str,request:Request):
+    try:return _checkpoint_ui(request).get(cid)
+    except HTTPException:raise
+    except Exception as exc:raise _error(exc)
 @product_router.get('/api/history/v2')
 def hosted_history_list():return {'revisions':runtime.history.list_revisions()}
 @product_router.post('/api/autocommit')

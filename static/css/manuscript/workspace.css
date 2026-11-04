@@ -1,3 +1,24 @@
+/* Phone navigation reuses the chapter rail as a temporary drawer. */
+.phone-book-nav-button,.phone-book-nav-backdrop{display:none}
+@media(max-width:640px){
+  #manuscriptView>.book-nav{display:none;position:absolute;inset:0 auto 0 0;width:min(290px,calc(100% - 44px));min-width:0;z-index:38;box-shadow:var(--shadow)}
+  #manuscriptView.phone-nav-open>.book-nav{display:flex}
+  .phone-book-nav-button{display:block;min-width:40px;min-height:40px}
+  .phone-nav-open>.phone-book-nav-backdrop{display:block;position:absolute;inset:0;border:0;background:rgba(0,0,0,.2);z-index:37}
+  #manuscriptPrimaryPane>.document-toolbar{height:48px;min-height:48px}
+  #manuscriptPrimaryPane>.document-toolbar button{min-height:36px}
+  #manuscriptPrimaryPane .document-scroller{padding:18px 8px 70px}
+  #manuscriptPrimaryPane .paper{padding:22px 28px 60px}
+  #manuscriptView>.right-panel{width:min(320px,calc(100% - 44px));min-width:0}
+  #manuscriptView>.right-panel .panel-head{height:48px;min-height:48px}
+  #manuscriptView>.right-panel .panel-head button{min-width:40px;min-height:40px}
+  .topbar{gap:4px;padding-inline:4px}
+  .topbar .brand-name,.topbar .save-state,.topbar #quickOpenBtn,.topbar #themeBtn{display:none}
+  .topbar nav.main-tabs{overflow-x:auto;scrollbar-width:none}
+  .topbar .main-tab{flex-shrink:0;padding-inline:8px}
+  .topbar .top-actions{flex-shrink:0;gap:0}
+  .topbar .brand-button{padding-inline:4px}
+}
 /* The normal manuscript paper, read-only until the complete snapshot is verified. */
 #manuscriptPrimaryPane{position:relative}
 .full-text-preview{color:var(--text)}

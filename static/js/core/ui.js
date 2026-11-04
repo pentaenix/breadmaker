@@ -19,8 +19,17 @@ window.addEventListener('unhandledrejection', event => {
 
 const modalStack=[];
 let currentModalDismiss=null;
+let modalReturnFocus=null,modalRevision=0,modalAppInert=false,modalMenuOwner=null;
+function modalOwnsMenu(){return modalMenuOwner?.revision===modalRevision&&$('#modal').contains(modalMenuOwner.node)&&!$('#contextMenu').classList.contains('hidden')}
+function closeModalMenu(){if(modalOwnsMenu()){$('#contextMenu').classList.add('hidden');hideContextMenuTip()}modalMenuOwner=null;$('#modal').removeAttribute('aria-owns')}
+function modalControls(){const selector='button,input,select,textarea,a[href],[tabindex],[contenteditable="true"]';return [...$('#modal').querySelectorAll(selector),...(modalOwnsMenu()?$('#contextMenu').querySelectorAll(selector):[])].filter(node=>!node.disabled&&node.tabIndex>=0&&node.getClientRects().length&&!node.closest('[inert]'))}
+function restoreModalFocus(node,revision){queueMicrotask(()=>{if(revision!==modalRevision)return;const target=node?.isConnected&&node.getClientRects().length&&!node.closest('[inert]')?node:$('#brandButton');target?.focus({preventScroll:true})})}
+function focusModal(revision){queueMicrotask(()=>{if(revision!==modalRevision||$('#modal').classList.contains('hidden'))return;const controls=modalControls();(controls.find(node=>node.matches('[autofocus]'))||controls.find(node=>node.closest('#modalBody'))||controls[0]||$('#modal')).focus({preventScroll:true})})}
 function renderModal(title,bodyHtml,actionsHtml='',onDismiss=null){
+  closeModalMenu();
+  if($('#modal').classList.contains('hidden')){modalReturnFocus=document.activeElement;modalAppInert=$('#app').inert;$('#app').inert=true;$('#modalClose').disabled=false;$('#modalClose').removeAttribute('aria-disabled')}
   $('#modalTitle').textContent=i18nSource(title);$('#modalBody').innerHTML=resolveI18nMarkers(bodyHtml);$('#modalActions').innerHTML=resolveI18nMarkers(actionsHtml);currentModalDismiss=onDismiss;$('#modal').classList.remove('hidden');
+  focusModal(++modalRevision);
 }
 function showModal(title, bodyHtml, actionsHtml='', onDismiss=null) {
   if(!$('#modal').classList.contains('hidden')&&currentModalDismiss){const dismiss=currentModalDismiss;currentModalDismiss=null;dismiss();}
@@ -28,10 +37,12 @@ function showModal(title, bodyHtml, actionsHtml='', onDismiss=null) {
 }
 function showNestedModal(title,bodyHtml,actionsHtml='',onDismiss=null){
   if(!$('#modal').classList.contains('hidden')){
+    const childOpener=document.activeElement;
     const body=document.createDocumentFragment(),actions=document.createDocumentFragment();
     while($('#modalBody').firstChild)body.appendChild($('#modalBody').firstChild);
     while($('#modalActions').firstChild)actions.appendChild($('#modalActions').firstChild);
-    modalStack.push({title:$('#modalTitle').textContent,body,actions,onDismiss:currentModalDismiss});
+    modalStack.push({title:$('#modalTitle').textContent,body,actions,onDismiss:currentModalDismiss,returnFocus:modalReturnFocus,childOpener,closeDisabled:$('#modalClose').disabled,closeAriaDisabled:$('#modalClose').getAttribute('aria-disabled')});
+    $('#modalClose').disabled=false;$('#modalClose').removeAttribute('aria-disabled');
   }
   renderModal(title,bodyHtml,actionsHtml,onDismiss);
 }
@@ -60,17 +71,30 @@ function contextMenuItems(container,items,root){
   }
 }
 function positionContextSubmenu(row,submenu){submenu.style.display='block';submenu.style.visibility='hidden';submenu.style.position='fixed';const rowRect=row.getBoundingClientRect(),w=submenu.offsetWidth||230,h=submenu.offsetHeight||300;let left=rowRect.right+5;if(left+w>innerWidth-4)left=Math.max(4,rowRect.left-w-5);const top=Math.max(4,Math.min(rowRect.top-4,innerHeight-h-4));submenu.style.left=`${left}px`;submenu.style.top=`${top}px`;submenu.style.visibility='';submenu.style.display=''}
-function openContextMenu(x,y,items,{anchorRect=null}={}){hideContextMenuTip();const menu=$('#contextMenu'),margin=6;menu.classList.remove('review-hover-context');menu.innerHTML='';contextMenuItems(menu,items,menu);menu.style.visibility='hidden';menu.style.left='0px';menu.style.top='0px';menu.classList.remove('hidden');const box=menu.getBoundingClientRect(),w=box.width||190,h=box.height||40;let left=Math.max(margin,Math.min(Number(x)||margin,innerWidth-w-margin)),top=Number(y)||margin;if(anchorRect&&top+h>innerHeight-margin)top=anchorRect.top-h-6;top=Math.max(margin,Math.min(top,innerHeight-h-margin));menu.style.left=`${Math.round(left)}px`;menu.style.top=`${Math.round(top)}px`;menu.style.visibility='';}
+function openContextMenu(x,y,items,{anchorRect=null,owner=document.activeElement}={}){
+  hideContextMenuTip();modalMenuOwner=!$('#modal').classList.contains('hidden')&&$('#modal').contains(owner)?{node:owner,revision:modalRevision}:null;
+  if(typeof setPhoneRailMenuOwner==='function')setPhoneRailMenuOwner(modalMenuOwner?null:owner);
+  if(modalMenuOwner)$('#modal').setAttribute('aria-owns','contextMenu');else $('#modal').removeAttribute('aria-owns');
+  const menu=$('#contextMenu'),margin=6;menu.classList.remove('review-hover-context');menu.innerHTML='';contextMenuItems(menu,items,menu);menu.style.visibility='hidden';menu.style.left='0px';menu.style.top='0px';menu.classList.remove('hidden');const box=menu.getBoundingClientRect(),w=box.width||190,h=box.height||40;let left=Math.max(margin,Math.min(Number(x)||margin,innerWidth-w-margin)),top=Number(y)||margin;if(anchorRect&&top+h>innerHeight-margin)top=anchorRect.top-h-6;top=Math.max(margin,Math.min(top,innerHeight-h-margin));menu.style.left=`${Math.round(left)}px`;menu.style.top=`${Math.round(top)}px`;menu.style.visibility='';
+}
 
 function closeModal(notify=true) {
-  const dismiss=currentModalDismiss;currentModalDismiss=null;if(notify&&dismiss)dismiss();
-  if(modalStack.length){const previous=modalStack.pop();$('#modalTitle').textContent=previous.title;$('#modalBody').replaceChildren(previous.body);$('#modalActions').replaceChildren(previous.actions);currentModalDismiss=previous.onDismiss||null;$('#modal').classList.remove('hidden');return;}
-  $('#modal').classList.add('hidden');
+  if($('#modal').classList.contains('hidden'))return;
+  closeModalMenu();
+  const dismiss=currentModalDismiss;currentModalDismiss=null;const revision=++modalRevision;
+  if(modalStack.length){const previous=modalStack.pop();$('#modalTitle').textContent=previous.title;$('#modalBody').replaceChildren(previous.body);$('#modalActions').replaceChildren(previous.actions);currentModalDismiss=previous.onDismiss||null;modalReturnFocus=previous.returnFocus;$('#modalClose').disabled=previous.closeDisabled;if(previous.closeAriaDisabled===null)$('#modalClose').removeAttribute('aria-disabled');else $('#modalClose').setAttribute('aria-disabled',previous.closeAriaDisabled);$('#modal').classList.remove('hidden');restoreModalFocus(previous.childOpener,revision)}
+  else{$('#modal').classList.add('hidden');$('#app').inert=modalAppInert;restoreModalFocus(modalReturnFocus,revision);modalReturnFocus=null}
+  // Publish the closed/restored frame before callbacks can open another dialog.
+  if(notify&&dismiss)dismiss();
 }
 function dismissModalTree(){
-  if(currentModalDismiss){const dismiss=currentModalDismiss;currentModalDismiss=null;dismiss();}
-  while(modalStack.length){const frame=modalStack.pop();frame.onDismiss?.();}
-  $('#modal').classList.add('hidden');
+  if($('#modal').classList.contains('hidden')&&!modalStack.length)return;
+  closeModalMenu();
+  const callbacks=[currentModalDismiss,...modalStack.slice().reverse().map(frame=>frame.onDismiss)];
+  const opener=modalStack[0]?.returnFocus||modalReturnFocus;
+  currentModalDismiss=null;modalStack.length=0;modalReturnFocus=null;
+  $('#modal').classList.add('hidden');$('#app').inert=modalAppInert;restoreModalFocus(opener,++modalRevision);
+  for(const dismiss of callbacks)dismiss?.();
 }
 function confirmDialog(title,message,{confirmLabel='Continue',danger=false}={}){
   return new Promise(resolve=>{
@@ -79,18 +103,41 @@ function confirmDialog(title,message,{confirmLabel='Continue',danger=false}={}){
     $('#dialogCancel').onclick=()=>settle(false);$('#dialogConfirm').onclick=()=>settle(true);
   });
 }
-function textDialog(title,{label='Name',value='',placeholder='',multiline=false,description='',confirmLabel='Save'}={}){
+function textDialog(title,{label='Name',value='',placeholder='',multiline=false,description='',confirmLabel='Save',sensitive=false,autocomplete='current-password'}={}){
   return new Promise(resolve=>{
-    let settled=false;const settle=result=>{if(settled)return;settled=true;currentModalDismiss=null;resolve(result);closeModal(false)};
-    const control=multiline?`<textarea id="dialogText" rows="5" placeholder="${escapeHtml(i18nSource(placeholder))}">${escapeHtml(value)}</textarea>`:`<input id="dialogText" value="${escapeHtml(value)}" placeholder="${escapeHtml(i18nSource(placeholder))}" autofocus>`;
-    showNestedModal(title,`${description?`<p class="small-muted">${escapeHtml(i18nSource(description))}</p>`:''}<div class="field"><label>${escapeHtml(i18nSource(label))}</label>${control}</div>`,`<button id="dialogCancel">{{i18n:dynamic.html.text.button.92113f72}}</button><button id="dialogConfirm">${escapeHtml(i18nSource(confirmLabel))}</button>`,()=>{if(!settled){settled=true;resolve(null)}});
-    const input=$('#dialogText');$('#dialogCancel').onclick=()=>settle(null);$('#dialogConfirm').onclick=()=>settle(input.value);if(!multiline)input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();settle(input.value)}});queueMicrotask(()=>input.focus());
+    let settled=false,input;const clear=()=>{if(sensitive&&input)input.value=''};
+    const settle=result=>{if(settled)return;settled=true;clear();currentModalDismiss=null;resolve(result);closeModal(false)};
+    const control=multiline&&!sensitive?`<textarea id="dialogText" rows="5" placeholder="${escapeHtml(i18nSource(placeholder))}">${escapeHtml(value)}</textarea>`:`<input id="dialogText" ${sensitive?`type="password" autocomplete="${autocomplete==='new-password'?'new-password':'current-password'}"`:`value="${escapeHtml(value)}"`} placeholder="${escapeHtml(i18nSource(placeholder))}" autofocus>`;
+    showNestedModal(title,`${description?`<p class="small-muted">${escapeHtml(i18nSource(description))}</p>`:''}<div class="field"><label for="dialogText">${escapeHtml(i18nSource(label))}</label>${control}</div>`,`<button id="dialogCancel">{{i18n:dynamic.html.text.button.92113f72}}</button><button id="dialogConfirm">${escapeHtml(i18nSource(confirmLabel))}</button>`,()=>{clear();if(!settled){settled=true;resolve(null)}});
+    input=$('#dialogText');$('#dialogCancel').onclick=()=>settle(null);$('#dialogConfirm').onclick=()=>settle(input.value);if(!multiline||sensitive)input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();settle(input.value)}});queueMicrotask(()=>input.focus());
   });
 }
-$('#modalClose').addEventListener('click', () => closeModal());
+function passwordDialog(title,options={}){return textDialog(title,{label:'Password',...options,sensitive:true,multiline:false})}
+$('#modalClose').addEventListener('click', () => {if(!$('#modalClose').disabled)closeModal()});
 $('#modal').addEventListener('click', e => { if (e.target === $('#modal') && !$('#modalClose').disabled) closeModal(); });
+document.addEventListener('keydown',event=>{
+  if($('#modal').classList.contains('hidden'))return;
+  if(event.key==='Escape'){
+    event.preventDefault();event.stopImmediatePropagation();
+    if(!$('#contextMenu').classList.contains('hidden')){const owner=modalOwnsMenu()?modalMenuOwner.node:null;closeTransientUI();if(owner)restoreModalFocus(owner,modalRevision);return}
+    if(!$('#modalClose').disabled)closeModal();
+  }else if(event.key==='Tab'){
+    const controls=modalControls(),active=document.activeElement,index=controls.indexOf(active);
+    if(!controls.length){event.preventDefault();$('#modal').focus()}
+    else{event.preventDefault();controls[index<0?(event.shiftKey?controls.length-1:0):(index+(event.shiftKey?-1:1)+controls.length)%controls.length].focus()}
+    event.stopPropagation();
+  }
+},true);
+document.addEventListener('focusin',event=>{
+  if($('#modal').classList.contains('hidden')||$('#modal').contains(event.target)||(modalOwnsMenu()&&$('#contextMenu').contains(event.target)))return;
+  (modalControls()[0]||$('#modal')).focus({preventScroll:true});
+});
+// Target input/form handlers and native defaults still run. Application-level
+// shortcuts registered later must not edit the workspace behind a dialog.
+document.addEventListener('keydown',event=>{if(!$('#modal').classList.contains('hidden'))event.stopImmediatePropagation()});
 
 function closeTransientUI() {
+  closeModalMenu();
   hideContextMenuTip();
   closeUserProfilePopover();
   $('#contextMenu').classList.add('hidden');

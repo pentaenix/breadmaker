@@ -1,6 +1,6 @@
 {
   "schema": 3,
-  "generated_for": "10.5.74",
+  "generated_for": "10.5.76",
   "platform_domains": [
     {
       "module": "api.project_management",
@@ -1765,7 +1765,7 @@
           "method": "GET",
           "path": "/api/checkpoints/compare/versions",
           "function": "compare_checkpoints",
-          "line": 143,
+          "line": 34,
           "file": "src/api/checkpoints/comparison.py"
         },
         {
