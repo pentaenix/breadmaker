@@ -474,32 +474,39 @@ def test_browser_v41_task_draft_survives_nested_marker_and_later_is_reversible(l
         page.locator('#taskDescription').fill('This description must survive creating a marker.')
 
         page.locator('#taskCreateMarker').click()
-        assert page.locator('#markerName').is_visible()
+        expect(page.locator('#markerName')).to_be_visible()
         page.locator('#markerName').fill('Continuity')
         page.locator('#createMarkerConfirm').click()
-        page.wait_for_timeout(250)
+        expect(page.locator('#taskName')).to_be_visible()
 
         # Parent modal DOM is restored, not reconstructed from persisted task data.
-        assert page.locator('#taskName').input_value()=='Preserve this draft'
-        assert page.locator('#taskDescription').input_value()=='This description must survive creating a marker.'
-        assert page.locator('#taskMarker option:checked').inner_text()=='Continuity'
-        page.locator('#saveTask').click(); page.wait_for_timeout(250)
+        expect(page.locator('#taskName')).to_have_value('Preserve this draft')
+        expect(page.locator('#taskDescription')).to_have_value('This description must survive creating a marker.')
+        expect(page.locator('#taskMarker option:checked')).to_have_text('Continuity')
+        page.locator('#saveTask').click()
+        expect(page.locator('#taskName')).not_to_be_visible()
 
         row=page.locator('.task-row').filter(has_text='Preserve this draft')
-        assert row.count()==1
+        # Creation includes asynchronous checkpoint, save and list refresh.
+        # Observe completion, rather than assuming it fits a fixed sleep.
+        expect(row).to_have_count(1)
+        expect(row).to_be_visible()
         # The row itself opens the task; no title-only Open control is required.
         row.locator('.task-title').click()
-        assert page.locator('#taskName').input_value()=='Preserve this draft'
+        expect(page.locator('#taskName')).to_have_value('Preserve this draft')
         page.locator('#taskStatus').select_option('later')
-        page.locator('#saveTask').click(); page.wait_for_timeout(250)
+        page.locator('#saveTask').click()
+        expect(page.locator('#taskName')).not_to_be_visible()
 
-        page.locator('[data-task-filter="later"]').click(); page.wait_for_timeout(150)
+        page.locator('[data-task-filter="later"]').click()
         later=page.locator('.task-row').filter(has_text='Preserve this draft')
-        assert later.count()==1
+        expect(later).to_have_count(1)
+        expect(later).to_be_visible()
         later.locator('[data-task-more]').click()
-        page.get_by_text('Move to Open',exact=True).click(); page.wait_for_timeout(250)
-        page.locator('[data-task-filter="open"]').click(); page.wait_for_timeout(150)
-        assert page.locator('.task-row').filter(has_text='Preserve this draft').count()==1
+        page.get_by_text('Move to Open',exact=True).click()
+        expect(later).to_have_count(0)
+        page.locator('[data-task-filter="open"]').click()
+        expect(page.locator('.task-row').filter(has_text='Preserve this draft')).to_have_count(1)
 
         # Focus exits through the same toolbar control (renamed Unfocus) or Esc.
         page.locator('[data-view="manuscript"]').click()
