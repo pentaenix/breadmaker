@@ -14956,6 +14956,123 @@
       ]
     },
     {
+      "file": "static/js/features/app_telemetry/consent.js",
+      "lines": 41,
+      "symbols": [
+        {
+          "name": "mountAppTelemetryConsentPreview",
+          "kind": "function",
+          "line": 4
+        },
+        {
+          "name": "description",
+          "kind": "function",
+          "line": 13
+        },
+        {
+          "name": "choose",
+          "kind": "function",
+          "line": 14
+        },
+        {
+          "name": "render",
+          "kind": "function",
+          "line": 19
+        },
+        {
+          "name": "openSettings",
+          "kind": "function",
+          "line": 31
+        },
+        {
+          "name": "syncSwitch",
+          "kind": "function",
+          "line": 37
+        },
+        {
+          "name": "sync",
+          "kind": "function",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "file": "static/js/features/app_telemetry/foundation.js",
+      "lines": 91,
+      "symbols": [
+        {
+          "name": "createAppTelemetryFoundation",
+          "kind": "function",
+          "line": 5
+        },
+        {
+          "name": "clock",
+          "kind": "function",
+          "line": 14
+        },
+        {
+          "name": "read",
+          "kind": "function",
+          "line": 15
+        },
+        {
+          "name": "clear",
+          "kind": "function",
+          "line": 24
+        },
+        {
+          "name": "consent",
+          "kind": "function",
+          "line": 28
+        },
+        {
+          "name": "notify",
+          "kind": "function",
+          "line": 33
+        },
+        {
+          "name": "setConsent",
+          "kind": "function",
+          "line": 34
+        },
+        {
+          "name": "prune",
+          "kind": "function",
+          "line": 49
+        },
+        {
+          "name": "bucket",
+          "kind": "function",
+          "line": 50
+        },
+        {
+          "name": "startSyntheticSession",
+          "kind": "function",
+          "line": 57
+        },
+        {
+          "name": "recordSyntheticMinute",
+          "kind": "function",
+          "line": 61
+        },
+        {
+          "name": "recordSyntheticFeature",
+          "kind": "function",
+          "line": 62
+        },
+        {
+          "name": "snapshot",
+          "kind": "function",
+          "line": 63
+        },
+        {
+          "name": "deliverToSyntheticSink",
+          "kind": "function",
+          "line": 64
+        }
+      ]
+    },
+    {
       "file": "static/js/features/canvas/connectors.js",
       "lines": 155,
       "symbols": [

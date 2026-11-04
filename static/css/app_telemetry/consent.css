@@ -1,0 +1,7 @@
+/* The only new geometry is the requested bottom banner. Controls use shared UI. */
+.app-telemetry-banner{position:fixed;inset:auto 12px 12px;z-index:80;display:flex;align-items:center;gap:14px;padding:14px;background:var(--surface);color:var(--text);border:1px solid var(--line2);border-radius:8px;box-shadow:var(--shadow);max-height:calc(100dvh - 24px);overflow:auto}
+.app-telemetry-copy{flex:1;min-width:0;max-width:960px}
+.app-telemetry-copy p{margin:5px 0;line-height:1.4}
+.app-telemetry-actions{display:flex;flex-wrap:wrap;gap:8px;flex:none}
+.app-telemetry-banner>.ui-close-button{align-self:flex-start;flex:none}
+@media(max-width:900px){.app-telemetry-banner{flex-wrap:wrap;padding-right:42px}.app-telemetry-copy{flex-basis:100%}.app-telemetry-banner>.ui-close-button{position:absolute;right:9px;top:9px}}

@@ -1,0 +1,86 @@
+{
+  "synthetic": true,
+  "warning": "Invented consenting browser installations, never people or exact concurrency. No real observations.",
+  "reports": [
+    {
+      "schema": "bm-app-telemetry-preview-v1",
+      "installation_id": "00000000-0000-4000-8000-000000000001",
+      "notice_version": "preview-1",
+      "app_version": "10.5.66",
+      "bucket_utc_ms": 1793786400000,
+      "sessions": 1,
+      "active_minutes": 9,
+      "feature_visits": {
+        "manuscript": 1,
+        "canvas": 0,
+        "maps": 0,
+        "tasks": 0,
+        "reviews": 0
+      }
+    },
+    {
+      "schema": "bm-app-telemetry-preview-v1",
+      "installation_id": "00000000-0000-4000-8000-000000000001",
+      "notice_version": "preview-1",
+      "app_version": "10.5.66",
+      "bucket_utc_ms": 1793787300000,
+      "sessions": 0,
+      "active_minutes": 6,
+      "feature_visits": {
+        "manuscript": 0,
+        "canvas": 1,
+        "maps": 0,
+        "tasks": 0,
+        "reviews": 0
+      }
+    },
+    {
+      "schema": "bm-app-telemetry-preview-v1",
+      "installation_id": "00000000-0000-4000-8000-000000000001",
+      "notice_version": "preview-1",
+      "app_version": "10.5.66",
+      "bucket_utc_ms": 1793790000000,
+      "sessions": 1,
+      "active_minutes": 4,
+      "feature_visits": {
+        "manuscript": 0,
+        "canvas": 0,
+        "maps": 1,
+        "tasks": 0,
+        "reviews": 0
+      }
+    },
+    {
+      "schema": "bm-app-telemetry-preview-v1",
+      "installation_id": "00000000-0000-4000-8000-000000000002",
+      "notice_version": "preview-1",
+      "app_version": "10.5.66",
+      "bucket_utc_ms": 1793786400000,
+      "sessions": 1,
+      "active_minutes": 7,
+      "feature_visits": {
+        "manuscript": 1,
+        "canvas": 0,
+        "maps": 0,
+        "tasks": 0,
+        "reviews": 0
+      }
+    },
+    {
+      "schema": "bm-app-telemetry-preview-v1",
+      "installation_id": "00000000-0000-4000-8000-000000000002",
+      "notice_version": "preview-1",
+      "app_version": "10.5.66",
+      "bucket_utc_ms": 1793787300000,
+      "sessions": 0,
+      "active_minutes": 11,
+      "feature_visits": {
+        "manuscript": 0,
+        "canvas": 0,
+        "maps": 0,
+        "tasks": 1,
+        "reviews": 0
+      }
+    }
+  ]
+}
