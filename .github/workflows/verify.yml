@@ -4,43 +4,41 @@ on:
 permissions:
   contents: read
 jobs:
-  canvas-touch-diagnostic:
+  browser-bootstrap-mirror-measurement:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.14'
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
-        with:
-          node-version: '22'
-      - run: python -m pip install -r requirements-test.txt
-      - run: python -m playwright install --with-deps chromium
-      - name: Trace unchanged native touch interaction
-        env:
-          PYTHONPATH: src:.
-          PYTHONDONTWRITEBYTECODE: '1'
+      - run: python -m pip install playwright==1.57.0
+      - name: Select canonical Ubuntu archive without changing trust or suites
         run: |
-          python -m pytest -q tests/test_v10581_canvas_navigation_browser.py::test_canvas_touch_editor_does_not_require_compatibility_mouse_click
-          python -u - <<'PY'
-          import json,tempfile
+          sudo python3 - <<'PY'
           from pathlib import Path
-          from contextlib import contextmanager
-          import tests.test_v10581_canvas_navigation_browser as case
-          original=case.browser
-          @contextmanager
-          def observed(*args,**kwargs):
-              with original(*args,**kwargs) as result:
-                  page=result[1]
-                  page.evaluate('''()=>{window.qaTouchTrace=[];for(const type of ['pointerdown','pointerup','pointercancel','focusin','focusout','click','touchstart','touchend'])document.addEventListener(type,e=>qaTouchTrace.push({type,target:e.target.className,pointer:e.pointerType,selected:[...state.selectedNodes],active:document.activeElement.className,pan:!!canvasPanGesture,time:performance.now()}),true)}''')
-                  try: yield result
-                  except Exception:
-                      print('TOUCH_FAILURE',json.dumps(page.evaluate('''()=>({trace:qaTouchTrace,selected:[...state.selectedNodes],active:document.activeElement.className,pan:!!canvasPanGesture,scroll:[$('#canvasStage').scrollLeft,$('#canvasStage').scrollTop],scale:visualViewport.scale})''')),flush=True)
-                      raise
-          case.browser=observed
-          for iteration in range(12):
-              with tempfile.TemporaryDirectory() as home:
-                  case._touch(Path(home),'chromium')
-                  print('PASS native touch iteration',iteration+1,flush=True)
+          path=Path('/etc/apt/sources.list.d/ubuntu.sources')
+          original=path.read_text()
+          updated=original
+          for scheme in ('http','https'):
+              updated=updated.replace(scheme+'://azure.archive.ubuntu.com/ubuntu','https://archive.ubuntu.com/ubuntu')
+          assert updated!=original,'Expected GitHub runner Azure Ubuntu mirror not found'
+          assert [line for line in original.splitlines() if not line.startswith('URIs:')]==[line for line in updated.splitlines() if not line.startswith('URIs:')]
+          assert 'Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg' in updated
+          path.write_text(updated)
+          print(updated)
+          PY
+      - name: Measure unchanged browser and signed OS dependency installation
+        run: /usr/bin/time -p python -m playwright install --with-deps chromium firefox webkit
+      - name: Verify all three managed browsers launch and close
+        run: |
+          python -u - <<'PY'
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              for name in ('chromium','firefox','webkit'):
+                  browser=getattr(p,name).launch(headless=True,args=['--no-sandbox'] if name=='chromium' else [])
+                  page=browser.new_page()
+                  page.set_content('<title>Browser bootstrap check</title><p>Disposable verification</p>')
+                  assert page.title()=='Browser bootstrap check'
+                  browser.close()
+                  print('PASS managed browser',name,flush=True)
           PY
