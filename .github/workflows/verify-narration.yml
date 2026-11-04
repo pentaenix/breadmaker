@@ -37,6 +37,8 @@ jobs:
           pulseaudio --start --exit-idle-time=-1
           pactl load-module module-null-sink sink_name=breadmaker_test
           pactl set-default-sink breadmaker_test
+      - name: Diagnose native WebKit media clock and PCM output
+        run: python tools/narration/probe-media-clock.py
       - name: Narration behavior, dictionaries and three-browser UI checks
         run: python tools/narration/check.py --runtime --browser chromium --browser firefox --browser webkit
       - name: Short real-model samples, never a full-book endurance test
