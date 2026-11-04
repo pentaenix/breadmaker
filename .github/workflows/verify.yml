@@ -34,6 +34,10 @@ jobs:
           tests/test_v10569_narration_maintenance.py tests/test_v10569_narration_maintenance_google.py
           tests/test_v10569_narration_recordings.py::test_atomic_editor_save_without_redundant_tab_field_can_publish
           tests/test_v10569_editing_hosted.py::test_unicode_expanded_vocabulary_publishes_canonical_ranges_and_supports_undo_redo
+      # Keep the existing signed Ubuntu repositories; avoid slow Azure responses
+      # consuming the job budget before the release assertions can run.
+      - name: Prefer the runner's existing HTTPS Ubuntu archive
+        run: sudo --preserve-env=GITHUB_ACTIONS,RUNNER_OS python3 scripts/configure_ci_ubuntu_mirror.py
       - name: Install Linux browser dependencies
         run: python -m playwright install-deps chromium webkit
       - name: Install pinned Playwright Chromium and WebKit

@@ -28,6 +28,10 @@ jobs:
           pnpm --dir tools/narration audit
       - name: Build and verify offline CPU model assets
         run: node tools/narration/install.mjs
+      # Keep the existing signed Ubuntu repositories; avoid slow Azure responses
+      # consuming the job budget before the release assertions can run.
+      - name: Prefer the runner's existing HTTPS Ubuntu archive
+        run: sudo --preserve-env=GITHUB_ACTIONS,RUNNER_OS python3 scripts/configure_ci_ubuntu_mirror.py
       - name: Install pinned browser test runtimes
         run: python -m playwright install --with-deps chromium firefox webkit
       - name: Provide virtual audio output for headless browser checks
