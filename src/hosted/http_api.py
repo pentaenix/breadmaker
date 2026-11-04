@@ -792,6 +792,9 @@ async def hosted_ui_state_put(key:str,request:Request):
     if key=='narration-preferences' and 'x-breadmaker-narration-account' in request.headers:
         claimed=request.headers.getlist('x-breadmaker-narration-account')
         if len(claimed)!=1 or claimed[0]!=uid:raise HTTPException(409,'NARRATION_ACCOUNT_CONTEXT_CHANGED')
+    if key=='targets-v1' and 'x-breadmaker-targets-account' in request.headers:
+        claimed=request.headers.getlist('x-breadmaker-targets-account')
+        if len(claimed)!=1 or claimed[0]!=uid:raise HTTPException(409,'TARGETS_ACCOUNT_CONTEXT_CHANGED')
     return await run_in_threadpool(runtime.projects.put_member_state,_pid(request),await _body(request),key=key,user_id=uid)
 
 # Tasks

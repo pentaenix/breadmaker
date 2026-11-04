@@ -2,6 +2,7 @@
 
 Project administration is package-owned in 10.3.5. The package keeps destructive, backup, and transfer responsibilities explicit instead of accumulating them in one Project shell file.
 
+- `targets-model.js` / `targets.js` — default-off personal project writing/time goals, local-calendar recurrence, compact status indicators, optional in-app celebration, and bounded history. Uses the existing collaborator UI-state store (with a profile-specific key locally); manuscript bytes and generation owners remain untouched. See `docs/TARGETS_CHECKPOINT.md` for counting/activity semantics and verification limits.
 - `menu.js` — brand Project menu, submenus, and rename entry point.
   Submenu hover opens only for mouse pointers. Touch opens on click so
   compatibility hover events cannot move a project row under the initial tap.

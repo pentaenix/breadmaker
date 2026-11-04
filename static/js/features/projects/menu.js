@@ -36,6 +36,7 @@ function renderProjectMenu(){
     ${projectMenuButton('projectMenuExport','Export',{submenu:true})}
     <div class="context-sep"></div>
     ${projectMenuButton('projectMenuSettings','Project Settings…')}
+    ${projectMenuButton('projectMenuTargets',i18nText('targets.title'))}
     ${projectMenuButton('projectMenuLanguage',i18nText('settings.language.row_label'))}
   `;
   $('#projectMenuRename')?.addEventListener('click',e=>{e.stopPropagation();startProjectMenuRename()});
@@ -44,6 +45,7 @@ function renderProjectMenu(){
   wireProjectSubmenuButton($('#projectMenuImport'),'import');
   wireProjectSubmenuButton($('#projectMenuExport'),'export');
   $('#projectMenuSettings').onclick=()=>{hideProjectMenu();openProjectSettings()};
+  $('#projectMenuTargets').onclick=()=>{hideProjectMenu();openTargets()};
   $('#projectMenuLanguage').onclick=()=>{hideProjectMenu();openLanguageSettings()};
 }
 function wireProjectSubmenuButton(button,kind){

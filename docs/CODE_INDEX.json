@@ -8528,7 +8528,7 @@
     },
     {
       "file": "src/hosted/http_api.py",
-      "lines": 939,
+      "lines": 942,
       "symbols": [
         {
           "name": "_projects",
@@ -8943,187 +8943,187 @@
         {
           "name": "hosted_tasks",
           "kind": "function",
-          "line": 799
+          "line": 802
         },
         {
           "name": "hosted_task_create",
           "kind": "async_function",
-          "line": 801
+          "line": 804
         },
         {
           "name": "hosted_task_update",
           "kind": "async_function",
-          "line": 803
+          "line": 806
         },
         {
           "name": "hosted_task_delete",
           "kind": "function",
-          "line": 805
+          "line": 808
         },
         {
           "name": "hosted_milestones",
           "kind": "function",
-          "line": 807
+          "line": 810
         },
         {
           "name": "hosted_milestone_create",
           "kind": "async_function",
-          "line": 809
+          "line": 812
         },
         {
           "name": "hosted_canvas_create",
           "kind": "async_function",
-          "line": 813
+          "line": 816
         },
         {
           "name": "hosted_canvas_get",
           "kind": "function",
-          "line": 815
+          "line": 818
         },
         {
           "name": "hosted_canvas_update",
           "kind": "async_function",
-          "line": 818
+          "line": 821
         },
         {
           "name": "hosted_canvas_delete",
           "kind": "function",
-          "line": 820
+          "line": 823
         },
         {
           "name": "hosted_canvas_node",
           "kind": "async_function",
-          "line": 822
+          "line": 825
         },
         {
           "name": "hosted_canvas_edge",
           "kind": "async_function",
-          "line": 824
+          "line": 827
         },
         {
           "name": "hosted_maps",
           "kind": "function",
-          "line": 831
+          "line": 834
         },
         {
           "name": "hosted_map_create",
           "kind": "async_function",
-          "line": 833
+          "line": 836
         },
         {
           "name": "hosted_map_get",
           "kind": "function",
-          "line": 835
+          "line": 838
         },
         {
           "name": "hosted_map_update",
           "kind": "async_function",
-          "line": 843
+          "line": 846
         },
         {
           "name": "hosted_map_delete",
           "kind": "function",
-          "line": 845
+          "line": 848
         },
         {
           "name": "hosted_map_line",
           "kind": "async_function",
-          "line": 847
+          "line": 850
         },
         {
           "name": "hosted_map_item",
           "kind": "async_function",
-          "line": 849
+          "line": 852
         },
         {
           "name": "hosted_map_junction",
           "kind": "async_function",
-          "line": 852
+          "line": 855
         },
         {
           "name": "hosted_reviews",
           "kind": "function",
-          "line": 856
+          "line": 859
         },
         {
           "name": "hosted_review_create",
           "kind": "async_function",
-          "line": 858
+          "line": 861
         },
         {
           "name": "hosted_review_get",
           "kind": "function",
-          "line": 860
+          "line": 863
         },
         {
           "name": "hosted_review_update",
           "kind": "async_function",
-          "line": 863
+          "line": 866
         },
         {
           "name": "hosted_review_delete",
           "kind": "function",
-          "line": 865
+          "line": 868
         },
         {
           "name": "hosted_review_participant",
           "kind": "async_function",
-          "line": 867
+          "line": 870
         },
         {
           "name": "hosted_questionnaires",
           "kind": "function",
-          "line": 869
+          "line": 872
         },
         {
           "name": "hosted_questionnaire_create",
           "kind": "async_function",
-          "line": 871
+          "line": 874
         },
         {
           "name": "_checkpoint_ui",
           "kind": "function",
-          "line": 874
+          "line": 877
         },
         {
           "name": "hosted_checkpoints",
           "kind": "function",
-          "line": 879
+          "line": 882
         },
         {
           "name": "hosted_checkpoint_create",
           "kind": "async_function",
-          "line": 884
+          "line": 887
         },
         {
           "name": "hosted_checkpoint_get",
           "kind": "function",
-          "line": 893
+          "line": 896
         },
         {
           "name": "hosted_history_list",
           "kind": "function",
-          "line": 898
+          "line": 901
         },
         {
           "name": "hosted_autocommit",
           "kind": "async_function",
-          "line": 900
+          "line": 903
         },
         {
           "name": "_commit_history_snapshot",
           "kind": "function",
-          "line": 905
+          "line": 908
         },
         {
           "name": "hosted_local_backup_unavailable",
           "kind": "function",
-          "line": 927
+          "line": 930
         },
         {
           "name": "hosted_unported_bulk_mutation",
           "kind": "function",
-          "line": 938
+          "line": 941
         }
       ]
     },
@@ -23133,7 +23133,7 @@
     },
     {
       "file": "static/js/features/projects/menu.js",
-      "lines": 114,
+      "lines": 116,
       "symbols": [
         {
           "name": "hideProjectSubmenu",
@@ -23178,17 +23178,17 @@
         {
           "name": "wireProjectSubmenuButton",
           "kind": "function",
-          "line": 49
+          "line": 51
         },
         {
           "name": "showProjectSubmenu",
           "kind": "function",
-          "line": 59
+          "line": 61
         },
         {
           "name": "startProjectMenuRename",
           "kind": "function",
-          "line": 107
+          "line": 109
         }
       ]
     },
@@ -23301,6 +23301,208 @@
           "name": "returnToSettings",
           "kind": "function",
           "line": 89
+        }
+      ]
+    },
+    {
+      "file": "static/js/features/projects/targets-model.js",
+      "lines": 71,
+      "symbols": [
+        {
+          "name": "period",
+          "kind": "function",
+          "line": 6
+        },
+        {
+          "name": "defaults",
+          "kind": "function",
+          "line": 14
+        },
+        {
+          "name": "normalize",
+          "kind": "function",
+          "line": 15
+        },
+        {
+          "name": "entry",
+          "kind": "function",
+          "line": 28
+        },
+        {
+          "name": "apply",
+          "kind": "function",
+          "line": 32
+        },
+        {
+          "name": "progress",
+          "kind": "function",
+          "line": 53
+        },
+        {
+          "name": "count",
+          "kind": "function",
+          "line": 56
+        },
+        {
+          "name": "elapsed",
+          "kind": "function",
+          "line": 64
+        }
+      ]
+    },
+    {
+      "file": "static/js/features/projects/targets.js",
+      "lines": 238,
+      "symbols": [
+        {
+          "name": "targetText",
+          "kind": "function",
+          "line": 7
+        },
+        {
+          "name": "targetHtml",
+          "kind": "function",
+          "line": 8
+        },
+        {
+          "name": "targetsContext",
+          "kind": "function",
+          "line": 9
+        },
+        {
+          "name": "targetsCacheKey",
+          "kind": "function",
+          "line": 10
+        },
+        {
+          "name": "targetsCache",
+          "kind": "function",
+          "line": 11
+        },
+        {
+          "name": "targetsRequest",
+          "kind": "function",
+          "line": 12
+        },
+        {
+          "name": "targetsHideTips",
+          "kind": "function",
+          "line": 17
+        },
+        {
+          "name": "loadTargets",
+          "kind": "function",
+          "line": 18
+        },
+        {
+          "name": "loading",
+          "kind": "function",
+          "line": 24
+        },
+        {
+          "name": "targetsEnqueue",
+          "kind": "function",
+          "line": 37
+        },
+        {
+          "name": "flushTargets",
+          "kind": "function",
+          "line": 51
+        },
+        {
+          "name": "save",
+          "kind": "function",
+          "line": 56
+        },
+        {
+          "name": "targetsClock",
+          "kind": "function",
+          "line": 77
+        },
+        {
+          "name": "targetsActivity",
+          "kind": "function",
+          "line": 92
+        },
+        {
+          "name": "targetsManuscriptText",
+          "kind": "function",
+          "line": 101
+        },
+        {
+          "name": "targetsCaptureWriting",
+          "kind": "function",
+          "line": 102
+        },
+        {
+          "name": "targetsFinishWriting",
+          "kind": "function",
+          "line": 107
+        },
+        {
+          "name": "targetsStopSound",
+          "kind": "function",
+          "line": 137
+        },
+        {
+          "name": "targetsPlaySound",
+          "kind": "function",
+          "line": 138
+        },
+        {
+          "name": "targetsCelebrate",
+          "kind": "function",
+          "line": 143
+        },
+        {
+          "name": "targetsAmount",
+          "kind": "function",
+          "line": 148
+        },
+        {
+          "name": "targetsProgressLabel",
+          "kind": "function",
+          "line": 154
+        },
+        {
+          "name": "targetsRing",
+          "kind": "function",
+          "line": 155
+        },
+        {
+          "name": "renderTargets",
+          "kind": "function",
+          "line": 156
+        },
+        {
+          "name": "targetsSwitch",
+          "kind": "function",
+          "line": 183
+        },
+        {
+          "name": "targetsGoalRow",
+          "kind": "function",
+          "line": 184
+        },
+        {
+          "name": "field",
+          "kind": "function",
+          "line": 185
+        },
+        {
+          "name": "openTargets",
+          "kind": "function",
+          "line": 188
+        },
+        {
+          "name": "readGoals",
+          "kind": "function",
+          "line": 195
+        },
+        {
+          "name": "wireRows",
+          "kind": "function",
+          "line": 196
         }
       ]
     },

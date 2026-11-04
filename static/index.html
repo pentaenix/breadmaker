@@ -65,6 +65,7 @@ window.__breadmakerStartupDeadline=setTimeout(()=>window.breadmakerStartupFailed
     </nav>
     <button id="phoneWorkspaceBtn" class="bare-button phone-workspace-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="{{i18n:static.attr.aria.label.ae171502}}"><span aria-hidden="true">☰</span><span id="phoneWorkspaceName"></span></button>
     <div class="top-actions">
+      <button id="targetsTop" class="bare-button targets-top hidden" data-target-status type="button" aria-describedby="targetsTopTip"></button>
       <span id="globalSaveState" class="save-state">{{i18n:static.text.text.7289b6f3}}</span>
       <div class="global-history-controls" role="group" aria-label="{{i18n:static.attr.aria.label.11631504}}">
         <button id="undoBtn" class="icon-button global-history-button" aria-label="{{i18n:global.undo_title}}" aria-describedby="undoTooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H4V2"/><path d="M4.5 7.5A8 8 0 1 1 5.8 17"/></svg></button>
@@ -178,7 +179,7 @@ window.__breadmakerStartupDeadline=setTimeout(()=>window.breadmakerStartupFailed
           <div class="paper-end" contenteditable="false"></div>
         </article>
       </div>
-      <footer class="statusbar"><span id="saveState">{{i18n:static.text.text.7289b6f3}}</span><span id="sceneStatus"></span><span id="wordCount">{{i18n:static.text.text.c6e2a28a}}</span></footer>
+      <footer class="statusbar"><button id="targetsFooter" class="bare-button targets-footer hidden" data-target-status type="button" aria-describedby="targetsFooterTip"></button><span id="saveState">{{i18n:static.text.text.7289b6f3}}</span><span id="sceneStatus"></span><span id="wordCount">{{i18n:static.text.text.c6e2a28a}}</span></footer>
     </section>
 
     <div id="splitResizer" class="split-resizer hidden" role="separator" aria-orientation="vertical" aria-label="{{i18n:static.attr.aria.label.6fd6a021}}" tabindex="0" title="{{i18n:static.attr.title.6e073b9a}}"></div>
@@ -696,6 +697,12 @@ window.__breadmakerStartupDeadline=setTimeout(()=>window.breadmakerStartupFailed
 <script src="/static/js/features/durability/history.js?v=10.5.81"></script>
 <script src="/static/js/features/notes/comments.js?v=10.5.81"></script>
 <script src="/static/js/core/quick_open.js?v=10.5.81"></script>
+<button id="targetsFocus" class="bare-button targets-focus hidden" data-target-status type="button" aria-describedby="targetsFocusTip"></button>
+<div id="targetsTopTip" class="editors-eye-tooltip manuscript-tool-tooltip targets-tip hidden" role="tooltip"></div>
+<div id="targetsFooterTip" class="editors-eye-tooltip manuscript-tool-tooltip targets-tip hidden" role="tooltip"></div>
+<div id="targetsFocusTip" class="editors-eye-tooltip manuscript-tool-tooltip targets-tip hidden" role="tooltip"></div>
+<script src="/static/js/features/projects/targets-model.js?v=10.5.81"></script>
+<script src="/static/js/features/projects/targets.js?v=10.5.81"></script>
 <script src="/static/app.js?v=10.5.81"></script>
 </body>
 </html>
