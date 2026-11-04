@@ -16477,7 +16477,7 @@
     },
     {
       "file": "static/js/features/canvas/hierarchy.js",
-      "lines": 260,
+      "lines": 262,
       "symbols": [
         {
           "name": "restoreCanvasUIState",
@@ -16747,267 +16747,267 @@
         {
           "name": "applyPendingCanvasViewport",
           "kind": "function",
-          "line": 136
+          "line": 138
         },
         {
           "name": "restoreCanvasViewport",
           "kind": "function",
-          "line": 140
+          "line": 142
         },
         {
           "name": "canvasWorldMetrics",
           "kind": "function",
-          "line": 143
+          "line": 145
         },
         {
           "name": "canvasPointFromClient",
           "kind": "function",
-          "line": 144
+          "line": 146
         },
         {
           "name": "canvasDeltaFromClient",
           "kind": "function",
-          "line": 145
+          "line": 147
         },
         {
           "name": "isDevelopmentalStructureCard",
           "kind": "function",
-          "line": 146
+          "line": 148
         },
         {
           "name": "isDevelopmentalPlanningCard",
           "kind": "function",
-          "line": 147
+          "line": 149
         },
         {
           "name": "developmentalObjectVisible",
           "kind": "function",
-          "line": 148
+          "line": 150
         },
         {
           "name": "nodeInDevelopmentalLane",
           "kind": "function",
-          "line": 149
+          "line": 151
         },
         {
           "name": "developmentalPlacedCards",
           "kind": "function",
-          "line": 150
+          "line": 152
         },
         {
           "name": "developmentalUnplacedCards",
           "kind": "function",
-          "line": 151
+          "line": 153
         },
         {
           "name": "developmentalLaneCards",
           "kind": "function",
-          "line": 152
+          "line": 154
         },
         {
           "name": "developmentalCurrentEntityIds",
           "kind": "function",
-          "line": 153
+          "line": 155
         },
         {
           "name": "developmentalMissingItems",
           "kind": "function",
-          "line": 154
+          "line": 156
         },
         {
           "name": "developmentalMissingLanePositions",
           "kind": "function",
-          "line": 155
+          "line": 157
         },
         {
           "name": "assignDevelopmentalLanePositions",
           "kind": "function",
-          "line": 156
+          "line": 158
         },
         {
           "name": "developmentalLaneDropIndex",
           "kind": "function",
-          "line": 157
+          "line": 159
         },
         {
           "name": "developmentalLaneRects",
           "kind": "function",
-          "line": 158
+          "line": 160
         },
         {
           "name": "animateDevelopmentalLaneFrom",
           "kind": "function",
-          "line": 159
+          "line": 161
         },
         {
           "name": "createDevelopmentalDragProxy",
           "kind": "function",
-          "line": 160
+          "line": 162
         },
         {
           "name": "moveDevelopmentalDragProxy",
           "kind": "function",
-          "line": 161
+          "line": 163
         },
         {
           "name": "removeDevelopmentalDragProxy",
           "kind": "function",
-          "line": 162
+          "line": 164
         },
         {
           "name": "developmentalLaneAutoScroll",
           "kind": "function",
-          "line": 163
+          "line": 165
         },
         {
           "name": "syncDevelopmentalStructureToggle",
           "kind": "function",
-          "line": 164
+          "line": 166
         },
         {
           "name": "renderDevelopmentalLane",
           "kind": "function",
-          "line": 165
+          "line": 167
         },
         {
           "name": "addGap",
           "kind": "function",
-          "line": 171
+          "line": 173
         },
         {
           "name": "renderCanvasGuides",
           "kind": "function",
-          "line": 182
+          "line": 184
         },
         {
           "name": "canvasVersionDirty",
           "kind": "function",
-          "line": 183
+          "line": 185
         },
         {
           "name": "nextCanvasVersionName",
           "kind": "function",
-          "line": 184
+          "line": 186
         },
         {
           "name": "loadActiveCanvasVersion",
           "kind": "function",
-          "line": 185
+          "line": 187
         },
         {
           "name": "versionGeometryMatches",
           "kind": "function",
-          "line": 186
+          "line": 188
         },
         {
           "name": "same",
           "kind": "function",
-          "line": 198
+          "line": 200
         },
         {
           "name": "initializeCanvasVersions",
           "kind": "function",
-          "line": 206
+          "line": 208
         },
         {
           "name": "versionSwitchChoice",
           "kind": "function",
-          "line": 207
+          "line": 209
         },
         {
           "name": "refreshCanvasVersionState",
           "kind": "function",
-          "line": 208
+          "line": 210
         },
         {
           "name": "updateActiveCanvasVersion",
           "kind": "function",
-          "line": 209
+          "line": 211
         },
         {
           "name": "switchCanvasVersion",
           "kind": "function",
-          "line": 210
+          "line": 212
         },
         {
           "name": "createCanvasVersion",
           "kind": "function",
-          "line": 212
+          "line": 214
         },
         {
           "name": "renameCanvasVersion",
           "kind": "function",
-          "line": 213
+          "line": 215
         },
         {
           "name": "renameActiveCanvasVersion",
           "kind": "function",
-          "line": 214
+          "line": 216
         },
         {
           "name": "deleteCanvasVersion",
           "kind": "function",
-          "line": 215
+          "line": 217
         },
         {
           "name": "deleteActiveCanvasVersion",
           "kind": "function",
-          "line": 216
+          "line": 218
         },
         {
           "name": "removeMissingVersionItem",
           "kind": "function",
-          "line": 217
+          "line": 219
         },
         {
           "name": "canvasVersionMenuItems",
           "kind": "function",
-          "line": 218
+          "line": 220
         },
         {
           "name": "openCanvasVersionMenu",
           "kind": "function",
-          "line": 219
+          "line": 221
         },
         {
           "name": "structureVersionRows",
           "kind": "function",
-          "line": 220
+          "line": 222
         },
         {
           "name": "openCanvasVersionsPanel",
           "kind": "function",
-          "line": 221
+          "line": 223
         },
         {
           "name": "hideStructurePanelHover",
           "kind": "function",
-          "line": 223
+          "line": 225
         },
         {
           "name": "queueStructurePanelHover",
           "kind": "function",
-          "line": 224
+          "line": 226
         },
         {
           "name": "wireStructurePanelDescriptions",
           "kind": "function",
-          "line": 228
+          "line": 230
         },
         {
           "name": "openStructurePanel",
           "kind": "function",
-          "line": 231
+          "line": 233
         },
         {
           "name": "fitCanvasContents",
           "kind": "function",
-          "line": 244
+          "line": 246
         },
         {
           "name": "selectCanvas",
           "kind": "function",
-          "line": 253
+          "line": 255
         }
       ]
     },

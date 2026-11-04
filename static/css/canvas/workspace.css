@@ -138,7 +138,7 @@
 .canvas-toolbar .canvas-name{flex:0 1 230px;min-width:90px;max-width:300px}
 
 /* Canvas inspectors use the same desktop push-layout and compact panel frame as
-   Notes / Markup / Checkpoints / Cuts. Only small screens may overlay. */
+   Notes / Markup / Checkpoints / Cuts. Shared phone rules use a bottom sheet. */
 #canvasToolPanel.canvas-tool-panel{
   width:290px;
   min-width:255px;
@@ -157,14 +157,6 @@
 #canvasPanelBody .canvas-panel-field>.panel-hint:first-child{margin-top:0}
 #canvasPanelBody .canvas-panel-field>.panel-hint:last-child{margin-bottom:0}
 #canvasPanelBody .full-soft{min-height:32px}
-@media(max-width:640px){
-  #canvasToolPanel.canvas-tool-panel{
-    position:absolute;
-    right:0;top:0;bottom:0;
-    z-index:35;
-    box-shadow:var(--shadow);
-  }
-}
 
 /* Proposed Order header is intentionally quiet; instructions live in the
    toolbar tooltip instead of consuming horizontal lane space. */
