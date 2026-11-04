@@ -186,3 +186,31 @@ def test_canvas_context_menu_timing_and_pointer_cancellation(tmp_path):
         expect(page.locator('#contextMenu')).to_be_visible()
         page.keyboard.press('Escape')
         assert not errors,errors
+
+
+def test_canvas_touch_editor_does_not_require_compatibility_mouse_click(tmp_path):
+    # Chromium can suppress compatibility click/focus immediately after a touch
+    # pan. Pointer events alone must select/focus the touched editable surface.
+    with browser(tmp_path,local=True,page_options={'viewport':{'width':390,'height':844},'is_mobile':True,'has_touch':True}) as (_,page,_):
+        ids,errors=_board(page)
+        card=page.locator(f'.canvas-node[data-id="{ids["a"]}"]')
+        for selector in ('.node-title','.node-body'):
+            page.locator('#canvasStage').focus()
+            editor=card.locator(selector)
+            editor.dispatch_event('pointerdown',{'pointerType':'touch','pointerId':81,'button':0,'bubbles':True})
+            editor.dispatch_event('pointerup',{'pointerType':'touch','pointerId':81,'button':0,'bubbles':True})
+            expect(editor).to_be_focused()
+            assert page.evaluate('(id)=>state.selectedNodes.has(id)',ids['a'])
+        # Focusing must not prevent ordinary typing or canonical persistence.
+        page.keyboard.press('End');page.keyboard.type(' Touch edit.')
+        expect(card.locator('.node-body')).to_contain_text('Touch edit.')
+        page.wait_for_function('(id)=>state.canvasNodes.find(node=>node.id===id).body.includes("Touch edit.")&&!state.canvasNodeTimers.size&&!state.canvasNodeSaveInFlight.size',arg=ids['a'])
+        # The one-frame fallback must yield to a newer intentional focus and
+        # must never apply to ordinary mouse release.
+        for pointer in ('touch','mouse'):
+            assert page.evaluate("""async pointer=>{
+              const editor=document.querySelector('.node-title'),button=$('#addNodePanelBtn');
+              editor.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerType:pointer,button:0}));
+              button.focus();await afterCanvasPaint();return document.activeElement===button;
+            }""",pointer)
+        assert not errors,errors
