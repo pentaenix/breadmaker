@@ -160,7 +160,7 @@ Navigation pauses playback before queued media events can fetch another recordin
 from a departing document. Cancelling navigation preserves the queue for explicit
 Play/Narrate resume. The full UI test shares this regression with the focused
 `BREADMAKER_NARRATION_BROWSER=webkit python tools/narration/test-navigation.py`
-command. It uses synthetic saved WAVs, checks actual media play events and audio
+command. It uses synthetic saved WAVs, checks actual non-silent PCM output and exact audio
 reads, and delivers an ended callback while WebKit holds a replacement document.
 Chromium/Firefox retain the shared suspension, resume, queue and reload checks.
 

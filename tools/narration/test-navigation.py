@@ -1,5 +1,7 @@
 """Focused real saved-audio/navigation check; no inference or external services."""
 import io
+import math
+import struct
 import json
 import os
 from pathlib import Path
@@ -35,7 +37,7 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-navigation-') as home:
         blocks=requests.get(base+f"/api/chapters/{chapter['id']}").json()['blocks']
         audio=io.BytesIO()
         with wave.open(audio,'wb') as out:
-            out.setnchannels(1);out.setsampwidth(2);out.setframerate(24000);out.writeframes(b'\0\0'*24000)
+            out.setnchannels(1);out.setsampwidth(2);out.setframerate(24000);out.writeframes(b''.join(struct.pack('<h',int(5000*math.sin(i*2*math.pi*220/24000))) for i in range(24000*3)))
         for block in blocks:
             text=block['text_content'];metadata={'block_id':block['id'],'voice':'af_heart','source_text':text,'text':text,'start':0,'end':len(text),'timings':[]}
             requests.post(base+'/api/narrations',data={'metadata':json.dumps(metadata)},files={'file':('fixture.wav',audio.getvalue(),'audio/wav')}).raise_for_status()
@@ -47,6 +49,7 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-navigation-') as home:
             page.route('**/narration-engine.js?*',lambda route:route.fulfill(status=200,content_type='text/javascript',body=ENGINE))
             page.goto(base+'/p/'+project['id']);page.locator('#app:not([inert])').wait_for(state='visible');page.locator('#narrationBtn').click()
             page.wait_for_function('()=>narration.records.length===3&&!narration.loading')
+            page.evaluate('async()=>{await narration.audio.setPitch(2);narration.audio.playbackRate=2}')
             check_navigation_lifecycle(page,base,project['id'],name)
             assert not errors,errors
             print(f'PASS: {name} navigation stops queued audio reads; cancelled navigation resumes; normal continuation and reload remain usable.',flush=True)
