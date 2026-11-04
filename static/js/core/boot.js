@@ -71,11 +71,30 @@ function showLeaseLost(initial=false) {
   showModal('Project already open', `<p>${escapeHtml(i18nSource(message))}</p><p class="small-muted">{{i18n:dynamic.html.text.p.549806ae}}</p>`, '<button id="reloadLease">{{i18n:dynamic.html.text.button.959be4d5}}</button>');
   $('#reloadLease').onclick = () => location.reload();
 }
+let leaseNavigationSuspended=false,leaseHeartbeatController=null;
 async function heartbeatLease() {
-  try { await api('/api/lease', {method:'POST'}); }
-  catch (error) { if (error.status === 409) showLeaseLost(false); else console.warn('Lease heartbeat failed', error); }
+  if(leaseLost||leaseNavigationSuspended||leaseHeartbeatController)return;
+  const controller=new AbortController();leaseHeartbeatController=controller;
+  try { await api('/api/lease', {method:'POST',signal:controller.signal}); }
+  catch (error) { if (error.status === 409) showLeaseLost(false); else if(!controller.signal.aborted)console.warn('Lease heartbeat failed', error); }
+  finally { if(leaseHeartbeatController===controller)leaseHeartbeatController=null; }
 }
+function suspendLeaseHeartbeatForNavigation(){leaseNavigationSuspended=true;leaseHeartbeatController?.abort();leaseHeartbeatController=null}
+function resumeLeaseHeartbeatAfterNavigation(){
+  if(!leaseNavigationSuspended||document.visibilityState==='hidden')return;
+  leaseNavigationSuspended=false;heartbeatLease();
+}
+// WebKit can execute timers in the departing document during provisional
+// navigation. Do not renew a lease after release or start requests there.
+window.addEventListener('beforeunload',suspendLeaseHeartbeatForNavigation);
+window.addEventListener('pageshow',resumeLeaseHeartbeatAfterNavigation);
+window.addEventListener('focus',resumeLeaseHeartbeatAfterNavigation);
+// A cancelled leave-page prompt may not emit pageshow. Real interaction
+// resumes renewal; the usual409 fence still prevents editing a foreign lease.
+window.addEventListener('pointerdown',resumeLeaseHeartbeatAfterNavigation,true);
+window.addEventListener('keydown',resumeLeaseHeartbeatAfterNavigation,true);
 window.addEventListener('pagehide', e => {
+  suspendLeaseHeartbeatForNavigation();
   if (e.persisted) return;
   try { const pid=currentProjectIdentity(),uid=runtimeSupports('account_sessions')?'':currentUserIdentity();fetch('/api/lease/release', {method:'POST', headers:{'X-Breadmaker-Client':CLIENT_ID,...(pid?{'X-Breadmaker-Project':pid}:{}),...(uid?{'X-Breadmaker-User':uid}:{})}, keepalive:true}).catch(()=>{}); } catch {}
 });
