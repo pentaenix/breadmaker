@@ -80,16 +80,23 @@ function appendCollectionQuickAdd(container,label,onClick){
 }
 
 // Phone menus retain the existing command owners, menu renderer and undo fences.
-let phoneCommandMenuOwner=null;
+let phoneCommandMenuOwner=null,phoneCommandMenuLabel=null;
 function ownsPhoneCommandMenu(){return phoneCommandMenuOwner&&!$('#contextMenu').classList.contains('hidden')&&$('#contextMenu button')?.dataset.phoneCommandOwner===phoneCommandMenuOwner.id}
-function resetPhoneCommandMenu(){if(phoneCommandMenuOwner)phoneCommandMenuOwner.setAttribute('aria-expanded','false');phoneCommandMenuOwner=null;const menu=$('#contextMenu');menu.classList.remove('phone-command-menu');menu.removeAttribute('role');menu.removeAttribute('aria-label')}
+function resetPhoneCommandMenu(){
+  const menu=$('#contextMenu');
+  if(phoneCommandMenuOwner)phoneCommandMenuOwner.setAttribute('aria-expanded','false');
+  // A different popup may have replaced this shared root in the same turn.
+  // Remove only our metadata, never the replacement owner's label/role.
+  if(phoneCommandMenuLabel!==null&&menu.getAttribute('aria-label')===phoneCommandMenuLabel){menu.removeAttribute('aria-label');if(menu.getAttribute('role')==='menu')menu.removeAttribute('role')}
+  phoneCommandMenuOwner=null;phoneCommandMenuLabel=null;menu.classList.remove('phone-command-menu');
+}
 function openPhoneCommandMenu(button,items){
   if(!phoneRailMedia.matches)return;
   const rect=button.getBoundingClientRect();closeTransientUI();
   const menu=$('#contextMenu');menu.classList.add('phone-command-menu');
   openContextMenu(rect.left,rect.bottom+6,items,{anchorRect:rect,owner:button});
   phoneCommandMenuOwner=button;button.setAttribute('aria-expanded','true');
-  menu.setAttribute('role','menu');menu.setAttribute('aria-label',button.getAttribute('aria-label'));
+  phoneCommandMenuLabel=button.getAttribute('aria-label');menu.setAttribute('role','menu');menu.setAttribute('aria-label',phoneCommandMenuLabel);
   menu.querySelectorAll('button').forEach((item,index)=>{item.dataset.phoneCommandOwner=button.id;item.setAttribute('role','menuitem');if(items[index]?.current)item.setAttribute('aria-current','page')});
   menu.querySelector('button:not(:disabled)')?.focus({preventScroll:true});
 }

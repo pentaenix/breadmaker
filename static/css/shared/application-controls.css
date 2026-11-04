@@ -169,6 +169,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   #manuscriptView:has(>.right-panel:not(.hidden))>#manuscriptPrimaryPane{height:50%}
   #manuscriptView>.right-panel{position:absolute;left:0;right:0;top:auto;bottom:0;flex:none;width:100%;min-width:0;height:50%;max-height:50%;min-height:0;border-left:0;border-top:1px solid var(--line2);border-radius:10px 10px 0 0;box-shadow:var(--shadow);z-index:35;overscroll-behavior:contain}
   #manuscriptView>.right-panel .panel-head{position:sticky;top:0;flex-shrink:0;background:var(--surface);z-index:2}
+  /* A selected note uses the sheet as one scroller; desktop list minimums
+     otherwise squeeze its editor to a few pixels when the keyboard opens. */
+  #commentsPanel:not(.detail-hidden){display:block;overflow-y:auto}
+  #commentsPanel:not(.detail-hidden) .comments-list{min-height:0;max-height:110px}
+  #commentsPanel:not(.detail-hidden) .comments-detail{overflow:visible;min-height:44px}
   .modal,.project-overlay{top:var(--phone-viewport-top,0px);bottom:auto;height:var(--phone-viewport-height,100dvh)}
   .modal-card,.project-card{max-height:calc(100% - 16px)}
   .modal-head,.modal-actions{position:sticky;background:var(--surface);z-index:2}
@@ -177,7 +182,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .find-options,.replace-row{flex-wrap:wrap}.replace-row input{flex-basis:100%}
   .phone-command-menu{max-width:calc(100vw - 12px);max-height:calc(var(--phone-viewport-height,100dvh) - 80px);overflow:auto;overscroll-behavior:contain}
   .phone-command-menu button{min-height:44px}
-  input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select{font-size:16px}
+  :is(#app,#modal,.project-overlay,.quick-open) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select){font-size:16px}
 }
 
 @media(max-width:640px){.phone-command-menu button[aria-current="page"]{background:var(--accent-soft);font-weight:bold}}

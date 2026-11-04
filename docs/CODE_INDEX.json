@@ -15073,7 +15073,7 @@
     },
     {
       "file": "static/js/core/collections.js",
-      "lines": 120,
+      "lines": 127,
       "symbols": [
         {
           "name": "phoneRailOwnsMenu",
@@ -15123,17 +15123,17 @@
         {
           "name": "openPhoneCommandMenu",
           "kind": "function",
-          "line": 86
+          "line": 93
         },
         {
           "name": "syncPhoneWorkspaceName",
           "kind": "function",
-          "line": 107
+          "line": 114
         },
         {
           "name": "syncPhoneViewport",
           "kind": "function",
-          "line": 112
+          "line": 119
         }
       ]
     },
