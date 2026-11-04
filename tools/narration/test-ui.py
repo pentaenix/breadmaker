@@ -12,6 +12,7 @@ from pathlib import Path
 
 import requests
 from playwright.sync_api import sync_playwright, expect
+from navigation_ui import check_navigation_lifecycle
 
 ROOT=Path(__file__).resolve().parents[2]
 STUB="""window.BreadmakerKokoroEngine=class {
@@ -407,6 +408,7 @@ with tempfile.TemporaryDirectory(prefix='breadmaker-narration-ui-') as home:
             page.locator('[data-narration-setting="showAllLanguages"]').click();page.locator('#narrationSettingsSave').click();expect(page.locator('#settingsNarration')).to_be_visible();page.locator('#modalClose').click()
             assert page.locator('#narrationVoice').evaluate('(select)=>[...select.options].every(option=>/^[ab]/.test(option.value))')
             assert len(saves)==saved,'Language filtering and settings must not create/regenerate recordings'
+            check_navigation_lifecycle(page,base,project['id'],browser_name)
             assert not errors,errors
             print('PASS: ellipsis/right-click menus on both actions, exact Generate-only selection with autoplay enabled, silent cached scopes, persisted continuation, grouped View, settings/GPU disposal, ordered whole-book generation, stop/save/resume and unattended paused-audio generation.',flush=True)
             browser.close()
