@@ -78,3 +78,43 @@ function compactRailLabel(value,prefixes=[]){
 function appendCollectionQuickAdd(container,label,onClick){
   if(!container)return;const wrap=document.createElement('div');wrap.className='collection-quick-add-row';const button=document.createElement('button');button.type='button';button.className='collection-quick-add';button.title=label;button.setAttribute('aria-label',label);button.innerHTML='<span aria-hidden="true">+</span>';button.onclick=event=>{event.preventDefault();event.stopPropagation();onClick()};wrap.appendChild(button);container.appendChild(wrap);
 }
+
+// Phone menus retain the existing command owners, menu renderer and undo fences.
+let phoneCommandMenuOwner=null;
+function ownsPhoneCommandMenu(){return phoneCommandMenuOwner&&!$('#contextMenu').classList.contains('hidden')&&$('#contextMenu button')?.dataset.phoneCommandOwner===phoneCommandMenuOwner.id}
+function resetPhoneCommandMenu(){if(phoneCommandMenuOwner)phoneCommandMenuOwner.setAttribute('aria-expanded','false');phoneCommandMenuOwner=null;const menu=$('#contextMenu');menu.classList.remove('phone-command-menu');menu.removeAttribute('role');menu.removeAttribute('aria-label')}
+function openPhoneCommandMenu(button,items){
+  if(!phoneRailMedia.matches)return;
+  const rect=button.getBoundingClientRect();closeTransientUI();
+  const menu=$('#contextMenu');menu.classList.add('phone-command-menu');
+  openContextMenu(rect.left,rect.bottom+6,items,{anchorRect:rect,owner:button});
+  phoneCommandMenuOwner=button;button.setAttribute('aria-expanded','true');
+  menu.setAttribute('role','menu');menu.setAttribute('aria-label',button.getAttribute('aria-label'));
+  menu.querySelectorAll('button').forEach((item,index)=>{item.dataset.phoneCommandOwner=button.id;item.setAttribute('role','menuitem');if(items[index]?.current)item.setAttribute('aria-current','page')});
+  menu.querySelector('button:not(:disabled)')?.focus({preventScroll:true});
+}
+new MutationObserver(()=>{if(phoneCommandMenuOwner&&!ownsPhoneCommandMenu())resetPhoneCommandMenu()}).observe($('#contextMenu'),{attributes:true,attributeFilter:['class'],childList:true});
+document.addEventListener('keydown',event=>{
+  if(!ownsPhoneCommandMenu())return;
+  const controls=[...$('#contextMenu').querySelectorAll('button:not(:disabled)')];
+  if(event.key==='Escape'){const owner=phoneCommandMenuOwner;closeTransientUI();resetPhoneCommandMenu();owner.focus({preventScroll:true});event.preventDefault();event.stopImmediatePropagation()}
+  else if(['ArrowDown','ArrowUp','Home','End','Tab'].includes(event.key)){
+    const index=controls.indexOf(document.activeElement),back=event.key==='ArrowUp'||event.key==='Tab'&&event.shiftKey;
+    controls[event.key==='Home'?0:event.key==='End'?controls.length-1:(index+(back?-1:1)+controls.length)%controls.length]?.focus({preventScroll:true});event.preventDefault();event.stopImmediatePropagation();
+  }
+},true);
+$('#phoneWorkspaceBtn').onclick=()=>openPhoneCommandMenu($('#phoneWorkspaceBtn'),$$('.main-tabs .main-tab').map(tab=>({label:tab.textContent.trim(),current:tab.classList.contains('active'),action:()=>tab.click()})));
+function syncPhoneWorkspaceName(){$('#phoneWorkspaceName').textContent=$('.main-tabs .main-tab.active')?.textContent.trim()||''}
+new MutationObserver(syncPhoneWorkspaceName).observe($('.main-tabs'),{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class']});syncPhoneWorkspaceName();
+
+// Safari's keyboard/browser chrome changes the visual viewport independently
+// of layout height. Constrain only phone layouts, and leave pinch zoom alone.
+function syncPhoneViewport(){
+  const viewport=window.visualViewport,root=document.documentElement;
+  if(!phoneRailMedia.matches){root.style.removeProperty('--phone-viewport-height');root.style.removeProperty('--phone-viewport-top');return}
+  if(viewport&&Math.abs(viewport.scale-1)>.01)return;
+  root.style.setProperty('--phone-viewport-height',`${Math.round(viewport?.height||innerHeight)}px`);
+  root.style.setProperty('--phone-viewport-top',`${Math.round(viewport?.offsetTop||0)}px`);
+}
+window.visualViewport?.addEventListener('resize',syncPhoneViewport);window.visualViewport?.addEventListener('scroll',syncPhoneViewport);
+window.addEventListener('resize',syncPhoneViewport);phoneRailMedia.addEventListener('change',()=>{closeTransientUI();resetPhoneCommandMenu();syncPhoneViewport()});syncPhoneViewport();

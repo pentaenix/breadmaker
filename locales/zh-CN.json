@@ -3607,7 +3607,8 @@
     "auth.recovery.continue": "继续",
     "auth.recovery.back": "返回登录",
     "auth.privacy_policy": "隐私政策",
-    "auth.login.error_generic": "无法使用这些信息登录。请检查电子邮箱和密码，或使用账户恢复。"
+    "auth.login.error_generic": "无法使用这些信息登录。请检查电子邮箱和密码，或使用账户恢复。",
+    "phone.manuscript_tools": "手稿工具"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

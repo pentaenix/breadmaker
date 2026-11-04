@@ -29,7 +29,7 @@ STUB="""window.BreadmakerKokoroEngine=class {
 
 
 @contextmanager
-def browser(home,*,local=False):
+def browser(home,*,local=False,page_options=None,engine="chromium"):
     with socket.socket() as sock:
         sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
     base=f'http://127.0.0.1:{port}'
@@ -49,7 +49,11 @@ def browser(home,*,local=False):
             except requests.RequestException:pass
             time.sleep(.05)
         else:raise AssertionError('Synthetic server startup failed')
-        driver,instance,_=start_browser();page=instance.new_page()
+        driver,instance,_=start_browser()
+        if engine=='webkit':
+            instance.close();instance=driver.webkit.launch(headless=True)
+        elif engine!='chromium':raise ValueError('Unsupported test browser')
+        page=instance.new_page(**(page_options or {}))
         def script(name):
             body=(ROOT/'tools/narration'/f'{name}.mjs').read_text()
             return lambda route:route.fulfill(status=200,content_type='text/javascript',body=body)

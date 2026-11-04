@@ -35,3 +35,5 @@ The Manuscript browser domain is split by responsibility while preserving Breadm
 - `imports.js` — document-tab append import, Main Manuscript import, new-project import, import destination selection, and import progress UI.
 
 These are runtime owners, not compatibility wrappers. Application Undo/Redo/structural history belongs to `static/js/core/history.js`; routing/view discovery belongs to `core/routing.js`; generic collection-rail helpers belong to `core/collections.js`. Do not move implementations back to `static/app.js`, `core/ui.js`, or unrelated features. The dedicated Notes/comments workspace lives under `static/js/features/notes/`, and History/Cuts lives under `features/durability/`.
+
+At phone widths, the existing toolbar actions are exposed through the compact Manuscript tools menu. The original controls still own each action and pressed state. Tool panels open as bottom sheets using half the available workspace; the writing area remains above them. Global phone viewport/menus live in `core/collections.js` and shared application controls.

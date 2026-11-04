@@ -3607,7 +3607,8 @@
     "auth.recovery.continue": "Continuer",
     "auth.recovery.back": "Retour à la connexion",
     "auth.privacy_policy": "Politique de confidentialité",
-    "auth.login.error_generic": "Impossible de se connecter avec ces informations. Vérifiez votre e-mail et votre mot de passe ou utilisez la récupération de compte."
+    "auth.login.error_generic": "Impossible de se connecter avec ces informations. Vérifiez votre e-mail et votre mot de passe ou utilisez la récupération de compte.",
+    "phone.manuscript_tools": "Outils du manuscrit"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

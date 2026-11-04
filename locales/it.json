@@ -3607,7 +3607,8 @@
     "auth.recovery.continue": "Continua",
     "auth.recovery.back": "Torna all’accesso",
     "auth.privacy_policy": "Informativa sulla privacy",
-    "auth.login.error_generic": "Impossibile accedere con questi dati. Controlla email e password oppure usa il recupero account."
+    "auth.login.error_generic": "Impossibile accedere con questi dati. Controlla email e password oppure usa il recupero account.",
+    "phone.manuscript_tools": "Strumenti del manoscritto"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

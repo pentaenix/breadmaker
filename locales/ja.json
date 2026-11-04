@@ -3607,7 +3607,8 @@
     "auth.recovery.continue": "続行",
     "auth.recovery.back": "ログインに戻る",
     "auth.privacy_policy": "プライバシーポリシー",
-    "auth.login.error_generic": "この情報ではログインできませんでした。メールアドレスとパスワードを確認するか、アカウント復旧を使用してください。"
+    "auth.login.error_generic": "この情報ではログインできませんでした。メールアドレスとパスワードを確認するか、アカウント復旧を使用してください。",
+    "phone.manuscript_tools": "原稿ツール"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

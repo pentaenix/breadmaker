@@ -3607,7 +3607,8 @@
     "auth.recovery.continue": "Continuar",
     "auth.recovery.back": "Volver al inicio de sesión",
     "auth.privacy_policy": "Política de privacidad",
-    "auth.login.error_generic": "No se pudo iniciar sesión con esos datos. Revisa tu correo y contraseña o usa la recuperación de cuenta."
+    "auth.login.error_generic": "No se pudo iniciar sesión con esos datos. Revisa tu correo y contraseña o usa la recuperación de cuenta.",
+    "phone.manuscript_tools": "Herramientas del manuscrito"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

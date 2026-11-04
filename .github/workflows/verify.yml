@@ -30,9 +30,9 @@ jobs:
           tests/test_v10569_narration_recordings.py::test_atomic_editor_save_without_redundant_tab_field_can_publish
           tests/test_v10569_editing_hosted.py::test_unicode_expanded_vocabulary_publishes_canonical_ranges_and_supports_undo_redo
       - name: Install Linux browser dependencies
-        run: python -m playwright install-deps chromium
-      - name: Install pinned Playwright Chromium
-        run: python -m playwright install chromium
+        run: python -m playwright install-deps chromium webkit
+      - name: Install pinned Playwright Chromium and WebKit
+        run: python -m playwright install chromium webkit
       # Exercise the real navigation boundary before spending time on the full
       # core stage. Keep the verifier's existing discovery, watchdog and accounting.
       - name: Check startup modal and first-project navigation

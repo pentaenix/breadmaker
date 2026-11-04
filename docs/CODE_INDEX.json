@@ -15073,7 +15073,7 @@
     },
     {
       "file": "static/js/core/collections.js",
-      "lines": 80,
+      "lines": 120,
       "symbols": [
         {
           "name": "phoneRailOwnsMenu",
@@ -15109,6 +15109,31 @@
           "name": "appendCollectionQuickAdd",
           "kind": "function",
           "line": 77
+        },
+        {
+          "name": "ownsPhoneCommandMenu",
+          "kind": "function",
+          "line": 84
+        },
+        {
+          "name": "resetPhoneCommandMenu",
+          "kind": "function",
+          "line": 85
+        },
+        {
+          "name": "openPhoneCommandMenu",
+          "kind": "function",
+          "line": 86
+        },
+        {
+          "name": "syncPhoneWorkspaceName",
+          "kind": "function",
+          "line": 107
+        },
+        {
+          "name": "syncPhoneViewport",
+          "kind": "function",
+          "line": 112
         }
       ]
     },
@@ -21019,7 +21044,7 @@
     },
     {
       "file": "static/js/features/manuscript/workspace.js",
-      "lines": 136,
+      "lines": 141,
       "symbols": [
         {
           "name": "syncFocusModeControl",
