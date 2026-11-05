@@ -3,6 +3,7 @@
 const targetsModel=window.BreadmakerTargetsModel;
 const targets={context:'',pid:'',user:'',doc:targetsModel.defaults(),pending:[],ready:false,loading:null,saving:null,lastTick:Date.now(),lastActivity:0,active:false,signature:'',audio:null,revision:0};
 const targetsJournal=window.BreadmakerTargetsJournal;
+let targetsDeparting=false;
 const targetText=(key,vars={})=>i18nText(`targets.${key}`,vars);
 const targetHtml=(key,vars={})=>escapeHtml(targetText(key,vars));
 function targetsContext(){return currentProjectIdentity()&&!state.reviewerSession?`${currentProjectIdentity()}:${currentUserIdentity()}`:''}
@@ -50,9 +51,9 @@ function targetsEnqueue(delta={},at=Date.now(),settings=null,intervals=null){
   if(achieved.length)targetsCelebrate(achieved);
 }
 async function flushTargets(){
-  if(!targets.ready||targets.context!==targetsContext())return;
+  if(targetsDeparting||document.hidden||!targets.ready||targets.context!==targetsContext())return;
   if(targets.saving){await targets.saving;return flushTargets()}
-  const revision=targets.revision,context=targets.context,current=()=>revision===targets.revision&&context===targetsContext();
+  const revision=targets.revision,context=targets.context,current=()=>!targetsDeparting&&!document.hidden&&revision===targets.revision&&context===targetsContext();
   const save=async()=>{
     const records=await targetsJournal.read(context);if(!current())return;
     targetsMergePending(records);
@@ -294,10 +295,13 @@ async function openTargets(){
 for(const [button,tip] of [['targetsTop','targetsTopTip'],['targetsFooter','targetsFooterTip'],['targetsFocus','targetsFocusTip']]){
   $(`#${button}`).onclick=()=>{targetsHideTips();openTargets()};attachManuscriptToolTooltip(button,tip,{delay:300});
 }
-window.addEventListener('blur',()=>{targetsClock();targets.lastActivity=0;targetsStopSound();targetsHideTips();flushTargets().catch(()=>{})});
+window.addEventListener('blur',()=>{targetsClock();targets.lastActivity=0;targetsStopSound();targetsHideTips()});
 window.addEventListener('focus',()=>{targets.lastTick=Date.now();renderTargets();if(targets.ready)flushTargets().catch(()=>{})});
-document.addEventListener('visibilitychange',()=>{targetsClock();targets.lastActivity=0;targets.lastTick=Date.now();if(document.hidden){targetsStopSound();targetsHideTips();flushTargets().catch(()=>{})}});
-window.addEventListener('pagehide',()=>{targetsClock();flushTargets().catch(()=>{})});
+document.addEventListener('visibilitychange',()=>{targetsClock();targets.lastActivity=0;targets.lastTick=Date.now();if(document.hidden){targetsStopSound();targetsHideTips()}else if(targets.ready)flushTargets().catch(()=>{})});
+// Keep the synchronous pre-journal on navigation; a fresh revision read cannot
+// reliably start in an unloading document. Replay safely on reopen/BFCache return.
+window.addEventListener('pagehide',()=>{targetsDeparting=true;targetsClock();targetsStopSound();targetsHideTips()});
+window.addEventListener('pageshow',()=>{targetsDeparting=false;targets.lastTick=Date.now();if(targets.ready)flushTargets().catch(()=>{})});
 window.addEventListener('online',()=>{if(!targets.ready)loadTargets();else flushTargets().catch(()=>{})});
 let targetsHeartbeat=0;
 setInterval(()=>{
