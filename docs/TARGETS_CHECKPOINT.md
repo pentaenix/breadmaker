@@ -29,7 +29,9 @@ account-free and work offline; hosting is not a prerequisite for tracking goals.
   alone does not keep it alive. Switching away pauses both; sleep/scheduler gaps
   over ten seconds are not counted. Timer heartbeats split midnight correctly.
   Overlapping clock intervals from multiple devices are unioned, so the same
-  elapsed second is not counted twice. Completed time goals stop collecting
+  elapsed second is not counted twice. Changing timezones does not discard
+  recorded time: contributions keep their original local date, and saved progress
+  survives reopening. Completed time goals stop collecting
   intervals and retain their achieved total. Clock ticks for completed goals do
   not create new journal records or progress writes. The next calendar period
   resumes timing automatically; unfinished goals and net writing still count.
