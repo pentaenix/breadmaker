@@ -73,3 +73,21 @@ def test_ci_mirror_existing_malformed_list_still_blocks(monkeypatch,capsys):
     monkeypatch.setattr(module,'Path',lambda _:MalformedList())
     assert module.main()==2
     assert 'ValueError' in capsys.readouterr().err
+
+
+def test_ci_mirror_layout_diagnostics_strip_credentials_query_and_arbitrary_fields():
+    from scripts.configure_ci_ubuntu_mirror import safe_layout_summary
+    result=safe_layout_summary('https://user:secret@archive.ubuntu.com/ubuntu/?token=secret#secret priority:1 secret\n')
+    assert result==[{'feed':'https://archive.ubuntu.com/ubuntu/','fields':['priority:1','<redacted>']}]
+    assert 'secret' not in str(result)
+
+
+def test_ci_mirror_layout_diagnostics_handle_malformed_uris_without_printing_input():
+    from scripts.configure_ci_ubuntu_mirror import safe_layout_summary
+    assert safe_layout_summary('http://[broken priority:1')[0]['feed']=='<unrecognized>'
+
+
+def test_ci_mirror_layout_diagnostics_redact_unknown_hosts_and_nonstandard_paths():
+    from scripts.configure_ci_ubuntu_mirror import safe_layout_summary
+    assert safe_layout_summary('https://secret.invalid/secret priority:1')[0]['feed']=='<unrecognized>'
+    assert safe_layout_summary('https://archive.ubuntu.com/secret priority:1')[0]['feed']=='https://archive.ubuntu.com/<redacted>'

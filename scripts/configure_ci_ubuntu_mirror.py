@@ -7,10 +7,13 @@ signing keys. Runners without the Azure mirror list retain their vendor sources.
 """
 from __future__ import annotations
 
+import json
 import os
+import re
 from pathlib import Path
 import platform
 import sys
+from urllib.parse import urlsplit
 
 _AZURE = 'http://azure.archive.ubuntu.com/ubuntu/'
 _ARCHIVE = 'https://archive.ubuntu.com/ubuntu/'
@@ -34,6 +37,22 @@ def prefer_https_archive(text: str) -> str:
                    if line.strip() else line for line in text.splitlines(keepends=True))
 
 
+def safe_layout_summary(text: str) -> list[dict]:
+    """Expose public feed shape, stripping credentials and arbitrary fields."""
+    result=[]
+    for line in text.splitlines()[:12]:
+        fields=line.split()
+        if not fields:continue
+        try:
+            uri=urlsplit(fields[0])
+            trusted=uri.hostname in {'azure.archive.ubuntu.com','archive.ubuntu.com','security.ubuntu.com'} or bool(uri.hostname and uri.hostname.endswith('.ec2.archive.ubuntu.com'))
+            feed=f'{uri.scheme}://{uri.hostname}'+(uri.path if uri.path in {'/ubuntu','/ubuntu/',''} else '/<redacted>') if trusted else '<unrecognized>'
+        except ValueError:
+            feed='<unrecognized>'
+        result.append({'feed':feed,'fields':[field if re.fullmatch(r'(?:priority|arch|architecture):[0-9A-Za-z_,-]+',field) else '<redacted>' for field in fields[1:]]})
+    return result
+
+
 def main() -> int:
     if (sys.platform != 'linux' or os.environ.get('GITHUB_ACTIONS') != 'true'
             or os.environ.get('RUNNER_OS') != 'Linux' or os.geteuid() != 0):
@@ -44,6 +63,7 @@ def main() -> int:
         print('CI_APT_MIRROR_REQUIRES_UBUNTU_24_04', file=sys.stderr)
         return 2
     path = Path('/etc/apt/apt-mirrors.txt')
+    original=None
     try:
         original = path.read_text()
         updated = prefer_https_archive(original)
@@ -56,6 +76,8 @@ def main() -> int:
         return 0
     except (OSError, ValueError) as error:
         print(f'CI_APT_MIRROR_CONFIGURATION_BLOCKED:{type(error).__name__}', file=sys.stderr)
+        if isinstance(error,ValueError) and isinstance(original,str):
+            print('CI_APT_MIRROR_LAYOUT '+json.dumps(safe_layout_summary(original)),file=sys.stderr)
         return 2
     print('Ubuntu HTTPS archive preferred; existing repositories and signing keys preserved.')
     return 0
