@@ -57,7 +57,9 @@ def test_readable_hosted_sparse_canvas_map_and_frozen_history_restore_unchanged(
         assert reference['map_lines'][0]['title']=='Main'
         assert not {'review_participants','project_memberships','ui_state','bookmarks'} & set(reference)
         restored=HostedProjectPackageService(make().projects).import_bytes(archive.read('Project.breadmaker'),OWNER)
-    restored_domain=make().projects.domain;rp={'project_id':restored['id']}
+    restored_runtime=make();restored_domain=restored_runtime.projects.domain;rp={'project_id':restored['id']}
+    with restored_runtime.context.bind(restored['id'],user_id=OWNER):
+        assert restored_runtime.assets.read_blob(saved.api_path)==payload
     restored_canvas=restored_domain.list('canvas',rp,user_id=OWNER)[0]
     rv=restored_domain.list('canvas_version',{**rp,'canvas_id':restored_canvas['id']},user_id=OWNER)[0]
     items=restored_domain.list('canvas_version_item',{**rp,'canvas_id':restored_canvas['id'],'version_id':rv['id']},user_id=OWNER)
