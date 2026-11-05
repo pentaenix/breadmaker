@@ -6,7 +6,7 @@ account-free and work offline; hosting is not a prerequisite for tracking goals.
 
 ## Product behavior
 
-- The Project menu places Targets between Project Settings and Language.
+- The Project menu places Targets… between Project Settings and Language.
 - Targets starts disabled. The modal initially shows only its activation switch
   and Save/Cancel. Disabling preserves saved goals/history and hides all status UI.
 - Up to eight optional goals can mix words, characters, foreground app time and
@@ -134,3 +134,19 @@ Continuing release checks:
 
 No new cloud service, schema migration, paid resource, publishing step, out-of-app
 notification, or manuscript storage dependency was introduced.
+
+## Presentation in 10.5.86
+
+The goal picker exposes one editor at a time while preserving up to eight unsaved
+goal drafts. Save retains old historical snapshots when a goal is replaced. The
+modal shell/body stay fixed; only expanded History scrolls, showing about 2.5
+list rows at normal phone/desktop heights. Activity view groups observed daily,
+weekly or monthly periods. Missing periods are not invented as failures; unlike
+measures are not added together. Group cells expose exact goals/counts on hover
+and keyboard focus.
+
+Achieved statuses retain actual current/target amounts in hover and accessibility
+labels. The existing ring completes with a small center dot. Chime choices use
+native theme-aware settings selectors; selecting a sound previews it, without a
+separate preview button. Opening the dialog does not play a sound, and closing or
+leaving the app stops previews. No external notification channel is introduced.

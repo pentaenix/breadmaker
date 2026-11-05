@@ -11,7 +11,6 @@ import time
 
 from playwright.sync_api import expect
 import requests
-import pytest
 
 from scripts.browser_runtime import start_browser, close_browser
 from hosted.narration.models import encode_manifest
@@ -168,9 +167,7 @@ def test_native_narration_stays_accountless_and_preserves_full_metadata_and_reus
         assert not external,external
 
 
-@pytest.mark.parametrize('local',[False,True])
-@pytest.mark.parametrize('engine',['chromium','webkit'])
-def test_saved_generation_finishes_while_playback_read_is_pending(tmp_path,local,engine):
+def _saved_generation_finishes_while_playback_read_is_pending(tmp_path,local,engine):
     with browser(tmp_path,local=local,engine=engine) as (base,page,pid):
         page.locator('#narrationBtn').click()
         page.wait_for_function('()=>!narration.loading&&narration.project===currentProjectIdentity()')
@@ -207,6 +204,12 @@ def test_saved_generation_finishes_while_playback_read_is_pending(tmp_path,local
             expect(page.locator('.manuscript-block')).to_have_text('Synthetic narration passage.')
         finally:
             for route in held:route.abort()
+
+
+def test_saved_generation_finishes_with_pending_player_local_chromium(tmp_path):_saved_generation_finishes_while_playback_read_is_pending(tmp_path,True,'chromium')
+def test_saved_generation_finishes_with_pending_player_local_webkit(tmp_path):_saved_generation_finishes_while_playback_read_is_pending(tmp_path,True,'webkit')
+def test_saved_generation_finishes_with_pending_player_hosted_chromium(tmp_path):_saved_generation_finishes_while_playback_read_is_pending(tmp_path,False,'chromium')
+def test_saved_generation_finishes_with_pending_player_hosted_webkit(tmp_path):_saved_generation_finishes_while_playback_read_is_pending(tmp_path,False,'webkit')
 
 
 def test_unfinished_publication_keeps_saving_status_and_generation_busy(tmp_path):

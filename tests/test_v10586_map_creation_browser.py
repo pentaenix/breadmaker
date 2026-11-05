@@ -1,12 +1,8 @@
 """Create from the committed empty Map without redundant hydration requests."""
 import re
-import pytest
-import requests
 from playwright.sync_api import expect
 
-from test_v41812_browser import (
-    scene_live_server, scene_browser, _new_project, _page, _shutdown_page,
-)
+from tests.test_v10569_narration_browser import browser
 from tests.test_v10565_browser import first_workspace
 from tests.test_v10548_browser import hosted_browser
 
@@ -65,8 +61,7 @@ def _creation_contract(page):
     return ids
 
 
-@pytest.mark.parametrize('width',(1400,900,430))
-def test_hosted_map_creation_reuses_commit_and_preserves_undo_and_viewport(tmp_path,width):
+def _hosted_map_creation_reuses_commit_and_preserves_undo_and_viewport(tmp_path,width):
     with first_workspace(tmp_path,'maps') as (_base,page,_pid,_errors):
         page.set_viewport_size({'width':width,'height':900})
         ids=_creation_contract(page)
@@ -78,18 +73,22 @@ def test_hosted_map_creation_reuses_commit_and_preserves_undo_and_viewport(tmp_p
         assert page.evaluate('()=>state.maps.map(row=>row.id)')==ids
 
 
-def test_local_map_creation_reuses_commit_and_preserves_undo_and_viewport(scene_live_server,scene_browser):
-    tab,_chapter=_new_project(scene_live_server,'SYNTHETIC fast Map creation')
-    requests.post(scene_live_server+'/api/chapters',json={
-        'title':'SYNTHETIC ruler chapter','tab_id':tab['id']},timeout=2).raise_for_status()
-    page,errors=_page(scene_live_server,scene_browser)
-    try:
+def test_hosted_map_creation_reuses_commit_at_1400px(tmp_path):_hosted_map_creation_reuses_commit_and_preserves_undo_and_viewport(tmp_path,1400)
+def test_hosted_map_creation_reuses_commit_at_900px(tmp_path):_hosted_map_creation_reuses_commit_and_preserves_undo_and_viewport(tmp_path,900)
+def test_hosted_map_creation_reuses_commit_at_430px(tmp_path):_hosted_map_creation_reuses_commit_and_preserves_undo_and_viewport(tmp_path,430)
+
+
+def test_local_map_creation_reuses_commit_and_preserves_undo_and_viewport(tmp_path):
+    # Own the complete driver lifecycle: a module-scoped browser must not leave
+    # a running Playwright event loop across later hosted test contexts.
+    with browser(tmp_path,local=True) as (_base,page,_pid):
+        errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
+        page.evaluate("""async()=>await api('/api/chapters',{method:'POST',body:JSON.stringify({
+          title:'SYNTHETIC ruler chapter',tab_id:state.documents.find(doc=>doc.is_manuscript).id})})""")
         page.locator('.main-tab[data-view="maps"]').click()
         _creation_contract(page)
         expect(page.locator('#mapSvg')).to_contain_text('SYNTHETIC ruler chapter')
         assert not errors,errors
-    finally:
-        _shutdown_page(page)
 
 
 def test_map_creation_does_not_publish_unfinished_save(tmp_path):
