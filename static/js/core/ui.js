@@ -50,9 +50,9 @@ function showNestedModal(title,bodyHtml,actionsHtml='',onDismiss=null){
 // Shared context-menu renderer used by Manuscript, Canvas, Maps, Reviews, and other features.
 let contextMenuTipTimer=null;
 function hideContextMenuTip(){clearTimeout(contextMenuTipTimer);contextMenuTipTimer=null;$('#contextMenuHoverTip')?.remove()}
-function queueContextMenuTip(button,text){
+function queueContextMenuTip(button,text,{focus=false}={}){
   hideContextMenuTip();if(!text)return;
-  contextMenuTipTimer=setTimeout(()=>{if(!button.isConnected||!button.matches(':hover'))return;const tip=document.createElement('div');tip.id='contextMenuHoverTip';tip.className='context-menu-hover-tip';tip.textContent=text;document.body.appendChild(tip);const r=button.getBoundingClientRect(),b=tip.getBoundingClientRect(),gap=7,edge=7;let left=r.right+gap;if(left+b.width>innerWidth-edge)left=Math.max(edge,r.left-b.width-gap);let top=Math.max(edge,Math.min(innerHeight-b.height-edge,r.top+(r.height-b.height)/2));tip.style.left=`${Math.round(left)}px`;tip.style.top=`${Math.round(top)}px`},300)
+  contextMenuTipTimer=setTimeout(()=>{if(!button.isConnected||!(button.matches(':hover')||(focus&&document.activeElement===button)))return;const tip=document.createElement('div');tip.id='contextMenuHoverTip';tip.className='context-menu-hover-tip';tip.textContent=text;document.body.appendChild(tip);const r=button.getBoundingClientRect(),b=tip.getBoundingClientRect(),gap=7,edge=7;let left=r.right+gap;if(left+b.width>innerWidth-edge)left=Math.max(edge,r.left-b.width-gap);let top=Math.max(edge,Math.min(innerHeight-b.height-edge,r.top+(r.height-b.height)/2));tip.style.left=`${Math.round(left)}px`;tip.style.top=`${Math.round(top)}px`},300)
 }
 function contextMenuItems(container,items,root){
   for(const item of items){

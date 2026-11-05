@@ -17,3 +17,8 @@ pan; drawing tools and object gestures retain their existing touch behavior. The
 viewport stores zoom and scroll position, without a persistent hand/pointer mode.
 Space on buttons, menus, fields outside the board and modals keeps native keyboard
 behavior; Canvas text editing can still convert a held Space into a pan gesture.
+
+The 18px dotted background uses a 1 CSS-pixel radius in normal and Split Canvas.
+The old subpixel radius could rasterize to no visible pixels at device scale 1;
+real-pixel browser checks cover light/dusk/dark and three zoom levels. Pointer,
+Space-pan, right-drag and stationary context menus retain their existing owners.

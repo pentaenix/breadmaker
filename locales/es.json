@@ -3646,7 +3646,14 @@
     "targets.load_failed": "No se pudieron cargar los objetivos. Inténtalo de nuevo.",
     "targets.save_failed": "No se pudieron guardar los objetivos. Tus cambios se conservan en este dispositivo para reintentar.",
     "targets.invalid": "Introduce un número entero positivo para cada objetivo.",
-    "targets.sound_unavailable": "No se pudo reproducir este sonido. Inténtalo de nuevo."
+    "targets.sound_unavailable": "No se pudo reproducir este sonido. Inténtalo de nuevo.",
+    "targets.menu": "Objetivos…",
+    "targets.choose_goal": "Meta",
+    "targets.history_view": "Vista del historial",
+    "targets.history_list": "Lista",
+    "targets.history_chart": "Actividad",
+    "targets.history_period": "Período",
+    "targets.history_group": "{count}/{total} metas alcanzadas"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

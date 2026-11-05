@@ -159,11 +159,11 @@ function targetsAmount(value,metric){
   return minutes>=60?`${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,'0')}:${rest}`:`${minutes}:${rest}`;
 }
 function targetsProgressLabel(p){return `${targetsAmount(p.value,p.metric)}/${targetsAmount(p.amount,p.metric)} ${targetText(p.metric)}`}
-function targetsRing(ratio,complete=false){return complete?'<span class="targets-check" aria-hidden="true">✓</span>':`<svg class="targets-ring" viewBox="0 0 20 20" aria-hidden="true"><circle class="targets-ring-track" cx="10" cy="10" r="7.5"/><circle class="targets-ring-value" cx="10" cy="10" r="7.5" pathLength="100" stroke-dasharray="${Math.max(0,Math.min(100,ratio*100))} 100"/></svg>`}
+function targetsRing(ratio,complete=false){return `<svg class="targets-ring${complete?' targets-check':''}" viewBox="0 0 20 20" aria-hidden="true"><circle class="targets-ring-track" cx="10" cy="10" r="7.5"/><circle class="targets-ring-value" cx="10" cy="10" r="7.5" pathLength="100" stroke-dasharray="${complete?100:Math.max(0,Math.min(100,ratio*100))} 100"/>${complete?'<circle class="targets-ring-seed" cx="10" cy="10" r="2"/>':''}</svg>`}
 function renderTargets(){
   const enabled=targets.ready&&targets.doc.enabled&&targets.context===targetsContext(),progress=enabled?targetsModel.progress(targets.doc):[];
   const shown=progress.length>0,complete=shown&&progress.every(p=>p.achieved),ratio=shown?progress.reduce((sum,p)=>sum+p.ratio,0)/progress.length:0;
-  const description=progress.map(p=>`${targetText(p.period)} · ${p.achieved?targetText('achieved_'+p.period):targetsProgressLabel(p)}`).join('\n');
+  const description=progress.map(p=>`${targetText(p.period)} · ${targetsProgressLabel(p)}${p.achieved?' · '+targetText('achieved_'+p.period):''}`).join('\n');
   for(const id of ['targetsTop','targetsFooter','targetsFocus']){
     const button=$(`#${id}`);if(!button)continue;button.classList.toggle('hidden',!shown);button.setAttribute('aria-label',description||targetText('title'));
     if(!shown)continue;
@@ -192,29 +192,77 @@ function targetsGoalRow(goal){
   const field=(label,input)=>`<div class="field"><label>${targetHtml(label)}${input}</label></div>`;
   return `<div class="targets-goal" data-target-goal="${escapeHtml(goal.id)}">${field('metric',`<select data-target-field="metric" aria-label="${targetHtml('metric')}">${targetsModel.metrics.map(metric=>`<option value="${metric}"${goal.metric===metric?' selected':''}>${targetHtml(metric)}</option>`).join('')}</select>`)}${field('period',`<select data-target-field="period" aria-label="${targetHtml('period')}">${targetsModel.periods.map(period=>`<option value="${period}"${goal.period===period?' selected':''}>${targetHtml(period)}</option>`).join('')}</select>`)}${field(['time','active'].includes(goal.metric)?'minutes':'amount',`<input data-target-field="amount" type="number" inputmode="numeric" min="1" max="100000000" step="1" required value="${['time','active'].includes(goal.metric)?goal.amount/60:goal.amount}" aria-label="${targetHtml('amount')}">`)}<button class="bare-button ui-close-button" data-target-remove type="button" aria-label="${targetHtml('remove')}">×</button></div>`;
 }
+function targetsHistoryRows(history){
+  return history.map(e=>`<div class="targets-history-row"><span><b>${targetHtml(e.period)} · ${targetHtml(e.metric)}</b><small>${escapeHtml(i18nDate(e.start,{month:'short',day:'numeric',year:'numeric'}))} · ${escapeHtml(targetsProgressLabel(e))}</small></span>${e.achieved?`<span role="img" aria-label="${targetHtml('achieved_'+e.period)}">${targetsRing(1,true)}</span>`:`<span class="small-muted">${targetHtml(e.end<=Date.now()?'not_achieved':'in_progress')}</span>`}</div>`).join('')||`<p class="small-muted">${targetHtml('history_empty')}</p>`;
+}
+function targetsHistoryChart(history,period){
+  // Only observed periods are shown. Missing days are not failed goals, and
+  // unlike measures are never summed into one invented word/time total.
+  const groups=new Map();
+  for(const entry of history.filter(e=>e.period===period)){const rows=groups.get(entry.key)||[];rows.push(entry);groups.set(entry.key,rows)}
+  return [...groups].sort(([a],[b])=>a.localeCompare(b)).slice(period==='daily'?-28:-12).map(([key,rows])=>{
+    const achieved=rows.filter(e=>e.achieved).length,description=rows.map(e=>targetsProgressLabel(e)+(e.achieved?' · '+targetText('achieved_'+period):'')).join('\n');
+    const date=new Date(key+'T12:00:00'),label=i18nDate(date.getTime(),{month:'short',...(period==='monthly'?{year:'numeric'}:{day:'numeric'})});
+    const summary=`${targetText(period)} · ${label} · ${targetText('history_group',{count:i18nNumber(achieved),total:i18nNumber(rows.length)})}\n${description}`;
+    return `<button type="button" class="targets-history-cell${achieved===rows.length?' achieved':achieved?' partial':''}" aria-label="${escapeHtml(summary)}" data-target-history-tip="${escapeHtml(summary)}"><span>${escapeHtml(label)}</span>${achieved===rows.length?targetsRing(1,true):''}</button>`;
+  }).join('')||`<p class="small-muted">${targetHtml('history_empty')}</p>`;
+}
 async function openTargets(){
   if(!await loadTargets()){toast(targetText('load_failed'),4000);return}
   await flushTargets().catch(()=>{});
   const context=targets.context,draft=structuredClone(targets.doc),original=new Map(draft.goals.map(g=>[g.id,{...g}]));
-  let closing=false;
-  const history=Object.values(draft.entries).sort((a,b)=>b.start-a.start).slice(0,30),achieved=Object.values(draft.entries).filter(e=>e.achieved).length;
-  showModal(targetText('title'),`<form class="targets-form" id="targetsForm">${targetsSwitch('enabled','enable',draft.enabled)}<div id="targetsOptions"${draft.enabled?'':' class="hidden"'}><section class="project-settings-section"><h3 class="project-settings-section-title">${targetHtml('goals')}</h3><div id="targetsGoalList">${draft.goals.map(targetsGoalRow).join('')}</div><button id="targetsAdd" class="quiet-button" type="button">+ ${targetHtml('add')}</button></section><section class="project-settings-section"><h3 class="project-settings-section-title">${targetHtml('celebration')}</h3>${targetsSwitch('banner','banner',draft.banner)}${targetsSwitch('chime','chime',draft.chime)}<div id="targetsSounds" class="targets-sounds${draft.chime?'':' hidden'}"><div class="field"><label for="targetsSound">${targetHtml('sound')}</label><select id="targetsSound">${targetsModel.sounds.map(name=>`<option${name===draft.sound?' selected':''}>${name}</option>`).join('')}</select></div><button id="targetsPreview" class="quiet-button" type="button">${targetHtml('preview')}</button></div></section><section class="project-settings-section"><h3 class="project-settings-section-title">${targetHtml('history')}</h3><p class="small-muted">${targetHtml('history_summary',{count:i18nNumber(achieved),total:i18nNumber(Object.keys(draft.entries).length)})}</p><div class="targets-history">${history.length?history.map(e=>`<div class="targets-history-row"><span><b>${targetHtml(e.period)} · ${targetHtml(e.metric)}</b><small>${escapeHtml(i18nDate(e.start,{month:'short',day:'numeric',year:'numeric'}))} · ${escapeHtml(targetsProgressLabel(e))}</small></span><span class="${e.achieved?'targets-check':'small-muted'}">${e.achieved?'✓':targetHtml(e.end<=Date.now()?'not_achieved':'in_progress')}</span></div>`).join(''):`<p class="small-muted">${targetHtml('history_empty')}</p>`}</div></section></div><p id="targetsError" class="small-muted" role="status"></p></form>`,`<button id="targetsCancel" class="bare-button">${escapeHtml(i18nSource('Cancel'))}</button><button id="targetsSave" class="soft-button">${escapeHtml(i18nSource('Save'))}</button>`,()=>{closing=true;targetsStopSound();targetsHideTips();hideContextMenuTip()});
+  let closing=false,activeGoal=draft.goals[0]?.id||'';
+  const history=Object.values(draft.entries).sort((a,b)=>b.start-a.start),achieved=Object.values(draft.entries).filter(e=>e.achieved).length;
+  showModal(targetText('title'),`<form class="targets-form" id="targetsForm">
+    ${targetsSwitch('enabled','enable',draft.enabled)}
+    <div id="targetsOptions"${draft.enabled?'':' class="hidden"'}>
+      <section class="project-settings-section targets-goals-section">
+        <h3 class="project-settings-section-title">${targetHtml('goals')}</h3>
+        <div class="targets-goal-actions"><div class="field" id="targetsGoalPicker"><label for="targetsGoalSelect">${targetHtml('choose_goal')}</label><select id="targetsGoalSelect"></select></div><button id="targetsAdd" class="quiet-button" type="button">+ ${targetHtml('add')}</button></div>
+        <div id="targetsGoalList">${draft.goals.map(targetsGoalRow).join('')}</div>
+      </section>
+      <section class="project-settings-section targets-celebration-section">
+        <h3 class="project-settings-section-title">${targetHtml('celebration')}</h3>
+        ${targetsSwitch('banner','banner',draft.banner)}${targetsSwitch('chime','chime',draft.chime)}
+        <div id="targetsSounds" class="targets-sounds${draft.chime?'':' hidden'}"><div class="field"><label for="targetsSound">${targetHtml('sound')}</label><span class="narration-select"><select id="targetsSound">${targetsModel.sounds.map(name=>`<option${name===draft.sound?' selected':''}>${name}</option>`).join('')}</select><svg class="view-menu-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg></span></div></div>
+      </section>
+      <section class="project-settings-section targets-history-section" id="targetsHistoryDetails">
+        <button id="targetsHistoryToggle" type="button" class="project-settings-row" aria-expanded="false" aria-controls="targetsHistoryContent"><span><b>${targetHtml('history')}</b><small>${targetHtml('history_summary',{count:i18nNumber(achieved),total:i18nNumber(Object.keys(draft.entries).length)})}</small></span><span class="project-settings-row-caret" aria-hidden="true">›</span></button>
+        <div id="targetsHistoryContent" class="targets-history-content hidden"><div class="targets-history-controls"><label>${targetHtml('history_view')}<select id="targetsHistoryView"><option value="list">${targetHtml('history_list')}</option><option value="chart">${targetHtml('history_chart')}</option></select></label><label id="targetsHistoryPeriodField" class="hidden">${targetHtml('history_period')}<select id="targetsHistoryPeriod">${targetsModel.periods.map(period=>`<option value="${period}">${targetHtml(period)}</option>`).join('')}</select></label></div>
+        <div class="targets-history" tabindex="0" role="region" aria-label="${targetHtml('history')}"><div id="targetsHistoryList">${targetsHistoryRows(history.slice(0,30))}</div><div id="targetsHistoryChart" class="targets-history-chart hidden"></div></div></div>
+      </section>
+    </div><p id="targetsError" class="small-muted" role="status"></p></form>`,
+    `<button id="targetsCancel" class="bare-button">${escapeHtml(i18nSource('Cancel'))}</button><button id="targetsSave" class="soft-button">${escapeHtml(i18nSource('Save'))}</button>`,()=>{closing=true;targetsStopSound();targetsHideTips();hideContextMenuTip()});
   const readGoals=()=>$$('[data-target-goal]',$('#targetsGoalList')).map(row=>{const id=row.dataset.targetGoal,metric=$('[data-target-field="metric"]',row).value,period=$('[data-target-field="period"]',row).value,amount=Number($('[data-target-field="amount"]',row).value)*(['time','active'].includes(metric)?60:1);return {id,metric,period,amount,created:original.get(id)?.created||Date.now()}});
+  const syncGoalPicker=()=>{
+    const rows=$$('[data-target-goal]');if(!rows.some(row=>row.dataset.targetGoal===activeGoal))activeGoal=rows[0]?.dataset.targetGoal||'';
+    $('#targetsGoalPicker').classList.toggle('hidden',rows.length<2);
+    $('#targetsGoalSelect').innerHTML=readGoals().map(goal=>`<option value="${escapeHtml(goal.id)}">${targetHtml(goal.period)} · ${targetHtml(goal.metric)} · ${escapeHtml(targetsAmount(goal.amount,goal.metric))}</option>`).join('');
+    $('#targetsGoalSelect').value=activeGoal;for(const row of rows)row.hidden=row.dataset.targetGoal!==activeGoal;
+  };
   const wireRows=()=>{
     for(const row of $$('[data-target-goal]')){
-      $('[data-target-remove]',row).onclick=()=>{hideContextMenuTip();row.remove();$('#targetsAdd').disabled=false};
+      $('[data-target-remove]',row).onclick=()=>{hideContextMenuTip();row.remove();wireRows()};
       for(const select of row.querySelectorAll('select')){select.setAttribute('aria-description',targetText('count_help')+' '+targetText('time_help'));select.onmouseenter=()=>queueContextMenuTip(select,targetText(['time','active'].includes($('[data-target-field="metric"]',row).value)?'time_help':'count_help'));select.onmouseleave=hideContextMenuTip;select.onblur=hideContextMenuTip}
-      $('[data-target-field="metric"]',row).onchange=()=>{const input=$('[data-target-field="amount"]',row),metric=$('[data-target-field="metric"]',row).value;input.parentElement.firstChild.textContent=targetText(['time','active'].includes(metric)?'minutes':'amount')};
+      $('[data-target-field="metric"]',row).onchange=()=>{const input=$('[data-target-field="amount"]',row),metric=$('[data-target-field="metric"]',row).value;input.parentElement.firstChild.textContent=targetText(['time','active'].includes(metric)?'minutes':'amount');syncGoalPicker()};
+      for(const input of row.querySelectorAll('input,select'))input.oninput=syncGoalPicker;
     }
-    $('#targetsAdd').disabled=$$('[data-target-goal]').length>=8;
+    $('#targetsAdd').disabled=$$('[data-target-goal]').length>=8;syncGoalPicker();
   };
   for(const toggle of $$('[data-target-toggle]'))toggle.onclick=()=>{const value=toggle.getAttribute('aria-checked')!=='true';toggle.setAttribute('aria-checked',String(value));toggle.classList.toggle('active',value);draft[toggle.dataset.targetToggle]=value;if(toggle.dataset.targetToggle==='enabled')$('#targetsOptions').classList.toggle('hidden',!value);if(toggle.dataset.targetToggle==='chime')$('#targetsSounds').classList.toggle('hidden',!value)};
-  $('#targetsAdd').onclick=()=>{if($$('[data-target-goal]').length>=8)return;$('#targetsGoalList').insertAdjacentHTML('beforeend',targetsGoalRow({id:uid(),metric:'words',period:'daily',amount:500}));wireRows();$$('[data-target-goal]').at(-1).querySelector('select').focus()};
-  $('#targetsPreview').onclick=()=>targetsPlaySound($('#targetsSound').value,true);
+  $('#targetsAdd').onclick=()=>{if($$('[data-target-goal]').length>=8)return;$('#targetsGoalList').insertAdjacentHTML('beforeend',targetsGoalRow({id:uid(),metric:'words',period:'daily',amount:500}));activeGoal=$$('[data-target-goal]').at(-1).dataset.targetGoal;wireRows();$$('[data-target-goal]').at(-1).querySelector('select').focus()};
+  $('#targetsGoalSelect').onchange=event=>{activeGoal=event.target.value;syncGoalPicker()};
+  $('#targetsSound').onchange=()=>targetsPlaySound($('#targetsSound').value,true);
+  const renderHistory=()=>{
+    const chart=$('#targetsHistoryView').value==='chart';$('#targetsHistoryPeriodField').classList.toggle('hidden',!chart);$('#targetsHistoryList').classList.toggle('hidden',chart);$('#targetsHistoryChart').classList.toggle('hidden',!chart);hideContextMenuTip();
+    if(chart){$('#targetsHistoryChart').innerHTML=targetsHistoryChart(history,$('#targetsHistoryPeriod').value);for(const cell of $$('[data-target-history-tip]')){const show=()=>queueContextMenuTip(cell,cell.dataset.targetHistoryTip);cell.onmouseenter=show;cell.onfocus=()=>queueContextMenuTip(cell,cell.dataset.targetHistoryTip,{focus:true});cell.onmouseleave=cell.onblur=hideContextMenuTip}}
+  };
+  $('#targetsHistoryView').onchange=$('#targetsHistoryPeriod').onchange=renderHistory;$('#targetsHistoryToggle').onclick=()=>{const open=$('#targetsHistoryToggle').getAttribute('aria-expanded')!=='true';$('#targetsHistoryToggle').setAttribute('aria-expanded',String(open));$('#targetsHistoryDetails').classList.toggle('expanded',open);$('#targetsHistoryContent').classList.toggle('hidden',!open);hideContextMenuTip()};
   $('#targetsCancel').onclick=()=>closeModal();
   const save=async event=>{
     event?.preventDefault();if(context!==targetsContext()){closeModal();return}
-    if(draft.enabled&&!$('#targetsForm').reportValidity())return;
+    const invalid=$$('[data-target-goal]').find(row=>!row.querySelector('input').checkValidity());
+    if(draft.enabled&&invalid){activeGoal=invalid.dataset.targetGoal;syncGoalPicker();invalid.querySelector('input').reportValidity();return}
     const goals=readGoals();
     if(draft.enabled&&goals.some(g=>!Number.isInteger(g.amount)||g.amount<=0||g.amount>100000000)){$('#targetsError').textContent=targetText('invalid');return}
     // A changed goal starts fresh; immutable old snapshots remain in History.

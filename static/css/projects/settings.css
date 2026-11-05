@@ -2,24 +2,53 @@
 /* Targets extends the existing settings/modal grammar. The status ring is the
    only new visual primitive; it conveys proportional progress in little space. */
 .modal-card:has(.targets-form){display:flex;flex-direction:column;overflow:hidden;width:min(640px,calc(100% - 30px))}
-.modal-card:has(.targets-form) #modalBody{overflow:auto;min-height:0}
+.modal-card:has(.targets-form) #modalBody{overflow:hidden;min-height:0;display:flex;flex-direction:column}
+.targets-form{display:flex;flex-direction:column;min-height:0}
+#targetsOptions{display:flex;flex-direction:column;min-height:0}
+.targets-goals-section,.targets-celebration-section{flex:none}
+.targets-form .project-settings-section{padding:10px 0 4px}
+.targets-goal-actions{display:flex;align-items:flex-end;gap:8px;margin-bottom:8px}
+.targets-goal-actions>.field{flex:1;min-width:0;margin:0}
+.targets-goal-actions>.quiet-button{flex:none;width:auto;min-height:32px}
+#targetsError:empty{display:none}
 .modal-card:has(.targets-form)>.modal-head,.modal-card:has(.targets-form)>.modal-actions{flex:none}
 .targets-form>.project-settings-switch-row{border-bottom:0}
 .targets-form .project-settings-switch-row>b{font-size:12px}
-.targets-form .project-settings-section-title{margin:0 0 6px}
+.targets-form .project-settings-switch-row{padding:10px 0}
+.targets-form .project-settings-section-title{margin:0}
 .targets-form .small-muted{font-size:11px;line-height:1.5}
 .targets-goal{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(72px,.8fr) 28px;gap:8px;align-items:center;margin-bottom:6px}
+.targets-goal[hidden]{display:none}
 .targets-goal .field{min-width:0;margin:0}
 .targets-goal label{display:block;font-size:11px}
 .targets-goal select,.targets-goal input{margin-top:5px;width:100%;min-width:0}
 .targets-goal [data-target-remove]{margin-top:15px}
-.targets-sounds{display:flex;align-items:flex-end;gap:10px;margin-block:8px}
+.targets-sounds{display:flex;align-items:flex-end;gap:10px;margin-block:8px 4px}
 .targets-sounds .field{flex:1;min-width:0;margin:0}
-.targets-history{max-height:210px;overflow:auto}
-.targets-history-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 2px;border-bottom:1px solid var(--line)}
+.targets-sounds label{display:block;font-size:11px;margin-bottom:5px}
+.targets-form select,.targets-form select option{background-color:var(--surface);color:var(--text);color-scheme:light}
+:root[data-theme=dark] .targets-form select,:root[data-theme=dark] .targets-form select option{color-scheme:dark}
+.targets-history-section{min-height:0}
+.targets-history-section.expanded{display:flex;flex-direction:column;flex:1 1 auto}
+.targets-history-section>#targetsHistoryToggle{list-style:none;flex:none;padding:7px 2px}
+.targets-history-section>#targetsHistoryToggle::-webkit-details-marker{display:none}
+.targets-history-section.expanded>#targetsHistoryToggle .project-settings-row-caret{transform:rotate(90deg)}
+.targets-history-content{display:flex;flex-direction:column;min-height:0;flex:1}
+.targets-history-controls{display:flex;gap:8px;flex:none;margin:4px 0 6px}
+.targets-history-controls>label{display:flex;align-items:center;gap:7px;font-size:11px;min-width:0}
+.targets-history-controls select{width:auto;min-width:0;padding:5px}
+.targets-history{height:140px;max-height:140px;min-height:0;overflow:auto;overscroll-behavior:contain;flex:1 1 140px;scrollbar-gutter:stable}
+.targets-history-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 2px;border-bottom:1px solid var(--line);min-height:56px}
 .targets-history-row>span:first-child{min-width:0}
 .targets-history-row b,.targets-history-row small{display:block;overflow-wrap:anywhere;font-size:11px}
 .targets-history-row small{color:var(--muted);margin-top:3px}
+.targets-history-chart{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;padding:3px 1px}
+.targets-history-chart>p{grid-column:1/-1}
+.targets-history-cell{min-width:0;min-height:38px;display:flex;align-items:center;justify-content:center;gap:3px;border:1px solid var(--line);border-radius:4px;background:var(--surface);padding:5px 2px;color:var(--muted);font-size:10px}
+.targets-history-cell.achieved{background:color-mix(in srgb,var(--accent) 14%,var(--surface));border-color:var(--accent);color:var(--text)}
+.targets-history-cell.partial{background:var(--surface2);border-style:dashed}
+.targets-history-cell .targets-ring{width:12px;height:12px}
+.targets-ring .targets-ring-seed{fill:var(--accent);stroke:none}
 .targets-top{display:grid;place-items:center;flex:none;width:25px;height:28px;padding:3px;color:var(--muted)}
 .targets-ring{width:18px;height:18px;display:block;flex:none;transform:rotate(-90deg)}
 .targets-ring circle{fill:none;stroke-width:1.8}

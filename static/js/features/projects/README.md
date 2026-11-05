@@ -28,3 +28,13 @@ Project administration is package-owned in 10.3.5. The package keeps destructive
 - `export_recovery.js` — PDF export, project verification, and Recovery-backup UI.
 
 Do not recreate `features/projects.js` as a compatibility facade. Destructive controls remain reachable from Project Settings even when project state is unhealthy, matching Breadmaker's pre-alpha recovery rules.
+
+Targets uses the same native settings controls and compact section spacing. A
+single goal editor plus direct goal selector keeps all eight drafts available
+without forcing the whole dialog to scroll. Only the bounded History region
+scrolls (about 2.5 rows); its disclosure offers a list or observed-period activity
+view for daily/weekly/monthly goals. Missing periods are not painted as failures
+and unlike measures are not summed. Sound selection previews that choice, while
+opening the modal stays silent; cancellation/blur/context changes stop preview.
+Achieved indicators complete the existing ring with a quiet center dot, and
+hover/accessibility descriptions retain actual current/target amounts.

@@ -36,7 +36,7 @@ function renderProjectMenu(){
     ${projectMenuButton('projectMenuExport','Export',{submenu:true})}
     <div class="context-sep"></div>
     ${projectMenuButton('projectMenuSettings','Project Settings…')}
-    ${projectMenuButton('projectMenuTargets',i18nText('targets.title'))}
+    ${projectMenuButton('projectMenuTargets',i18nText('targets.menu'))}
     ${projectMenuButton('projectMenuLanguage',i18nText('settings.language.row_label'))}
   `;
   $('#projectMenuRename')?.addEventListener('click',e=>{e.stopPropagation();startProjectMenuRename()});

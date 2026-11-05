@@ -9,3 +9,9 @@ Maps browser behavior lives here rather than in `static/app.js` or shared UI inf
 - `metro.js` — Metro View derived-poster modeling and rendering.
 
 The files remain ordered classic scripts. Shared typography primitives come from `core/typography.js`; generic compact-label parsing and collection quick-add construction come from `core/collections.js`; Map-specific wrappers/preferences stay in this package.
+
+A newly committed hosted Map is already empty: creation seeds its detail cache
+and starts from an empty viewport without duplicate detail/viewport reads. Local
+creation loads its manuscript ruler projection once before selecting the Map.
+Existing Map selection still restores its saved viewport. Structural Undo/Redo
+and failed-finish rollback remain authoritative.

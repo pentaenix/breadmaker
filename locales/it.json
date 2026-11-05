@@ -3646,7 +3646,14 @@
     "targets.load_failed": "Impossibile caricare gli obiettivi. Riprova.",
     "targets.save_failed": "Impossibile salvare gli obiettivi. Le modifiche restano su questo dispositivo per riprovare.",
     "targets.invalid": "Inserisci un numero intero positivo per ogni obiettivo.",
-    "targets.sound_unavailable": "Impossibile riprodurre questo suono. Riprova."
+    "targets.sound_unavailable": "Impossibile riprodurre questo suono. Riprova.",
+    "targets.menu": "Obiettivi…",
+    "targets.choose_goal": "Obiettivo",
+    "targets.history_view": "Vista cronologia",
+    "targets.history_list": "Elenco",
+    "targets.history_chart": "Attività",
+    "targets.history_period": "Periodo",
+    "targets.history_group": "{count}/{total} obiettivi raggiunti"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

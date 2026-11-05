@@ -51,7 +51,9 @@ def browser(home,*,local=False,page_options=None,engine="chromium"):
         else:raise AssertionError('Synthetic server startup failed')
         driver,instance,_=start_browser()
         if engine=='webkit':
-            instance.close();instance=driver.webkit.launch(headless=True)
+            instance.close();print('NARRATION_BROWSER_PHASE: webkit-launch',flush=True)
+            instance=driver.webkit.launch(headless=True)
+            print('NARRATION_BROWSER_PHASE: webkit-ready',flush=True)
         elif engine!='chromium':raise ValueError('Unsupported test browser')
         page=instance.new_page(**(page_options or {}))
         def script(name):
@@ -163,3 +165,105 @@ def test_native_narration_stays_accountless_and_preserves_full_metadata_and_reus
         expect(page.locator('.narration-recording')).to_have_count(1)
         expect(page.locator('.manuscript-block').first).to_have_text('Synthetic narration passage.')
         assert not external,external
+
+
+def _saved_generation_finishes_while_playback_read_is_pending(tmp_path,local,engine):
+    with browser(tmp_path,local=local,engine=engine) as (base,page,pid):
+        page.locator('#narrationBtn').click()
+        page.wait_for_function('()=>!narration.loading&&narration.project===currentProjectIdentity()')
+        # Leave the actual playback transport pending after inference and publication.
+        # The recording is complete; loading its player cannot own generation status.
+        held=[]
+        pattern='**/api/narrations/*/audio' if local else '**/api/narrations/*/manifest'
+        page.route(pattern,lambda route:held.append(route))
+        page.evaluate('''()=>{
+            narration.audio.native.muted=true;
+            narrationPreferences.value.autoplay=false;
+            narrationPreferences.value.earlyPlayback=false;
+            window.pendingGeneration=generateNarrations([narrationSource(document.querySelector('.manuscript-block'))]);
+        }''')
+        try:
+            page.wait_for_function('()=>narration.records.length===1')
+            print('NARRATION_COMPLETION_PHASE: saved',flush=True)
+            expect(page.locator('#narrationProgress')).to_be_hidden(timeout=1500)
+            expect(page.locator('#narrationChapter')).to_be_enabled()
+            expect(page.locator('.narration-recording')).to_have_count(1)
+            assert held,'The player read must still be pending during the completion assertion'
+            assert page.evaluate('()=>!narration.busy&&!narration.selected&&window.syntheticGenerations===1')
+            # New work must invalidate the old automatic playback, even before
+            # another recording is selected or the delayed read returns.
+            page.evaluate('''async()=>await generateNarrations(
+                [narrationSource(document.querySelector('.manuscript-block'))],true,{generateOnly:true})''')
+            print('NARRATION_COMPLETION_PHASE: replacement-saved',flush=True)
+            for route in held:route.continue_()
+            held.clear()
+            page.evaluate('async()=>await pendingGeneration')
+            page.wait_for_function('()=>!narration.busy')
+            print('NARRATION_COMPLETION_PHASE: pending-read-released',flush=True)
+            assert page.evaluate('()=>!narration.selected&&!narration.url&&narration.audio.paused&&window.syntheticGenerations===2')
+            expect(page.locator('.manuscript-block')).to_have_text('Synthetic narration passage.')
+        finally:
+            for route in held:route.abort()
+
+
+def test_saved_generation_finishes_with_pending_player_local_chromium(tmp_path):_saved_generation_finishes_while_playback_read_is_pending(tmp_path,True,'chromium')
+def test_saved_generation_finishes_with_pending_player_local_webkit(tmp_path):_saved_generation_finishes_while_playback_read_is_pending(tmp_path,True,'webkit')
+def test_saved_generation_finishes_with_pending_player_hosted_chromium(tmp_path):_saved_generation_finishes_while_playback_read_is_pending(tmp_path,False,'chromium')
+def test_saved_generation_finishes_with_pending_player_hosted_webkit(tmp_path):_saved_generation_finishes_while_playback_read_is_pending(tmp_path,False,'webkit')
+
+
+def test_unfinished_publication_keeps_saving_status_and_generation_busy(tmp_path):
+    with browser(tmp_path) as (base,page,pid):
+        page.locator('#narrationBtn').click()
+        page.wait_for_function('()=>!narration.loading&&narration.project===currentProjectIdentity()')
+        held=[]
+        page.route('**/api/narrations/uploads/*/finish',lambda route:held.append(route))
+        page.evaluate('''()=>{window.savingGeneration=generateNarrations(
+            [narrationSource(document.querySelector('.manuscript-block'))],false,{generateOnly:true})}''')
+        try:
+            page.wait_for_function('()=>document.querySelector("#narrationProgressEstimate").textContent===i18nText("narration.saving")')
+            # Exceed the real saving estimate, without replacing the actual clock.
+            page.wait_for_timeout(800)
+            expect(page.locator('#narrationProgressEstimate')).to_have_text('Saving recording…',timeout=500)
+            expect(page.locator('#narrationChapter')).to_be_disabled()
+            assert held and page.evaluate('()=>narration.busy&&narration.records.length===0')
+            for route in held:route.continue_()
+            held.clear()
+            page.evaluate('async()=>await savingGeneration')
+            expect(page.locator('#narrationProgress')).to_be_hidden()
+            expect(page.locator('.narration-recording')).to_have_count(1)
+        finally:
+            for route in held:route.abort()
+
+
+def test_deleted_recording_cannot_install_a_late_buffered_player_response(tmp_path):
+    with browser(tmp_path,local=True) as (base,page,pid):
+        page.locator('#narrationBtn').click()
+        page.wait_for_function('()=>!narration.loading&&narration.project===currentProjectIdentity()')
+        held=[]
+        page.route('**/api/narrations/*/audio',lambda route:held.append(route))
+        page.evaluate('''()=>{
+            narration.audio.native.muted=true;
+            narrationPreferences.value.autoplay=false;
+            narrationPreferences.value.earlyPlayback=false;
+            const audio=narrationStore.audio;
+            narrationStore.audio=async(...args)=>{try{return await audio(...args)}finally{window.playerReadFinished=true}};
+            generateNarrations([narrationSource(document.querySelector('.manuscript-block'))]);
+        }''')
+        try:
+            expect(page.locator('.narration-recording')).to_have_count(1)
+            record_id=page.evaluate('()=>narration.records[0].id')
+            # Model a response already buffered before deletion, not a new read
+            # that would simply receive 404 from the real storage endpoint.
+            audio=page.request.get(base+'/api/narrations/'+record_id+'/audio',headers={'X-Breadmaker-Project':pid})
+            assert audio.ok
+            page.evaluate('async()=>await deleteNarration(narration.records[0])')
+            expect(page.locator('.narration-recording')).to_have_count(0)
+            assert held
+            for route in held:route.fulfill(status=200,content_type='audio/wav',body=audio.body())
+            held.clear()
+            page.wait_for_function('()=>window.playerReadFinished')
+            assert page.evaluate('()=>!narration.selected&&!narration.url&&narration.audio.paused')
+            expect(page.locator('.manuscript-block')).to_have_text('Synthetic narration passage.')
+        finally:
+            for route in held:route.abort()

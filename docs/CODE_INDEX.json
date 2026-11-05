@@ -19769,7 +19769,7 @@
     },
     {
       "file": "static/js/features/manuscript/narration.js",
-      "lines": 288,
+      "lines": 291,
       "symbols": [
         {
           "name": "narrationHosted",
@@ -20024,12 +20024,12 @@
         {
           "name": "openNarrationPanel",
           "kind": "function",
-          "line": 253
+          "line": 256
         },
         {
           "name": "initializeNarrationUI",
           "kind": "function",
-          "line": 266
+          "line": 269
         }
       ]
     },
@@ -21838,7 +21838,7 @@
     },
     {
       "file": "static/js/features/maps/workspace.js",
-      "lines": 575,
+      "lines": 585,
       "symbols": [
         {
           "name": "mapRailLabel",
@@ -22523,122 +22523,122 @@
         {
           "name": "newMapLineDialog",
           "kind": "function",
-          "line": 529
+          "line": 539
         },
         {
           "name": "deleteMapLine",
           "kind": "function",
-          "line": 530
+          "line": 540
         },
         {
           "name": "deleteMapItem",
           "kind": "function",
-          "line": 531
+          "line": 541
         },
         {
           "name": "nextMapItemPosition",
           "kind": "function",
-          "line": 532
+          "line": 542
         },
         {
           "name": "nextMapItemDefaultName",
           "kind": "function",
-          "line": 533
+          "line": 543
         },
         {
           "name": "renderPendingMapItemLinks",
           "kind": "function",
-          "line": 534
+          "line": 544
         },
         {
           "name": "openPendingMapItemLinker",
           "kind": "function",
-          "line": 535
+          "line": 545
         },
         {
           "name": "addMapItemDirect",
           "kind": "function",
-          "line": 536
+          "line": 546
         },
         {
           "name": "renderLinks",
           "kind": "function",
-          "line": 541
+          "line": 551
         },
         {
           "name": "branchNewLineHere",
           "kind": "function",
-          "line": 546
+          "line": 556
         },
         {
           "name": "configureCurrentMap",
           "kind": "function",
-          "line": 547
+          "line": 557
         },
         {
           "name": "commit",
           "kind": "function",
-          "line": 554
+          "line": 564
         },
         {
           "name": "syncMode",
           "kind": "function",
-          "line": 557
+          "line": 567
         },
         {
           "name": "commitCustom",
           "kind": "function",
-          "line": 560
+          "line": 570
         },
         {
           "name": "autoArrangeCurrentMap",
           "kind": "function",
-          "line": 563
+          "line": 573
         },
         {
           "name": "duplicateCurrentMap",
           "kind": "function",
-          "line": 565
+          "line": 575
         },
         {
           "name": "deleteCurrentMap",
           "kind": "function",
-          "line": 566
+          "line": 576
         },
         {
           "name": "setMapSetting",
           "kind": "function",
-          "line": 567
+          "line": 577
         },
         {
           "name": "positionMapViewPopover",
           "kind": "function",
-          "line": 568
+          "line": 578
         },
         {
           "name": "closeMapViewPopover",
           "kind": "function",
-          "line": 569
+          "line": 579
         },
         {
           "name": "toggleMapViewPopover",
           "kind": "function",
-          "line": 570
+          "line": 580
         },
         {
           "name": "setMapZoom",
           "kind": "function",
-          "line": 571
+          "line": 581
         },
         {
           "name": "mapFitsViewportAtZoom",
           "kind": "function",
-          "line": 573
+          "line": 583
         },
         {
           "name": "fitMap",
           "kind": "function",
-          "line": 574
+          "line": 584
         }
       ]
     },
@@ -23419,7 +23419,7 @@
     },
     {
       "file": "static/js/features/projects/targets.js",
-      "lines": 245,
+      "lines": 293,
       "symbols": [
         {
           "name": "targetText",
@@ -23562,19 +23562,39 @@
           "line": 192
         },
         {
-          "name": "openTargets",
+          "name": "targetsHistoryRows",
           "kind": "function",
           "line": 195
         },
         {
+          "name": "targetsHistoryChart",
+          "kind": "function",
+          "line": 198
+        },
+        {
+          "name": "openTargets",
+          "kind": "function",
+          "line": 210
+        },
+        {
           "name": "readGoals",
           "kind": "function",
-          "line": 202
+          "line": 236
+        },
+        {
+          "name": "syncGoalPicker",
+          "kind": "function",
+          "line": 237
         },
         {
           "name": "wireRows",
           "kind": "function",
-          "line": 203
+          "line": 243
+        },
+        {
+          "name": "renderHistory",
+          "kind": "function",
+          "line": 256
         }
       ]
     },

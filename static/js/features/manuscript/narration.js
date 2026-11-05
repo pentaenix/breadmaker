@@ -200,7 +200,7 @@ async function playNarration(record,queue=[record],continuation=false){
   const snapshot=narrationSnapshot(),pid=snapshot.pid,token=++narration.token;narration.audio.pause();
   if(record.thin){record=await narrationStore.metadata(pid,record,snapshot.transport);requireNarrationContext(snapshot)}
   if(token!==narration.token||narration.playbackSuspended||!narrationCurrent(snapshot)||!narrationOpen())return;
-  const blob=await narrationStore.audio(pid,record.id,snapshot.transport);if(token!==narration.token||!narrationCurrent(snapshot)||!narrationOpen())return;
+  const blob=await narrationStore.audio(pid,record.id,snapshot.transport);if(token!==narration.token||!narrationCurrent(snapshot)||!narrationOpen()||!narration.records.some(saved=>saved.id===record.id))return;
   const autoplay=!continuation||!narration.early||narration.early.autoplay;
   if(narration.url)URL.revokeObjectURL(narration.url);narration.url=URL.createObjectURL(blob);narration.selected=record;narration.queue=queue;narration.audio.src=narration.url;narration.audio.playbackRate=Number($('#narrationSpeed').value);$('#narrationPanel .narration-player').classList.remove('hidden');$('#narrationPreviewExcerpt').textContent=record.text;
   // A browser may leave resume() pending; loaded queues must remain usable.
@@ -233,11 +233,14 @@ function renderNarrations(){
 async function generateNarrations(sources,recreate=false,{reuseAnyVoice=false,generateOnly=false,savedTail=[],context=null}={}){
   narration.playbackSuspended=false;
   if(narration.busy||narration.queueLoading||!sources.length)return;const snapshot=requireNarrationContext(context||narrationSnapshot()),pid=snapshot.pid,voice=$('#narrationVoice').value,pace=narrationPreferences.value.generationPace,punctuationPauses=narrationPreferences.value.punctuationPauses;narration.busy=true;narration.stopRequested=false;syncNarrationActions();const queue=[];let success=false,progress;
-  cancelNarrationEarly();narration.audio.pause();const early={pid,context:snapshot,voice,queue,started:false,autoplay:!generateOnly&&narrationPreferences.value.autoplay,waitingNext:false,record:null};narration.early=generateOnly?null:early;syncNarrationPlayControl();
+  cancelNarrationEarly();narration.token++;narration.audio.pause();const early={pid,context:snapshot,voice,queue,started:false,autoplay:!generateOnly&&narrationPreferences.value.autoplay,waitingNext:false,record:null};narration.early=generateOnly?null:early;syncNarrationPlayControl();
+  // Saving completes generation. A player's authorized metadata/audio read can
+  // remain pending independently, just like AudioContext activation in playNarration.
+  const startPlayback=record=>{playNarration(record,queue,true).catch(error=>{if(narrationCurrent(snapshot)&&narration.early===early)narrationFail(error)})};
   try{
   sources=await prepareNarrationSources(sources,snapshot,{remember:true});if(recreate)sources=narrationReplacementSources(sources);narrationEngine();
   const progressSources=sources.map(source=>({...source,cached:!recreate&&!!window.findNarrationRecording(source,narration.records,voice,reuseAnyVoice)}));
-  progress=new window.BreadmakerNarrationProgress(narration.engine,progressSources,voice,status=>{if(!narrationCurrent(snapshot))return;const label=i18nText('narration.generating',{current:status.current,total:status.total}),hint=status.overrun?i18nText('narration.longer'):status.phase==='saving'?i18nText('narration.saving'):(status.phase==='loading'?i18nText('narration.loading_voice')+' · ':'')+i18nText('narration.remaining',{seconds:status.remainingSeconds});if($('#narrationProgressLabel').textContent!==label)$('#narrationProgressLabel').textContent=label;$('#narrationProgressBar').value=status.fraction;if($('#narrationProgressEstimate').textContent!==hint)$('#narrationProgressEstimate').textContent=hint});
+  progress=new window.BreadmakerNarrationProgress(narration.engine,progressSources,voice,status=>{if(!narrationCurrent(snapshot))return;const label=i18nText('narration.generating',{current:status.current,total:status.total}),hint=status.phase==='saving'?i18nText('narration.saving'):status.overrun?i18nText('narration.longer'):(status.phase==='loading'?i18nText('narration.loading_voice')+' · ':'')+i18nText('narration.remaining',{seconds:status.remainingSeconds});if($('#narrationProgressLabel').textContent!==label)$('#narrationProgressLabel').textContent=label;$('#narrationProgressBar').value=status.fraction;if($('#narrationProgressEstimate').textContent!==hint)$('#narrationProgressEstimate').textContent=hint});
   await flushSave();requireNarrationContext(snapshot);for(let i=0;i<sources.length;i++){
     requireNarrationContext(snapshot);if(narration.stopRequested)break;const source=sources[i];if(!source.text.trim())continue;if(!narrationGenerationFresh(source))throw Error('NARRATION_TEXT_CHANGED');
     let record=!recreate&&window.findNarrationRecording(source,narration.records,voice,reuseAnyVoice);const generated=!record;
@@ -245,8 +248,8 @@ async function generateNarrations(sources,recreate=false,{reuseAnyVoice=false,ge
     if(i===sources.length-1&&!narration.stopRequested)queue.push(...savedTail);
     if(narration.early===early&&narrationOpen()){
       if(i===0&&early.started&&early.record){Object.assign(early.record,record.thin?{id:record.id,duration:record.duration}:record);narration.audio.finishStream()}
-      else if(!early.started){early.started=true;early.record=record;await playNarration(record,queue,true)}
-      else if(early.waitingNext&&early.autoplay){early.waitingNext=false;await playNarration(record,queue,true)}
+      else if(!early.started){early.started=true;early.record=record;startPlayback(record)}
+      else if(early.waitingNext&&early.autoplay){early.waitingNext=false;startPlayback(record)}
     }if(generated||i===0||i===sources.length-1)renderNarrations();
   }success=narrationCurrent(snapshot)&&!narration.stopRequested}finally{progress?.stop(success);if(narrationCurrent(snapshot)){narration.busy=false;if(narration.early===early){early.waitingNext=false;if(!success&&narration.selected?.id==='pending-narration'){narration.audio.pause();narration.audio.clearStream();narration.selected=null;$('#narrationPanel .narration-player').classList.add('hidden');clearNarrationPreviewHighlights()}}syncNarrationActions();syncNarrationPlayControl();narrationTime()}}
 }
