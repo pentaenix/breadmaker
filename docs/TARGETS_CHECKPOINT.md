@@ -1,11 +1,8 @@
-# Optional Targets review checkpoint
+# Optional Targets
 
-Targets is integrated with Canvas in the isolated 10.5.81 candidate on
-`integration/canvas-next`, based on deployed main `8dcf79e`. It includes the
-Targets owner's checkpoints `4613591` and `bc2cef2`; original owner worktrees
-remain preserved. This candidate is not deployed. All 23 parameter combinations
-now have explicit one-item browser entries for the unchanged release verifier.
-Full integrated release verification remains required before promotion.
+Targets shipped in Editor 10.5.81. This document describes its shared local and
+hosted behavior, durability, and verification limits. Local Targets remain
+account-free and work offline; hosting is not a prerequisite for tracking goals.
 
 ## Product behavior
 
@@ -33,7 +30,9 @@ Full integrated release verification remains required before promotion.
   over ten seconds are not counted. Timer heartbeats split midnight correctly.
   Overlapping clock intervals from multiple devices are unioned, so the same
   elapsed second is not counted twice. Completed time goals stop collecting
-  intervals and retain their achieved total.
+  intervals and retain their achieved total. Clock ticks for completed goals do
+  not create new journal records or progress writes. The next calendar period
+  resumes timing automatically; unfinished goals and net writing still count.
 - The top Saved area has one quiet aggregate ring and a status hover. The
   Manuscript footer has compact individual progress, with horizontal scrolling
   under constraint. Achieved goals become green checks, then the text contracts.
@@ -114,12 +113,16 @@ cross-device race with overlapping timer intervals passed in both runtimes. The
 existing integrated feature smoke passed all 21 local/hosted cases with no skips
 or recovered failures; report: `/tmp/breadmaker-targets-feature-smoke.json`.
 These tests use synthetic hosted Firestore/GCS adapters and disposable local
-projects. They do not establish live provider/deployment or real iPhone acceptance.
+projects. The original integration subsequently passed its full release gates
+and deployed in 10.5.81. Fixture results alone do not establish cross-device
+production behavior or real iPhone acceptance.
 
-Before release:
+Continuing release checks:
 
-1. Run the full `./verify-release` gate after integration; the focused checks do
-   not replace it. Reconcile the version/cache tags with the parallel phone release.
+1. Every change still requires the full release gate on its final source; focused
+   checks do not replace it. Completed-timer regressions additionally verify that
+   unchanged clock ticks cause no outbox records, Targets PUTs, or revision changes,
+   while writing and the next period continue to persist in both runtimes.
 2. Check actual iPhone Safari focus/background/keyboard behavior and chime permission.
    Headless Chromium can report focus in multiple offscreen windows, so that test
    drives the real blur handler while controlling `document.hasFocus()` explicitly.
