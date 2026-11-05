@@ -92,6 +92,42 @@ def _document_copies(tab,chapters,blocks,asset_names):
     return _page(tab.get('title') or 'Document',''.join(chunks)), '\n\n'.join(plain)+'\n'
 
 
+def write_snapshot_copies(package,destination,source,title,tabs,chapters,blocks,content,*,restore_in_web=False):
+    """Write readable copies from an already frozen, validated snapshot."""
+    asset_entries=[name for name in source.namelist() if name.startswith('assets/') and not name.endswith('/')]
+    asset_names={entry.split('/')[1] for entry in asset_entries}
+    def read_asset(path):
+        if not is_safe_project_asset_path(path):raise ValueError('READABLE_EXPORT_UNSAFE_ASSET_PATH')
+        return source.read('assets/'+path.rsplit('/',1)[-1])
+    readme=_README
+    if restore_in_web:
+        readme=readme.replace('Project.breadmaker is the original portable project snapshot. Import that file\nthrough Breadmaker > Import > Breadmaker Project to restore project features.',
+            'Project.breadmaker is the original hosted project snapshot. Import that file\nthrough Breadmaker web app > Import > Breadmaker Project to restore project\nfeatures. This hosted recovery file is not a desktop-native project package.')
+    try:
+        with zipfile.ZipFile(destination,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as archive:
+            archive.write(package,'Project.breadmaker',compress_type=zipfile.ZIP_STORED)
+            archive.writestr('README.txt',readme)
+            links=[]
+            for index,tab in enumerate(tabs,1):
+                stem=f'{index:02d}-'+file_stem(tab.get('title'))
+                path='documents/'+stem
+                owned_chapters=[ch for ch in chapters if ch['tab_id']==tab['id']]
+                owned_ids={ch['id'] for ch in owned_chapters}
+                owned_blocks=[block for block in blocks if block['chapter_id'] in owned_ids]
+                doc_title=str(tab.get('title') or title)
+                archive.writestr(path+'.docx',docx_bytes(doc_title,[tab],owned_chapters,owned_blocks,read_asset))
+                rich,plain=_document_copies(tab,owned_chapters,owned_blocks,asset_names)
+                archive.writestr(path+'.html',rich);archive.writestr(path+'.txt',plain)
+                links.append('<li>'+html.escape(doc_title)+': '+ ' · '.join('<a href="'+html.escape(quote(path+'.'+ext),quote=True)+'">'+label+'</a>' for ext,label in [('html','Read'),('docx','Word'),('txt','Text')])+'</li>')
+            archive.writestr('START-HERE.html',_page(title,'<h1>'+html.escape(title)+'</h1><ul>'+''.join(links)+'</ul><p>Read README.txt for contents, restoration and format limitations.</p>'))
+            archive.writestr('data/project-content.json',json.dumps({'format':'breadmaker-readable-reference','version':1,'title':title,'tables':content},ensure_ascii=False,indent=2)+'\n')
+            for entry in asset_entries:
+                with source.open(entry) as incoming,archive.open(entry,'w') as outgoing:shutil.copyfileobj(incoming,outgoing)
+    except Exception:
+        destination.unlink(missing_ok=True);raise
+    return file_stem(title)
+
+
 def write_readable_archive(package:Path,destination:Path) -> str:
     """Render one generated .breadmaker package; return a safe download stem."""
     with zipfile.ZipFile(package) as source, tempfile.TemporaryDirectory(prefix='breadmaker-readable-') as td:
@@ -112,30 +148,4 @@ def write_readable_archive(package:Path,destination:Path) -> str:
             blocks=[dict(row) for row in con.execute('SELECT * FROM manuscript_blocks ORDER BY tab_id,chapter_id,position,id')]
             content={table:[dict(row) for row in con.execute('SELECT * FROM '+table+' ORDER BY id')] for table in _CONTENT_TABLES}
         finally:con.close()
-        asset_names={entry.split('/')[1] for entry in asset_entries}
-        def read_asset(path):
-            if not is_safe_project_asset_path(path):raise ValueError('READABLE_EXPORT_UNSAFE_ASSET_PATH')
-            return source.read('assets/'+path.rsplit('/',1)[-1])
-        try:
-            with zipfile.ZipFile(destination,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as archive:
-                archive.write(package,'Project.breadmaker',compress_type=zipfile.ZIP_STORED)
-                archive.writestr('README.txt',_README)
-                links=[]
-                for index,tab in enumerate(tabs,1):
-                    stem=f'{index:02d}-'+file_stem(tab.get('title'))
-                    path='documents/'+stem
-                    owned_chapters=[ch for ch in chapters if ch['tab_id']==tab['id']]
-                    owned_ids={ch['id'] for ch in owned_chapters}
-                    owned_blocks=[block for block in blocks if block['chapter_id'] in owned_ids]
-                    doc_title=str(tab.get('title') or title)
-                    archive.writestr(path+'.docx',docx_bytes(doc_title,[tab],owned_chapters,owned_blocks,read_asset))
-                    rich,plain=_document_copies(tab,owned_chapters,owned_blocks,asset_names)
-                    archive.writestr(path+'.html',rich);archive.writestr(path+'.txt',plain)
-                    links.append('<li>'+html.escape(doc_title)+': '+ ' · '.join('<a href="'+html.escape(quote(path+'.'+ext),quote=True)+'">'+label+'</a>' for ext,label in [('html','Read'),('docx','Word'),('txt','Text')])+'</li>')
-                archive.writestr('START-HERE.html',_page(title,'<h1>'+html.escape(title)+'</h1><ul>'+''.join(links)+'</ul><p>Read README.txt for contents, restoration and format limitations.</p>'))
-                archive.writestr('data/project-content.json',json.dumps({'format':'breadmaker-readable-reference','version':1,'title':title,'tables':content},ensure_ascii=False,indent=2)+'\n')
-                for entry in asset_entries:
-                    with source.open(entry) as incoming,archive.open(entry,'w') as outgoing:shutil.copyfileobj(incoming,outgoing)
-        except Exception:
-            destination.unlink(missing_ok=True);raise
-    return file_stem(title)
+        return write_snapshot_copies(package,destination,source,title,tabs,chapters,blocks,content)

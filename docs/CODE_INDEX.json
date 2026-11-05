@@ -7770,7 +7770,7 @@
     },
     {
       "file": "src/formats/readable_archive.py",
-      "lines": 141,
+      "lines": 151,
       "symbols": [
         {
           "name": "_page",
@@ -7783,9 +7783,14 @@
           "line": 67
         },
         {
-          "name": "write_readable_archive",
+          "name": "write_snapshot_copies",
           "kind": "function",
           "line": 95
+        },
+        {
+          "name": "write_readable_archive",
+          "kind": "function",
+          "line": 131
         }
       ]
     },
@@ -12420,23 +12425,49 @@
     },
     {
       "file": "src/hosted/readable_export.py",
-      "lines": 39,
+      "lines": 44,
       "symbols": [
         {
           "name": "_readable_zip",
           "kind": "function",
-          "line": 20
+          "line": 21
         },
         {
           "name": "hosted_export_readable_zip",
           "kind": "async_function",
-          "line": 31,
+          "line": 36,
           "routes": [
             {
               "method": "GET",
               "path": "/api/export/zip"
             }
           ]
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/readable_source.py",
+      "lines": 92,
+      "symbols": [
+        {
+          "name": "_rows",
+          "kind": "function",
+          "line": 30
+        },
+        {
+          "name": "_order",
+          "kind": "function",
+          "line": 47
+        },
+        {
+          "name": "_documents",
+          "kind": "function",
+          "line": 54
+        },
+        {
+          "name": "write_hosted_readable_archive",
+          "kind": "function",
+          "line": 68
         }
       ]
     },
@@ -28877,7 +28908,7 @@
       "method": "GET",
       "function": "hosted_export_readable_zip",
       "file": "src/hosted/readable_export.py",
-      "line": 31,
+      "line": 36,
       "path": "/api/export/zip"
     }
   ],

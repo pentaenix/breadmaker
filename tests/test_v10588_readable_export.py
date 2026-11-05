@@ -74,7 +74,7 @@ def test_hosted_word_and_zip_keep_formatting_and_portability_without_local_works
     from hosted.runtime_services import _DEV_USER_ID as owner
     from hosted.document_io import export_docx_bytes
     from hosted.packages import HostedProjectPackageService
-    from formats.readable_archive import write_readable_archive
+    from hosted.readable_export import _readable_zip
     one,make,docs,pid,cid=_replicas(monkeypatch);domain=one.projects.domain
     block=domain.list('manuscript_block',{'project_id':pid},user_id=owner)[0]
     domain.update('manuscript_block',{'project_id':pid,'block_id':block['id']},{'text_content':'Bold\nbreak','content_html':'<b>Bold</b><br>break'},user_id=owner)
@@ -82,10 +82,10 @@ def test_hosted_word_and_zip_keep_formatting_and_portability_without_local_works
         raw=export_docx_bytes(domain,one.assets,one.projects.get(pid),pid,owner)
     paragraph=next(p for p in Document(io.BytesIO(raw)).paragraphs if p.text.startswith('Bold'))
     assert paragraph.text=='Bold\nbreak' and paragraph.runs[0].bold
-    package=tmp_path/'project.breadmaker';original=HostedProjectPackageService(one.projects).export_local_bytes(pid,owner);package.write_bytes(original)
-    output=tmp_path/'readable.zip';write_readable_archive(package,output)
-    with zipfile.ZipFile(output) as archive:
-        assert archive.read('Project.breadmaker')==original
+    _,readable=_readable_zip(one.projects,pid,owner)
+    with zipfile.ZipFile(io.BytesIO(readable)) as archive:
+        with zipfile.ZipFile(io.BytesIO(archive.read('Project.breadmaker'))) as recovery:
+            assert json.loads(recovery.read('manifest.json'))['format_version']==3
         restored=HostedProjectPackageService(make().projects).import_bytes(archive.read('Project.breadmaker'),owner)
     assert any(row['text_content']=='Bold\nbreak' for row in make().projects.domain.list('manuscript_block',{'project_id':restored['id']},user_id=owner))
 
@@ -94,11 +94,11 @@ def test_hosted_zip_rejects_other_membership_and_encrypted_mode_before_render(mo
     from tests.test_v10364 import _replicas
     from hosted.runtime_services import _DEV_USER_ID as owner
     from hosted.firestore.contracts import ProjectUnavailable
-    from hosted.packages import HostedProjectPackageService
-    one,*_,pid,cid=_replicas(monkeypatch);service=HostedProjectPackageService(one.projects)
-    with pytest.raises(ProjectUnavailable):service.export_local_bytes(pid,'usr_'+'f'*32)
+    from hosted.readable_export import _readable_zip
+    one,*_,pid,cid=_replicas(monkeypatch)
+    with pytest.raises(ProjectUnavailable):_readable_zip(one.projects,pid,'usr_'+'f'*32)
     one.projects.domain.encrypted_fields=object()
-    with pytest.raises(ValueError,match='HOSTED_ENCRYPTED_PACKAGE_EXPORT_NOT_READY'):service.export_local_bytes(pid,owner)
+    with pytest.raises(ValueError,match='HOSTED_ENCRYPTED_PACKAGE_EXPORT_NOT_READY'):_readable_zip(one.projects,pid,owner)
 
 
 def test_hosted_portable_notes_translate_thread_links_and_restore_messages(monkeypatch,tmp_path):

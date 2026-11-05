@@ -51,3 +51,28 @@ def test_word_subheadings_inherit_heading_style_while_preserving_inline_emphasis
     # Explicit False overrides Word's heading style and made headings lose bold.
     assert all(run.bold is None for run in paragraph.runs)
     assert next(run for run in paragraph.runs if run.text=='emphasis').italic
+
+
+def test_hosted_readable_rejects_unsafe_members_bad_asset_hash_and_incomplete_documents(tmp_path):
+    import json
+    import zipfile
+    import pytest
+    from hosted.readable_source import write_hosted_readable_archive
+    package=tmp_path/'source.breadmaker';output=tmp_path/'out.zip'
+    pid='a'*32
+    manifest={'format':'breadmaker-hosted-project','format_version':3,
+        'authorization_portable':False,'source_project_id':pid,'title':'Synthetic'}
+    entities={'document_tab':[{'ids':{'project_id':pid,'tab_id':'tab_one'},'data':{'title':'Main'}}],
+        'chapter':[{'ids':{'project_id':pid,'chapter_id':'chapter_one'},'data':{'tab_id':'tab_missing'}}]}
+    def write(extra=None):
+        with zipfile.ZipFile(package,'w') as archive:
+            archive.writestr('manifest.json',json.dumps(manifest))
+            archive.writestr('project.json',json.dumps({'entities':entities}))
+            for name,data in (extra or {}).items():archive.writestr(name,data)
+    write({'assets/../../outside.png':b'bad'})
+    with pytest.raises(ValueError,match='HOSTED_READABLE_SNAPSHOT_INVALID'):write_hosted_readable_archive(package,output)
+    write({'assets/'+'a'*64+'.png':b'bad'})
+    with pytest.raises(ValueError,match='HOSTED_READABLE_ASSET_HASH_MISMATCH'):write_hosted_readable_archive(package,output)
+    write()
+    with pytest.raises(ValueError,match='HOSTED_READABLE_DOCUMENT_LINK_INVALID'):write_hosted_readable_archive(package,output)
+    assert not output.exists() and not (tmp_path/'outside.png').exists()
