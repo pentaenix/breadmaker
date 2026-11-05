@@ -131,7 +131,9 @@ function cancelQueuedCanvasViewportPersist(){if(state.canvasViewportSaveTimer){c
 function queueCanvasViewportPersist(){cancelQueuedCanvasViewportPersist();const canvasId=entityId(state.currentCanvas?.id)||0;if(!canvasId)return;state.canvasViewportSaveTimer=setTimeout(()=>{state.canvasViewportSaveTimer=null;if(entityId(state.currentCanvas?.id)!==canvasId)return;persistCurrentCanvasViewport().catch(console.warn)},180)}
 async function persistCurrentCanvasViewport(){
   if(!state.currentCanvas||state.canvasViewportRestoring)return;const stage=$('#canvasStage');if(!stage)return;
-  const lane=$('#developmentalLaneViewport');await api(`/api/ui-state/${canvasViewportKey(state.currentCanvas.id)}`,{method:'PUT',body:JSON.stringify({value:{zoom:state.canvasZoom,left:stage.scrollLeft,top:stage.scrollTop,laneLeft:lane?.scrollLeft||0,lastNumericLabelId:state.lastCanvasNumericLabelId,legendOpen:!!state.canvasLegendOpen,structureOpen:!!state.developmentalStructureOpen,textSize:state.canvasFontSize,font:state.canvasFont,snap:!!state.canvasSnap}})});
+  // Visibility loss also saves this small viewport record during page exit.
+  // Keep the authenticated request alive so WebKit can finish it after reload.
+  const lane=$('#developmentalLaneViewport');await api(`/api/ui-state/${canvasViewportKey(state.currentCanvas.id)}`,{method:'PUT',keepalive:true,body:JSON.stringify({value:{zoom:state.canvasZoom,left:stage.scrollLeft,top:stage.scrollTop,laneLeft:lane?.scrollLeft||0,lastNumericLabelId:state.lastCanvasNumericLabelId,legendOpen:!!state.canvasLegendOpen,structureOpen:!!state.developmentalStructureOpen,textSize:state.canvasFontSize,font:state.canvasFont,snap:!!state.canvasSnap}})});
 }
 function applyPendingCanvasViewport(){
   const pending=state.canvasPendingViewport;if(!pending||!state.currentCanvas||entityId(pending.id)!==entityId(state.currentCanvas.id))return;
