@@ -2,7 +2,8 @@
 
 GitHub's Ubuntu image configures /etc/apt/apt-mirrors.txt with Azure first.
 A slow but successful Azure response never triggers its error-based failover.
-This CI-only setup changes priorities, not repositories, suites or signing keys.
+This optional CI optimization changes priorities, not repositories, suites or
+signing keys. Runners without the Azure mirror list retain their vendor sources.
 """
 from __future__ import annotations
 
@@ -48,8 +49,13 @@ def main() -> int:
         updated = prefer_https_archive(original)
         if updated != original:
             path.write_text(updated)
-    except (OSError, ValueError):
-        print('CI_APT_MIRROR_CONFIGURATION_BLOCKED', file=sys.stderr)
+    except FileNotFoundError:
+        # Some hosted images do not use the Azure mirror list. There is no
+        # priority to optimize; leave all vendor APT sources and keys untouched.
+        print('Azure mirror list absent; runner repositories left unchanged.')
+        return 0
+    except (OSError, ValueError) as error:
+        print(f'CI_APT_MIRROR_CONFIGURATION_BLOCKED:{type(error).__name__}', file=sys.stderr)
         return 2
     print('Ubuntu HTTPS archive preferred; existing repositories and signing keys preserved.')
     return 0
