@@ -16,6 +16,7 @@ import sys
 from urllib.parse import urlsplit
 
 _AZURE = 'http://azure.archive.ubuntu.com/ubuntu/'
+_AWS = 'http://us-east-2.ec2.archive.ubuntu.com/ubuntu/'
 _ARCHIVE = 'https://archive.ubuntu.com/ubuntu/'
 _SECURITY = 'https://security.ubuntu.com/ubuntu/'
 _DEFAULT = {_AZURE: 'priority:1', _ARCHIVE: 'priority:2', _SECURITY: 'priority:3'}
@@ -28,6 +29,10 @@ def prefer_https_archive(text: str) -> str:
             or len({row[0] for row in rows}) != 3):
         raise ValueError('CI_APT_MIRROR_LAYOUT_CHANGED')
     current = dict(rows)
+    # Observed AWS-hosted image: its regional mirror is already appropriate.
+    # Recognize the exact signed-vendor fallback layout without rewriting it.
+    if current == {_AWS:'priority:1',_ARCHIVE:'priority:2',_SECURITY:'priority:3'}:
+        return text
     if current == _PREFERRED:
         return text
     if current != _DEFAULT:
@@ -79,7 +84,10 @@ def main() -> int:
         if isinstance(error,ValueError) and isinstance(original,str):
             print('CI_APT_MIRROR_LAYOUT '+json.dumps(safe_layout_summary(original)),file=sys.stderr)
         return 2
-    print('Ubuntu HTTPS archive preferred; existing repositories and signing keys preserved.')
+    if _AWS in original:
+        print('Regional Ubuntu mirror retained; repositories and signing keys unchanged.')
+    else:
+        print('Ubuntu HTTPS archive preferred; existing repositories and signing keys preserved.')
     return 0
 
 

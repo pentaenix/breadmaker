@@ -91,3 +91,26 @@ def test_ci_mirror_layout_diagnostics_redact_unknown_hosts_and_nonstandard_paths
     from scripts.configure_ci_ubuntu_mirror import safe_layout_summary
     assert safe_layout_summary('https://secret.invalid/secret priority:1')[0]['feed']=='<unrecognized>'
     assert safe_layout_summary('https://archive.ubuntu.com/secret priority:1')[0]['feed']=='https://archive.ubuntu.com/<redacted>'
+
+
+AWS_DEFAULT=DEFAULT.replace('http://azure.archive.ubuntu.com/ubuntu/','http://us-east-2.ec2.archive.ubuntu.com/ubuntu/')
+
+
+def test_ci_mirror_observed_aws_layout_remains_byte_for_byte_unchanged():
+    assert prefer_https_archive(AWS_DEFAULT)==AWS_DEFAULT
+    assert prefer_https_archive(prefer_https_archive(AWS_DEFAULT))==AWS_DEFAULT
+
+
+def test_ci_mirror_aws_cli_never_rewrites_regional_vendor_configuration(monkeypatch,capsys):
+    module=_github_linux_root(monkeypatch)
+    class RegionalList:
+        def read_text(self):return AWS_DEFAULT
+        def write_text(self,value):raise AssertionError('must retain the regional vendor configuration')
+    monkeypatch.setattr(module,'Path',lambda _:RegionalList())
+    assert module.main()==0
+    assert 'Regional Ubuntu mirror retained' in capsys.readouterr().out
+
+
+def test_ci_mirror_unobserved_regional_layout_still_requires_review():
+    with pytest.raises(ValueError,match='CI_APT_MIRROR_LAYOUT_CHANGED'):
+        prefer_https_archive(AWS_DEFAULT.replace('us-east-2','unreviewed-region'))
