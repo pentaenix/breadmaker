@@ -69,7 +69,10 @@ async function api(url, options={}) {
   const hosted=typeof runtimeSupports==='function'&&runtimeSupports('hosted_persistence');
   // Derivatives have their own publication CAS, not canonical structural Undo.
   const narrationRequest=/^\/api\/(?:narrations(?:\/|\?|$)|narration-(?:models|pronunciation|voices)(?:\/|\?|$))/.test(url);
-  const nonceHeaders=hosted&&mutates?{'Idempotency-Key':String(options.idempotencyKey||uid()),...(hostedStructuralActionToken&&!url.startsWith('/api/undo/')&&!narrationRequest?{'X-Breadmaker-Action':hostedStructuralActionToken}:{})}:{};
+  // Personal UI state is outside canonical Undo. Background preference saves
+  // can overlap an action, but member-state entities cannot join its journal.
+  const personalStateRequest=/^\/api\/ui-state(?:\/|\?|$)/.test(url);
+  const nonceHeaders=hosted&&mutates?{'Idempotency-Key':String(options.idempotencyKey||uid()),...(hostedStructuralActionToken&&!url.startsWith('/api/undo/')&&!narrationRequest&&!personalStateRequest?{'X-Breadmaker-Action':hostedStructuralActionToken}:{})}:{};
   const {idempotencyKey,acceptNotModified,rawResponse,...fetchOptions}=options;
   const response = await fetch(url, {...fetchOptions, headers:{...headers, ...contextHeaders, ...nonceHeaders, 'X-Breadmaker-Client':CLIENT_ID, 'X-Breadmaker-Locale':i18nLocale(), ...(options.headers||{})}});
   if(response.status===304&&acceptNotModified&&method==='GET')return null;
