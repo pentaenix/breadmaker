@@ -11,6 +11,7 @@ def exercise(home,local,engine="chromium",width=1280):
         page.route('**/api/references?source_type=node&source_id=*',lambda route:held.append(route))
         page.evaluate('(id)=>{state.selectedNodes=new Set([id]);void openNodeInspector(id)}',ids['a'])
         expect(page.locator('#nodeShape')).to_be_visible()
+        assert page.locator('#canvasPanelBody > .panel-hint').count()==0
         expect(page.locator('#nodeInspectorReferences')).to_have_attribute('aria-busy','true')
         page.screenshot(path=str(home/'immediate-inspector.png'))
         page.wait_for_function('()=>document.querySelector("#nodeShape")!==null')
