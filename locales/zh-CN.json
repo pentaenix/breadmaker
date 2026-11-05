@@ -3646,7 +3646,14 @@
     "targets.load_failed": "无法加载目标，请重试。",
     "targets.save_failed": "无法保存目标。你的更改已保留在此设备上以供重试。",
     "targets.invalid": "请为每个目标输入正整数。",
-    "targets.sound_unavailable": "无法播放此声音，请重试试听。"
+    "targets.sound_unavailable": "无法播放此声音，请重试试听。",
+    "targets.menu": "目标…",
+    "targets.choose_goal": "目标",
+    "targets.history_view": "历史视图",
+    "targets.history_list": "列表",
+    "targets.history_chart": "活动",
+    "targets.history_period": "周期",
+    "targets.history_group": "已达成 {count}/{total} 个目标"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

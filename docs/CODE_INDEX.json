@@ -23419,7 +23419,7 @@
     },
     {
       "file": "static/js/features/projects/targets.js",
-      "lines": 245,
+      "lines": 293,
       "symbols": [
         {
           "name": "targetText",
@@ -23562,19 +23562,39 @@
           "line": 192
         },
         {
-          "name": "openTargets",
+          "name": "targetsHistoryRows",
           "kind": "function",
           "line": 195
         },
         {
+          "name": "targetsHistoryChart",
+          "kind": "function",
+          "line": 198
+        },
+        {
+          "name": "openTargets",
+          "kind": "function",
+          "line": 210
+        },
+        {
           "name": "readGoals",
           "kind": "function",
-          "line": 202
+          "line": 236
+        },
+        {
+          "name": "syncGoalPicker",
+          "kind": "function",
+          "line": 237
         },
         {
           "name": "wireRows",
           "kind": "function",
-          "line": 203
+          "line": 243
+        },
+        {
+          "name": "renderHistory",
+          "kind": "function",
+          "line": 256
         }
       ]
     },

@@ -3646,7 +3646,14 @@
     "targets.load_failed": "Could not load targets. Please try again.",
     "targets.save_failed": "Targets could not be saved. Your changes are kept on this device for retry.",
     "targets.invalid": "Enter a positive whole number for each target.",
-    "targets.sound_unavailable": "This sound could not play. Try Preview again."
+    "targets.sound_unavailable": "This sound could not play. Try Preview again.",
+    "targets.menu": "Targets…",
+    "targets.choose_goal": "Goal",
+    "targets.history_view": "History view",
+    "targets.history_list": "List",
+    "targets.history_chart": "Activity",
+    "targets.history_period": "Period",
+    "targets.history_group": "{count}/{total} goals reached"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

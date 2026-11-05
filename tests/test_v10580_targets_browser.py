@@ -43,7 +43,7 @@ def _exercise_targets_optional_create_write_complete_persist_disable(tmp_path,lo
         block=page.locator('.manuscript-block').first
         block.click();page.keyboard.press('End');page.keyboard.insert_text(' bright harbor')
         page.wait_for_function('()=>targetsModel.progress(targets.doc)[0]?.achieved>0')
-        assert page.locator('#targetsTop').get_attribute('aria-label')=='Daily · Daily goal achieved'
+        assert page.locator('#targetsTop').get_attribute('aria-label')=='Daily · 2/2 words · Daily goal achieved'
         assert page.evaluate('window.targetSoundPlays')==0
         page.evaluate('async()=>{await flushSave();await flushTargets()}')
         page.reload();page.wait_for_function('()=>targets.ready')
@@ -67,7 +67,9 @@ def _exercise_targets_modal_follows_manuscript_mobile_and_narrow_layout(tmp_path
         for _ in range(4):page.locator('#targetsAdd').click()
         page.get_by_role('switch',name='Chime',exact=True).click()
         assert page.locator('#targetsSound option').all_text_contents()==['Moss','Fern','Oak','Palm','Monstera','Pothos']
-        for selector in ['.modal-card','#targetsSave','[data-target-goal]']:
+        expect(page.locator('[data-target-goal]:visible')).to_have_count(1)
+        expect(page.locator('#targetsGoalSelect option')).to_have_count(4)
+        for selector in ['.modal-card','#targetsSave','[data-target-goal]:visible']:
             for box in page.locator(selector).all():
                 r=box.bounding_box();assert r['x']>=0 and r['x']+r['width']<=width
         assert page.evaluate('()=>document.documentElement.scrollWidth===innerWidth')

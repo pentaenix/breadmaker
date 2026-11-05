@@ -3646,7 +3646,14 @@
     "targets.load_failed": "Impossible de charger les objectifs. Réessayez.",
     "targets.save_failed": "Impossible d’enregistrer les objectifs. Vos modifications restent sur cet appareil pour réessayer.",
     "targets.invalid": "Saisissez un entier positif pour chaque objectif.",
-    "targets.sound_unavailable": "Impossible de lire ce son. Réessayez."
+    "targets.sound_unavailable": "Impossible de lire ce son. Réessayez.",
+    "targets.menu": "Objectifs…",
+    "targets.choose_goal": "Objectif",
+    "targets.history_view": "Vue de l’historique",
+    "targets.history_list": "Liste",
+    "targets.history_chart": "Activité",
+    "targets.history_period": "Période",
+    "targets.history_group": "{count}/{total} objectifs atteints"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

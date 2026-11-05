@@ -3646,7 +3646,14 @@
     "targets.load_failed": "Não foi possível carregar as metas. Tente novamente.",
     "targets.save_failed": "Não foi possível salvar as metas. Suas alterações ficam neste dispositivo para tentar novamente.",
     "targets.invalid": "Digite um número inteiro positivo para cada meta.",
-    "targets.sound_unavailable": "Não foi possível reproduzir este som. Tente novamente."
+    "targets.sound_unavailable": "Não foi possível reproduzir este som. Tente novamente.",
+    "targets.menu": "Metas…",
+    "targets.choose_goal": "Meta",
+    "targets.history_view": "Visualização do histórico",
+    "targets.history_list": "Lista",
+    "targets.history_chart": "Atividade",
+    "targets.history_period": "Período",
+    "targets.history_group": "{count}/{total} metas alcançadas"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

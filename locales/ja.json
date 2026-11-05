@@ -3646,7 +3646,14 @@
     "targets.load_failed": "目標を読み込めませんでした。もう一度お試しください。",
     "targets.save_failed": "目標を保存できませんでした。変更は再試行のためこの端末に保持されています。",
     "targets.invalid": "各目標に正の整数を入力してください。",
-    "targets.sound_unavailable": "サウンドを再生できませんでした。もう一度試聴してください。"
+    "targets.sound_unavailable": "サウンドを再生できませんでした。もう一度試聴してください。",
+    "targets.menu": "目標…",
+    "targets.choose_goal": "目標",
+    "targets.history_view": "履歴の表示",
+    "targets.history_list": "一覧",
+    "targets.history_chart": "達成状況",
+    "targets.history_period": "期間",
+    "targets.history_group": "{total}件中{count}件の目標を達成"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",
