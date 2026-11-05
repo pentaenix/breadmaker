@@ -6,9 +6,11 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def test_production_runtime_excludes_build_os_tools_and_retains_package_evidence():
     docker=(ROOT/'deploy/Dockerfile.hosted').read_text()
-    runtime=docker.split('FROM gcr.io/distroless/cc-debian13:nonroot@sha256:',1)[1]
-    assert 'COPY --from=build /usr/local /usr/local' in runtime
-    assert 'COPY --from=build /runtime-status /var/lib/dpkg/status.d' in runtime
+    runtime=docker.split('FROM scratch',1)[1]
+    assert 'COPY --from=build /runtime/ /' in runtime
+    assert 'COPY --from=build /opt/python /opt/python' in runtime
+    assert 'scripts/assert_vendor_runtime.py' in runtime
+    assert runtime.index('USER 10001:10001') < runtime.index('scripts/assert_vendor_runtime.py')
     assert 'COPY --from=build / /' not in runtime
     assert 'USER 10001:10001' in runtime
     assert 'import ssl,sqlite3,bz2,lzma,ctypes,uuid' in runtime

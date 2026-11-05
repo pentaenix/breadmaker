@@ -1,47 +1,31 @@
-# Build and scan independently; this helper NEVER contains the Editor runtime.
+# The approved OCI build base and authenticated runtime graph are source-bound.
 ARG PYTHON_BASE_DIGEST
-FROM python:3.14.8-slim-trixie@sha256:${PYTHON_BASE_DIGEST} AS build
+FROM cgr.dev/chainguard/wolfi-base@sha256:${PYTHON_BASE_DIGEST} AS build
+ARG PYTHON_BASE_DIGEST
+RUN apk add --no-cache python-3.14=3.14.10_git20261104-r0 python-3.14-dev=3.14.10_git20261104-r0 py3.14-pip build-base
 WORKDIR /helper
-# mojimoji's pinned release has no CPython 3.14 Linux wheel. Compile it here;
-# only /usr/local and explicitly selected runtime libraries reach the final image.
-RUN apt-get update && apt-get install -y --no-install-recommends g++ && rm -r /var/lib/apt/lists/*
 COPY deploy/requirements-pronunciation.txt ./requirements.txt
-RUN python -m pip install --no-cache-dir -r requirements.txt setuptools==84.2.0
+COPY deploy/vendor-runtime.json ./deploy/vendor-runtime.json
+COPY scripts/stage_vendor_runtime.py scripts/assert_vendor_runtime.py ./scripts/
+RUN python3.14 -m venv --without-pip /opt/python && python3.14 -m pip --python /opt/python/bin/python install --no-cache-dir -r requirements.txt setuptools==84.2.0
+ENV PATH=/opt/python/bin:$PATH PYTHONPATH=/helper/src
 COPY src/narration ./src/narration
 COPY src/hosted/narration/pronunciation_helper.py ./src/hosted/narration/pronunciation_helper.py
 COPY tools/narration/assert-helper-data.py tools/narration/build-helper-lexicon.py tools/narration/language-data-pins.json tools/narration/THIRD_PARTY_NOTICES.md ./notices/
-RUN python notices/assert-helper-data.py --isolated-image
-# Read the pinned dictionary once in the build stage. Preserve its exact native
-# mapping while keeping SQLite's engine and Python bindings out of production.
-RUN PYTHONPATH=/helper/src python notices/build-helper-lexicon.py
-# Never redistribute the unused eSpeak-derived alternative dictionary. Native
-# parity uses only the separately pinned top-level lexicon and CRF model.
+RUN python notices/assert-helper-data.py --isolated-image && python notices/build-helper-lexicon.py
 RUN python -c "import gruut_lang_it,shutil; from pathlib import Path; shutil.rmtree(Path(gruut_lang_it.__file__).parent/'espeak')"
-RUN mkdir -p /runtime-libs /runtime-status && \
-    for package in libbz2-1.0 libexpat1 libffi8 liblzma5; do \
-      if dpkg-query -s "$package" > "/runtime-status/$package"; then \
-        dpkg-query -L "$package" | while IFS= read -r file; do \
-          case "$file" in /usr/lib/*/*.so.*) cp -L "$file" /runtime-libs/ ;; esac; \
-        done; \
-      else rm "/runtime-status/$package"; fi; \
-    done
-RUN python -m pip uninstall --yes pip && rm -r /usr/local/lib/python3.14/ensurepip
-RUN rm -r /usr/local/lib/python3.14/sqlite3 && rm /usr/local/lib/python3.14/lib-dynload/_sqlite3*.so
+RUN python scripts/stage_vendor_runtime.py --install --mode helper --base-digest "$PYTHON_BASE_DIGEST"
 
-FROM gcr.io/distroless/cc-debian13:nonroot@sha256:e792ab3d241a468a4fd7519ddbbebe66b49b5f365771716ea688ad40b6c6f1c2
-COPY --from=build /usr/local /usr/local
-COPY --from=build /runtime-libs /opt/python-libs
-COPY --from=build /runtime-status /var/lib/dpkg/status.d
+# Copy only the assembled runtime, never compiler, shell or package manager code.
+FROM scratch
+COPY --from=build /runtime/ /
+COPY --from=build /opt/python /opt/python
 COPY --from=build /helper /helper
 WORKDIR /helper
-ENV PATH=/usr/local/bin:$PATH \
-    LD_LIBRARY_PATH=/usr/local/lib:/opt/python-libs \
-    HOME=/nonexistent \
-    PYTHONPATH=/helper/src \
-    PYTHONDONTWRITEBYTECODE=1 \
-    TMPDIR=/tmp
+ENV PATH=/opt/python/bin:/usr/bin HOME=/nonexistent PYTHONPATH=/helper/src PYTHONDONTWRITEBYTECODE=1 TMPDIR=/tmp
 USER 10001:10001
-RUN ["python", "notices/assert-helper-data.py", "--isolated-image"]
-RUN ["python", "-c", "import ssl,pycrfsuite,fugashi,mojimoji; import importlib.util; assert all(importlib.util.find_spec(n) is None for n in ('pip','ensurepip','sqlite3','_sqlite3')); from hosted.narration.pronunciation_helper import app"]
+RUN ["python","scripts/assert_vendor_runtime.py","--mode","helper"]
+RUN ["python","notices/assert-helper-data.py","--isolated-image"]
+RUN ["python","-c","import ssl,pycrfsuite,fugashi,mojimoji; from hosted.narration.pronunciation_helper import app"]
 EXPOSE 8080
-CMD ["python", "-m", "uvicorn", "hosted.narration.pronunciation_helper:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1", "--timeout-graceful-shutdown", "8", "--no-access-log", "--no-proxy-headers", "--no-server-header"]
+CMD ["python","-m","uvicorn","hosted.narration.pronunciation_helper:app","--host","0.0.0.0","--port","8080","--workers","1","--timeout-graceful-shutdown","8","--no-access-log","--no-proxy-headers","--no-server-header"]

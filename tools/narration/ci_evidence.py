@@ -10,6 +10,7 @@ import sys
 ROOT=Path(__file__).resolve().parents[2]
 if __package__ in (None,''):sys.path.insert(0,str(ROOT/'src'))
 HELPER_FILES={'deploy/Dockerfile.pronunciation','deploy/requirements-pronunciation.txt',
+    'deploy/vendor-runtime.json','scripts/stage_vendor_runtime.py','scripts/assert_vendor_runtime.py',
     'src/hosted/narration/pronunciation_helper.py','tools/narration/assert-helper-data.py','tools/narration/build-helper-lexicon.py',
     'tools/narration/language-data-pins.json','tools/narration/THIRD_PARTY_NOTICES.md'}
 
@@ -28,6 +29,8 @@ def helper_fingerprint(root=ROOT):
 def evidence(runtime,sha,base):
     if not re.fullmatch('[0-9a-f]{40}',sha) or not re.fullmatch('[0-9a-f]{64}',base):
         raise ValueError('NARRATION_PROVENANCE_INVALID')
+    if base!=json.loads((ROOT/'deploy/vendor-runtime.json').read_bytes())['base_digest']:
+        raise ValueError('NARRATION_BASE_PROVENANCE_MISMATCH')
     runtime=Path(runtime);files=[];size=0
     for path in sorted(runtime.rglob('*')):
         if path.is_symlink():raise ValueError('NARRATION_RUNTIME_SYMLINK')
@@ -47,9 +50,30 @@ def check_scan(report):
     if (not isinstance(report,dict) or report.get('SchemaVersion')!=2
             or report.get('ArtifactType')!='container_image' or not isinstance(report.get('Results'),list)):
         raise ValueError('NARRATION_SCAN_REPORT_INVALID')
+    contract=json.loads((ROOT/'deploy/vendor-runtime.json').read_bytes())
     classes={(item.get('Class'),item.get('Type')) for item in report['Results'] if isinstance(item,dict)}
-    if not {('os-pkgs','debian'),('lang-pkgs','python-pkg')}<=classes:
+    if (report.get('Metadata',{}).get('OS',{}).get('Family')!=contract['family']
+            or not {('os-pkgs',contract['family']),('lang-pkgs','python-pkg')}<=classes):
         raise ValueError('NARRATION_SCAN_COVERAGE_INCOMPLETE')
+    packages=[pkg for item in report['Results'] if item.get('Class')=='os-pkgs'
+              for pkg in item.get('Packages',[])]
+    architectures={pkg.get('Arch') for pkg in packages}
+    if len(architectures)!=1 or next(iter(architectures)) not in contract['packages']:
+        raise ValueError('NARRATION_SCAN_PACKAGE_GRAPH_INVALID')
+    expected={row['P']:row['V'] for row in contract['packages'][next(iter(architectures))]
+              if row['P'] not in {'sqlite-libs','py3-pip-wheel'}}
+    actual={pkg.get('Name'):pkg.get('Version') for pkg in packages}
+    if len(actual)!=len(packages) or actual!=expected or any(pkg.get('Release') for pkg in packages):
+        raise ValueError('NARRATION_SCAN_PACKAGE_GRAPH_INVALID')
+    if not any(item.get('Type')=='python-pkg' and item.get('Packages') for item in report['Results']):
+        raise ValueError('NARRATION_SCAN_COVERAGE_INCOMPLETE')
+    normal=lambda name:re.sub(r'[-_.]+','-',name).lower()
+    python={normal(pkg['Name']):pkg.get('Version') for item in report['Results']
+            if item.get('Type')=='python-pkg' for pkg in item.get('Packages',[])}
+    for line in (ROOT/'deploy/requirements-pronunciation.txt').read_text().splitlines():
+        if not line.strip() or line.startswith('#'):continue
+        name,version=line.split('==');name=name.split('[')[0]
+        if python.get(normal(name))!=version:raise ValueError('NARRATION_SCAN_PYTHON_GRAPH_INVALID')
     for item in report['Results']:
         findings=item.get('Vulnerabilities') or []
         if not isinstance(findings,list):raise ValueError('NARRATION_SCAN_REPORT_INVALID')

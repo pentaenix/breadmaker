@@ -78,8 +78,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
-      # Same already-reviewed base as the existing hosted release build.
-      PYTHON_BASE_DIGEST: a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170
+      # Source-bound vendor base; exact runtime graph is checked before assembly.
+      PYTHON_BASE_DIGEST: 771146c2dfc880902a185f060c3db5571473c46b267edd98c3119c83068dfb61
       SCANNER: ghcr.io/aquasecurity/trivy@sha256:2416d1f74045b57274df1a340eee6b510cacd73c66a6ccb8da092b117eb7d222
       PYTHONPATH: src
       PYTHONDONTWRITEBYTECODE: '1'
