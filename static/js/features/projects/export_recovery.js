@@ -3,8 +3,37 @@
 async function downloadPostFile(url,payload,fallbackName){
   const response=await fetch(url,{method:'POST',headers:projectScopedHeaders({'Content-Type':'application/json','X-Breadmaker-Client':CLIENT_ID,'X-Breadmaker-Locale':i18nLocale()}),body:JSON.stringify(payload)});
   if(!response.ok){const raw=await response.text().catch(()=>'');let errorPayload;try{errorPayload=raw?JSON.parse(raw):{}}catch{errorPayload={detail:raw||`Request failed (${response.status})`}}throw breadmakerErrorFromPayload(errorPayload,response.status)}
+  await downloadResponseFile(response,fallbackName);
+}
+
+async function downloadResponseFile(response,fallbackName){
   const blob=await response.blob(),disposition=response.headers.get('content-disposition')||'';let name=fallbackName;const m=disposition.match(/filename\*?=(?:UTF-8''|\")?([^\";]+)/i);if(m)try{name=decodeURIComponent(m[1].replace(/^\"|\"$/g,''))}catch{name=m[1].replace(/^\"|\"$/g,'')}
   const href=URL.createObjectURL(blob),a=document.createElement('a');a.href=href;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),1500);
+}
+
+let readableZipExportInFlight=false;
+function openReadableZipExport(){
+  if(readableZipExportInFlight){toast(i18nText('export.zip.creating'));return}
+  $('#brandButton').focus({preventScroll:true});
+  showModal(i18nText('export.zip.title'),`<div class="pdf-export-form"><p class="small-muted">${escapeHtml(i18nText('export.zip.description'))}</p></div>`,
+    `<button id="zipExportConfirm">${escapeHtml(i18nText('export.zip.create'))}</button>`);
+  const button=$('#zipExportConfirm'),projectId=currentProjectIdentity(),url=projectScopedUrl('/api/export/zip');
+  button.onclick=async()=>{
+    if(readableZipExportInFlight)return;
+    readableZipExportInFlight=true;button.disabled=true;button.setAttribute('aria-busy','true');button.textContent=i18nText('export.zip.creating');
+    try{
+      await flushSave();
+      if(currentProjectIdentity()!==projectId)throw new Error(i18nText('export.zip.project_changed'));
+      const response=await fetch(url,{headers:projectScopedHeaders({'X-Breadmaker-Locale':i18nLocale()})});
+      if(!response.ok){const payload=await response.json().catch(()=>({}));throw breadmakerErrorFromPayload(payload,response.status)}
+      await downloadResponseFile(response,'Breadmaker-readable.zip');
+      toast(i18nText('export.zip.ready'));
+      if($('#zipExportConfirm')===button)closeModal();
+    }catch(error){
+      if($('#zipExportConfirm')===button){button.disabled=false;button.removeAttribute('aria-busy');button.textContent=i18nText('export.zip.create')}
+      toast(error.message||i18nText('export.zip.failed'),4500);
+    }finally{readableZipExportInFlight=false}
+  };
 }
 
 function openPdfExport(onDismiss=null){

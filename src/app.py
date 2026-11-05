@@ -13,6 +13,7 @@ if not getattr(_platform_app.state,'feature_routers_installed',False):
         from hosted.http_api import product_router
         from hosted.http_compat import router as hosted_compat_router
         from hosted.http_auth import router as hosted_auth_router
+        from hosted.readable_export import router as readable_export_router
         from hosted.http_api import _uid, _pid, _domain
         from hosted.editing_http import build_router as build_editing_router
         from hosted.narration.http import build_recording_router
@@ -26,6 +27,7 @@ if not getattr(_platform_app.state,'feature_routers_installed',False):
             identity=_uid,project=_pid))
         _platform_app.include_router(product_router)
         _platform_app.include_router(hosted_compat_router)
+        _platform_app.include_router(readable_export_router)
     _platform_app.state.feature_routers_installed=True
 
 app=_platform_app

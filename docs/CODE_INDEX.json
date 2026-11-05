@@ -2218,17 +2218,12 @@
     },
     {
       "file": "src/api/import_export/docx_export.py",
-      "lines": 120,
+      "lines": 35,
       "symbols": [
-        {
-          "name": "_manuscript_block_groups",
-          "kind": "function",
-          "line": 19
-        },
         {
           "name": "export_docx",
           "kind": "function",
-          "line": 33,
+          "line": 20,
           "routes": [
             {
               "method": "GET",
@@ -2381,6 +2376,23 @@
             {
               "method": "POST",
               "path": "/api/export/pdf"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/api/import_export/readable_export.py",
+      "lines": 27,
+      "symbols": [
+        {
+          "name": "export_readable_zip",
+          "kind": "function",
+          "line": 18,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/api/export/zip"
             }
           ]
         }
@@ -6012,7 +6024,7 @@
     },
     {
       "file": "src/app.py",
-      "lines": 31,
+      "lines": 33,
       "symbols": []
     },
     {
@@ -7581,6 +7593,27 @@
       ]
     },
     {
+      "file": "src/formats/manuscript_docx.py",
+      "lines": 84,
+      "symbols": [
+        {
+          "name": "manuscript_block_groups",
+          "kind": "function",
+          "line": 10
+        },
+        {
+          "name": "_inline",
+          "kind": "function",
+          "line": 24
+        },
+        {
+          "name": "docx_bytes",
+          "kind": "function",
+          "line": 37
+        }
+      ]
+    },
+    {
       "file": "src/formats/project_json/__init__.py",
       "lines": 3,
       "symbols": []
@@ -7732,6 +7765,38 @@
           "name": "validate_document",
           "kind": "function",
           "line": 199
+        }
+      ]
+    },
+    {
+      "file": "src/formats/readable_archive.py",
+      "lines": 141,
+      "symbols": [
+        {
+          "name": "_page",
+          "kind": "function",
+          "line": 61
+        },
+        {
+          "name": "_document_copies",
+          "kind": "function",
+          "line": 67
+        },
+        {
+          "name": "write_readable_archive",
+          "kind": "function",
+          "line": 95
+        }
+      ]
+    },
+    {
+      "file": "src/formats/readable_names.py",
+      "lines": 12,
+      "symbols": [
+        {
+          "name": "file_stem",
+          "kind": "function",
+          "line": 7
         }
       ]
     },
@@ -8028,47 +8093,47 @@
     },
     {
       "file": "src/hosted/document_io.py",
-      "lines": 193,
+      "lines": 178,
       "symbols": [
         {
           "name": "read_upload_bytes_sync",
           "kind": "function",
-          "line": 29
+          "line": 28
         },
         {
           "name": "validate_docx_bytes",
           "kind": "function",
-          "line": 35
+          "line": 34
         },
         {
           "name": "parse_document_bytes",
           "kind": "function",
-          "line": 50
+          "line": 49
         },
         {
           "name": "ordered_book",
           "kind": "function",
-          "line": 111
+          "line": 110
         },
         {
           "name": "export_docx_bytes",
           "kind": "function",
-          "line": 120
+          "line": 119
         },
         {
           "name": "export_pdf_bytes",
           "kind": "function",
-          "line": 142
+          "line": 127
         },
         {
           "name": "manuscript_is_default_blank",
           "kind": "function",
-          "line": 161
+          "line": 146
         },
         {
           "name": "install_parsed_tabs",
           "kind": "function",
-          "line": 168
+          "line": 153
         }
       ]
     },
@@ -11300,57 +11365,57 @@
     },
     {
       "file": "src/hosted/local_portability.py",
-      "lines": 484,
+      "lines": 486,
       "symbols": [
         {
           "name": "LocalPortabilityError",
           "kind": "class",
-          "line": 58
+          "line": 60
         },
         {
           "name": "_byte_value",
           "kind": "function",
-          "line": 62
+          "line": 64
         },
         {
           "name": "_scalar",
           "kind": "function",
-          "line": 78
+          "line": 80
         },
         {
           "name": "_archive_members",
           "kind": "function",
-          "line": 91
+          "line": 93
         },
         {
           "name": "_mapping",
           "kind": "function",
-          "line": 131
+          "line": 133
         },
         {
           "name": "_columns",
           "kind": "function",
-          "line": 136
+          "line": 138
         },
         {
           "name": "_foreign",
           "kind": "function",
-          "line": 141
+          "line": 143
         },
         {
           "name": "_rebase_typed_reference",
           "kind": "function",
-          "line": 157
+          "line": 159
         },
         {
           "name": "_rebase_non_fk_semantics",
           "kind": "function",
-          "line": 168
+          "line": 170
         },
         {
           "name": "to_local_package",
           "kind": "function",
-          "line": 227
+          "line": 229
         }
       ]
     },
@@ -12350,6 +12415,28 @@
           "name": "HostedSandboxPurgeExecutor",
           "kind": "class",
           "line": 48
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/readable_export.py",
+      "lines": 39,
+      "symbols": [
+        {
+          "name": "_readable_zip",
+          "kind": "function",
+          "line": 20
+        },
+        {
+          "name": "hosted_export_readable_zip",
+          "kind": "async_function",
+          "line": 31,
+          "routes": [
+            {
+              "method": "GET",
+              "path": "/api/export/zip"
+            }
+          ]
         }
       ]
     },
@@ -15565,7 +15652,7 @@
     },
     {
       "file": "static/js/core/runtime.js",
-      "lines": 96,
+      "lines": 99,
       "symbols": [
         {
           "name": "$",
@@ -15630,7 +15717,7 @@
         {
           "name": "apiList",
           "kind": "function",
-          "line": 91
+          "line": 94
         }
       ]
     },
@@ -22987,7 +23074,7 @@
     },
     {
       "file": "static/js/features/projects/export_recovery.js",
-      "lines": 52,
+      "lines": 81,
       "symbols": [
         {
           "name": "downloadPostFile",
@@ -22995,29 +23082,39 @@
           "line": 2
         },
         {
+          "name": "downloadResponseFile",
+          "kind": "function",
+          "line": 8
+        },
+        {
+          "name": "openReadableZipExport",
+          "kind": "function",
+          "line": 15
+        },
+        {
           "name": "openPdfExport",
           "kind": "function",
-          "line": 9
+          "line": 38
         },
         {
           "name": "sync",
           "kind": "function",
-          "line": 24
+          "line": 53
         },
         {
           "name": "verifyProject",
           "kind": "function",
-          "line": 27
+          "line": 56
         },
         {
           "name": "formatBytes",
           "kind": "function",
-          "line": 39
+          "line": 68
         },
         {
           "name": "openRecovery",
           "kind": "function",
-          "line": 41
+          "line": 70
         }
       ]
     },
@@ -23159,7 +23256,7 @@
     },
     {
       "file": "static/js/features/projects/menu.js",
-      "lines": 116,
+      "lines": 117,
       "symbols": [
         {
           "name": "hideProjectSubmenu",
@@ -23214,7 +23311,7 @@
         {
           "name": "startProjectMenuRename",
           "kind": "function",
-          "line": 109
+          "line": 110
         }
       ]
     },
@@ -23419,182 +23516,187 @@
     },
     {
       "file": "static/js/features/projects/targets.js",
-      "lines": 293,
+      "lines": 313,
       "symbols": [
         {
           "name": "targetText",
           "kind": "function",
-          "line": 6
+          "line": 7
         },
         {
           "name": "targetHtml",
           "kind": "function",
-          "line": 7
+          "line": 8
         },
         {
           "name": "targetsContext",
           "kind": "function",
-          "line": 8
+          "line": 9
         },
         {
           "name": "targetsAcknowledged",
           "kind": "function",
-          "line": 9
+          "line": 10
         },
         {
           "name": "targetsMergePending",
           "kind": "function",
-          "line": 10
+          "line": 11
         },
         {
           "name": "targetsPreviewPending",
           "kind": "function",
-          "line": 14
+          "line": 15
         },
         {
           "name": "targetsRequest",
           "kind": "function",
-          "line": 15
+          "line": 16
         },
         {
           "name": "targetsHideTips",
           "kind": "function",
-          "line": 20
+          "line": 21
         },
         {
           "name": "loadTargets",
           "kind": "function",
-          "line": 21
+          "line": 22
         },
         {
           "name": "loading",
           "kind": "function",
-          "line": 27
+          "line": 28
         },
         {
           "name": "targetsEnqueue",
           "kind": "function",
-          "line": 39
+          "line": 40
         },
         {
           "name": "flushTargets",
           "kind": "function",
-          "line": 52
+          "line": 53
         },
         {
           "name": "save",
           "kind": "function",
-          "line": 56
+          "line": 57
         },
         {
           "name": "targetsClock",
           "kind": "function",
-          "line": 84
+          "line": 85
         },
         {
           "name": "targetsActivity",
           "kind": "function",
-          "line": 99
+          "line": 100
         },
         {
           "name": "targetsManuscriptText",
           "kind": "function",
-          "line": 108
+          "line": 109
         },
         {
           "name": "targetsCaptureWriting",
           "kind": "function",
-          "line": 109
+          "line": 110
         },
         {
           "name": "targetsFinishWriting",
           "kind": "function",
-          "line": 114
+          "line": 115
         },
         {
           "name": "targetsStopSound",
           "kind": "function",
-          "line": 144
+          "line": 145
         },
         {
           "name": "targetsPlaySound",
           "kind": "function",
-          "line": 145
+          "line": 146
         },
         {
           "name": "targetsCelebrate",
           "kind": "function",
-          "line": 150
+          "line": 151
         },
         {
           "name": "targetsAmount",
           "kind": "function",
-          "line": 155
+          "line": 156
         },
         {
           "name": "targetsProgressLabel",
           "kind": "function",
-          "line": 161
+          "line": 162
         },
         {
           "name": "targetsRing",
           "kind": "function",
-          "line": 162
+          "line": 163
         },
         {
           "name": "renderTargets",
           "kind": "function",
-          "line": 163
+          "line": 164
         },
         {
           "name": "targetsSwitch",
           "kind": "function",
-          "line": 190
+          "line": 191
         },
         {
           "name": "targetsGoalRow",
           "kind": "function",
-          "line": 191
+          "line": 192
         },
         {
           "name": "field",
           "kind": "function",
-          "line": 192
+          "line": 193
         },
         {
           "name": "targetsHistoryRows",
           "kind": "function",
-          "line": 195
+          "line": 196
         },
         {
           "name": "targetsHistoryChart",
           "kind": "function",
-          "line": 198
+          "line": 199
+        },
+        {
+          "name": "openTargetsHistory",
+          "kind": "function",
+          "line": 212
+        },
+        {
+          "name": "render",
+          "kind": "function",
+          "line": 221
         },
         {
           "name": "openTargets",
           "kind": "function",
-          "line": 210
+          "line": 230
         },
         {
           "name": "readGoals",
           "kind": "function",
-          "line": 236
+          "line": 255
         },
         {
           "name": "syncGoalPicker",
           "kind": "function",
-          "line": 237
+          "line": 256
         },
         {
           "name": "wireRows",
           "kind": "function",
-          "line": 243
-        },
-        {
-          "name": "renderHistory",
-          "kind": "function",
-          "line": 256
+          "line": 262
         }
       ]
     },
@@ -25674,7 +25776,7 @@
       "method": "GET",
       "function": "export_docx",
       "file": "src/api/import_export/docx_export.py",
-      "line": 33,
+      "line": 20,
       "path": "/api/export/docx"
     },
     {
@@ -25711,6 +25813,13 @@
       "file": "src/api/import_export/pdf_export.py",
       "line": 154,
       "path": "/api/export/pdf"
+    },
+    {
+      "method": "GET",
+      "function": "export_readable_zip",
+      "file": "src/api/import_export/readable_export.py",
+      "line": 18,
+      "path": "/api/export/zip"
     },
     {
       "method": "POST",
@@ -28763,7 +28872,14 @@
       "file": "src/hosted/narration/pronunciation_helper.py",
       "line": 81,
       "path": "/pronounce"
+    },
+    {
+      "method": "GET",
+      "function": "hosted_export_readable_zip",
+      "file": "src/hosted/readable_export.py",
+      "line": 31,
+      "path": "/api/export/zip"
     }
   ],
-  "route_decorator_count": 548
+  "route_decorator_count": 550
 }

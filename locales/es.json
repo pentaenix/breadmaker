@@ -3653,7 +3653,15 @@
     "targets.history_list": "Lista",
     "targets.history_chart": "Actividad",
     "targets.history_period": "Período",
-    "targets.history_group": "{count}/{total} metas alcanzadas"
+    "targets.history_group": "{count}/{total} metas alcanzadas",
+    "export.zip.menu": "ZIP legible…",
+    "export.zip.title": "Exportar ZIP legible",
+    "export.zip.description": "Copias de Word, HTML y texto de cada documento, imágenes originales y un proyecto de Breadmaker restaurable. Extrae el ZIP y abre START-HERE.html.",
+    "export.zip.create": "Crear ZIP",
+    "export.zip.creating": "Creando ZIP…",
+    "export.zip.ready": "ZIP exportado",
+    "export.zip.failed": "No se pudo exportar el ZIP.",
+    "export.zip.project_changed": "El proyecto activo cambió. Abre la exportación de nuevo."
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

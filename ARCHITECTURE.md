@@ -45,6 +45,14 @@ The normal hosted runtime uses server-readable manuscript data with Google-manag
 
 For pre-alpha changes, correctness is more important than compatibility with obsolete project formats. Unsupported data is rejected rather than silently migrated. The full test gate must pass before a release is promoted.
 
+## Readable exports
+
+The readable ZIP is a view of one existing portable project snapshot, containing ordinary
+DOCX/HTML/text copies, original images and an unchanged `.breadmaker` file for restoration.
+Local snapshot capture and hosted authorization/generation fencing keep their existing
+owners. Runtime-independent rendering belongs to `formats/`; HTTP owners remain separate.
+See [Readable exports](docs/READABLE_EXPORTS.md) for format limits and verification.
+
 ## Architecture history
 
 The dated sections below record earlier design decisions, including systems that have since been removed. In particular, Auth0 and old staging instructions **do not describe the current hosted runtime**.

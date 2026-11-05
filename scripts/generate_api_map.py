@@ -24,7 +24,7 @@ PACKAGE_ROUTE_ORDER={
     'maps':('lifecycle','lines','items','junctions','layout','populate'),
     'durability':('cuts','history','undo','history_baseline','recovery','backup_destinations','recovery_backups','backup_inventory','backups'),
     'checkpoints':('lifecycle','comparison','apply'),
-    'import_export':('docx_import','docx_export','pdf_export','assets'),
+    'import_export':('docx_import','docx_export','pdf_export','assets','readable_export'),
     'workspace_tools':('references','bookmark','ui_state','documents'),
     'annotations':('routes',),
     'comments':('routes',),
