@@ -1,0 +1,51 @@
+name: diagnose-canvas-opening
+on:
+  push:
+    branches: [diagnostics/canvas-opening]
+permissions:
+  contents: read
+jobs:
+  canvas-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: candidate
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 99ab07d415bbb68b7b1eaf1a39c23b8fd5c712a4
+          path: baseline
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.14'
+      - run: python -m pip install -r candidate/requirements-test.txt
+      - run: sudo --preserve-env=GITHUB_ACTIONS,RUNNER_OS python3 candidate/scripts/configure_ci_ubuntu_mirror.py
+      - run: python -m playwright install --with-deps chromium webkit
+      - name: Measure unchanged baseline
+        working-directory: baseline
+        env:
+          PYTHONPATH: src:.
+        run: python ../candidate/scripts/diagnostics/canvas_latency.py --output "$RUNNER_TEMP/canvas-before.json"
+      - name: Measure candidate under identical conditions
+        working-directory: candidate
+        env:
+          PYTHONPATH: src:.
+        run: python scripts/diagnostics/canvas_latency.py --output "$RUNNER_TEMP/canvas-after.json"
+      - name: Verify immediate controls, stale reads, read-only camera and existing navigation
+        working-directory: candidate
+        run: >-
+          python -m pytest -q tests/test_v10590_canvas_opening_split_browser.py
+          tests/test_v10589_inspector_population_browser.py
+          tests/test_v10581_canvas_navigation_browser.py tests/test_v560_browser.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: canvas-opening-evidence
+          path: |
+            ${{ runner.temp }}/canvas-before.json
+            ${{ runner.temp }}/canvas-after.json
+          retention-days: 7
