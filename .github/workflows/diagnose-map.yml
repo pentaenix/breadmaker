@@ -1,0 +1,33 @@
+name: diagnose-map-http400
+on:
+  push:
+    branches: [diagnostics/map-http400]
+permissions:
+  contents: read
+jobs:
+  map-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.14'
+      - run: python -m pip install -r requirements-test.txt
+      - run: sudo --preserve-env=GITHUB_ACTIONS,RUNNER_OS python3 scripts/configure_ci_ubuntu_mirror.py
+      - run: python -m playwright install --with-deps chromium
+      - name: Reproduce only the failing Map workflow with synthetic request diagnostics
+        env:
+          PYTHONPATH: src:.
+        run: |
+          set -o pipefail
+          python -u scripts/diagnostics/map_http400.py 2>&1 | tee map-http400.log
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: map-http400-diagnostic
+          path: map-http400.log
+          retention-days: 3
