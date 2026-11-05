@@ -1,7 +1,9 @@
 # Low-cost k6 load testing
 
 Run OSS k6 on your machine against a runner-owned, disposable Breadmaker HTTP
-server. There is no Grafana Cloud subscription, production URL option, GCP
+server. The default uses memory adapters; an explicit option runs the real
+Google Firestore adapter against an owned local emulator. There is no Grafana
+Cloud subscription, production URL option, GCP
 credential, cloud provisioning, or paid CI job in this workflow. Provider cost
 for these local runs is **USD 0**; existing machine/electricity costs remain.
 The normal accountless, offline local editor is unchanged.
@@ -72,8 +74,73 @@ run also verifies anonymous denial and denial of another user's project.
 The server is the real FastAPI app, one Uvicorn worker, with the real hosted
 middleware, server-derived account/project authority, model validation,
 generation checks, chapter saves, map mutations and HTTP serialization. The
-backing adapters are **MemoryDocumentStore and MemoryObjectStore**, and login
-uses synthetic opaque test sessions. No Firebase login occurs.
+default backing adapters are **MemoryDocumentStore and MemoryObjectStore**, and
+login uses synthetic opaque test sessions. The optional emulator path uses the
+real **GoogleFirestoreDocumentStore** and local gRPC. Object storage and login
+remain synthetic in both paths. No Firebase login occurs.
+
+## Firestore emulator validation
+
+Use an existing Java 21+ executable and explicitly install the official emulator
+JAR outside the repository. The harness never downloads or upgrades software.
+It accepts only Firestore emulator **1.22.0**, exactly **136,707,194 bytes**, with
+SHA-256 `9b6498b7f62714d67f48f59b3818883cd682dbcd46b9f59511de81c97bb5166c`.
+The [official Firebase manifest](https://github.com/firebase/firebase-tools/blob/master/src/emulator/downloadableEmulatorInfo.json)
+publishes the size, checksum and download URL. A mismatch fails before execution.
+
+```sh
+# One explicit local prerequisite download; no gcloud login or component update.
+curl --fail --location --proto '=https' --tlsv1.2 --max-time 120 \
+  --max-filesize 140000000 --output /absolute/local/path/firestore-1.22.0.jar \
+  https://storage.googleapis.com/firebase-preview-drop/emulator/cloud-firestore-emulator-v1.22.0.jar
+
+./load-test --adapter firestore-emulator \
+  --emulator-jar /absolute/local/path/firestore-1.22.0.jar \
+  --java /absolute/path/to/java21-or-later/bin/java \
+  --profile smoke --users 2 --vus 2 --chapters 2 --blocks 5
+```
+
+The runner starts a new JVM for every VU level, caps its heap at 512 MiB and
+reported active processors at two, and pins Standard Native mode. All listeners
+bind IPv4 loopback. A fresh `demo-bm-k6-` project ID and strict single-project
+mode prevent accidental reuse of a real project. Client Security Rules deny all
+access; the Python server SDK uses the emulator's local administrative protocol.
+This tests Breadmaker's application authorization, not production IAM or Rules.
+
+The Python client explicitly receives AnonymousCredentials and an exact
+`127.0.0.1:port` endpoint. The SDK must confirm its emulator transport before any
+RPC. ADC, real project configuration, proxies, Java injection options, credentials
+and remote outputs are excluded from child environments. There is no flag to
+connect to a pre-existing emulator or external Firestore service.
+
+After the fixture stops, the runner deletes only its fresh demo database through
+the owned emulator endpoint, checks that users/projects are empty, terminates
+and reaps the JVM, verifies that its API port is closed, then removes the
+temporary directory. These outcomes are recorded in `status.json`; any unverified
+cleanup fails the run. No import/export flag or persistent data directory is used.
+
+The Google adapter activates the application's existing account lifecycle fence.
+For an otherwise matched memory comparison, add `--lifecycle-fence` to a memory
+run. The experiment and server observations record this difference, and regression
+comparison rejects different adapters, fence settings, emulator versions or Java
+runtimes. Changing an adapter is a separate experiment, not a code regression.
+The original memory baseline remains an unfenced historical measurement.
+
+For diagnosis, `--workload read-only` keeps only chapter reads, project navigation
+and map listing. It uses the same session/authority boundary and applies read
+thresholds without requiring mutation samples. Keep this distinct from a mixed
+capacity test; regression comparison rejects different workloads.
+
+Emulator transactions and query RPCs replace the memory adapter's whole-store
+copy and global scan behavior. They still do not reproduce production indexes,
+quotas, distributed contention, cold starts, IAM, network/region latency, KMS or
+GCS persistence. JVM JIT and transaction retry warm-up can affect short first
+runs; retain cold results and use longer bounded runs for warm comparisons.
+The emulator can differ from production transaction timing and limits. Google
+documents that write contention can hold emulator locks for up to 30 seconds;
+the harness retains its five-second user-facing timeout rather than relaxing
+latency expectations to obtain a pass. See
+[Google's emulator limitations](https://firebase.google.com/docs/emulator-suite/connect_firestore#how_the_cloud_firestore_emulator_differs_from_production).
 
 This is an application regression baseline, **not a Firestore or production
 capacity benchmark**. The memory driver serializes transactions behind one
@@ -101,7 +168,7 @@ same host as the load generator; CPU is not constrained to a production vCPU.
   requests/second and `3 * VUs * (seconds + 1)` requests per timed run. Smoke is
   capped at `30 * VUs` requests and a 60-second executor deadline. Health checks
   and three preflight requests are additional local traffic.
-- Seeding/startup has a 120-second watchdog, and k6 has an independent process
+- Emulator startup has a 30-second watchdog. Seeding/app startup has a 120-second watchdog, and k6 has an independent process
   watchdog. Error thresholds can stop early. The supervisor terminates/reaps
   its own children, closes the socket, and deletes the temporary home, manifest,
   cookies and data after success or failure. A forced interruption can omit the
@@ -145,6 +212,13 @@ lock wait and rollback copies. Timings overlap and are not additive. Logical
 calls are **not billable Firestore operations** or exact Firestore retry counts.
 The wrapper adds measurement overhead. Peak RSS includes seeding.
 
+Emulator observations additionally count transaction callback attempts (including
+retries) and track committed document count/serialized size without retaining
+document bodies or adding inventory RPCs to timed traffic. Low-level SDK RPC
+retries are not individually counted. App CPU/RSS cover the Python fixture only;
+the separate JVM's limits are recorded in experiment metadata, and its CPU/RSS
+are not included in the app-process figures.
+
 Use the evidence in this order:
 
 1. Check 401/403/404 preflight, semantic failures, 409 and 429 counts; invalid or
@@ -182,7 +256,8 @@ python3 tools/loadtest/report.py .loadtest-results/current \
 
 The comparison fails if any endpoint p95 increases by both more than 20% and
 more than 20 ms. It rejects mismatched populations, profiles, durations, arrival
-rates, k6 versions or platforms and requires matching passing VU runs. Absolute
+rates, k6 versions, platforms, adapters, lifecycle fences or emulator runtimes
+and requires matching passing VU runs. Absolute
 thresholds still apply even when no earlier baseline exists. The reporter writes
 a sanitized `report.json` beside the raw summaries. Do not compare the small
 population baseline with the larger-project experiment as a code regression.
@@ -194,8 +269,8 @@ experiment, use the private infrastructure repository to review a disposable
 design compatible with the existing single-production policy. Do not create a
 persistent staging environment or broaden IAM/ingress as a side effect. Any
 required access change needs its specific confirmation. The next lower-cost
-option is a credential-free local Firestore emulator with the real Google
-adapter; it is not installed or measured by this harness yet.
+option is the credential-free local Firestore emulator path above. Validate its
+results and limitations before spending on any hosted calibration.
 
 For an explicitly authorized disposable hosted experiment: pin the app/image
 SHA and region, synthetic accounts and dataset; verify synthetic-only targeting

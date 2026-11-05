@@ -1,4 +1,4 @@
-"""Run the real hosted HTTP app with synthetic accounts and memory adapters."""
+"""Run real hosted HTTP with synthetic accounts and disposable local adapters."""
 from __future__ import annotations
 
 import json
@@ -37,8 +37,9 @@ class Observations:
 
 
 class ObservedTransaction:
-    def __init__(self, transaction, observations):
+    def __init__(self, transaction, observations, pending=None):
         self.transaction, self.observations = transaction, observations
+        self.pending = pending
 
     def __getattr__(self, name):
         native = getattr(self.transaction, name)
@@ -46,6 +47,9 @@ class ObservedTransaction:
             start = time.perf_counter()
             try:
                 result = native(*args, **kwargs)
+                if self.pending is not None and name in {'set', 'create', 'delete'}:
+                    self.pending[tuple(args[0])] = (None if name == 'delete'
+                        else len(json.dumps(args[1], default=str).encode()))
                 return result
             finally:
                 self.observations.record('tx.' + name, time.perf_counter() - start)
@@ -99,6 +103,66 @@ def make_store(observations):
     return ObservedMemoryStore()
 
 
+def make_google_store(observations, *, endpoint, project):
+    from tools.loadtest.emulator import create_client
+    from hosted.firestore.google_driver import GoogleFirestoreDocumentStore
+    client = create_client(endpoint, project)
+
+    class ObservedGoogleStore(GoogleFirestoreDocumentStore):
+        # Track committed writes in this fresh process-owned project, without
+        # adding inventory RPCs to measured traffic or retaining document bodies.
+        def __init__(self):
+            super().__init__(client=client)
+            self.inventory, self.inventory_lock = {}, threading.Lock()
+
+        def get(self, path):
+            start = time.perf_counter()
+            try:
+                return super().get(path)
+            finally:
+                observations.record('get', time.perf_counter() - start)
+
+        def query_collection(self, path, **kwargs):
+            start = time.perf_counter()
+            rows = super().query_collection(path, **kwargs)
+            observations.record('query', time.perf_counter() - start, returned=len(rows))
+            return rows
+
+        def query_collection_group(self, name, **kwargs):
+            start = time.perf_counter()
+            rows = super().query_collection_group(name, **kwargs)
+            observations.record('query_group', time.perf_counter() - start, returned=len(rows))
+            return rows
+
+        def run_transaction(self, fn, **kwargs):
+            start, final_writes = time.perf_counter(), {}
+            def execute(tx):
+                pending = {}
+                observations.record('transaction_attempt', 0)
+                result = fn(ObservedTransaction(tx, observations, pending))
+                final_writes.clear()
+                final_writes.update(pending)
+                return result
+            try:
+                result = super().run_transaction(execute, **kwargs)
+                with self.inventory_lock:
+                    for path, size in final_writes.items():
+                        if size is None:
+                            self.inventory.pop(path, None)
+                        else:
+                            self.inventory[path] = size
+                return result
+            finally:
+                observations.record('transaction', time.perf_counter() - start)
+
+        def volume(self):
+            with self.inventory_lock:
+                return dict(documents_at_end=len(self.inventory), stored_json_bytes=sum(self.inventory.values()),
+                            inventory_method='tracked committed writes in fresh owned emulator project')
+
+    return ObservedGoogleStore()
+
+
 def seed(runtime, *, users, chapters, blocks, text_bytes):
     from hosted.chapter_mutations import replace_chapter_blocks
     from hosted.runtime_services import ensure_hosted_user
@@ -132,7 +196,7 @@ def seed(runtime, *, users, chapters, blocks, text_bytes):
 def main():
     # A fresh runner child is the only supported entry point. No credential-backed
     # adapters, network targets or environment-selected hosted modes are accepted.
-    if os.environ.get('BREADMAKER_LOAD_FIXTURE') != 'local-memory-v1':
+    if os.environ.get('BREADMAKER_LOAD_FIXTURE') != 'local-load-v2':
         raise SystemExit('Use ./load-test; direct fixture startup is disabled.')
     config = json.loads(Path(sys.argv[1]).read_text())
     sock = socket.socket(fileno=int(config['socket_fd']))
@@ -142,16 +206,28 @@ def main():
         os.environ.get('BREADMAKER_AUTH_MODE')) != ('hosted_dev', 'test', 'test'):
         raise SystemExit('Load fixture requires hosted_dev/test/test.')
     observations = Observations()
-    documents = make_store(observations)
+    adapter = config.get('adapter', 'memory')
+    if adapter == 'firestore-emulator':
+        documents = make_google_store(observations, endpoint=config['emulator_endpoint'], project=config['emulator_project'])
+    elif adapter == 'memory':
+        documents = make_store(observations)
+    else:
+        raise SystemExit('Unsupported local load adapter')
     from hosted.storage import MemoryObjectStore
     from runtime.hosted import build_hosted_dev_runtime
-    runtime = build_hosted_dev_runtime(documents=documents, objects=MemoryObjectStore())
+    runtime_documents = documents
+    if adapter == 'memory' and config.get('lifecycle_fence'):
+        from hosted.account_lifecycle import AccountLifecycleDocumentStore
+        runtime_documents = AccountLifecycleDocumentStore(documents)
+    runtime = build_hosted_dev_runtime(documents=runtime_documents, objects=MemoryObjectStore())
     with patch('runtime.build_runtime', return_value=runtime):
         from app import app
     accounts = seed(runtime, **config['dataset'])
-    documents.seeding = False
+    if adapter == 'memory':
+        documents.seeding = False
     manifest = dict(base_url=f'http://127.0.0.1:{sock.getsockname()[1]}',
-                    fixture='local-memory-v1', cookie_name=runtime.sessions.cookie_name,
+                    fixture='local-firestore-v1' if adapter == 'firestore-emulator' else 'local-memory-v1',
+                    cookie_name=runtime.sessions.cookie_name,
                     accounts=accounts, run_id=config['run_id'])
     Path(config['manifest']).write_text(json.dumps(manifest))
     observations.clear()
@@ -160,14 +236,18 @@ def main():
     def write_observations():
         usage = resource.getrusage(resource.RUSAGE_SELF)
         rss_bytes = usage.ru_maxrss if sys.platform == 'darwin' else usage.ru_maxrss * 1024
-        Path(config['observations']).write_text(json.dumps(dict(
-            adapter='MemoryDocumentStore', dataset=config['dataset'],
+        volume = (documents.volume() if adapter == 'firestore-emulator' else dict(
             documents_at_end=len(documents._documents),
             stored_json_bytes=sum(len(json.dumps(row[0]).encode()) for row in documents._documents.values()),
+            inventory_method='memory driver document inventory'))
+        Path(config['observations']).write_text(json.dumps(dict(
+            adapter='GoogleFirestoreDocumentStore/emulator' if adapter == 'firestore-emulator' else 'MemoryDocumentStore',
+            dataset=config['dataset'], **volume,
+            account_lifecycle_fence=runtime.capabilities.supports('account_erasure_fence'),
             elapsed_seconds=time.perf_counter() - start,
             cpu_seconds=(usage.ru_utime + usage.ru_stime - start_usage.ru_utime - start_usage.ru_stime),
             max_rss_bytes=rss_bytes, operations=observations.rows,
-            warning='Logical test-adapter calls, not Firestore billable operations. Timings overlap.'
+            warning='Logical adapter calls, not Firestore billable operations. Timings overlap; GCS and login remain synthetic.'
         ), indent=2))
 
     # Uvicorn re-raises SIGTERM after shutdown. Persist before signal re-raise,
@@ -180,6 +260,8 @@ def main():
                 yield
         finally:
             write_observations()
+            if adapter == 'firestore-emulator':
+                documents._client.close()
     app.router.lifespan_context = observed_lifespan
     import uvicorn
     uvicorn.Server(uvicorn.Config(app, access_log=False, log_level='warning')).run(sockets=[sock])

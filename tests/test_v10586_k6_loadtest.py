@@ -9,8 +9,9 @@ import subprocess
 import pytest
 
 from tools.loadtest.run import clean_environment, parser, plan, stop
-from tools.loadtest.report import read_experiment, regressions
+from tools.loadtest.report import OPERATIONS, read_experiment, regressions
 from tools.loadtest.fixture import Observations, make_store
+from tools.loadtest.emulator import check_installation, create_client, validate_target
 
 
 def test_production_target_and_unbounded_load_are_not_accepted():
@@ -28,7 +29,8 @@ def test_production_target_and_unbounded_load_are_not_accepted():
 
 def test_child_environment_excludes_credentials_outputs_and_proxies(monkeypatch):
     for key in ('GOOGLE_APPLICATION_CREDENTIALS', 'GOOGLE_CLOUD_PROJECT', 'BREADMAKER_RUNTIME',
-                'BREADMAKER_STORAGE_BUCKET', 'K6_OUT', 'K6_CLOUD_TOKEN', 'HTTPS_PROXY', 'HTTP_PROXY'):
+                'BREADMAKER_STORAGE_BUCKET', 'K6_OUT', 'K6_CLOUD_TOKEN', 'HTTPS_PROXY', 'HTTP_PROXY',
+                'FIRESTORE_EMULATOR_HOST', 'DATASTORE_EMULATOR_HOST', 'JAVA_TOOL_OPTIONS', 'JDK_JAVA_OPTIONS'):
         monkeypatch.setenv(key, 'must-not-propagate')
     child = clean_environment()
     assert child['NO_PROXY'] == '127.0.0.1'
@@ -103,3 +105,77 @@ def test_timed_store_keeps_normal_rollback_after_disposable_seed():
     with pytest.raises(ValueError, match='controlled failure'):
         store.run_transaction(failing_write)
     assert store.get(('synthetic', 'one')).data == {'value': 'seed'}
+
+
+@pytest.mark.parametrize('endpoint,project', [
+    ('firestore.googleapis.com:443', 'demo-bm-k6-' + 'a' * 16),
+    ('127.0.0.1:8080', 'production-project'),
+    ('http://127.0.0.1:8080', 'demo-bm-k6-' + 'a' * 16),
+    ('127.0.0.1:0', 'demo-bm-k6-' + 'a' * 16),
+    ('127.0.0.1:65536', 'demo-bm-k6-' + 'a' * 16),
+    ('localhost:8080', 'demo-bm-k6-' + 'a' * 16),
+])
+def test_emulator_rejects_unowned_or_cloud_targets(endpoint, project):
+    with pytest.raises(ValueError):
+        validate_target(endpoint, project)
+
+
+def test_emulator_client_uses_anonymous_credentials_and_loopback(monkeypatch):
+    import google.auth
+    from google.auth.credentials import AnonymousCredentials
+    monkeypatch.setattr(google.auth, 'default', lambda *a, **kw: pytest.fail('ADC must never be consulted'))
+    monkeypatch.setenv('FIRESTORE_EMULATOR_HOST', '127.0.0.1:54321')
+    client = create_client('127.0.0.1:54321', 'demo-bm-k6-' + 'a' * 16)
+    assert isinstance(client._credentials, AnonymousCredentials)
+    assert client._emulator_host == client._target == '127.0.0.1:54321'
+    with pytest.raises(ValueError, match='must agree'):
+        create_client('127.0.0.1:54322', 'demo-bm-k6-' + 'a' * 16)
+
+
+def test_unverified_jar_is_not_executed(tmp_path, monkeypatch):
+    jar = tmp_path / 'unverified.jar'
+    jar.write_bytes(b'Unverified executable')
+    monkeypatch.setattr(subprocess, 'run', lambda *a, **kw: pytest.fail('Unverified JAR must not execute'))
+    with pytest.raises(ValueError, match='SHA-256'):
+        check_installation(jar, 'java')
+
+
+def test_emulator_plan_requires_explicit_jar_and_tags_adapter():
+    with pytest.raises(ValueError, match='emulator-jar'):
+        plan(parser().parse_args(['--adapter', 'firestore-emulator']))
+    value = plan(parser().parse_args(['--adapter', 'firestore-emulator', '--emulator-jar', '/explicit/emulator.jar']))
+    assert value['adapter'] == 'firestore-emulator'
+    assert value['account_lifecycle_fence'] is True
+
+
+def test_regression_comparison_rejects_different_adapters_and_fences():
+    before, after = experiment(), experiment()
+    after['experiment']['adapter'] = 'firestore-emulator'
+    with pytest.raises(ValueError, match='adapter'):
+        regressions(after, before)
+    after['experiment']['adapter'] = 'memory'
+    after['experiment']['account_lifecycle_fence'] = True
+    with pytest.raises(ValueError, match='account_lifecycle_fence'):
+        regressions(after, before)
+    after['experiment']['account_lifecycle_fence'] = False
+    after['experiment']['workload'] = 'read-only'
+    with pytest.raises(ValueError, match='workload'):
+        regressions(after, before)
+
+
+def test_emulator_report_requires_positive_data_and_process_cleanup(tmp_path):
+    (tmp_path / 'experiment.json').write_text(json.dumps(dict(vus=[1], adapter='firestore-emulator')))
+    root = tmp_path / 'vus-1'
+    root.mkdir()
+    status = dict(k6_exit_code=0, error=None, temporary_data_removed=True)
+    (root / 'status.json').write_text(json.dumps(status))
+    metrics = {'checks': {'values': {'rate': 1}, 'thresholds': {'rate==1': {'ok': True}}}}
+    for op in OPERATIONS:
+        metrics[f'http_req_duration{{op:{op}}}'] = {'values': {'p(95)': 10, 'p(99)': 20}}
+        metrics[f'http_reqs{{op:{op}}}'] = {'values': {'count': 1}}
+    (root / 'k6-summary.json').write_text(json.dumps(dict(metrics=metrics)))
+    (root / 'server-observations.json').write_text(json.dumps(dict(adapter='GoogleFirestoreDocumentStore/emulator')))
+    assert read_experiment(tmp_path)['runs'][0]['passed'] is False
+    status['emulator_cleanup'] = dict(data_cleared=True, empty_verified=True, endpoint_closed=True, error=None)
+    (root / 'status.json').write_text(json.dumps(status))
+    assert read_experiment(tmp_path)['runs'][0]['passed'] is True

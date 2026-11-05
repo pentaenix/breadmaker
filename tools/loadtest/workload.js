@@ -4,7 +4,7 @@ import exec from 'k6/execution';
 import { Counter, Rate, Trend } from 'k6/metrics';
 
 const fixture = JSON.parse(open(__ENV.BREADMAKER_LOAD_MANIFEST));
-if (fixture.fixture !== 'local-memory-v1' || !/^http:\/\/127\.0\.0\.1:[0-9]+$/.test(fixture.base_url)) {
+if (!['local-memory-v1', 'local-firestore-v1'].includes(fixture.fixture) || !/^http:\/\/127\.0\.0\.1:[0-9]+$/.test(fixture.base_url)) {
   throw new Error('Only the disposable loopback fixture is supported.');
 }
 const integer = (name, minimum, maximum) => {
@@ -16,6 +16,8 @@ const vus = integer('BREADMAKER_LOAD_VUS', 1, 20);
 const seconds = integer('BREADMAKER_LOAD_SECONDS', 5, 120);
 const arrivalRate = integer('BREADMAKER_LOAD_RATE', 1, 10);
 const profile = __ENV.BREADMAKER_LOAD_PROFILE;
+const workload = __ENV.BREADMAKER_LOAD_WORKLOAD || 'mixed';
+if (!['mixed', 'read-only'].includes(workload)) throw new Error('Invalid workload');
 if (!['smoke', 'concurrency', 'arrival'].includes(profile) || fixture.accounts.length < vus) {
   throw new Error('Invalid profile or insufficient distinct synthetic accounts.');
 }
@@ -35,11 +37,14 @@ const thresholds = {
   checks: ['rate==1'],
   completed_actions: ['count>0'],
   'http_req_duration{kind:read}': ['p(95)<500', 'p(99)<1000'],
-  'http_req_duration{op:chapter_save}': ['p(95)<1000', 'p(99)<2000'],
-  'http_req_duration{op:map_create}': ['p(95)<1500', 'p(99)<3000'],
 };
-for (const op of ['chapter_read', 'project_navigation', 'maps_read', 'save_preread',
-  'save_verify', 'chapter_save', 'map_create', 'map_delete']) {
+if (workload === 'mixed') {
+  thresholds['http_req_duration{op:chapter_save}'] = ['p(95)<1000', 'p(99)<2000'];
+  thresholds['http_req_duration{op:map_create}'] = ['p(95)<1500', 'p(99)<3000'];
+}
+const operations = workload === 'read-only' ? ['chapter_read', 'project_navigation', 'maps_read']
+  : ['chapter_read', 'project_navigation', 'maps_read', 'save_preread', 'save_verify', 'chapter_save', 'map_create', 'map_delete'];
+for (const op of operations) {
   thresholds[`http_reqs{op:${op}}`] = ['count>0'];
   if (!thresholds[`http_req_duration{op:${op}}`]) {
     thresholds[`http_req_duration{op:${op}}`] = ['p(95)<500', 'p(99)<1000'];
@@ -98,7 +103,7 @@ export default function () {
   const account = fixture.accounts[exec.vu.idInTest - 1];
   const iteration = exec.vu.iterationInScenario;
   const cid = account.chapter_ids[iteration % account.chapter_ids.length];
-  const slot = (iteration + exec.vu.idInTest - 1) % 10;
+  const slot = (iteration + exec.vu.idInTest - 1) % (workload === 'read-only' ? 7 : 10);
   let action;
   try {
     if (slot < 5) {

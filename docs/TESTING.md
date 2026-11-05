@@ -53,7 +53,9 @@ its own disposable loopback-only hosted app, seeds synthetic accounts/projects,
 checks reads and mutations, and removes the test data. It accepts no production
 URL and incurs no cloud charges. See [Load testing](LOAD_TESTING.md) for bounded
 concurrency/arrival profiles, population experiments, thresholds and regression
-comparison. Memory-adapter measurements are not production capacity claims.
+comparison. An explicit `--adapter firestore-emulator` option uses the real
+Google adapter against a checksum-pinned owned local emulator; no cloud account
+is needed. Memory and emulator measurements are not production capacity claims.
 These checks supplement the existing release gate and do not add paid CI work.
 
 ## Historical test notes

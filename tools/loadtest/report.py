@@ -16,6 +16,8 @@ def metric(summary, name, statistic, default=0):
 def read_experiment(directory):
     directory = Path(directory)
     experiment = json.loads((directory / 'experiment.json').read_text())
+    required_operations = ({'chapter_read', 'project_navigation', 'maps_read'}
+        if experiment.get('workload') == 'read-only' else OPERATIONS)
     runs = []
     for vus in experiment['vus']:
         root = directory / f'vus-{vus}'
@@ -26,6 +28,10 @@ def read_experiment(directory):
         summary = json.loads((root / 'k6-summary.json').read_text())
         observations = (json.loads((root / 'server-observations.json').read_text())
                         if (root / 'server-observations.json').exists() else {})
+        emulator_cleanup = status.get('emulator_cleanup') or {}
+        cleanup_valid = experiment.get('adapter') != 'firestore-emulator' or (
+            all(emulator_cleanup.get(key) is True for key in ('data_cleared', 'empty_verified', 'endpoint_closed'))
+            and emulator_cleanup.get('error') is None)
         checks = {f'{name}: {condition}': value['ok']
                   for name, item in summary['metrics'].items()
                   for condition, value in item.get('thresholds', {}).items()}
@@ -38,8 +44,8 @@ def read_experiment(directory):
                     p95_ms=metric(summary, name, 'p(95)'), p99_ms=metric(summary, name, 'p(99)'))
         runs.append(dict(vus=vus,
             passed=status['k6_exit_code'] == 0 and not status.get('error') and
-                   status.get('temporary_data_removed') is True and bool(observations) and
-                   bool(checks) and all(checks.values()) and OPERATIONS.issubset(endpoints) and
+                   status.get('temporary_data_removed') is True and cleanup_valid and bool(observations) and
+                   bool(checks) and all(checks.values()) and required_operations.issubset(endpoints) and
                    all(item['count'] > 0 for item in endpoints.values()),
             error=status.get('error'),
             requests=metric(summary, 'http_reqs', 'count'), rps=metric(summary, 'http_reqs', 'rate'),
@@ -61,6 +67,11 @@ def regressions(current, baseline, relative=.20, absolute_ms=20):
     for field in ('dataset', 'profile', 'seconds', 'arrival_actions_per_second', 'k6_version', 'platform'):
         if current['experiment'].get(field) != baseline['experiment'].get(field):
             raise ValueError(f'Baseline mismatch: {field}')
+    for field, default in (('adapter', 'memory'), ('account_lifecycle_fence', False), ('workload', 'mixed')):
+        if current['experiment'].get(field, default) != baseline['experiment'].get(field, default):
+            raise ValueError(f'Baseline mismatch: {field}')
+    if current['experiment'].get('emulator') != baseline['experiment'].get('emulator'):
+        raise ValueError('Baseline mismatch: emulator version or runtime')
     previous = {row['vus']: row for row in baseline['runs']}
     failures = []
     for row in current['runs']:
@@ -95,7 +106,7 @@ def main():
     (args.directory / 'report.json').write_text(json.dumps(report, indent=2))
     if report.get('regressions'):
         print('Latency regressions:', json.dumps(report['regressions']))
-    print('Local memory adapters and synthetic test sessions; not production capacity.')
+    print(f"Local adapter: {report['experiment'].get('adapter', 'memory')}; synthetic sessions/objects, not production capacity.")
     print('Use endpoint sample counts; p99 with fewer than 100 samples is exploratory.')
     return 1 if any(not row['passed'] for row in report['runs']) or report.get('regressions') else 0
 
