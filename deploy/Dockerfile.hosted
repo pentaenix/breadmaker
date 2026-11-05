@@ -1,24 +1,17 @@
-# The build must supply the reviewed multi-platform index digest through the
-# production pipeline. Never substitute a mutable tag or an invented hash.
+# Source-bound vendor runtime; local accountless distribution is unchanged.
 ARG PYTHON_BASE_DIGEST
-FROM python:3.14.8-slim-trixie@sha256:${PYTHON_BASE_DIGEST} AS build
-
+FROM cgr.dev/chainguard/wolfi-base@sha256:${PYTHON_BASE_DIGEST} AS build
+ARG PYTHON_BASE_DIGEST
+RUN apk add --no-cache python-3.14=3.14.10_git20261104-r0 python-3.14-dev=3.14.10_git20261104-r0 py3.14-pip build-base
 WORKDIR /app
-COPY deploy/sqlite-source.json ./deploy/sqlite-source.json
-COPY scripts/build_hosted_sqlite.py scripts/assert_hosted_sqlite.py ./scripts/
-# Debian has no fixed SQLite package for the current core advisory. Build the
-# checksum-pinned upstream core; compiler and headers never enter the runtime.
-RUN apt-get update && apt-get install --yes --no-install-recommends gcc libc6-dev \
-    && rm -rf /var/lib/apt/lists/* \
-    && python scripts/build_hosted_sqlite.py
+COPY deploy/sqlite-source.json deploy/vendor-runtime.json ./deploy/
+COPY scripts/build_hosted_sqlite.py scripts/assert_hosted_sqlite.py scripts/stage_vendor_runtime.py scripts/assert_vendor_runtime.py ./scripts/
+RUN python3.14 scripts/build_hosted_sqlite.py --package-format none
 COPY requirements.txt requirements-hosted.txt ./
 COPY deploy/constraints-hosted.txt ./deploy/constraints-hosted.txt
-RUN python -m pip install --no-cache-dir -r requirements-hosted.txt \
-    -c deploy/constraints-hosted.txt setuptools==84.2.0
-
-# Hosted images are assembled from an allowlist. Never COPY the working tree: an
-# operator may legitimately have local .env files, OAuth backup credentials, project
-# databases, verification reports, or other private state beside the source checkout.
+RUN python3.14 -m venv --without-pip /opt/python && python3.14 -m pip --python /opt/python/bin/python install --no-cache-dir -r requirements-hosted.txt -c deploy/constraints-hosted.txt setuptools==84.2.0
+ENV PATH=/opt/python/bin:$PATH
+# Explicit source allowlist: no credentials, databases or private local state.
 COPY src ./src
 COPY static ./static
 COPY locales ./locales
@@ -27,39 +20,14 @@ COPY docs/HOSTED_DATA_MODEL_V1.json ./docs/HOSTED_DATA_MODEL_V1.json
 COPY VERSION ./VERSION
 COPY scripts/assert_hosted_image_stack.py ./scripts/assert_hosted_image_stack.py
 RUN python scripts/assert_hosted_image_stack.py
-# Narration's large PUBLIC assets belong in the private immutable model origin,
-# never in the app's 512 MiB scale-to-zero image or its static-serving routes.
 RUN python -c "from pathlib import Path; p=Path('static/vendor/narration'); assert not any(f.suffix in {'.onnx','.bin','.wasm'} or 'models' in f.relative_to(p).parts or 'dictionaries' in f.relative_to(p).parts for f in p.rglob('*') if f.is_file()), 'NARRATION_BINARY_IN_APP_IMAGE'"
-
-# Copy only required shared libraries and their real Debian package records.
-# Retaining metadata keeps OS scanning accurate; no scanner exclusions are used.
-RUN mkdir -p /runtime-libs /runtime-status && \
-    for package in libbz2-1.0 libexpat1 libffi8 liblzma5; do \
-      if dpkg-query -s "$package" > "/runtime-status/$package"; then \
-        dpkg-query -L "$package" | while IFS= read -r file; do \
-          case "$file" in /usr/lib/*/*.so.*) cp -L "$file" /runtime-libs/ ;; esac; \
-        done; \
-      else rm "/runtime-status/$package"; fi; \
-    done
-
-# pip vendors its own old dependencies; none are needed after installation.
-# Remove the actual package-manager code and bootstrap wheels, not just SBOMs.
-RUN python -m pip uninstall --yes pip \
-    && rm -r /usr/local/lib/python3.14/ensurepip \
-    && rm /usr/local/lib/python3.14/sqlite3/__main__.py
-
-# The runtime has no shell, package manager, mount/login tools, systemd or Perl.
-# Its maintained OpenSSL library is patched independently of the build image.
-FROM gcr.io/distroless/cc-debian13:nonroot@sha256:e792ab3d241a468a4fd7519ddbbebe66b49b5f365771716ea688ad40b6c6f1c2
-COPY --from=build /usr/local /usr/local
-COPY --from=build /runtime-libs /opt/python-libs
-COPY --from=build /runtime-status /var/lib/dpkg/status.d
-COPY --from=build /runtime-sqlite /usr/share/breadmaker/sqlite
+RUN python scripts/stage_vendor_runtime.py --install --mode hosted --base-digest "$PYTHON_BASE_DIGEST"
+FROM scratch
+COPY --from=build /runtime/ /
+COPY --from=build /opt/python /opt/python
 COPY --from=build /app /app
 WORKDIR /app
-ENV PATH=/usr/local/bin:$PATH \
-    LD_LIBRARY_PATH=/usr/local/lib:/opt/python-libs \
-    HOME=/nonexistent
+ENV PATH=/opt/python/bin:/usr/bin LD_LIBRARY_PATH=/opt/python-libs HOME=/nonexistent
 
 ENV PYTHONPATH=/app/src \
     BREADMAKER_RUNTIME=hosted \
@@ -73,7 +41,8 @@ ENV PYTHONPATH=/app/src \
 
 EXPOSE 8080
 USER 10001:10001
-RUN ["python", "-c", "import ssl,sqlite3,bz2,lzma,ctypes,uuid; import firebase_admin,google.cloud.firestore,google.cloud.storage,docx,reportlab,PIL,uvicorn; assert __import__('sys').version_info[:3] == (3,14,8)"]
+RUN ["python","scripts/assert_vendor_runtime.py","--mode","hosted"]
+RUN ["python", "-c", "import ssl,sqlite3,bz2,lzma,ctypes,uuid; import firebase_admin,google.cloud.firestore,google.cloud.storage,docx,reportlab,PIL,uvicorn"]
 RUN ["python", "-c", "import importlib.util; assert importlib.util.find_spec('pip') is None; assert importlib.util.find_spec('ensurepip') is None"]
 RUN ["python", "scripts/assert_hosted_image_stack.py"]
 RUN ["python", "-c", "from hosted.local_portability import _mapping; assert _mapping()"]

@@ -83,7 +83,8 @@ def check():
     if paths != {str(library)}:
         raise ValueError('SQLITE_UNREVIEWED_LIBRARY_LOADED')
     if evidence.get('shell_included') is not False or shutil.which('sqlite3') or any(Path(path).exists() for path in
-            ('/usr/bin/sqlite3', '/bin/sqlite3', '/usr/local/bin/sqlite3', '/usr/local/lib/python3.14/sqlite3/__main__.py')):
+            ('/usr/bin/sqlite3', '/bin/sqlite3', '/usr/local/bin/sqlite3',
+             str(Path(sqlite3.__file__).with_name('__main__.py')))):
         raise ValueError('SQLITE_SHELL_PRESENT')
     with sqlite3.connect(':memory:') as db:
         if db.execute('select sqlite_source_id()').fetchone()[0] != pin['source_id']:
@@ -119,10 +120,14 @@ def check():
             if restored.execute('PRAGMA integrity_check').fetchone() != ('ok',):
                 raise ValueError('SQLITE_INTEGRITY_FAILED')
     portable_package()
-    return dict(version=pin['version'], package_version=pin['package_version'],
+    result = dict(version=pin['version'], package_version=pin['package_version'],
                 source_id=pin['source_id'], source_sha3_256=pin['sha3_256'],
                 library_sha256=digest, shell_present=False, fts5_present=False,
                 serialization=True, foreign_keys=True, rollback=True, schema42=True)
+    if (ROOT / 'deploy/vendor-runtime.json').is_file():
+        from assert_vendor_runtime import check as check_vendor_runtime
+        result['vendor_runtime'] = check_vendor_runtime('hosted')
+    return result
 
 
 if __name__ == '__main__':

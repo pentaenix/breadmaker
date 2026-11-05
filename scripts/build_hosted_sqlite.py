@@ -7,6 +7,7 @@ with the runtime. This is a portable-package codec, not hosted durable storage.
 from __future__ import annotations
 
 import hashlib
+import argparse
 import io
 import json
 from pathlib import Path
@@ -38,6 +39,9 @@ def sources(raw: bytes, pin: dict) -> dict[str, bytes]:
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--package-format', choices=('debian', 'none'), default='debian')
+    args = parser.parse_args()
     pin = json.loads((ROOT / 'deploy/sqlite-source.json').read_text())
     with urllib.request.urlopen(pin['url'], timeout=30) as response:
         if response.url != pin['url']:
@@ -57,6 +61,10 @@ def main():
     destination = Path('/runtime-sqlite')
     destination.mkdir(exist_ok=True)
     (destination / 'provenance.json').write_text(json.dumps(evidence, sort_keys=True))
+    # Non-Debian assembly records the real custom component in its own package
+    # database after removing the replaced vendor library. Never forge dpkg data.
+    if args.package_format == 'none':
+        return
     architecture = subprocess.check_output(['dpkg', '--print-architecture'], text=True).strip()
     records = Path('/runtime-status')
     records.mkdir(exist_ok=True)

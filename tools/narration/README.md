@@ -1,3 +1,11 @@
+## Vendor runtime migration source candidate
+
+The hosted app and text-only pronunciation helper assemble a minimal Wolfi runtime from the approved OCI build-base digest and exact authenticated APK graph in `deploy/vendor-runtime.json`. This changes container Python to vendor3.14.10, hardened OpenSSL4.0.3 and the vendor-maintained patched zlib snapshot. It does not change the accountless local editor or desktop/browser bundles. Container validation currently targets Linuxamd64; other architectures fail closed pending their own reviewed package lock and native checks.
+
+`scripts/stage_vendor_runtime.py` checks every approved vendor package version, archive checksum and recipe commit before removing actual unused bootstrap/SQLite payloads. It retains truthful package evidence. The hosted app installs its existing checksum-pinned SQLite3.54.1 core as the separately named Breadmaker component; original SQL shell/FTS5/source/hash/portable-roundtrip assertions remain. The helper contains no SQLite engine or binding. Final-image validation checks exact runtime identity, package graph, absence of shells/package managers/compilers, TLS certificate verification and installed CAs.
+
+The pinned strict scanner still blocks every HIGH/CRITICAL finding. Its expected OS coverage now explicitly matches the approved Wolfi graph, alongside real Python dependency coverage; missing/mixed/unapproved evidence fails. Publishing also requires the independently approved release-controller contract, image-bound SQLite proof and full release gates. This source candidate is not a deployment claim.
+
 # Kokoro narration: Editor implementation and Cloud handoff
 
 ## Helper lexicon packaging

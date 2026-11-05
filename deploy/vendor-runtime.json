@@ -1,0 +1,257 @@
+{
+  "schema": 1,
+  "family": "wolfi",
+  "base_image": "cgr.dev/chainguard/wolfi-base",
+  "base_digest": "771146c2dfc880902a185f060c3db5571473c46b267edd98c3119c83068dfb61",
+  "python_package": "3.14.10_git20261104-r0",
+  "python_runtime": "3.14.10",
+  "zlib_package": "1.3.2.1_rc20260921-r2",
+  "zlib_source": "767c4c947852e143f582c85f14cf573411df1b35",
+  "zlib_fix": "df84af25dc1942490e1d1c899a07619152a46148",
+  "packages": {
+    "x86_64": [
+      {
+        "C": "Q19P7fzB945PuRaQEnzg9napiRzKE=",
+        "P": "ca-certificates-bundle",
+        "V": "20261020-r0",
+        "A": "x86_64",
+        "o": "ca-certificates",
+        "c": "8061afafa65af5a9026707a8880e14120dd6f4a0"
+      },
+      {
+        "C": "Q1+OpsdmzH2i87yrQzTUkS0smKEPg=",
+        "P": "gdbm",
+        "V": "1.26-r9",
+        "A": "x86_64",
+        "o": "gdbm",
+        "c": "bdc197227f39597f43727c03854efbb4e834c5ef"
+      },
+      {
+        "C": "Q1DBDsZ6yhBPYsa/V7pltJ5OXPtPs=",
+        "P": "glibc-2.44",
+        "V": "2.44-r13",
+        "A": "x86_64",
+        "o": "glibc-2.44",
+        "c": "e56b3f33a6e7ea76029947d68ce17227fd1fe841"
+      },
+      {
+        "C": "Q1TfI55+eRQkOMi4FXiVIteycJ8do=",
+        "P": "glibc-2.44-locale-posix",
+        "V": "2.44-r13",
+        "A": "x86_64",
+        "o": "glibc-2.44",
+        "c": "e56b3f33a6e7ea76029947d68ce17227fd1fe841"
+      },
+      {
+        "C": "Q1uAfRmX2ZNzQOk3Hk8fZ4OzQ5i6M=",
+        "P": "ld-linux-2.44",
+        "V": "2.44-r13",
+        "A": "x86_64",
+        "o": "glibc-2.44",
+        "c": "e56b3f33a6e7ea76029947d68ce17227fd1fe841"
+      },
+      {
+        "C": "Q1d6173SiBWI/3ZTJ9usIqKVhqlNQ=",
+        "P": "libbrotlicommon1",
+        "V": "1.2.1-r3",
+        "A": "x86_64",
+        "o": "brotli",
+        "c": "f5ef816d1cb2bd0e165a402c4e8a4c4622464bf3"
+      },
+      {
+        "C": "Q1SxcpNPM7TTnimjuCfB+KWbRChZ4=",
+        "P": "libbrotlidec1",
+        "V": "1.2.1-r3",
+        "A": "x86_64",
+        "o": "brotli",
+        "c": "f5ef816d1cb2bd0e165a402c4e8a4c4622464bf3"
+      },
+      {
+        "C": "Q1ct7hg38j5fftUTCqmF8s60d3nwA=",
+        "P": "libbrotlienc1",
+        "V": "1.2.1-r3",
+        "A": "x86_64",
+        "o": "brotli",
+        "c": "f5ef816d1cb2bd0e165a402c4e8a4c4622464bf3"
+      },
+      {
+        "C": "Q1uJUw7U9e/1Jwt+vRSM5r8xKMJBE=",
+        "P": "libbz2-1",
+        "V": "1.0.8-r30",
+        "A": "x86_64",
+        "o": "bzip2",
+        "c": "f353805867a3059d7018cceac9746da7c23634fe"
+      },
+      {
+        "C": "Q1/qFHF88NrKvQQcegKi7sppEYI5M=",
+        "P": "libexpat1",
+        "V": "2.10.0-r1",
+        "A": "x86_64",
+        "o": "expat",
+        "c": "5aeb575ed7ca64fb21dfda042e170d08f1654bbc"
+      },
+      {
+        "C": "Q1Xv/AsO+lsjORCxdKxyfkMMLLkO0=",
+        "P": "libffi",
+        "V": "3.8.0-r2",
+        "A": "x86_64",
+        "o": "libffi",
+        "c": "aaa2344b75ef8b19889f087c91e10b11f191e15c"
+      },
+      {
+        "C": "Q1ZiXgGGwe5h6UXD0/Zbd/7LKBpkw=",
+        "P": "libgcc",
+        "V": "16.2.0-r2",
+        "A": "x86_64",
+        "o": "gcc",
+        "c": "1a8a06e57ab63d92834a9467dd0eaa5d54ade3b0"
+      },
+      {
+        "C": "Q1TDYeh0Iq9Fjbp5cPck+zZfmDn14=",
+        "P": "libstdc++",
+        "V": "16.2.0-r2",
+        "A": "x86_64",
+        "o": "gcc",
+        "c": "1a8a06e57ab63d92834a9467dd0eaa5d54ade3b0"
+      },
+      {
+        "C": "Q1RMgxwtEheWi8izRUHv/oGNNwqKA=",
+        "P": "libuuid",
+        "V": "2.42.4-r2",
+        "A": "x86_64",
+        "o": "util-linux",
+        "c": "8298ba7be686605b03c1943f22ccf5a0640e0042"
+      },
+      {
+        "C": "Q18qf/hL60HO4kVy/KSZk3mfs/EJA=",
+        "P": "libzstd1",
+        "V": "1.5.7-r13",
+        "A": "x86_64",
+        "o": "zstd",
+        "c": "0d1cb8462683e2c06d7591b8b4ad4d1f2797a0f7"
+      },
+      {
+        "C": "Q1kpDYLUMV5sHuT7URRwDjYUwBYp8=",
+        "P": "mpdecimal",
+        "V": "4.0.1-r6",
+        "A": "x86_64",
+        "o": "mpdecimal",
+        "c": "491b184c82ef2868d73a46a98997db789342ff15"
+      },
+      {
+        "C": "Q1gW25Kb9fqmel5hPO4cWZedYPvDw=",
+        "P": "ncurses",
+        "V": "6.6.20261031-r0",
+        "A": "x86_64",
+        "o": "ncurses",
+        "c": "1e23bef29f698095b9e2a213402d2af2ce6d65e8"
+      },
+      {
+        "C": "Q1k7ds1A74ij4vql3+aeD2h5i3Koo=",
+        "P": "ncurses-terminfo-base",
+        "V": "6.6.20261031-r0",
+        "A": "x86_64",
+        "o": "ncurses",
+        "c": "1e23bef29f698095b9e2a213402d2af2ce6d65e8"
+      },
+      {
+        "C": "Q1W9piTcgyubhrducJCMM7+qErDxo=",
+        "P": "openssl-4.0-libcrypto",
+        "V": "4.0.3-r8",
+        "A": "x86_64",
+        "o": "openssl-4.0",
+        "c": "53fb2f6751f832fa61ddba06cb8a40dbba5f409f"
+      },
+      {
+        "C": "Q1arwi4n4L3VZ3S8YJ6P4WwY/7JjY=",
+        "P": "openssl-4.0-libssl",
+        "V": "4.0.3-r8",
+        "A": "x86_64",
+        "o": "openssl-4.0",
+        "c": "53fb2f6751f832fa61ddba06cb8a40dbba5f409f"
+      },
+      {
+        "C": "Q1K5CR6PVd/wWU++lG1SG1MRrQkJA=",
+        "P": "openssl-provider-legacy-allowed",
+        "V": "4.1.0-r0",
+        "A": "x86_64",
+        "o": "openssl-provider-legacy-allowed",
+        "c": "aeae4801330be6fd269d5ed5640dc37b58ccab09"
+      },
+      {
+        "C": "Q1BWb5vwrbg4NJu9UjvsQh38ETTAc=",
+        "P": "py3-pip-wheel",
+        "V": "26.2.2-r2",
+        "A": "x86_64",
+        "o": "py3-pip",
+        "c": "58b78718f8e8947523a1ad3eb0deb82aee6911d7"
+      },
+      {
+        "C": "Q1CBkHvPQrVGt1xLX6iUeEaLaqBTI=",
+        "P": "python-3.14",
+        "V": "3.14.10_git20261104-r0",
+        "A": "x86_64",
+        "o": "python-3.14",
+        "c": "9bb159e5d90465e65ddb49de475ee694567cef39"
+      },
+      {
+        "C": "Q1pi4o0MbuYa2uxVyJGACkc0DCX1k=",
+        "P": "python-3.14-base",
+        "V": "3.14.10_git20261104-r0",
+        "A": "x86_64",
+        "o": "python-3.14",
+        "c": "9bb159e5d90465e65ddb49de475ee694567cef39"
+      },
+      {
+        "C": "Q1oUqIN4csyDg/G6Bp/46mHGlm7SQ=",
+        "P": "python-3.14-runtime",
+        "V": "3.14.10_git20261104-r0",
+        "A": "x86_64",
+        "o": "python-3.14",
+        "c": "9bb159e5d90465e65ddb49de475ee694567cef39"
+      },
+      {
+        "C": "Q1DpD7gaJW7NfhS6UXgOqJ/d9LlBc=",
+        "P": "readline",
+        "V": "8.3-r3",
+        "A": "x86_64",
+        "o": "readline",
+        "c": "20a5359ac0a7a6aca23efa343f0f29c8d3ea1453"
+      },
+      {
+        "C": "Q1VRLw0RR5HoAu1uTfKALfMDoAMco=",
+        "P": "sqlite-libs",
+        "V": "3.54.1-r0",
+        "A": "x86_64",
+        "o": "sqlite",
+        "c": "b0ca8c95606371be2557980059c10b34df30fa9f"
+      },
+      {
+        "C": "Q1W4ff78hzbtDn6J9JJRRwbjKmKR4=",
+        "P": "wolfi-baselayout",
+        "V": "20230201-r31",
+        "A": "x86_64",
+        "o": "wolfi-baselayout",
+        "c": "ed415005c84750f03c4a9252137813734a224ae7"
+      },
+      {
+        "C": "Q1LyyjHbT9tm1oWo6nH6SZGi+F8jo=",
+        "P": "xz",
+        "V": "5.8.4-r1",
+        "A": "x86_64",
+        "o": "xz",
+        "c": "5aeb575ed7ca64fb21dfda042e170d08f1654bbc"
+      },
+      {
+        "C": "Q1VhYXgIFnt54EjOK+EDlVL9ypZVI=",
+        "P": "zlib",
+        "V": "1.3.2.1_rc20260921-r2",
+        "A": "x86_64",
+        "o": "zlib",
+        "c": "5aeb575ed7ca64fb21dfda042e170d08f1654bbc"
+      }
+    ]
+  },
+  "zlib_runtime": "1.3.2.1-motley",
+  "openssl_runtime": "OpenSSL 4.0.3 29 Sep 2026"
+}

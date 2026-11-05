@@ -61,8 +61,10 @@ def test_hosted_builder_keeps_real_package_and_source_provenance():
     docker = (ROOT / 'deploy/Dockerfile.hosted').read_text()
     assert 'scripts/build_hosted_sqlite.py' in docker
     assert 'scripts/assert_hosted_sqlite.py' in docker
-    assert 'COPY --from=build /runtime-sqlite /usr/share/breadmaker/sqlite' in docker
-    assert 'COPY --from=build /runtime-status /var/lib/dpkg/status.d' in docker
+    assert '--mode hosted' in docker
+    assert 'COPY --from=build /runtime/ /' in docker
+    assert 'scripts/stage_vendor_runtime.py' in docker
+    assert '--package-format none' in docker
 
 
 def test_synthetic_portable_export_reopens_with_identical_text_and_schema():
