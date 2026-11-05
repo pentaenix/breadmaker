@@ -56,6 +56,8 @@ def split_pan(home,local,engine):
         assert abs(moved[0]-origin[0]-60)<2 and abs(moved[1]-origin[1]-50)<2,(origin,moved)
         assert page.locator('#splitCanvasStage').evaluate('el=>el.classList.contains("panning")') is False
         assert page.locator('#splitBody [contenteditable=true]').count()==0
+        assert 'pinch-zoom' in page.locator('#splitCanvasStage').evaluate('el=>getComputedStyle(el).touchAction')
+        page.screenshot(path=str(home/'split-camera.png'))
         assert not writes,writes
         after=page.evaluate('(id)=>api(`/api/canvases/${id}`)',ids['cv'])
         assert before==after,'Camera movement must not edit Canvas content'

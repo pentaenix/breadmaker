@@ -286,4 +286,4 @@
 @media (min-resolution:1.5dppx){.canvas-stage{background-image:radial-gradient(var(--line2) .7px,transparent .7px)}.split-canvas-stage{background-image:radial-gradient(var(--line2) .65px,transparent .65px)}}
 
 /* Split Canvas is a read-only camera surface; use the same grab affordance. */
-.split-canvas-stage{cursor:grab;touch-action:none}.split-canvas-stage.panning{cursor:grabbing;user-select:none}
+.split-canvas-stage{cursor:grab;touch-action:pinch-zoom}.split-canvas-stage.panning{cursor:grabbing;user-select:none}
