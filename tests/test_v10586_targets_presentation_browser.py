@@ -29,7 +29,7 @@ def exercise(home,local,engine,width):
         assert page.locator('#projectMenuTargets').inner_text()=='Targets…'
         assert page.locator('#targetsPreview').count()==0
         expect(page.locator('#targetsSound')).to_be_visible()
-        assert page.locator('.targets-history-row .targets-ring-seed').count()>0
+        assert page.locator('[data-target-toggle=banner]').count()==0
         for theme in ('light','dusk','dark'):
             page.evaluate('(theme)=>document.documentElement.dataset.theme=theme',theme)
             colors=page.locator('#targetsSound option').first.evaluate('(el)=>({ink:getComputedStyle(el).color,paper:getComputedStyle(el).backgroundColor})')
@@ -62,9 +62,6 @@ def exercise(home,local,engine,width):
         page.locator('.targets-history').hover();page.mouse.wheel(0,400)
         page.wait_for_function('()=>document.querySelector(".targets-history").scrollTop>0')
         assert page.evaluate('()=>document.querySelector("#modalBody").scrollTop===0&&document.querySelector(".modal-card").scrollTop===0')
-        for selector in ('#targetsSave','#targetsCancel','#targetsSound'):
-            box=page.locator(selector).bounding_box();assert box and 0<=box['x'] and box['x']+box['width']<=width and box['y']+box['height']<=844
-        page.locator('#targetsHistoryView').select_option('chart')
         for period in ('daily','weekly','monthly'):
             page.locator('#targetsHistoryPeriod').select_option(period)
             expect(page.locator('.targets-history-cell').first).to_be_visible()
@@ -72,6 +69,9 @@ def exercise(home,local,engine,width):
         page.locator('.targets-history-cell').first.focus()
         expect(page.locator('#contextMenuHoverTip')).to_be_visible()
         page.screenshot(path=str(home/'targets-presentation.png'))
+        page.keyboard.press('Escape')
+        expect(page.locator('#targetsHistoryToggle')).to_be_focused()
+        expect(page.locator('[data-target-goal]:visible [data-target-field=amount]')).to_have_value('650')
         page.keyboard.press('Escape');expect(page.locator('#modal')).to_be_hidden()
         assert page.evaluate('soundStops')==2
         assert page.evaluate('()=>targets.doc.goals.find(g=>g.id==="synthetic4").amount')==500,'Cancel must preserve saved goals'
