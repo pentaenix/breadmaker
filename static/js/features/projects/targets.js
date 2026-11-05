@@ -38,7 +38,10 @@ async function loadTargets(){
 }
 function targetsEnqueue(delta={},at=Date.now(),settings=null,intervals=null){
   if(!targets.ready||targets.context!==targetsContext())return;
-  if(!settings&&!targets.doc.goals.some(goal=>Number(delta[goal.metric])))return;
+  // Timed achievements no longer consume clock intervals. Do not fill the
+  // durable outbox or rewrite receipts for those no-op ticks; a new calendar
+  // period resumes automatically, and writing goals keep their net totals.
+  if(!settings&&!targets.doc.goals.some(goal=>Number(delta[goal.metric])&&(!['time','active'].includes(goal.metric)||!targetsModel.entry(targets.doc,goal,at).achieved)))return;
   const operation={id:uid(),at,delta:{...delta},sealed:true,...(intervals?{intervals}:{}),...(settings?{settings}:{goals:structuredClone(targets.doc.goals),calendar:Object.fromEntries(targets.doc.goals.map(goal=>[goal.id,targetsModel.period(goal.period,at)]))})};
   const context=targets.context;targets.pending.push(operation);
   // enqueue writes the synchronous pre-journal before returning its IDB promise.

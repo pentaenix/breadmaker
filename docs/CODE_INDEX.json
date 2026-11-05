@@ -23419,7 +23419,7 @@
     },
     {
       "file": "static/js/features/projects/targets.js",
-      "lines": 242,
+      "lines": 245,
       "symbols": [
         {
           "name": "targetText",
@@ -23479,102 +23479,102 @@
         {
           "name": "flushTargets",
           "kind": "function",
-          "line": 49
+          "line": 52
         },
         {
           "name": "save",
           "kind": "function",
-          "line": 53
+          "line": 56
         },
         {
           "name": "targetsClock",
           "kind": "function",
-          "line": 81
+          "line": 84
         },
         {
           "name": "targetsActivity",
           "kind": "function",
-          "line": 96
+          "line": 99
         },
         {
           "name": "targetsManuscriptText",
           "kind": "function",
-          "line": 105
+          "line": 108
         },
         {
           "name": "targetsCaptureWriting",
           "kind": "function",
-          "line": 106
+          "line": 109
         },
         {
           "name": "targetsFinishWriting",
           "kind": "function",
-          "line": 111
+          "line": 114
         },
         {
           "name": "targetsStopSound",
           "kind": "function",
-          "line": 141
+          "line": 144
         },
         {
           "name": "targetsPlaySound",
           "kind": "function",
-          "line": 142
+          "line": 145
         },
         {
           "name": "targetsCelebrate",
           "kind": "function",
-          "line": 147
+          "line": 150
         },
         {
           "name": "targetsAmount",
           "kind": "function",
-          "line": 152
+          "line": 155
         },
         {
           "name": "targetsProgressLabel",
           "kind": "function",
-          "line": 158
+          "line": 161
         },
         {
           "name": "targetsRing",
           "kind": "function",
-          "line": 159
+          "line": 162
         },
         {
           "name": "renderTargets",
           "kind": "function",
-          "line": 160
+          "line": 163
         },
         {
           "name": "targetsSwitch",
           "kind": "function",
-          "line": 187
+          "line": 190
         },
         {
           "name": "targetsGoalRow",
           "kind": "function",
-          "line": 188
+          "line": 191
         },
         {
           "name": "field",
           "kind": "function",
-          "line": 189
+          "line": 192
         },
         {
           "name": "openTargets",
           "kind": "function",
-          "line": 192
+          "line": 195
         },
         {
           "name": "readGoals",
           "kind": "function",
-          "line": 199
+          "line": 202
         },
         {
           "name": "wireRows",
           "kind": "function",
-          "line": 200
+          "line": 203
         }
       ]
     },
