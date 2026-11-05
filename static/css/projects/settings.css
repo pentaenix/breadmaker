@@ -144,3 +144,13 @@
 @media(max-width:520px){.brand-name{display:none}.project-app-menu{min-width:238px}.project-submenu{min-width:210px}}
 .manuscript-import-progress{padding:2px 0 4px}.manuscript-import-file{margin:0 0 8px}.manuscript-import-progress #manuscriptImportProgressStatus{margin:0 0 9px}.manuscript-import-progress-track{height:7px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);overflow:hidden}.manuscript-import-progress-track>span{display:block;height:100%;width:0;background:var(--accent);transition:width .18s ease}.manuscript-import-progress.failed .manuscript-import-progress-track>span{background:var(--danger)}.manuscript-import-error{margin:10px 0 0;padding:9px 10px;border:1px solid color-mix(in srgb,var(--danger) 40%,var(--line));border-radius:6px;background:color-mix(in srgb,var(--danger) 5%,var(--surface));color:var(--danger);font-size:12px;line-height:1.45}.modal-head #modalClose:disabled{opacity:.35;cursor:default}
 
+
+/* History uses the shared nested-dialog lifecycle; only its record list scrolls. */
+.modal-card:has(.targets-history-dialog){width:min(640px,calc(100% - 30px));display:flex;flex-direction:column;overflow:hidden}
+.modal-card:has(.targets-history-dialog) #modalBody{min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.targets-history-dialog{display:flex;flex-direction:column;min-height:0;gap:8px}
+.targets-history-dialog .targets-history-chart{flex:none;max-height:220px;overflow:hidden}
+.targets-history-dialog .targets-history-cell{flex-direction:column;min-height:72px}
+.targets-history-bar{display:flex;align-items:flex-end;width:12px;height:28px;border-radius:3px;background:var(--surface2);overflow:hidden}
+.targets-history-bar>span{display:block;width:100%;background:var(--accent);min-height:0}
+@media(max-height:600px){.targets-history-dialog .targets-history-chart{max-height:110px;overflow:auto}.targets-history-dialog .targets-history{max-height:110px}}
