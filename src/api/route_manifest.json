@@ -2148,7 +2148,7 @@
           "method": "GET",
           "path": "/api/export/docx",
           "function": "export_docx",
-          "line": 33,
+          "line": 20,
           "file": "src/api/import_export/docx_export.py"
         },
         {
@@ -2164,6 +2164,13 @@
           "function": "upload_asset",
           "line": 18,
           "file": "src/api/import_export/assets.py"
+        },
+        {
+          "method": "GET",
+          "path": "/api/export/zip",
+          "function": "export_readable_zip",
+          "line": 18,
+          "file": "src/api/import_export/readable_export.py"
         }
       ]
     }

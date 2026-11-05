@@ -38,3 +38,5 @@ and unlike measures are not summed. Sound selection previews that choice, while
 opening the modal stays silent; cancellation/blur/context changes stop preview.
 Achieved indicators complete the existing ring with a quiet center dot, and
 hover/accessibility descriptions retain actual current/target amounts.
+
+Readable ZIP export uses the existing Export submenu and PDF modal styling. `export_recovery.js` owns its saved-first download, busy/error state and modal ownership; archive rendering belongs to backend format owners.

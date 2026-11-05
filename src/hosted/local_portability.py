@@ -52,6 +52,8 @@ _PLAIN_REFERENCES = {
     'start_block_id': 'manuscript_blocks', 'end_block_id': 'manuscript_blocks',
     'source_marker_id': 'markup_labels',
     'source_scene_id': 'scenes',
+    # Schema 42 annotations.thread_id is a logical link without a declared FK.
+    'thread_id': 'comment_threads',
 }
 
 

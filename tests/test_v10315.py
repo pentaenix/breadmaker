@@ -74,17 +74,28 @@ def test_v10315_hosted_upload_and_portable_assets_validate_before_publication():
     assert "'X-Content-Type-Options':'nosniff'" in project_assets
 
 
-def test_v10315_hosted_server_never_decodes_project_images_in_process():
+def test_v10315_guarded_native_exports_never_decode_project_images_in_process(client,fresh_project,monkeypatch):
     pdf=(ROOT/'src/api/import_export/pdf_export.py').read_text(encoding='utf-8')
     docx=(ROOT/'src/api/import_export/docx_export.py').read_text(encoding='utf-8')
     assert '_HOSTED_LIMITS is not None' in pdf and "RLParagraph('[Image]'" in pdf
-    assert '_HOSTED_LIMITS is not None' in docx and "add_run('[Image]')" in docx
-    # Local export retains image support through the environment-neutral bytes port;
-    # hosted export reaches the placeholder branch before any in-process decoder.
+    # The DOCX renderer is now shared with readable export. Prove the native
+    # route's guard through the real output rather than its former inline body.
+    from api.import_export import docx_export
+    from tests.test_v81911 import _insert_image
+    from docx import Document
+    from io import BytesIO
+    _insert_image(client,fresh_project['bootstrap']['chapters'][0]['id'])
+    reads=[]
+    def forbidden(path):reads.append(path);raise AssertionError('Guarded route read an image')
+    monkeypatch.setattr(docx_export,'_HOSTED_LIMITS',object())
+    monkeypatch.setattr(docx_export.runtime.assets,'read_blob',forbidden)
+    response=client.get('/api/export/docx');assert response.status_code==200
+    document=Document(BytesIO(response.content))
+    assert not reads and not document.inline_shapes
+    assert any('[Image]' in paragraph.text for paragraph in document.paragraphs)
     assert 'RLImage(BytesIO(runtime.assets.read_blob(asset_name)))' in pdf
-    assert '.add_picture(BytesIO(runtime.assets.read_blob(asset_name))' in docx
     assert pdf.index("if _HOSTED_LIMITS is not None") < pdf.index('RLImage(BytesIO(runtime.assets.read_blob(asset_name)))')
-    assert docx.index("if _HOSTED_LIMITS is not None") < docx.index('.add_picture(BytesIO(runtime.assets.read_blob(asset_name))')
+
 
 
 def test_v10315_container_excludes_broad_heif_imagemagick_stack_and_pins_pillow():

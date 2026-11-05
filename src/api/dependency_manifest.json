@@ -3646,11 +3646,6 @@
         },
         {
           "module": "backend.data_access",
-          "symbol": "one",
-          "local": "one"
-        },
-        {
-          "module": "backend.data_access",
           "symbol": "project",
           "local": "project"
         },
@@ -3708,6 +3703,11 @@
           "module": "backend.environment",
           "symbol": "_HOSTED_LIMITS",
           "local": "_HOSTED_LIMITS"
+        },
+        {
+          "module": "backend.environment",
+          "symbol": "runtime",
+          "local": "runtime"
         },
         {
           "module": "backend.environment",
@@ -3738,6 +3738,11 @@
           "module": "backend.project_activation",
           "symbol": "activate_project",
           "local": "_activate_project"
+        },
+        {
+          "module": "backend.request_context",
+          "symbol": "_bound_project_id",
+          "local": "_bound_project_id"
         },
         {
           "module": "backend.request_context",
@@ -3780,6 +3785,36 @@
           "local": "_public_project_record"
         },
         {
+          "module": "backend.request_context",
+          "symbol": "_require_project_permission",
+          "local": "_require_project_permission"
+        },
+        {
+          "module": "formats.manuscript_docx",
+          "symbol": "docx_bytes",
+          "local": "docx_bytes"
+        },
+        {
+          "module": "formats.manuscript_docx",
+          "symbol": "manuscript_block_groups",
+          "local": "manuscript_block_groups"
+        },
+        {
+          "module": "formats.readable_archive",
+          "symbol": "write_readable_archive",
+          "local": "write_readable_archive"
+        },
+        {
+          "module": "formats.readable_names",
+          "symbol": "file_stem",
+          "local": "file_stem"
+        },
+        {
+          "module": "runtime.native",
+          "symbol": "require_native_projects",
+          "local": "require_native_projects"
+        },
+        {
           "module": "security.image_security",
           "symbol": "UnsafeImage",
           "local": "UnsafeImage"
@@ -3788,11 +3823,6 @@
           "module": "security.image_security",
           "symbol": "inspect_hosted_image_bytes",
           "local": "inspect_hosted_image_bytes"
-        },
-        {
-          "module": "storage",
-          "symbol": "context",
-          "local": "storage_context"
         },
         {
           "module": "storage",

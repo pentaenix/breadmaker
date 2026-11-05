@@ -14,7 +14,6 @@ from typing import Any, Mapping
 
 from docx import Document
 from docx.oxml.ns import qn
-from docx.shared import Inches
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.utils import ImageReader
@@ -118,25 +117,11 @@ def ordered_book(domain,project_id:str,user_id:str) -> tuple[dict[str,Any],list[
 
 
 def export_docx_bytes(domain,assets,project:Mapping[str,Any],project_id:str,user_id:str) -> bytes:
-    _tab,chapters,grouped=ordered_book(domain,project_id,user_id);doc=Document();title=str(project.get('title') or project.get('name') or 'Untitled')
-    doc.add_heading(title,0)
-    for chapter in chapters:
-        doc.add_heading(str(chapter.get('title') or 'Chapter'),level=1)
-        for block in grouped.get(str(chapter.get('id')),[]):
-            if str(block.get('block_type') or 'paragraph')=='image' and block.get('image_path'):
-                try:
-                    payload=assets.read_blob(str(block['image_path']));width=max(0.5,min(6.5,6.5*int(block.get('image_width') or 100)/100));doc.add_picture(io.BytesIO(payload),width=Inches(width))
-                    footer=str(block.get('image_footer') or '').strip()
-                    if footer:doc.add_paragraph(footer,style='Caption')
-                except Exception:
-                    doc.add_paragraph('[Image unavailable]')
-            else:
-                p=doc.add_paragraph(str(block.get('text_content') or ''))
-                style=str(block.get('semantic_style') or '').lower()
-                if style.startswith('heading'):
-                    try:p.style='Heading '+str(max(1,min(9,int(re.sub(r'\D','',style) or '2'))))
-                    except Exception:pass
-    out=io.BytesIO();doc.save(out);return out.getvalue()
+    from formats.manuscript_docx import docx_bytes
+    tab,chapters,grouped=ordered_book(domain,project_id,user_id)
+    blocks=[block for chapter in chapters for block in grouped.get(str(chapter.get('id')),[])]
+    return docx_bytes(str(project.get('title') or project.get('name') or 'Untitled'),
+        [tab],chapters,blocks,assets.read_blob)
 
 
 def export_pdf_bytes(domain,assets,project:Mapping[str,Any],project_id:str,user_id:str) -> bytes:

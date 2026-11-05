@@ -19,7 +19,7 @@ from api.import_export.contracts import PDFExportOptions
 from backend.data_access import allrows, one, project
 from storage import mutations as storage_mutations
 
-from .docx_export import _manuscript_block_groups
+from formats.manuscript_docx import manuscript_block_groups
 
 _primary_manuscript_tab = feature_call('checkpoints.capture', '_primary_manuscript_tab')
 
@@ -86,7 +86,7 @@ def _pdf_export_book(path:Path, title:str, options:PDFExportOptions, chapters:li
         if wrote_segment and options.chapter_page_breaks: story.append(PageBreak())
         if not ch.get('is_implicit'):
             story.append(RLParagraph(html.escape(str(ch.get('title') or 'Untitled Chapter')),chapter_style))
-        for group in _manuscript_block_groups(chapter_blocks):
+        for group in manuscript_block_groups(chapter_blocks):
             if len(group)>1 and all(b.get('block_type')=='image' and b.get('image_path') for b in group):
                 row_width=max(5,min(100,int(group[0].get('image_width') or 100)));total_width=doc.width*row_width/100;cell_width=total_width/len(group);cells=[]
                 for b in group:

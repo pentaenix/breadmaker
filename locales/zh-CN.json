@@ -3653,7 +3653,15 @@
     "targets.history_list": "列表",
     "targets.history_chart": "活动",
     "targets.history_period": "周期",
-    "targets.history_group": "已达成 {count}/{total} 个目标"
+    "targets.history_group": "已达成 {count}/{total} 个目标",
+    "export.zip.menu": "可读ZIP…",
+    "export.zip.title": "导出可读ZIP",
+    "export.zip.description": "包含每份文档的Word、HTML和文本副本、原始图片以及可恢复的Breadmaker项目。解压ZIP后打开START-HERE.html。",
+    "export.zip.create": "创建ZIP",
+    "export.zip.creating": "正在创建ZIP…",
+    "export.zip.ready": "ZIP已导出",
+    "export.zip.failed": "ZIP导出失败。",
+    "export.zip.project_changed": "当前项目已更改。请重新打开导出。"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

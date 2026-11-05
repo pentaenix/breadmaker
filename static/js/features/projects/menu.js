@@ -73,7 +73,7 @@ function showProjectSubmenu(kind,anchor){
   }else if(kind==='import'){
     html=`${projectMenuButton('projectMenuImportManuscript','Manuscript…')}${projectMenuButton('projectMenuImportJsonProject','Import JSON…')}${projectMenuButton('projectMenuImportProject','Breadmaker Project…')}${projectMenuButton('projectMenuImportCuts','Cuts…')}`;
   }else if(kind==='export'){
-    html=`${projectMenuButton('projectMenuExportDocx','Manuscript as DOCX')}${projectMenuButton('projectMenuExportPdf','Manuscript as PDF…')}${projectMenuButton('projectMenuExportJsonProject','JSON Project')}${projectMenuButton('projectMenuExportProject','Breadmaker Project')}${projectMenuButton('projectMenuExportCuts','Cuts')}`;
+    html=`${projectMenuButton('projectMenuExportDocx','Manuscript as DOCX')}${projectMenuButton('projectMenuExportPdf','Manuscript as PDF…')}${projectMenuButton('projectMenuExportJsonProject','JSON Project')}${projectMenuButton('projectMenuExportProject','Breadmaker Project')}${projectMenuButton('projectMenuExportZip',i18nText('export.zip.menu'))}${projectMenuButton('projectMenuExportCuts','Cuts')}`;
   }
   submenu.innerHTML=html;submenu.classList.remove('hidden');
   const r=anchor.getBoundingClientRect(),width=submenu.offsetWidth||220;let left=r.right+PROJECT_MENU_GAP;if(left+width>innerWidth-6)left=Math.max(6,r.left-width-PROJECT_MENU_GAP);
@@ -91,6 +91,7 @@ function showProjectSubmenu(kind,anchor){
     $('#projectMenuExportPdf').onclick=()=>{hideProjectMenu();openPdfExport()};
     $('#projectMenuExportJsonProject').onclick=async()=>{hideProjectMenu();if(active){await flushSave();location.href=projectScopedUrl(`/api/projects/${active.id}/export-json`)}};
     $('#projectMenuExportProject').onclick=async()=>{hideProjectMenu();if(active){await flushSave();location.href=projectScopedUrl(`/api/projects/${active.id}/export`)}};
+    $('#projectMenuExportZip').onclick=()=>{hideProjectMenu();openReadableZipExport()};
     $('#projectMenuExportCuts').onclick=()=>{hideProjectMenu();location.href=projectScopedUrl('/api/cuts/export')};
   }
 }
