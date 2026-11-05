@@ -76,3 +76,31 @@ assert.equal(complete.entries['short-clock:2026-11-04'].intervals,undefined,'com
 model.apply(complete,{id:'later-clock',stream:'clock',sequence:2,at:now,intervals:{active:[now+1000,now+2000]},delta:{active:1}});
 assert.equal(model.progress(complete,now)[0].value,1,'completed time goals stop gathering unnecessary clock data');
 console.log('Targets calendar, Unicode, progress, idempotency, idle, sleep and history checks passed');
+
+// The existing period identity is its captured local date label. A timezone
+// change can give that same label different UTC bounds; neither stream's valid
+// intervals may be acknowledged then clipped out by the first stream's window.
+for(const metric of ['time','active'])for(const [period,key,aStart,aEnd,bStart,bEnd] of [
+ ['daily','2026-11-05','2026-11-04T15:00Z','2026-11-05T15:00Z','2026-11-05T08:00Z','2026-11-06T08:00Z'],
+ ['weekly','2026-11-02','2026-11-01T15:00Z','2026-11-08T15:00Z','2026-11-02T08:00Z','2026-11-09T08:00Z'],
+ ['monthly','2026-11-01','2026-10-31T15:00Z','2026-11-30T15:00Z','2026-11-01T08:00Z','2026-12-01T08:00Z'],
+])for(const reverse of [false,true]){
+ const g={...goal('offset-clock',metric,period,1000),created:date(aStart)-86400000};
+ const state=model.defaults();state.enabled=true;state.goals=[g];
+ const op=(stream,start,end,span)=>({id:stream,stream,sequence:1,at:span[1],goals:[g],calendar:{[g.id]:{key,start:date(start),end:date(end)}},delta:{[metric]:10},intervals:{[metric]:span}});
+ const a=op('plus-nine',aStart,aEnd,[date(aStart)+3600000,date(aStart)+3610000]);
+ const b=op('minus-eight',bStart,bEnd,[date(bEnd)-14400000,date(bEnd)-14390000]);
+ for(const item of reverse?[b,a]:[a,b])model.apply(state,item);
+ const stored=state.entries[`${g.id}:${key}`];
+ assert.equal(stored.value,20,`${metric}/${period}: both captured windows count, in either arrival order`);
+ assert.equal(stored.start,Math.min(date(aStart),date(bStart)));
+ assert.equal(stored.end,Math.max(date(aEnd),date(bEnd)));
+ assert.deepEqual(model.normalize(state),state,'expanded calendar bounds preserve intervals through storage');
+ model.apply(state,{...a,id:'same-interval',stream:'same-interval'});
+ assert.equal(stored.value,20,'overlapping intervals across offsets still count once');
+ model.apply(state,b);
+ assert.equal(stored.value,20,'the acknowledged original stream remains idempotent');
+ model.apply(state,op('clipped',bStart,bEnd,[date(bStart)-5000,date(bStart)+5000]));
+ assert.equal(stored.value,25,'clip against the contribution’s own captured window, not its expanded history envelope');
+}
+console.log('Targets captured-calendar offset and arrival-order checks passed');

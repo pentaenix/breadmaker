@@ -64,8 +64,13 @@
         const timed=['time','active'].includes(goal.metric),span=operation.intervals?.[goal.metric];
         if(timed&&e.achieved)continue;
         if(timed&&Array.isArray(span)){
+          // Keep the captured local-date identity while honoring each immutable
+          // contribution's own UTC window after an offset change. Clamping to
+          // the first arrival's window silently discards acknowledged time.
+          const bounds=p||e,clipped=[Math.max(bounds.start,span[0]),Math.min(bounds.end,span[1])];
+          if(p&&clipped[1]>clipped[0]){e.start=Math.min(e.start,p.start);e.end=Math.max(e.end,p.end)}
           if(!Array.isArray(e.intervals)){e.intervals=[];e.timeBase=e.value}
-          e.intervals=mergeIntervals([...e.intervals,[Math.max(e.start,span[0]),Math.min(e.end,span[1])]]);
+          e.intervals=mergeIntervals([...e.intervals,clipped]);
           e.value=e.timeBase+e.intervals.reduce((sum,[from,to])=>sum+(to-from)/1000,0);
         }else e.value=Math.max(-1e10,Math.min(1e10,e.value+(Number(operation.delta?.[goal.metric])||0)));
         if(!e.achieved&&e.value>=e.amount){e.achieved=operation.at;achieved.push({...e})}

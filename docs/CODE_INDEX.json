@@ -23368,7 +23368,7 @@
     },
     {
       "file": "static/js/features/projects/targets-model.js",
-      "lines": 102,
+      "lines": 107,
       "symbols": [
         {
           "name": "mergeIntervals",
@@ -23403,17 +23403,17 @@
         {
           "name": "progress",
           "kind": "function",
-          "line": 84
+          "line": 89
         },
         {
           "name": "count",
           "kind": "function",
-          "line": 87
+          "line": 92
         },
         {
           "name": "elapsed",
           "kind": "function",
-          "line": 95
+          "line": 100
         }
       ]
     },
