@@ -11,19 +11,24 @@ from fastapi.responses import Response
 from backend.environment import runtime
 from hosted.http_api import _pid, _uid, _error
 from hosted.packages import HostedProjectPackageService
-from formats.readable_archive import write_readable_archive
+from hosted.firestore.contracts import DocumentConflict
+from hosted.readable_source import write_hosted_readable_archive
 
 router=APIRouter()
 _capacity=CapacityLimiter(1)
 
 
 def _readable_zip(projects,pid,uid):
-    # The existing codec authorizes membership, rejects experimental encrypted
-    # exports and concurrent mutations, and preserves supported project state.
-    payload=HostedProjectPackageService(projects).export_local_bytes(pid,uid)
+    # Normal hosted export enforces membership and the encrypted-mode embargo.
+    # Fence the entire snapshot, then render without further provider reads.
+    # Native conversion intentionally cannot represent some hosted history.
+    before=projects.domain.project_generation(pid,uid)
+    payload=HostedProjectPackageService(projects).export_bytes(pid,uid)
+    if projects.domain.project_generation(pid,uid)!=before:
+        raise DocumentConflict('HOSTED_READABLE_CONCURRENT_MUTATION')
     with tempfile.TemporaryDirectory(prefix='breadmaker-hosted-readable-') as td:
         package=Path(td)/'snapshot.breadmaker';out=Path(td)/'readable.zip';package.write_bytes(payload)
-        stem=write_readable_archive(package,out)
+        stem=write_hosted_readable_archive(package,out)
         return stem,out.read_bytes()
 
 

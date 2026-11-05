@@ -11,7 +11,10 @@ The archive contains:
 - `assets/` with original project image files, referenced relatively by the HTML copies.
 - `data/project-content.json`, a readable reference for current manuscript structure,
   markers, Canvas, Maps, Tasks and links. This is explicitly **not** an import format.
-- `Project.breadmaker`, the unchanged portable project snapshot used for restoration.
+- `Project.breadmaker`, the unchanged project snapshot used for restoration. Local
+  exports include the native package; hosted exports include the hosted-v3 package
+  and explicitly instruct restoration through the web app. A hosted recovery file
+  is not claimed to be a desktop-native package.
 
 The browser saves pending writing before export and shows a disabled “Creating ZIP…”
 button while the download is prepared. Failed requests can be retried. Completing an
@@ -22,8 +25,13 @@ PDF dialog body, modal lifecycle and download helper; no new CSS or panel langua
 
 The readable files are all derived from one portable snapshot. Local exports reuse the
 existing frozen canonical-generation package exporter, then render only that snapshot.
-Hosted exports reuse the existing membership-authorized, generation-fenced hosted-to-local
-codec, including its experimental-encryption refusal and unsupported-state checks. A
+Hosted exports fence the existing membership-authorized hosted-v3 package with canonical
+project generation checks before and after capture. They retain its experimental-encryption
+refusal. Readable copies are rendered from that immutable package without further provider
+reads. Hosted Canvas geometry history and sparse Canvas/Map records do not have to fit
+native Schema 42 to make readable files; their unchanged hosted state remains in the
+included recovery package. The separate native compatibility codec and all of its
+unsupported-state refusals remain in effect for native exports. A
 single per-instance worker limits hosted archive assembly; the existing heavy-request
 rate limit covers the new route. No local Workspace is created by hosted export.
 
@@ -32,6 +40,11 @@ fixed or use safe, numbered filenames. HTML titles/attributes are escaped and ma
 inline formatting uses the canonical sanitizer. Credentials, installations and account
 membership authority remain excluded by the existing portable-project policy. Temporary
 snapshot/archive files are cleaned after download or failure.
+
+Hosted-v3 snapshots name asset members with their full content hash. Readable
+copies use the existing `img_<24 hash characters>` manuscript asset names, with
+validated one-to-one aliases and collision refusal. The included recovery package
+retains its original member names and bytes.
 
 `formats/manuscript_docx.py` now owns the shared Word renderer used by local export,
 hosted export and ZIP copies. Semantic headings, bold, italics, underline, tabs, line
@@ -75,3 +88,11 @@ keyboard focus, busy/error feedback and stale-modal completion.
 Full Editor and Cloud release gates and authenticated live QA remain required before
 production promotion. The release coordinator owns version allocation and deployment;
 this feature does not change production independently of that release.
+
+The initial 10.5.89 deployment passed its full release gates but authenticated live
+ZIP verification exposed `HOSTED_PORTABLE_SCHEMA_CONFLICT:canvas` on a legitimate
+hosted Canvas without a position field. The corrective source removes the unnecessary
+native conversion boundary from hosted readable export. Regressions cover sparse
+Canvas/Maps, frozen Canvas history, byte-preserved hosted recovery and web import,
+generation changes during capture, and immutable rendering after capture. This note
+records the observed failure and design; it is not a claim of verified live correction.
