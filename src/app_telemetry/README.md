@@ -46,12 +46,56 @@ invented activity. Do not point it at an actual installation or feed real events
   Operations do not recreate a scratch database that has been erased.
 
 The database has an application ID and schema marker. Unknown or unrelated SQLite
-files are rejected rather than migrated. New files are created with POSIX mode
-0600; the caller must provide a private directory. SQLite secure deletion is
+files are rejected rather than migrated. POSIX checks enforce an owned directory
+with no group/other access, an owned regular database file with no group/other
+access and exactly one hard link, and reject symlink directories/files. Checks
+repeat before every transaction. New files use mode 0600. Windows is rejected
+pending an ACL implementation; Unix mode bits are not assumed sufficient there.
+These checks do not defend against malicious code already running as the same
+OS user or replace a full filesystem race/security review. SQLite secure deletion is
 requested for deleted cells. Neither this nor file removal guarantees forensic
 erasure, cleanup of external backups, filesystem snapshots or Windows ACL policy.
 Do not import/export this file with projects. No existing project/package code is
 changed and no live database file has been created by this package's tests.
+
+`erase_synthetic_state()` atomically deletes queued windows and clears token,
+consent timestamp and last activity. A persistent declined tombstone and
+delivery cooldown remain so existing/reopened authorities cannot resume collection
+or reset the budget. This is **logical erasure**, not physical file deletion or
+forensic erasure. It does not rewrite external backups or revoke previously copied
+batch bytes. Failed erasure disables the calling instance and returns false; do
+not claim successful installation-wide erasure after that failure.
+
+`maintain_synthetic_retention()` is an explicit expiry tick. The optional
+`SyntheticRetentionRunner` starts only through explicit developer invocation with
+`synthetic_only=True`; neither importing nor constructing it starts a thread. While
+running it attempts a tick every 60 seconds (shorter intervals only for tests),
+with silent failures and explicit shutdown. Tests verify actual idle-file pruning
+while running and retained expired rows when stopped. **No wall-clock deletion
+deadline is promised:** app shutdown, sleep, scheduling, clock changes, lock
+contention or failed storage can delay deletion. No runner is registered in the
+editor, desktop wrapper or operating system. Activation needs recovery/erasure
+integration and policy wording that matches those limits.
+Maintenance also clears inactive session metadata after 30 minutes and expired
+delivery cooldown metadata after 15 minutes; these share the same execution and
+failure limits. Current consent choice/receipt remains until changed or erased.
+
+## Foreground / idle gate preview
+
+`static/js/features/app_telemetry/presence.js` is a dormant sample-based gate. It
+requires granted consent, visible document, real document focus and an explicitly
+supplied synthetic interaction within the last 60 seconds of monotonic time.
+An observed blur, hidden document, idle threshold, clock rollback or consent
+change clears eligibility; returning to focus alone does not requalify it.
+It reads no keystrokes, event targets, coordinates or text, attaches no DOM input
+listeners, starts no timer and creates no report. Only tests invoke
+`noteSyntheticInteraction()`. A browser test samples the real focused document;
+deterministic tests cover visibility, idle boundary, revocation and clock rollback.
+The installed headless browser reports both tabs focused, so it cannot certify
+actual background-tab/native focus transitions; those remain a headed/device check.
+This is not an OS idle detector or a continuous focus monitor. Real interaction
+sources, sleep/resume, native wrapper focus and the connection to the local
+authority remain unimplemented and require review before any real activity use.
 
 ## Payload and truthful labels
 
@@ -86,13 +130,13 @@ admin mock data. Dashboard blocks remain primary, with raw rows one level below.
    retention and deletion policy, jurisdictions, children and security. This
    model's persisted queue differs from the original memory-only preview, so the
    original consent cannot silently authorize its storage or revised signals.
-2. A reviewed installation-wide path/authority, private directory/ACL enforcement,
+2. A reviewed installation-wide path/authority, Windows ACL enforcement,
    crash and corruption handling, erasure integration, retention scheduling and
    durable failed-withdrawal behavior. No workspace binding is supplied here.
 3. A reviewed bounded transport/receiver: consent recheck, cancellation, idempotency,
    abuse controls, credentials/referrer/redirect policy, IP/access logs and private
    admin authorization. No endpoint or sender exists in this checkpoint.
-4. Foreground and idle semantics tested in actual desktop wrappers and browsers.
+4. Foreground and idle semantics tested in actual desktop wrappers.
    The required `foreground=True` here is synthetic input, not a verified detector.
    No actual window, focus, visibility, keystroke or save hooks exist.
 5. Full Editor release verification before any release. Focused tests do not certify
@@ -114,3 +158,13 @@ the hard reservation ceiling is 4 KiB every 15 minutes across connections (up to
 limits, not measured network use. Actual telemetry traffic remains zero. No full
 release gate, real collection, native/browser bridge, endpoint or deployment was
 performed. Generated code navigation and diff whitespace checks passed.
+
+Storage/retention/presence follow-up: all **23 focused pytest entries** passed
+(15 installation/storage/retention cases, a wrapper for 18 deterministic Node
+cases, and 7 browser cases) in 22.06 seconds. After adding short-lived session and
+cooldown metadata expiry, all 16 unit entries passed again in 0.82 seconds.
+The optional worker was tested against an idle scratch database using a real
+thread and explicit shutdown. The browser gate test samples real document focus
+with synthetic interaction signals; actual background/native focus transitions
+remain unverified because this headless runtime reports both tabs focused.
+No transmission, production activation, merge or release verification occurred.

@@ -187,6 +187,7 @@ def test_unrelated_sqlite_file_is_rejected_without_changing_its_tables(tmp_path)
     path=tmp_path/'unrelated.sqlite'
     with sqlite3.connect(path) as db:
         db.execute('CREATE TABLE unrelated (value TEXT)')
+    path.chmod(0o600)
     with pytest.raises(ValueError,match='SCRATCH_SCHEMA_UNSUPPORTED'):
         SyntheticInstallationTelemetry(path,synthetic_only=True)
     with sqlite3.connect(path) as db:
@@ -201,3 +202,89 @@ def test_operations_do_not_recreate_an_erased_scratch_database(model):
     assert a.snapshot()==[] and a.prepare_synthetic_batch() is None
     assert not a.set_consent(False)
     assert not path.exists()
+
+
+def test_private_storage_rejects_shared_permissions_links_and_late_mode_changes(model,tmp_path):
+    clock,path,open_model=model
+    a=open_model();a.set_consent(True)
+    path.chmod(0o644)
+    assert not a.record_synthetic_activity('maps',foreground=True)
+    assert a.choice()=='declined'
+    with pytest.raises(ValueError,match='PRIVATE_DATABASE_REQUIRED'):
+        open_model()
+    path.chmod(0o600)
+    alias=tmp_path/'alias.sqlite';alias.symlink_to(path)
+    with pytest.raises(ValueError,match='PRIVATE_DATABASE_REQUIRED'):
+        SyntheticInstallationTelemetry(alias,synthetic_only=True)
+    alias.unlink();alias.hardlink_to(path)
+    with pytest.raises(ValueError,match='PRIVATE_DATABASE_REQUIRED'):
+        open_model()
+    alias.unlink()
+    tmp_path.chmod(0o755)
+    try:
+        assert a.snapshot()==[]
+        with pytest.raises(ValueError,match='PRIVATE_DIRECTORY_REQUIRED'):
+            open_model()
+    finally:
+        tmp_path.chmod(0o700)
+
+
+def test_logical_erasure_is_seen_by_existing_and_reopened_authorities(model):
+    clock,path,open_model=model
+    a,b=open_model(),open_model()
+    a.set_consent(True);a.record_synthetic_activity('maps',foreground=True)
+    clock[0]+=WINDOW;batch=a.prepare_synthetic_batch()
+    assert b.erase_synthetic_state()
+    assert a.choice()==open_model().choice()=='declined'
+    assert a.snapshot()==[] and not a.acknowledge_synthetic_batch(batch.reservation)
+    with sqlite3.connect(path) as db:
+        assert db.execute('SELECT token,decided,last_activity FROM consent').fetchone()==(None,None,None)
+        assert db.execute('SELECT COUNT(*) FROM windows').fetchone()[0]==0
+    assert not a.record_synthetic_activity('manuscript',foreground=True)
+    assert b.erase_synthetic_state()  # idempotent refusal tombstone
+
+
+def test_optional_retention_worker_actually_prunes_idle_file_only_when_running(model):
+    import threading
+    from app_telemetry.retention_preview import SyntheticRetentionRunner
+    clock,path,open_model=model
+    a=open_model();a.set_consent(True);a.record_synthetic_activity('maps',foreground=True)
+    first,expired=threading.Event(),threading.Event()
+    initial=clock[0]
+    class Observed:
+        def maintain_synthetic_retention(self):
+            ok=a.maintain_synthetic_retention()
+            first.set()
+            if clock[0]>=initial+DAY and ok:
+                expired.set()
+            return ok
+    worker=SyntheticRetentionRunner(Observed(),synthetic_only=True,interval_seconds=.01)
+    assert worker.start() and not worker.start()
+    try:
+        assert first.wait(.5)
+        clock[0]+=DAY
+        assert expired.wait(.5)
+        with sqlite3.connect(path) as db:
+            assert db.execute('SELECT COUNT(*) FROM windows').fetchone()[0]==0
+            assert db.execute('SELECT last_activity,last_attempt FROM consent').fetchone()==(None,None)
+    finally:
+        assert worker.close()
+    a.record_synthetic_activity('maps',foreground=True)
+    clock[0]+=DAY
+    with sqlite3.connect(path) as db:
+        # No running mechanism: expiry is explicitly not automatic.
+        assert db.execute('SELECT COUNT(*) FROM windows').fetchone()[0]==1
+    assert a.maintain_synthetic_retention()
+
+
+def test_retention_worker_failure_is_silent_and_closes():
+    import threading
+    from app_telemetry.retention_preview import SyntheticRetentionRunner
+    called=threading.Event()
+    class Broken:
+        def maintain_synthetic_retention(self):
+            called.set();raise RuntimeError('synthetic outage')
+    worker=SyntheticRetentionRunner(Broken(),synthetic_only=True,interval_seconds=.01)
+    worker.start()
+    assert called.wait(.5)
+    assert worker.close()

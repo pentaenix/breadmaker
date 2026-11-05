@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+import stat
 import time
 from uuid import uuid4
 
@@ -44,6 +45,7 @@ class SyntheticInstallationTelemetry:
             raise ValueError('VERSION_INVALID')
         self.database, self.version, self.clock = Path(database), version, clock
         self.disabled = False
+        self._private_storage(require_file=False)
         try:
             # No implicit application-home selection or directory creation.
             fd = os.open(self.database, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
@@ -65,6 +67,7 @@ class SyntheticInstallationTelemetry:
 
     @contextmanager
     def _transaction(self):
+        self._private_storage()
         # Runtime operations must never recreate a database removed by erasure.
         db = sqlite3.connect(self.database.absolute().as_uri()+'?mode=rw', uri=True, timeout=.05)
         try:
@@ -78,6 +81,22 @@ class SyntheticInstallationTelemetry:
         finally:
             db.close()
 
+    def _private_storage(self, *, require_file=True):
+        # POSIX preview only. Do not assume Unix mode bits enforce Windows ACLs.
+        if os.name != 'posix':
+            raise ValueError('PRIVATE_STORAGE_PLATFORM_UNREVIEWED')
+        parent = self.database.parent.lstat()
+        if not stat.S_ISDIR(parent.st_mode) or parent.st_uid != os.getuid() or parent.st_mode & 0o077:
+            raise ValueError('PRIVATE_DIRECTORY_REQUIRED')
+        try:
+            file = self.database.lstat()
+        except FileNotFoundError:
+            if not require_file:
+                return
+            raise
+        if not stat.S_ISREG(file.st_mode) or file.st_uid != os.getuid() or file.st_mode & 0o077 or file.st_nlink != 1:
+            raise ValueError('PRIVATE_DATABASE_REQUIRED')
+
     def _now(self):
         value = self.clock()
         if type(value) is not int or not 0 <= value <= 8_640_000_000_000_000:
@@ -87,6 +106,8 @@ class SyntheticInstallationTelemetry:
     def _prune(self, db, now):
         db.execute('DELETE FROM windows WHERE bucket <= ?', (now - DAY,))
         db.execute('DELETE FROM windows WHERE bucket NOT IN (SELECT bucket FROM windows ORDER BY bucket DESC LIMIT 96)')
+        db.execute('UPDATE consent SET last_activity=NULL WHERE last_activity<=?', (now - 30 * MINUTE,))
+        db.execute('UPDATE consent SET last_attempt=NULL WHERE last_attempt<=?', (now - WINDOW,))
 
     def _granted(self, db):
         row = db.execute('SELECT choice,notice,token FROM consent WHERE singleton=1').fetchone()
@@ -99,8 +120,29 @@ class SyntheticInstallationTelemetry:
             with self._transaction() as db:
                 row = db.execute('SELECT choice,notice FROM consent WHERE singleton=1').fetchone()
                 return row[0] if row and row[1] == NOTICE and row[0] in ('pending','declined','granted') else 'pending'
-        except (sqlite3.Error, OSError):
+        except (sqlite3.Error, OSError, ValueError):
             return 'declined'
+
+    def maintain_synthetic_retention(self):
+        """Explicit maintenance tick; no process/thread/scheduler starts implicitly."""
+        try:
+            with self._transaction() as db:
+                self._prune(db, self._now())
+            return True
+        except (sqlite3.Error, OSError, ValueError):
+            return False
+
+    def erase_synthetic_state(self):
+        """Logical erasure with a durable refusal tombstone, never forensic erasure."""
+        try:
+            with self._transaction() as db:
+                db.execute('DELETE FROM windows')
+                # Keep only refusal, notice and cooldown (to prevent budget reset).
+                db.execute("UPDATE consent SET choice='declined',notice=?,token=NULL,decided=NULL,last_activity=NULL WHERE singleton=1", (NOTICE,))
+            return True
+        except (sqlite3.Error, OSError, ValueError):
+            self.disabled = True
+            return False
 
     def set_consent(self, allowed: bool):
         if type(allowed) is not bool or self.disabled:

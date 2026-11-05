@@ -40,7 +40,7 @@ def telemetry_preview(home):
         page.wait_for_function('()=>document.documentElement.dataset.breadmakerBootReady==="true"')
         assert page.evaluate('typeof createAppTelemetryFoundation')=='undefined'
         page.add_style_tag(url=base+'/static/css/app_telemetry/consent.css')
-        for name in ('foundation.js','coordinator.js','consent.js'):
+        for name in ('foundation.js','coordinator.js','presence.js','consent.js'):
             page.add_script_tag(url=base+'/static/js/features/app_telemetry/'+name)
         page.evaluate('''()=>{
           window.telemetryClient=createAppTelemetryFoundation({storage:localStorage,appVersion:'10.5.66'});
@@ -184,3 +184,19 @@ def test_real_browser_lock_excludes_second_tab_then_hands_over_and_revokes(tmp_p
             assert other.evaluate('owner.acquire()') is False
         finally:
             other.close()
+
+
+def test_presence_preview_samples_real_document_and_expires_without_collecting(tmp_path):
+    with telemetry_preview(tmp_path) as page:
+        page.bring_to_front()
+        page.wait_for_function('()=>document.hasFocus()',timeout=1500)
+        page.evaluate('window.elapsed=0;window.presence=createAppTelemetryPresencePreview({client:telemetryClient,document,monotonic:()=>elapsed})')
+        assert page.evaluate('presence.noteSyntheticInteraction()') is False
+        page.get_by_role('button',name='Allow app usage',exact=True).click()
+        assert page.evaluate('presence.eligible()') is False
+        assert page.evaluate('presence.noteSyntheticInteraction();presence.eligible()') is True
+        assert page.evaluate('elapsed=60000;presence.eligible()') is False
+        assert page.evaluate('presence.noteSyntheticInteraction();presence.eligible()') is True
+        page.evaluate('telemetryClient.setConsent(false)')
+        assert page.evaluate('presence.eligible()') is False
+        assert page.evaluate('telemetryClient.snapshot().length')==0

@@ -5754,17 +5754,28 @@
     },
     {
       "file": "src/app_telemetry/installation_preview.py",
-      "lines": 204,
+      "lines": 246,
       "symbols": [
         {
           "name": "SyntheticBatch",
           "kind": "class",
-          "line": 26
+          "line": 27
         },
         {
           "name": "SyntheticInstallationTelemetry",
           "kind": "class",
-          "line": 31
+          "line": 32
+        }
+      ]
+    },
+    {
+      "file": "src/app_telemetry/retention_preview.py",
+      "lines": 33,
+      "symbols": [
+        {
+          "name": "SyntheticRetentionRunner",
+          "kind": "class",
+          "line": 5
         }
       ]
     },
@@ -15126,6 +15137,32 @@
           "name": "deliverToSyntheticSink",
           "kind": "function",
           "line": 64
+        }
+      ]
+    },
+    {
+      "file": "static/js/features/app_telemetry/presence.js",
+      "lines": 22,
+      "symbols": [
+        {
+          "name": "createAppTelemetryPresencePreview",
+          "kind": "function",
+          "line": 5
+        },
+        {
+          "name": "foreground",
+          "kind": "function",
+          "line": 8
+        },
+        {
+          "name": "eligible",
+          "kind": "function",
+          "line": 11
+        },
+        {
+          "name": "noteSyntheticInteraction",
+          "kind": "function",
+          "line": 16
         }
       ]
     },

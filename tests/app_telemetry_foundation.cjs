@@ -6,6 +6,7 @@ const path=require('node:path');
 const context=vm.createContext({TextEncoder,AbortController,setTimeout,clearTimeout});
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../static/js/features/app_telemetry/foundation.js'),'utf8'),context);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../static/js/features/app_telemetry/coordinator.js'),'utf8'),context);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'../static/js/features/app_telemetry/presence.js'),'utf8'),context);
 function fixture(overrides={}){
   const values=new Map();let time=Date.UTC(2026,10,4,10,0),ids=0;
   const storage={getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)};
@@ -159,4 +160,19 @@ test('unexpected loss of a granted lock stops the owner and drops queued reports
   assert.equal(await a.acquire(),true);a.recordSyntheticMinute();breakLock(Error('lock broken'));await turn();
   assert.equal(a.isOwner(),false);assert.equal(a.recordSyntheticMinute(),false);assert.equal(f.client.snapshot().length,0);
   assert.equal(f.client.consent(),'granted');
+});
+test('presence requires consent, visible focus and a recent synthetic interaction',()=>{
+  const f=fixture();let elapsed=0,focused=true;
+  const surface={visibilityState:'visible',hasFocus:()=>focused};
+  const gate=context.createAppTelemetryPresencePreview({client:f.client,document:surface,monotonic:()=>elapsed});
+  assert.equal(gate.noteSyntheticInteraction(),false);f.client.setConsent(true);
+  assert.equal(gate.eligible(),false);assert.equal(gate.noteSyntheticInteraction(),true);assert.equal(gate.eligible(),true);
+  elapsed=59999;assert.equal(gate.eligible(),true);elapsed=60000;assert.equal(gate.eligible(),false);
+  gate.noteSyntheticInteraction();focused=false;assert.equal(gate.eligible(),false);focused=true;assert.equal(gate.eligible(),false);
+  gate.noteSyntheticInteraction();surface.visibilityState='hidden';assert.equal(gate.eligible(),false);
+  surface.visibilityState='visible';assert.equal(gate.eligible(),false);
+  gate.noteSyntheticInteraction();f.client.setConsent(false);f.client.setConsent(true);assert.equal(gate.eligible(),false);
+  gate.noteSyntheticInteraction();elapsed--;assert.equal(gate.eligible(),false);
+  gate.dispose();assert.equal(gate.noteSyntheticInteraction(),false);
+  assert.equal(f.client.snapshot().length,0);
 });
