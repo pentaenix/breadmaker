@@ -3,6 +3,7 @@
 const targetsModel=window.BreadmakerTargetsModel;
 const targets={context:'',pid:'',user:'',doc:targetsModel.defaults(),pending:[],ready:false,loading:null,saving:null,lastTick:Date.now(),lastActivity:0,active:false,signature:'',audio:null,revision:0};
 const targetsJournal=window.BreadmakerTargetsJournal;
+let targetsDeparting=false;
 const targetText=(key,vars={})=>i18nText(`targets.${key}`,vars);
 const targetHtml=(key,vars={})=>escapeHtml(targetText(key,vars));
 function targetsContext(){return currentProjectIdentity()&&!state.reviewerSession?`${currentProjectIdentity()}:${currentUserIdentity()}`:''}
@@ -50,9 +51,9 @@ function targetsEnqueue(delta={},at=Date.now(),settings=null,intervals=null){
   if(achieved.length)targetsCelebrate(achieved);
 }
 async function flushTargets(){
-  if(!targets.ready||targets.context!==targetsContext())return;
+  if(targetsDeparting||document.hidden||!targets.ready||targets.context!==targetsContext())return;
   if(targets.saving){await targets.saving;return flushTargets()}
-  const revision=targets.revision,context=targets.context,current=()=>revision===targets.revision&&context===targetsContext();
+  const revision=targets.revision,context=targets.context,current=()=>!targetsDeparting&&!document.hidden&&revision===targets.revision&&context===targetsContext();
   const save=async()=>{
     const records=await targetsJournal.read(context);if(!current())return;
     targetsMergePending(records);
@@ -149,7 +150,7 @@ function targetsPlaySound(sound,preview=false){
 }
 function targetsCelebrate(entries){
   if(document.visibilityState!=='visible'||!document.hasFocus())return;
-  if(targets.doc.banner)toast(entries.length===1?targetText('achieved_'+entries[0].period):targetText('achieved_many',{count:i18nNumber(entries.length)}),4000);
+  toast(entries.length===1?targetText('achieved_'+entries[0].period):targetText('achieved_many',{count:i18nNumber(entries.length)}),4000);
   if(targets.doc.chime)targetsPlaySound(targets.doc.sound);
 }
 function targetsAmount(value,metric){
@@ -200,12 +201,31 @@ function targetsHistoryChart(history,period){
   // unlike measures are never summed into one invented word/time total.
   const groups=new Map();
   for(const entry of history.filter(e=>e.period===period)){const rows=groups.get(entry.key)||[];rows.push(entry);groups.set(entry.key,rows)}
-  return [...groups].sort(([a],[b])=>a.localeCompare(b)).slice(period==='daily'?-28:-12).map(([key,rows])=>{
+  return [...groups].sort(([a],[b])=>a.localeCompare(b)).slice(period==='daily'?-14:-12).map(([key,rows])=>{
     const achieved=rows.filter(e=>e.achieved).length,description=rows.map(e=>targetsProgressLabel(e)+(e.achieved?' · '+targetText('achieved_'+period):'')).join('\n');
     const date=new Date(key+'T12:00:00'),label=i18nDate(date.getTime(),{month:'short',...(period==='monthly'?{year:'numeric'}:{day:'numeric'})});
+    const progress=rows.reduce((sum,e)=>sum+Math.max(0,Math.min(1,Number(e.value||0)/Math.max(1,Number(e.amount||1)))),0)/rows.length;
     const summary=`${targetText(period)} · ${label} · ${targetText('history_group',{count:i18nNumber(achieved),total:i18nNumber(rows.length)})}\n${description}`;
-    return `<button type="button" class="targets-history-cell${achieved===rows.length?' achieved':achieved?' partial':''}" aria-label="${escapeHtml(summary)}" data-target-history-tip="${escapeHtml(summary)}"><span>${escapeHtml(label)}</span>${achieved===rows.length?targetsRing(1,true):''}</button>`;
+    return `<button type="button" class="targets-history-cell${achieved===rows.length?' achieved':achieved?' partial':''}" aria-label="${escapeHtml(summary)}" data-target-history-tip="${escapeHtml(summary)}"><span class="targets-history-bar" aria-hidden="true"><span style="height:${Math.round(progress*100)}%"></span></span><span>${escapeHtml(label)}</span>${achieved===rows.length?targetsRing(1,true):''}</button>`;
   }).join('')||`<p class="small-muted">${targetHtml('history_empty')}</p>`;
+}
+function openTargetsHistory(history){
+  targetsStopSound();hideContextMenuTip();
+  const periods=targetsModel.periods,initial=periods.find(period=>history.some(e=>e.period===period))||'daily';
+  showNestedModal(targetText('history'),`<div class="targets-history-dialog">
+    <div class="targets-history-controls"><label for="targetsHistoryPeriod">${targetHtml('history_period')}</label><select id="targetsHistoryPeriod">${periods.map(period=>`<option value="${period}"${period===initial?' selected':''}>${targetHtml(period)}</option>`).join('')}</select></div>
+    <p id="targetsHistorySummary" class="small-muted" role="status"></p>
+    <div id="targetsHistoryChart" class="targets-history-chart" role="group" aria-label="${targetHtml('history_chart')}"></div>
+    <div class="targets-history" tabindex="0" role="region" aria-label="${targetHtml('history_list')}"><div id="targetsHistoryList"></div></div>
+  </div>`,`<button id="targetsHistoryClose" class="bare-button">${escapeHtml(i18nSource('Close'))}</button>`,()=>hideContextMenuTip());
+  const render=()=>{
+    hideContextMenuTip();const period=$('#targetsHistoryPeriod').value,rows=history.filter(e=>e.period===period);
+    $('#targetsHistorySummary').textContent=targetText('history_summary',{count:i18nNumber(rows.filter(e=>e.achieved).length),total:i18nNumber(rows.length)});
+    $('#targetsHistoryChart').innerHTML=targetsHistoryChart(rows,period);
+    $('#targetsHistoryList').innerHTML=targetsHistoryRows(rows);
+    for(const cell of $$('[data-target-history-tip]')){const show=()=>queueContextMenuTip(cell,cell.dataset.targetHistoryTip);cell.onmouseenter=show;cell.onfocus=()=>queueContextMenuTip(cell,cell.dataset.targetHistoryTip,{focus:true});cell.onmouseleave=cell.onblur=hideContextMenuTip}
+  };
+  $('#targetsHistoryPeriod').onchange=render;$('#targetsHistoryClose').onclick=()=>closeModal();render();
 }
 async function openTargets(){
   if(!await loadTargets()){toast(targetText('load_failed'),4000);return}
@@ -223,13 +243,12 @@ async function openTargets(){
       </section>
       <section class="project-settings-section targets-celebration-section">
         <h3 class="project-settings-section-title">${targetHtml('celebration')}</h3>
-        ${targetsSwitch('banner','banner',draft.banner)}${targetsSwitch('chime','chime',draft.chime)}
+        ${targetsSwitch('chime','chime',draft.chime)}
         <div id="targetsSounds" class="targets-sounds${draft.chime?'':' hidden'}"><div class="field"><label for="targetsSound">${targetHtml('sound')}</label><span class="narration-select"><select id="targetsSound">${targetsModel.sounds.map(name=>`<option${name===draft.sound?' selected':''}>${name}</option>`).join('')}</select><svg class="view-menu-chevron" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4"/></svg></span></div></div>
       </section>
       <section class="project-settings-section targets-history-section" id="targetsHistoryDetails">
-        <button id="targetsHistoryToggle" type="button" class="project-settings-row" aria-expanded="false" aria-controls="targetsHistoryContent"><span><b>${targetHtml('history')}</b><small>${targetHtml('history_summary',{count:i18nNumber(achieved),total:i18nNumber(Object.keys(draft.entries).length)})}</small></span><span class="project-settings-row-caret" aria-hidden="true">›</span></button>
-        <div id="targetsHistoryContent" class="targets-history-content hidden"><div class="targets-history-controls"><label>${targetHtml('history_view')}<select id="targetsHistoryView"><option value="list">${targetHtml('history_list')}</option><option value="chart">${targetHtml('history_chart')}</option></select></label><label id="targetsHistoryPeriodField" class="hidden">${targetHtml('history_period')}<select id="targetsHistoryPeriod">${targetsModel.periods.map(period=>`<option value="${period}">${targetHtml(period)}</option>`).join('')}</select></label></div>
-        <div class="targets-history" tabindex="0" role="region" aria-label="${targetHtml('history')}"><div id="targetsHistoryList">${targetsHistoryRows(history.slice(0,30))}</div><div id="targetsHistoryChart" class="targets-history-chart hidden"></div></div></div>
+        <button id="targetsHistoryToggle" type="button" class="project-settings-row" aria-haspopup="dialog"><span><b>${targetHtml('history')}…</b><small>${targetHtml('history_summary',{count:i18nNumber(achieved),total:i18nNumber(Object.keys(draft.entries).length)})}</small></span><span class="project-settings-row-caret" aria-hidden="true">›</span></button>
+
       </section>
     </div><p id="targetsError" class="small-muted" role="status"></p></form>`,
     `<button id="targetsCancel" class="bare-button">${escapeHtml(i18nSource('Cancel'))}</button><button id="targetsSave" class="soft-button">${escapeHtml(i18nSource('Save'))}</button>`,()=>{closing=true;targetsStopSound();targetsHideTips();hideContextMenuTip()});
@@ -253,11 +272,7 @@ async function openTargets(){
   $('#targetsAdd').onclick=()=>{if($$('[data-target-goal]').length>=8)return;$('#targetsGoalList').insertAdjacentHTML('beforeend',targetsGoalRow({id:uid(),metric:'words',period:'daily',amount:500}));activeGoal=$$('[data-target-goal]').at(-1).dataset.targetGoal;wireRows();$$('[data-target-goal]').at(-1).querySelector('select').focus()};
   $('#targetsGoalSelect').onchange=event=>{activeGoal=event.target.value;syncGoalPicker()};
   $('#targetsSound').onchange=()=>targetsPlaySound($('#targetsSound').value,true);
-  const renderHistory=()=>{
-    const chart=$('#targetsHistoryView').value==='chart';$('#targetsHistoryPeriodField').classList.toggle('hidden',!chart);$('#targetsHistoryList').classList.toggle('hidden',chart);$('#targetsHistoryChart').classList.toggle('hidden',!chart);hideContextMenuTip();
-    if(chart){$('#targetsHistoryChart').innerHTML=targetsHistoryChart(history,$('#targetsHistoryPeriod').value);for(const cell of $$('[data-target-history-tip]')){const show=()=>queueContextMenuTip(cell,cell.dataset.targetHistoryTip);cell.onmouseenter=show;cell.onfocus=()=>queueContextMenuTip(cell,cell.dataset.targetHistoryTip,{focus:true});cell.onmouseleave=cell.onblur=hideContextMenuTip}}
-  };
-  $('#targetsHistoryView').onchange=$('#targetsHistoryPeriod').onchange=renderHistory;$('#targetsHistoryToggle').onclick=()=>{const open=$('#targetsHistoryToggle').getAttribute('aria-expanded')!=='true';$('#targetsHistoryToggle').setAttribute('aria-expanded',String(open));$('#targetsHistoryDetails').classList.toggle('expanded',open);$('#targetsHistoryContent').classList.toggle('hidden',!open);hideContextMenuTip()};
+  $('#targetsHistoryToggle').onclick=()=>{$('#targetsHistoryToggle').focus({preventScroll:true});openTargetsHistory(history)};
   $('#targetsCancel').onclick=()=>closeModal();
   const save=async event=>{
     event?.preventDefault();if(context!==targetsContext()){closeModal();return}
@@ -266,7 +281,7 @@ async function openTargets(){
     const goals=readGoals();
     if(draft.enabled&&goals.some(g=>!Number.isInteger(g.amount)||g.amount<=0||g.amount>100000000)){$('#targetsError').textContent=targetText('invalid');return}
     // A changed goal starts fresh; immutable old snapshots remain in History.
-    draft.goals=goals.map(g=>{const old=original.get(g.id);return old&&(old.metric!==g.metric||old.period!==g.period||old.amount!==g.amount)?{...g,id:uid(),created:Date.now()}:g});draft.sound=$('#targetsSound').value;
+    draft.goals=goals.map(g=>{const old=original.get(g.id);return old&&(old.metric!==g.metric||old.period!==g.period||old.amount!==g.amount)?{...g,id:uid(),created:Date.now()}:g});draft.sound=$('#targetsSound').value;draft.banner=true;
     $('#targetsSave').disabled=true;$('#targetsCancel').disabled=true;$('#modalClose').disabled=true;
     try{
       // The journal serializes the final clock tick before settings, so one
@@ -280,10 +295,13 @@ async function openTargets(){
 for(const [button,tip] of [['targetsTop','targetsTopTip'],['targetsFooter','targetsFooterTip'],['targetsFocus','targetsFocusTip']]){
   $(`#${button}`).onclick=()=>{targetsHideTips();openTargets()};attachManuscriptToolTooltip(button,tip,{delay:300});
 }
-window.addEventListener('blur',()=>{targetsClock();targets.lastActivity=0;targetsStopSound();targetsHideTips();flushTargets().catch(()=>{})});
+window.addEventListener('blur',()=>{targetsClock();targets.lastActivity=0;targetsStopSound();targetsHideTips()});
 window.addEventListener('focus',()=>{targets.lastTick=Date.now();renderTargets();if(targets.ready)flushTargets().catch(()=>{})});
-document.addEventListener('visibilitychange',()=>{targetsClock();targets.lastActivity=0;targets.lastTick=Date.now();if(document.hidden){targetsStopSound();targetsHideTips();flushTargets().catch(()=>{})}});
-window.addEventListener('pagehide',()=>{targetsClock();flushTargets().catch(()=>{})});
+document.addEventListener('visibilitychange',()=>{targetsClock();targets.lastActivity=0;targets.lastTick=Date.now();if(document.hidden){targetsStopSound();targetsHideTips()}else if(targets.ready)flushTargets().catch(()=>{})});
+// Keep the synchronous pre-journal on navigation; a fresh revision read cannot
+// reliably start in an unloading document. Replay safely on reopen/BFCache return.
+window.addEventListener('pagehide',()=>{targetsDeparting=true;targetsClock();targetsStopSound();targetsHideTips()});
+window.addEventListener('pageshow',()=>{targetsDeparting=false;targets.lastTick=Date.now();if(targets.ready)flushTargets().catch(()=>{})});
 window.addEventListener('online',()=>{if(!targets.ready)loadTargets();else flushTargets().catch(()=>{})});
 let targetsHeartbeat=0;
 setInterval(()=>{
