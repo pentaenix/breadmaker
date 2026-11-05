@@ -1,0 +1,38 @@
+{
+  "synthetic": true,
+  "warning": "Invented scratch-installation activity only. V2 workspace minutes are not v1 feature visits or people.",
+  "reports": [
+    {
+      "schema": "bm-installation-synthetic-v2",
+      "installation_id": "00000000-0000-4000-8000-000000000001",
+      "notice_version": "installation-synthetic-preview-2",
+      "app_version": "10.5.66",
+      "bucket_utc_ms": 1800000000000,
+      "sessions": 1,
+      "active_minutes": 2,
+      "workspace_minutes": {
+        "manuscript": 1,
+        "canvas": 2,
+        "maps": 0,
+        "tasks": 0,
+        "reviews": 0
+      }
+    },
+    {
+      "schema": "bm-installation-synthetic-v2",
+      "installation_id": "00000000-0000-4000-8000-000000000001",
+      "notice_version": "installation-synthetic-preview-2",
+      "app_version": "10.5.66",
+      "bucket_utc_ms": 1800001800000,
+      "sessions": 1,
+      "active_minutes": 1,
+      "workspace_minutes": {
+        "manuscript": 0,
+        "canvas": 0,
+        "maps": 1,
+        "tasks": 0,
+        "reviews": 0
+      }
+    }
+  ]
+}

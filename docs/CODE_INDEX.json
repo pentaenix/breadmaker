@@ -5748,6 +5748,27 @@
       "symbols": []
     },
     {
+      "file": "src/app_telemetry/__init__.py",
+      "lines": 1,
+      "symbols": []
+    },
+    {
+      "file": "src/app_telemetry/installation_preview.py",
+      "lines": 204,
+      "symbols": [
+        {
+          "name": "SyntheticBatch",
+          "kind": "class",
+          "line": 26
+        },
+        {
+          "name": "SyntheticInstallationTelemetry",
+          "kind": "class",
+          "line": 31
+        }
+      ]
+    },
+    {
       "file": "src/auth/__init__.py",
       "lines": 0,
       "symbols": []

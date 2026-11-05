@@ -1,5 +1,11 @@
 # Optional free-app telemetry — review checkpoint
 
+For the newer **synthetic local-installation authority**, see
+[`src/app_telemetry/README.md`](../../../../src/app_telemetry/README.md). It models
+shared multi-process ownership, follower-window minute unions, session continuity
+and a persisted delivery budget. Its v2 schema/storage/notice are separate from
+this browser-origin prototype; neither is connected to production.
+
 This foundation is **dormant**. Neither script nor CSS is included in `static/index.html`;
 there is no boot hook, real observation, endpoint, SDK, network implementation,
 deployment, or production consent solicitation. Only synthetic test calls populate
