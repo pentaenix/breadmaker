@@ -30,16 +30,30 @@ def live_server():
     home.mkdir(parents=True,exist_ok=True)
     port=_free_port()
     env=os.environ.copy(); env["BREADMAKER_HOME"]=str(home); env["PYTHONPATH"]=str(APP_ROOT/"src")
-    proc=subprocess.Popen([sys.executable,"-m","uvicorn","app:app","--host","127.0.0.1","--port",str(port),"--log-level","warning"],cwd=APP_ROOT,env=env,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,text=True)
+    # Keep child diagnostics off the console on success, but do not throw away
+    # the only evidence distinguishing a startup crash from an unhealthy server.
+    startup_log=tempfile.TemporaryFile()
+    try:
+        proc=subprocess.Popen([sys.executable,"-m","uvicorn","app:app","--host","127.0.0.1","--port",str(port),"--log-level","info"],cwd=APP_ROOT,env=env,stdout=startup_log,stderr=subprocess.STDOUT,text=True)
+    except BaseException:
+        startup_log.close();raise
     base=f"http://127.0.0.1:{port}"
+    last_health="not attempted";ready=False
     try:
         for _ in range(100):
+            if proc.poll() is not None:break
             try:
-                if requests.get(base+"/api/health",timeout=.25).ok: break
-            except Exception: pass
+                response=requests.get(base+"/api/health",timeout=.25)
+                if response.ok:ready=True;break
+                last_health=f"HTTP {response.status_code}"
+            except Exception as error:last_health=type(error).__name__
             time.sleep(.05)
-        else:
-            proc.terminate(); proc.wait(timeout=2); raise AssertionError("server did not start")
+        if not ready:
+            child_status=proc.poll()
+            if child_status is None:proc.terminate();proc.wait(timeout=2)
+            startup_log.seek(0,os.SEEK_END);size=startup_log.tell();startup_log.seek(max(0,size-8192))
+            diagnostic=startup_log.read().decode("utf-8",errors="replace")
+            raise AssertionError(f"server did not start; child_exit={child_status}; last_health={last_health}\n{diagnostic}")
         yield base
     finally:
         proc.terminate()
@@ -48,7 +62,7 @@ def live_server():
         except subprocess.TimeoutExpired:
             proc.kill(); proc.wait(timeout=5)
         finally:
-            pass
+            startup_log.close()
 
 
 @pytest.fixture(autouse=True)
