@@ -45,6 +45,17 @@ installed Chrome executable; it still must pass the bounded launch/render/close
 probe. Workers are explicitly limited to one or two; this command changes no CI
 or full-suite defaults. `./verify-release` remains the complete release gate.
 
+## Optional local k6 performance checks
+
+Use `./load-test --plan`, then `./load-test --profile smoke --vus 2 --users 2`
+with an existing test virtual environment and installed OSS k6. The runner starts
+its own disposable loopback-only hosted app, seeds synthetic accounts/projects,
+checks reads and mutations, and removes the test data. It accepts no production
+URL and incurs no cloud charges. See [Load testing](LOAD_TESTING.md) for bounded
+concurrency/arrival profiles, population experiments, thresholds and regression
+comparison. Memory-adapter measurements are not production capacity claims.
+These checks supplement the existing release gate and do not add paid CI work.
+
 ## Historical test notes
 
 The material below documents earlier authentication providers, harness changes, and reliability decisions. It should not be treated as the current setup for CI or Identity Platform.
