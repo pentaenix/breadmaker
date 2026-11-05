@@ -227,7 +227,7 @@ def test_v10353_hosted_route_boundary_covers_every_current_local_product_route()
             for route in domain["routes"]:
                 expected.add((str(route["method"]).upper(), str(route["path"])))
     actual = set()
-    for relative in ("src/hosted/http_api.py", "src/hosted/http_compat.py", "src/hosted/http_auth.py", "src/hosted/narration/http.py", "src/hosted/editing_http.py"):
+    for relative in ("src/hosted/http_api.py", "src/hosted/http_compat.py", "src/hosted/http_auth.py", "src/hosted/narration/http.py", "src/hosted/editing_http.py", "src/hosted/readable_export.py"):
         tree = ast.parse((ROOT / relative).read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
