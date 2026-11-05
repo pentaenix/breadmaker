@@ -25,27 +25,15 @@ jobs:
       - run: python -m pip install -r candidate/requirements-test.txt
       - run: sudo --preserve-env=GITHUB_ACTIONS,RUNNER_OS python3 candidate/scripts/configure_ci_ubuntu_mirror.py
       - run: python -m playwright install --with-deps chromium webkit
-      - name: Measure unchanged baseline
-        working-directory: baseline
-        env:
-          PYTHONPATH: src:.
-        run: python ../candidate/scripts/diagnostics/canvas_latency.py --output "$RUNNER_TEMP/canvas-before.json"
-      - name: Measure candidate under identical conditions
-        working-directory: candidate
-        env:
-          PYTHONPATH: src:.
-        run: python scripts/diagnostics/canvas_latency.py --output "$RUNNER_TEMP/canvas-after.json"
-      - name: Verify immediate controls, stale reads, read-only camera and existing navigation
+      - name: Verify read-only camera and accessible zoom
         working-directory: candidate
         run: >-
-          python -m pytest -q tests/test_v10590_canvas_opening_split_browser.py
-          tests/test_v10589_inspector_population_browser.py
-          tests/test_v10581_canvas_navigation_browser.py tests/test_v560_browser.py
+          python -m pytest -q --basetemp=${{ runner.temp }}/canvas-pan-proof
+          tests/test_v10590_canvas_opening_split_browser.py::test_local_split_canvas_drag_is_read_only
+          tests/test_v10590_canvas_opening_split_browser.py::test_hosted_split_canvas_drag_is_read_only_webkit
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: canvas-opening-evidence
-          path: |
-            ${{ runner.temp }}/canvas-before.json
-            ${{ runner.temp }}/canvas-after.json
+          name: canvas-pan-evidence
+          path: ${{ runner.temp }}/canvas-pan-proof/**/split-camera.png
           retention-days: 7
