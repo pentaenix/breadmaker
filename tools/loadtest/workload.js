@@ -17,7 +17,7 @@ const seconds = integer('BREADMAKER_LOAD_SECONDS', 5, 120);
 const arrivalRate = integer('BREADMAKER_LOAD_RATE', 1, 10);
 const profile = __ENV.BREADMAKER_LOAD_PROFILE;
 const workload = __ENV.BREADMAKER_LOAD_WORKLOAD || 'mixed';
-if (!['mixed', 'read-only'].includes(workload)) throw new Error('Invalid workload');
+if (!['mixed', 'read-only', 'single-writer'].includes(workload)) throw new Error('Invalid workload');
 if (!['smoke', 'concurrency', 'arrival'].includes(profile) || fixture.accounts.length < vus) {
   throw new Error('Invalid profile or insufficient distinct synthetic accounts.');
 }
@@ -38,7 +38,7 @@ const thresholds = {
   completed_actions: ['count>0'],
   'http_req_duration{kind:read}': ['p(95)<500', 'p(99)<1000'],
 };
-if (workload === 'mixed') {
+if (workload !== 'read-only') {
   thresholds['http_req_duration{op:chapter_save}'] = ['p(95)<1000', 'p(99)<2000'];
   thresholds['http_req_duration{op:map_create}'] = ['p(95)<1500', 'p(99)<3000'];
 }
@@ -103,7 +103,8 @@ export default function () {
   const account = fixture.accounts[exec.vu.idInTest - 1];
   const iteration = exec.vu.iterationInScenario;
   const cid = account.chapter_ids[iteration % account.chapter_ids.length];
-  const slot = (iteration + exec.vu.idInTest - 1) % (workload === 'read-only' ? 7 : 10);
+  const readOnly = workload === 'read-only' || (workload === 'single-writer' && exec.vu.idInTest !== 1);
+  const slot = (iteration + exec.vu.idInTest - 1) % (readOnly ? 7 : 10);
   let action;
   try {
     if (slot < 5) {

@@ -131,6 +131,54 @@ and map listing. It uses the same session/authority boundary and applies read
 thresholds without requiring mutation samples. Keep this distinct from a mixed
 capacity test; regression comparison rejects different workloads.
 
+`--workload single-writer` gives VU 1 the mixed cycle while the other VUs only
+read. It isolates read traffic around one writing user from concurrent writers.
+Its write rate is lower than `mixed`; it cannot establish multi-writer capacity
+or substitute for a failed mixed run. Both modes keep the same latency/error
+gates and bounds.
+
+### Isolating emulator query locks
+
+The inspected emulator/SDK combination reproduced transaction-lock aborts with
+native SDK queries under five **disjoint parent paths** sharing the child
+collection ID `blocks`. Returned document paths and recorded RunQuery parent
+fields stayed scoped to each worker, with no cross-worker read/write document
+overlap. Point reads, batch reads and queries over distinct collection IDs did
+not reproduce the failure. Distinct filter values in the same collection ID
+still failed. Running the query outside the transaction also avoided it in a
+diagnostic control. The failure therefore does not require Breadmaker's HTTP,
+domain, session or adapter operations. This supports an emulator collection-query
+locking explanation; it is not production capacity evidence or proof about a
+specific emulator internal implementation.
+
+Run the bounded controls with the same verified local prerequisites:
+
+```sh
+"$BREADMAKER_TEST_PYTHON" tools/loadtest/diagnose_firestore.py \
+  --emulator-jar /absolute/local/path/firestore-1.22.0.jar \
+  --java /absolute/path/to/java21-or-later/bin/java \
+  --results .loadtest-results/query-lock-controls
+```
+
+The default is nine distinct controls, each with a fresh owned emulator, five
+workers and at most four transactions per worker. A worker stops after its first
+error. Transaction controls permit one attempt and a three-second Commit RPC
+deadline to expose provider aborts without retry amplification; each child has a
+40-second watchdog. Normal k6 application runs retain the application's existing
+retry behavior and five-second HTTP deadline. The controls record valid provider
+errors separately from invalid probe errors, actual query parents, document
+paths and cleanup evidence. `--cases sdk_point sdk_query` selects a bounded
+subset; duplicates are rejected. Observed transaction failures make the command
+exit nonzero even when evidence collection and cleanup complete successfully.
+
+The renamed-collection and outside-transaction cases are diagnostic controls.
+Do not change production collection names, move authoritative reads outside a
+transaction, or relax correctness/latency gates to turn an emulator test green.
+The application's chapter save must continue checking the complete chapter set,
+membership and expected project revision atomically. Keep failed multi-writer
+results distinct from passing read-only or single-writer results, and confirm
+actual hosted behavior only through a separately authorized bounded experiment.
+
 Emulator transactions and query RPCs replace the memory adapter's whole-store
 copy and global scan behavior. They still do not reproduce production indexes,
 quotas, distributed contention, cold starts, IAM, network/region latency, KMS or

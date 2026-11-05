@@ -36,7 +36,7 @@ def parser():
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument('--profile', choices=['smoke', 'concurrency', 'arrival'], default='smoke')
     result.add_argument('--adapter', choices=['memory', 'firestore-emulator'], default='memory')
-    result.add_argument('--workload', choices=['mixed', 'read-only'], default='mixed')
+    result.add_argument('--workload', choices=['mixed', 'read-only', 'single-writer'], default='mixed')
     result.add_argument('--emulator-jar', type=Path, help='Explicit locally installed, pinned official emulator JAR')
     result.add_argument('--java', default='java', help='Java 21+ executable; used only for the emulator')
     result.add_argument('--lifecycle-fence', action='store_true', help='Enable the same account lifecycle fence on memory comparisons')
