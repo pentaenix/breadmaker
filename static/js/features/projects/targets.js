@@ -269,7 +269,9 @@ async function openTargets(){
     draft.goals=goals.map(g=>{const old=original.get(g.id);return old&&(old.metric!==g.metric||old.period!==g.period||old.amount!==g.amount)?{...g,id:uid(),created:Date.now()}:g});draft.sound=$('#targetsSound').value;
     $('#targetsSave').disabled=true;$('#targetsCancel').disabled=true;$('#modalClose').disabled=true;
     try{
-      targetsClock();await flushTargets();targetsEnqueue({},Date.now(),draft);await flushTargets();
+      // The journal serializes the final clock tick before settings, so one
+      // revision-aware flush commits both in order without a spare hosted read.
+      targetsClock();targetsEnqueue({},Date.now(),draft);await flushTargets();
       if(!closing&&context===targetsContext())closeModal();
     }catch(error){if(!closing){$('#targetsError').textContent=targetText('save_failed');$('#targetsSave').disabled=false;$('#targetsCancel').disabled=false;$('#modalClose').disabled=false}}
   };
