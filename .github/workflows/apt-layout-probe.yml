@@ -1,0 +1,27 @@
+name: apt-layout-probe
+on:
+  push:
+    branches: [diag/apt-layout-20261105]
+permissions:
+  contents: read
+jobs:
+  inspect-apt:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Read public runner APT configuration without modification
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          from urllib.parse import urlsplit
+          def clean(match):
+              value=urlsplit(match.group(0))
+              return f'{value.scheme}://{value.hostname}{value.path}'
+          for name in ['/etc/os-release','/etc/apt/apt-mirrors.txt','/etc/apt/sources.list','/etc/apt/sources.list.d/ubuntu.sources']:
+              p=Path(name)
+              print('APT_PROBE_FILE',name,'exists',p.exists())
+              if p.exists():
+                  text=p.read_text()[:16000]
+                  print(re.sub(r'(?:https?|mirror\+file)://[^\s]+',clean,text))
+          PY
