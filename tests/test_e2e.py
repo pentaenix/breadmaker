@@ -773,7 +773,9 @@ def test_browser_v42_connector_endpoint_style_retarget_and_drag_create(live_serv
         page.locator('[data-edge-choice="line_width"][data-edge-value="4"]').click()
         page.locator('#edgeColorChoice').select_option('custom')
         page.locator('#edgeColorCustom').fill('#223344'); page.locator('#edgeColorCustom').dispatch_event('change')
-        page.wait_for_timeout(650)
+        # Each inspector edit joins the same serialized save queue. Read the
+        # actual stored result after that queue settles, regardless of latency.
+        page.evaluate('()=>state.edgeSaveChain.then(()=>true)')
         saved=requests.get(live_server+f"/api/canvases/{created['canvas']}",timeout=5).json()['edges'][0]
         assert saved['to_node_id']==created['b']
         assert saved['color']=='#223344'
