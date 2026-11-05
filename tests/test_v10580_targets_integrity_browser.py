@@ -50,6 +50,10 @@ def _exercise_targets_revision_is_checked_inside_the_store_transaction(tmp_path,
 
 def _exercise_targets_independent_devices_retry_a_forced_atomic_merge_conflict(tmp_path,local,shared_tab=False):
     with browser(tmp_path,local=local) as (base,page,pid):
+        # This race uses explicit captured intervals. Real focus-clock activity
+        # can add unrelated PUTs/conflicts while the two test writes are held.
+        quiet_clock="Object.defineProperty(document,'hasFocus',{configurable:true,value:()=>false})"
+        page.context.add_init_script(quiet_clock);page.evaluate(quiet_clock)
         add_word_goal(page)
         interval=page.evaluate("""async()=>{const settings=structuredClone(targets.doc);settings.goals.push({id:uid(),metric:'time',period:'daily',amount:600,created:Date.now()});targetsEnqueue({},Date.now(),settings);await flushTargets();const end=targetsModel.period('daily').end;return [end-3000,end-1000]}""")
         context=None
@@ -59,7 +63,7 @@ def _exercise_targets_independent_devices_retry_a_forced_atomic_merge_conflict(t
         else:
             context=page.context.browser.new_context()
             # Share only the test editing lease; IDB and stream IDs are isolated.
-            context.add_init_script('sessionStorage.setItem("breadmaker-client-id",'+json.dumps(page.evaluate('CLIENT_ID'))+')')
+            context.add_init_script('sessionStorage.setItem("breadmaker-client-id",'+json.dumps(page.evaluate('CLIENT_ID'))+');'+quiet_clock)
             other=context.new_page()
         try:
             other.goto(base+'/p/'+pid);other.wait_for_function('()=>targets.ready')
