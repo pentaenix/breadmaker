@@ -7770,7 +7770,7 @@
     },
     {
       "file": "src/formats/readable_archive.py",
-      "lines": 151,
+      "lines": 157,
       "symbols": [
         {
           "name": "_page",
@@ -7790,7 +7790,7 @@
         {
           "name": "write_readable_archive",
           "kind": "function",
-          "line": 131
+          "line": 137
         }
       ]
     },
@@ -12447,7 +12447,7 @@
     },
     {
       "file": "src/hosted/readable_source.py",
-      "lines": 92,
+      "lines": 96,
       "symbols": [
         {
           "name": "_rows",

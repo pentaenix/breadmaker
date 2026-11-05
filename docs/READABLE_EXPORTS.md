@@ -41,6 +41,11 @@ inline formatting uses the canonical sanitizer. Credentials, installations and a
 membership authority remain excluded by the existing portable-project policy. Temporary
 snapshot/archive files are cleaned after download or failure.
 
+Hosted-v3 snapshots name asset members with their full content hash. Readable
+copies use the existing `img_<24 hash characters>` manuscript asset names, with
+validated one-to-one aliases and collision refusal. The included recovery package
+retains its original member names and bytes.
+
 `formats/manuscript_docx.py` now owns the shared Word renderer used by local export,
 hosted export and ZIP copies. Semantic headings, bold, italics, underline, tabs, line
 breaks, supported images, image rows, widths, captions and descriptions are retained.

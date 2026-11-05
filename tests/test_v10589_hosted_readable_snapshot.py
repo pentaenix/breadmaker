@@ -50,6 +50,8 @@ def test_readable_hosted_sparse_canvas_map_and_frozen_history_restore_unchanged(
         assert len([n for n in archive.namelist() if n.endswith('.docx')])==2
         docs=[Document(io.BytesIO(archive.read(n))) for n in archive.namelist() if n.endswith('.docx')]
         assert sum(len(doc.inline_shapes) for doc in docs)==1
+        html=''.join(archive.read(n).decode() for n in archive.namelist() if n.startswith('documents/') and n.endswith('.html'))
+        assert '../assets/'+saved.api_path.rsplit('/',1)[-1] in html
         reference=json.loads(archive.read('data/project-content.json'))['tables']
         assert reference['canvases'][0]['name']=='Sparse canvas'
         assert reference['map_lines'][0]['title']=='Main'

@@ -92,13 +92,19 @@ def _document_copies(tab,chapters,blocks,asset_names):
     return _page(tab.get('title') or 'Document',''.join(chunks)), '\n\n'.join(plain)+'\n'
 
 
-def write_snapshot_copies(package,destination,source,title,tabs,chapters,blocks,content,*,restore_in_web=False):
+def write_snapshot_copies(package,destination,source,title,tabs,chapters,blocks,content,*,restore_in_web=False,asset_aliases=None):
     """Write readable copies from an already frozen, validated snapshot."""
     asset_entries=[name for name in source.namelist() if name.startswith('assets/') and not name.endswith('/')]
-    asset_names={entry.split('/')[1] for entry in asset_entries}
+    aliases=asset_aliases if asset_aliases is not None else {entry:entry for entry in asset_entries}
+    if set(aliases)!=set(asset_entries) or len(set(aliases.values()))!=len(aliases):
+        raise ValueError('READABLE_EXPORT_ASSET_ALIAS_INVALID')
+    if any(not is_safe_project_asset_path('/api/'+name) for name in aliases.values()):
+        raise ValueError('READABLE_EXPORT_UNSAFE_ASSET_NAME')
+    asset_sources={name.split('/')[1]:entry for entry,name in aliases.items()}
+    asset_names=set(asset_sources)
     def read_asset(path):
         if not is_safe_project_asset_path(path):raise ValueError('READABLE_EXPORT_UNSAFE_ASSET_PATH')
-        return source.read('assets/'+path.rsplit('/',1)[-1])
+        return source.read(asset_sources[path.rsplit('/',1)[-1]])
     readme=_README
     if restore_in_web:
         readme=readme.replace('Project.breadmaker is the original portable project snapshot. Import that file\nthrough Breadmaker > Import > Breadmaker Project to restore project features.',
@@ -121,8 +127,8 @@ def write_snapshot_copies(package,destination,source,title,tabs,chapters,blocks,
                 links.append('<li>'+html.escape(doc_title)+': '+ ' · '.join('<a href="'+html.escape(quote(path+'.'+ext),quote=True)+'">'+label+'</a>' for ext,label in [('html','Read'),('docx','Word'),('txt','Text')])+'</li>')
             archive.writestr('START-HERE.html',_page(title,'<h1>'+html.escape(title)+'</h1><ul>'+''.join(links)+'</ul><p>Read README.txt for contents, restoration and format limitations.</p>'))
             archive.writestr('data/project-content.json',json.dumps({'format':'breadmaker-readable-reference','version':1,'title':title,'tables':content},ensure_ascii=False,indent=2)+'\n')
-            for entry in asset_entries:
-                with source.open(entry) as incoming,archive.open(entry,'w') as outgoing:shutil.copyfileobj(incoming,outgoing)
+            for entry,name in aliases.items():
+                with source.open(entry) as incoming,archive.open(name,'w') as outgoing:shutil.copyfileobj(incoming,outgoing)
     except Exception:
         destination.unlink(missing_ok=True);raise
     return file_stem(title)

@@ -88,5 +88,9 @@ def write_hosted_readable_archive(package,destination):
                 raise ValueError('HOSTED_READABLE_ASSET_HASH_MISMATCH')
         content={table:_rows(document['entities'],logical,manifest.get('source_project_id')) for logical,table in _REFERENCE_ENTITIES.items()}
         tabs,chapters,blocks=_documents(content)
+        # Hosted-v3 stores full-hash filenames; normal hosted manuscript paths
+        # use img_<first 24 hash chars>. Match those references in readable files
+        # without rewriting even one byte of the included recovery snapshot.
+        aliases={name:'assets/img_'+name.split('/')[1][:24]+'.'+name.rsplit('.',1)[1] for name in assets}
         return write_snapshot_copies(package,destination,source,str(manifest.get('title') or 'Untitled'),
-            tabs,chapters,blocks,content,restore_in_web=True)
+            tabs,chapters,blocks,content,restore_in_web=True,asset_aliases=aliases)
