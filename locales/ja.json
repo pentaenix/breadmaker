@@ -3661,7 +3661,8 @@
     "export.zip.creating": "ZIPを作成中…",
     "export.zip.ready": "ZIPを書き出しました",
     "export.zip.failed": "ZIPの書き出しに失敗しました。",
-    "export.zip.project_changed": "使用中のプロジェクトが変更されました。書き出しを開き直してください。"
+    "export.zip.project_changed": "使用中のプロジェクトが変更されました。書き出しを開き直してください。",
+    "canvas.links_retry": "再試行"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",
