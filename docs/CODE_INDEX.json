@@ -18302,7 +18302,7 @@
     },
     {
       "file": "static/js/features/manuscript/annotations.js",
-      "lines": 503,
+      "lines": 523,
       "symbols": [
         {
           "name": "markupSelectionItems",
@@ -19027,82 +19027,82 @@
         {
           "name": "markerMenuItems",
           "kind": "function",
-          "line": 444
+          "line": 464
         },
         {
           "name": "openMarkerMenu",
           "kind": "function",
-          "line": 445
+          "line": 465
         },
         {
           "name": "editMarker",
           "kind": "function",
-          "line": 450
+          "line": 470
         },
         {
           "name": "ensureSavedSelection",
           "kind": "function",
-          "line": 451
+          "line": 471
         },
         {
           "name": "annotationPayloadItem",
           "kind": "function",
-          "line": 452
+          "line": 472
         },
         {
           "name": "applyAnnotation",
           "kind": "function",
-          "line": 453
+          "line": 473
         },
         {
           "name": "clearMarkerHighlights",
           "kind": "function",
-          "line": 454
+          "line": 474
         },
         {
           "name": "useClearMarkers",
           "kind": "function",
-          "line": 455
+          "line": 475
         },
         {
           "name": "useMarker",
           "kind": "function",
-          "line": 460
+          "line": 480
         },
         {
           "name": "markerSelectionKey",
           "kind": "function",
-          "line": 467
+          "line": 487
         },
         {
           "name": "applyActiveMarkupSelection",
           "kind": "function",
-          "line": 468
+          "line": 488
         },
         {
           "name": "navigateMarker",
           "kind": "function",
-          "line": 471
+          "line": 491
         },
         {
           "name": "commentSelection",
           "kind": "function",
-          "line": 475
+          "line": 495
         },
         {
           "name": "paintMarkerHighlights",
           "kind": "function",
-          "line": 476
+          "line": 496
         },
         {
           "name": "markerRangeFromOffsets",
           "kind": "function",
-          "line": 486
+          "line": 506
         },
         {
           "name": "rangeFromOffsets",
           "kind": "function",
-          "line": 501
+          "line": 521
         }
       ]
     },

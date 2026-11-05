@@ -439,7 +439,27 @@ function wireMarkerColor(){const picker=$('#markerColor'),text=$('#markerColorTe
 function newMarkerDialog(arg=null){
   const callback=typeof arg==='function'?arg:null,items=callback?null:(arg?.items||null),selected=items?.length?items:null,confirm=selected?'Create & highlight':'Create';
   showNestedModal('New Marker',markerForm(),`<button id="createMarkerConfirm">${confirm}</button>`);wireMarkerColor();
-  $('#createMarkerConfirm').onclick=async()=>{const name=$('#markerName').value.trim(),description=$('#markerDescription').value.trim(),color=$('#markerColorText').value.trim().toLowerCase(),problem=markerValidation(name,color);if(problem){toast(problem);return}let marker;try{await withStructuralUndo(`Create marker: ${name}`,async()=>{marker=await api('/api/labels',{method:'POST',body:JSON.stringify({name,description,color})})},{view:currentView(),chapterId:state.chapter?.id,canvasId:state.currentCanvas?.id})}catch(error){toast(error.message||'Marker could not be created.');return}closeModal();await refresh(false);renderMarkers();callback?.(marker);if(selected?.length){rememberMarkupMarkerUse(marker.id);await applyAnnotation('highlight',selected,marker.id,'');toast(i18nText('markup.highlighted_with',{name:marker.name}))}};
+  const button=$('#createMarkerConfirm'),frame=modalRevision,project=currentProjectIdentity(),user=currentUserIdentity();let pending=false;
+  button.onclick=async()=>{
+    if(pending||frame!==modalRevision||project!==currentProjectIdentity()||user!==currentUserIdentity())return;
+    const name=$('#markerName').value.trim(),description=$('#markerDescription').value.trim(),color=$('#markerColorText').value.trim().toLowerCase(),problem=markerValidation(name,color);
+    if(problem){toast(problem);return}
+    pending=true;button.disabled=true;
+    try{
+      let marker;await withStructuralUndo(`Create marker: ${name}`,async()=>{marker=await api('/api/labels',{method:'POST',body:JSON.stringify({name,description,color})})},{view:currentView(),chapterId:state.chapter?.id,canvasId:state.currentCanvas?.id});
+      if(project!==currentProjectIdentity()||user!==currentUserIdentity())return;
+      // Like icon-marker creation, reconcile the committed row directly. A full
+      // bootstrap here can finish after the next action and erase its UI state.
+      const existing=state.markers.find(item=>entityId(item.id)===entityId(marker.id));
+      if(existing)Object.assign(existing,marker);else state.markers.push(marker);
+      state.markers.sort((a,b)=>a.name.localeCompare(b.name));renderMarkers();renderLegendDrawer();
+      if(frame!==modalRevision)return;
+      closeModal();callback?.(marker);
+      if(selected?.length){rememberMarkupMarkerUse(marker.id);await applyAnnotation('highlight',selected,marker.id,'');toast(i18nText('markup.highlighted_with',{name:marker.name}))}
+    }catch(error){if(frame===modalRevision)toast(error.message||'Marker could not be created.')}
+    finally{pending=false;button.disabled=false}
+  };
+
 }
 function markerMenuItems(id){return[{label:'Navigate',action:()=>navigateMarker(id)},{label:i18nText(markerIsHidden(id)?'marker.show_highlights':'marker.hide_highlights'),action:()=>toggleMarkerVisibility(id)},{label:'Details',action:()=>editMarker(id)},{label:'Delete',danger:true,action:()=>editMarker(id,true)}]}
 function openMarkerMenu(event,id){
