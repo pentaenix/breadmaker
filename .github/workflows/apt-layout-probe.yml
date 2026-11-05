@@ -8,6 +8,9 @@ jobs:
   inspect-apt:
     runs-on: ubuntu-24.04
     timeout-minutes: 3
+    strategy:
+      matrix:
+        sample: [1, 2, 3]
     steps:
       - name: Read public runner APT configuration without modification
         run: |
