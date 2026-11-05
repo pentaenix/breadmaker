@@ -25,7 +25,7 @@ def _inline(paragraph, fragment, text):
     soup=BeautifulSoup(sanitize_inline_html(fragment or '', text or ''),'html.parser')
     def walk(node,bold=False,italic=False,underline=False):
         if isinstance(node,NavigableString):
-            run=paragraph.add_run(str(node));run.bold=bold;run.italic=italic;run.underline=underline
+            run=paragraph.add_run(str(node));run.bold=bold or None;run.italic=italic or None;run.underline=underline or None
         elif node.name=='br':
             paragraph.add_run().add_break()
         else:

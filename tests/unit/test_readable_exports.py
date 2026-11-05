@@ -36,3 +36,18 @@ def test_archive_rejects_asset_traversal_before_opening_database(tmp_path):
     with pytest.raises(ValueError,match='READABLE_EXPORT_UNSAFE_ASSET_NAME'):
         write_readable_archive(source,output)
     assert not output.exists() and not (tmp_path/'outside.png').exists()
+
+
+def test_word_subheadings_inherit_heading_style_while_preserving_inline_emphasis():
+    from io import BytesIO
+    from docx import Document
+    from formats.manuscript_docx import docx_bytes
+    blocks=[{'id':1,'chapter_id':1,'semantic_style':'heading2',
+        'text_content':'Subheading emphasis','content_html':'Subheading <em>emphasis</em>'}]
+    raw=docx_bytes('Synthetic',[{'id':1,'is_manuscript':True}],
+        [{'id':1,'tab_id':1,'title':'Chapter'}],blocks,lambda path:b'')
+    paragraph=next(p for p in Document(BytesIO(raw)).paragraphs if p.text=='Subheading emphasis')
+    assert paragraph.style.name=='Heading 2' and paragraph.style.font.bold
+    # Explicit False overrides Word's heading style and made headings lose bold.
+    assert all(run.bold is None for run in paragraph.runs)
+    assert next(run for run in paragraph.runs if run.text=='emphasis').italic
