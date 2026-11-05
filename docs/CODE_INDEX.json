@@ -14957,7 +14957,7 @@
     },
     {
       "file": "static/js/features/app_telemetry/consent.js",
-      "lines": 41,
+      "lines": 45,
       "symbols": [
         {
           "name": "mountAppTelemetryConsentPreview",
@@ -14990,15 +14990,51 @@
           "line": 37
         },
         {
+          "name": "openSettingsOverview",
+          "kind": "function",
+          "line": 38
+        },
+        {
           "name": "sync",
           "kind": "function",
-          "line": 39
+          "line": 43
+        }
+      ]
+    },
+    {
+      "file": "static/js/features/app_telemetry/coordinator.js",
+      "lines": 53,
+      "symbols": [
+        {
+          "name": "createAppTelemetryCoordinatorPreview",
+          "kind": "function",
+          "line": 5
+        },
+        {
+          "name": "dispose",
+          "kind": "function",
+          "line": 7
+        },
+        {
+          "name": "sync",
+          "kind": "function",
+          "line": 16
+        },
+        {
+          "name": "acquire",
+          "kind": "function",
+          "line": 19
+        },
+        {
+          "name": "isOwner",
+          "kind": "function",
+          "line": 44
         }
       ]
     },
     {
       "file": "static/js/features/app_telemetry/foundation.js",
-      "lines": 91,
+      "lines": 92,
       "symbols": [
         {
           "name": "createAppTelemetryFoundation",

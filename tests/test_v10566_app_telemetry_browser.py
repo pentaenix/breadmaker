@@ -38,8 +38,9 @@ def telemetry_preview(home):
         page = context.new_page()
         page.goto(base, wait_until='domcontentloaded', timeout=8000)
         page.wait_for_function('()=>document.documentElement.dataset.breadmakerBootReady==="true"')
+        assert page.evaluate('typeof createAppTelemetryFoundation')=='undefined'
         page.add_style_tag(url=base+'/static/css/app_telemetry/consent.css')
-        for name in ('foundation.js','consent.js'):
+        for name in ('foundation.js','coordinator.js','consent.js'):
             page.add_script_tag(url=base+'/static/js/features/app_telemetry/'+name)
         page.evaluate('''()=>{
           window.telemetryClient=createAppTelemetryFoundation({storage:localStorage,appVersion:'10.5.66'});
@@ -140,3 +141,46 @@ def test_banner_and_settings_fit_with_manuscript_panel_at_desktop_and_mobile_wid
         page.locator('#modalClose').click();page.evaluate('telemetryUI.openSettings()')
         actual=page.locator('.structure-switch').bounding_box()
         assert actual['width']==reference['width'] and actual['height']==reference['height']
+
+
+def test_preview_settings_row_returns_to_overview_after_withdrawal(tmp_path):
+    with telemetry_preview(tmp_path) as page:
+        page.get_by_role('button',name='Allow app usage',exact=True).click()
+        page.evaluate('telemetryUI.openSettingsOverview()')
+        page.locator('#appTelemetrySettingsRow').click()
+        expect(page.get_by_role('switch')).to_have_attribute('aria-checked','true')
+        page.get_by_role('switch').click()
+        assert page.evaluate('telemetryClient.consent()')=='declined'
+        page.locator('#modalClose').click()
+        expect(page.locator('#appTelemetrySettingsRow')).to_be_visible()
+        page.locator('#appTelemetrySettingsRow').click()
+        expect(page.get_by_role('switch')).to_have_attribute('aria-checked','false')
+
+
+def test_real_browser_lock_excludes_second_tab_then_hands_over_and_revokes(tmp_path):
+    with telemetry_preview(tmp_path) as page:
+        page.get_by_role('button',name='Allow app usage',exact=True).click()
+        page.evaluate('window.owner=createAppTelemetryCoordinatorPreview(telemetryClient,{locks:navigator.locks,events:window})')
+        assert page.evaluate('owner.acquire()') is True
+        assert page.evaluate('owner.startSyntheticSession()') is True
+        other=page.context.new_page()
+        try:
+            other.goto(page.url,wait_until='domcontentloaded')
+            other.wait_for_function('()=>document.documentElement.dataset.breadmakerBootReady==="true"')
+            for name in ('foundation.js','coordinator.js'):
+                other.add_script_tag(url=page.url+'static/js/features/app_telemetry/'+name)
+            other.evaluate('window.client=createAppTelemetryFoundation({storage:localStorage});window.owner=createAppTelemetryCoordinatorPreview(client,{locks:navigator.locks,events:window})')
+            assert other.evaluate('owner.acquire()') is False
+            assert other.evaluate('owner.recordSyntheticMinute()') is False
+            assert other.evaluate('client.snapshot().length')==0
+            page.evaluate('owner.dispose()')
+            assert page.evaluate('telemetryClient.snapshot().length')==0
+            other.wait_for_function('()=>owner.acquire()')
+            assert other.evaluate('owner.recordSyntheticMinute()') is True
+            # Withdraw from the original tab; real storage events stop the new owner.
+            page.evaluate('telemetryClient.setConsent(false)')
+            other.wait_for_function('()=>!owner.isOwner()')
+            assert other.evaluate('client.snapshot().length')==0
+            assert other.evaluate('owner.acquire()') is False
+        finally:
+            other.close()

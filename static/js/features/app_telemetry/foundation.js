@@ -21,8 +21,8 @@ function createAppTelemetryFoundation({storage, now=Date.now, randomUUID=()=>cry
       return value;
     } catch {return null}
   }
-  function clear(){
-    queue=[];sessionStarted=false;lastAttempt=-Infinity;generation++;
+  function clear(preserveBudget=false){
+    queue=[];sessionStarted=false;if(!preserveBudget)lastAttempt=-Infinity;generation++;
     if(pending){pending.controller.abort();pending.finish(false);pending=null}
   }
   function consent(){
@@ -85,6 +85,7 @@ function createAppTelemetryFoundation({storage, now=Date.now, randomUUID=()=>cry
   consent();
   return Object.freeze({consent,setConsent,startSyntheticSession,recordSyntheticMinute,recordSyntheticFeature,
     snapshot,deliverToSyntheticSink,syncConsent(){consent();notify()},
+    discardUnsent(){clear(true)},
     subscribe(fn){listeners.add(fn);return ()=>listeners.delete(fn)},
     dispose(){clear();disposed=true;listeners.clear()},
     limits:Object.freeze({bucketMs,ttlMs,maxQueue,batchSize,maxBatchBytes:4096,minDeliveryIntervalMs:bucketMs})});

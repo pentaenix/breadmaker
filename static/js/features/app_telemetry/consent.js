@@ -35,7 +35,11 @@ function mountAppTelemetryConsentPreview(client,{host=document.body}={}) {
     button.onclick=()=>{choose(client.consent()!=='granted');syncSwitch()};
   }
   function syncSwitch(){const button=$('#appTelemetrySwitch');if(button){const enabled=client.consent()==='granted';button.classList.toggle('active',enabled);button.setAttribute('aria-checked',String(enabled))}}
+  function openSettingsOverview(){
+    showModal('Settings',projectSettingsRow('appTelemetrySettingsRow','App usage','Choose whether to share optional app usage with Breadmaker.'),'');
+    $('#appTelemetrySettingsRow').onclick=()=>{closeModal(false);openSettings(()=>setTimeout(openSettingsOverview,0))};
+  }
   const unsubscribe=client.subscribe(()=>{render();syncSwitch()});
   const sync=()=>client.syncConsent();window.addEventListener('storage',sync);render();
-  return Object.freeze({openSettings,dispose(){unsubscribe();window.removeEventListener('storage',sync);banner?.remove()}});
+  return Object.freeze({openSettings,openSettingsOverview,dispose(){unsubscribe();window.removeEventListener('storage',sync);banner?.remove()}});
 }

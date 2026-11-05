@@ -11,6 +11,31 @@ real shared `showModal`, `soft-button`, `ui-close-button`,
 `project-settings-switch-row` and 34×20 `structure-switch` patterns.
 The only new CSS geometry is the requested bottom banner.
 
+`coordinator.js` adds an explicit synthetic single-owner preview. Construct it only
+after opting in, with `{locks:navigator.locks,events:window}`, and call `acquire()`.
+All synthetic observation and sink calls must then go through the coordinator.
+One origin/profile can hold the exclusive lock at a time; other tabs make no
+observations and do not forward activity. Missing/denied Web Locks means no owner
+and no reports. Acquisition never waits behind another tab; the local 500 ms
+deadline rejects late callbacks. There is no lock stealing, polling or automatic
+acquisition. This follows the [Web Locks API](https://www.w3.org/TR/web-locks/)
+exclusive ownership model. The implementation does not combine the incompatible
+`ifAvailable` and `signal` lock options.
+
+Withdrawal/storage events and page hiding due to navigation (`pagehide`) dispose
+ownership, cancel a pending synthetic sink and discard unsent reports. Explicit
+`dispose()` does the same without changing the user's saved choice. The remaining
+client retains its per-instance delivery cooldown. A different tab can explicitly
+acquire after release; its new in-memory queue starts empty. A restored page needs
+a new coordinator after checking consent again.
+
+This is browser coordination, not native installation ownership. Follower activity
+is deliberately omitted, session continuity is not carried across owners, and a
+new owner's separate client does not inherit the old owner's delivery cooldown.
+Consequently native multi-window session/minute deduplication, a shared delivery
+budget across owner changes and foreground/idle rules remain activation blockers.
+No production telemetry hooks are attached to focus, visibility, input or saves.
+
 ## Consent behavior
 
 - Initially pending/off. No random identifier, observations, reports or delivery
@@ -37,6 +62,10 @@ final privacy notice. English wording is provisional; translations must be
 reviewed before users are asked to consent. The future Settings row should use
 `projectSettingsRow` and existing child-dialog navigation, including recovery and
 zero-project states. This checkpoint does not modify that shared integration file.
+
+`telemetryUI.openSettingsOverview()` previews that complete route with the existing
+`projectSettingsRow` and child-dialog return pattern: Settings → App usage → switch
+→ close back to Settings. It creates no production Settings entry.
 
 ## Exact report fields
 
@@ -137,7 +166,17 @@ The tests cover refusal, close, keyboard consent, withdrawal, no reports on cons
 alone, continued writing, shared switch geometry, desktop/narrow/mobile layouts
 with a Manuscript panel open, and light/dark themes.
 
-Checkpoint validation: 10 Node foundation cases passed; the focused pytest run
+Initial checkpoint validation: 10 Node foundation cases passed; the focused pytest run
 passed all 5 entries (the Node wrapper plus 4 browser cases) in 12.15 seconds.
 JavaScript syntax and diff whitespace checks passed. New browser coverage is in
 the existing release discovery lane. The full release gate was not run.
+
+Follow-up checkpoint (2026-11-05): 17 deterministic Node cases and their pytest
+wrapper passed. All 6 browser cases passed, including actual two-tab lock
+exclusion/handover/withdrawal and the complete Settings return route. Browser
+startup asserts the foundation is absent before explicit preview injection.
+Additional deterministic cases cover unsupported/failed/timed-out coordination,
+late lock callbacks, unexpected granted-lock loss, pagehide cleanup, and delivery
+cooldown across report discard after a wall-clock rollback. Syntax and whitespace
+checks passed. The full release gate remains unrun; no runtime activation or
+deployment occurred.
