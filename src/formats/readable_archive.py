@@ -108,7 +108,8 @@ def write_snapshot_copies(package,destination,source,title,tabs,chapters,blocks,
     readme=_README
     if restore_in_web:
         readme=readme.replace('Project.breadmaker is the original portable project snapshot. Import that file\nthrough Breadmaker > Import > Breadmaker Project to restore project features.',
-            'Project.breadmaker is the original hosted project snapshot. Import that file\nthrough Breadmaker web app > Import > Breadmaker Project to restore project\nfeatures. This hosted recovery file is not a desktop-native project package.')
+            'Project.breadmaker is the original hosted project snapshot. Import that file\nthrough Breadmaker web app > Import > Breadmaker Project to restore project\nfeatures. This hosted recovery file is not a desktop-native project package.\n\n'
+            'Web restore has a 64 MiB application file cap (67,108,864 bytes), or a\nlower configured cap. Hosting services may impose smaller upload limits:\nCloud Run with HTTP/1 limits each request to 32 MiB, including upload overhead.\nA file near or above that size may not upload. Other package safety limits\nalso apply. Larger recovery files remain preserved in this ZIP, but are not\nguaranteed restorable through the current web import dialog. The Word, HTML\nand text copies can be opened independently.')
     try:
         with zipfile.ZipFile(destination,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as archive:
             archive.write(package,'Project.breadmaker',compress_type=zipfile.ZIP_STORED)
