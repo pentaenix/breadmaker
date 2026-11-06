@@ -11375,57 +11375,57 @@
     },
     {
       "file": "src/hosted/local_portability.py",
-      "lines": 503,
+      "lines": 505,
       "symbols": [
         {
           "name": "LocalPortabilityError",
           "kind": "class",
-          "line": 60
+          "line": 61
         },
         {
           "name": "_byte_value",
           "kind": "function",
-          "line": 64
+          "line": 65
         },
         {
           "name": "_scalar",
           "kind": "function",
-          "line": 80
+          "line": 81
         },
         {
           "name": "_archive_members",
           "kind": "function",
-          "line": 93
+          "line": 94
         },
         {
           "name": "_mapping",
           "kind": "function",
-          "line": 133
+          "line": 134
         },
         {
           "name": "_columns",
           "kind": "function",
-          "line": 138
+          "line": 139
         },
         {
           "name": "_foreign",
           "kind": "function",
-          "line": 143
+          "line": 144
         },
         {
           "name": "_rebase_typed_reference",
           "kind": "function",
-          "line": 159
+          "line": 160
         },
         {
           "name": "_rebase_non_fk_semantics",
           "kind": "function",
-          "line": 170
+          "line": 171
         },
         {
           "name": "to_local_package",
           "kind": "function",
-          "line": 229
+          "line": 230
         }
       ]
     },
@@ -12174,7 +12174,7 @@
     },
     {
       "file": "src/hosted/packages.py",
-      "lines": 726,
+      "lines": 735,
       "symbols": [
         {
           "name": "_fields",
@@ -12299,6 +12299,32 @@
           "name": "finalize_review_round_hashes",
           "kind": "function",
           "line": 270
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/portability_reviews.py",
+      "lines": 117,
+      "symbols": [
+        {
+          "name": "ReviewScopeShapeError",
+          "kind": "class",
+          "line": 14
+        },
+        {
+          "name": "_reject",
+          "kind": "function",
+          "line": 18
+        },
+        {
+          "name": "_parts",
+          "kind": "function",
+          "line": 22
+        },
+        {
+          "name": "prepare_review_scopes",
+          "kind": "function",
+          "line": 31
         }
       ]
     },

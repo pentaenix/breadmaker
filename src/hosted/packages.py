@@ -698,6 +698,15 @@ class HostedProjectPackageService:
                 old=str(row.get('id') or '')
                 if not old:continue
                 eid=id_maps[(logical,old)]
+                if logical in {'review_scope_chapter','review_scope_scene'}:
+                    # Local association PKs are independent of their selected
+                    # Chapter/Scene. Hosted paths use the selected entity ID,
+                    # scoped under the Review, not the local join-row number.
+                    scope_field='chapter_id' if logical=='review_scope_chapter' else 'scene_id'
+                    target=field_targets[scope_field]
+                    eid=id_maps.get((target,str(row.get(scope_field) or '')))
+                    if eid is None:raise ValueError('HOSTED_PACKAGE_REVIEW_SCOPE_REFERENCE_INVALID')
+                    id_maps[(logical,old)]=eid
                 ids={'project_id':pid}
                 for parent in fields[1:-1]:
                     raw=row.get(parent)
