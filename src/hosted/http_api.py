@@ -552,6 +552,7 @@ def _project_snapshot(pid:str, *, manuscript_only:bool=False, navigation_only:bo
     canvases=values['canvas'] if navigation_only else domain.list('canvas',parents,user_id=uid)
     maps=values['story_map'] if navigation_only else domain.list('story_map',parents,user_id=uid)
     reviews=values['review'] if navigation_only else domain.list('review',parents,user_id=uid)
+    reviews=_reviews_with_participants(pid,reviews)
     if not navigation_only:bookmark=runtime.projects.member_state(pid,user_id=uid)
     chapter_outlines=navigation.get('chapter_outlines') if navigation_only else [{k:row.get(k) for k in ('id','chapter_id','position','semantic_style','text_content')} for row in blocks if str(row.get('semantic_style') or '') in {'heading2','heading3','heading4'}]
     final_project=runtime.projects.get(pid)
@@ -862,7 +863,14 @@ async def hosted_map_junction(mid:str,request:Request):return _create('map_junct
 
 # Reviews / questionnaires
 @product_router.get('/api/reviews')
-def hosted_reviews(request:Request):return {'reviews':_list('review',{'project_id':_pid(request)})}
+def hosted_reviews(request:Request):
+    pid=_pid(request);return {'reviews':_reviews_with_participants(pid,_list('review',{'project_id':pid}))}
+
+
+def _reviews_with_participants(pid,reviews):
+    # Match the writer-side local shape in both bootstrap and list reads, using
+    # the same authorization as the existing per-Review participant endpoint.
+    return [{**review,'participants':_list('review_participant',{'project_id':pid,'review_id':review['id']})} for review in reviews]
 @product_router.post('/api/reviews')
 async def hosted_review_create(request:Request):return _create('review',{'project_id':_pid(request)},await _body(request))
 @product_router.get('/api/reviews/{rid}')

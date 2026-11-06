@@ -3667,7 +3667,12 @@
     "export.project.ready": "Descarga del proyecto lista.",
     "export.project.failed": "No se pudo descargar el proyecto.",
     "export.project.unsupported_title": "Este proyecto necesita una instantánea de recuperación web",
-    "export.project.unsupported_body": "Algunos datos guardados de este proyecto todavía no se pueden convertir al formato de escritorio. No se ha eliminado nada. El ZIP legible conserva copias legibles y la instantánea web original. Restáurala mediante la aplicación web, con sus límites de tamaño y formato."
+    "export.project.unsupported_body": "Algunos datos guardados de este proyecto todavía no se pueden convertir al formato de escritorio. No se ha eliminado nada. El ZIP legible conserva copias legibles y la instantánea web original. Restáurala mediante la aplicación web, con sus límites de tamaño y formato.",
+    "reviews.participant_project_changed": "El proyecto activo cambió. Abre de nuevo el diálogo de participantes.",
+    "canvas.populate_unavailable": "No se puede rellenar. Abre de nuevo este menú para reintentarlo.",
+    "tasks.status_failed": "No se pudo guardar el estado de la tarea.",
+    "tasks.refresh_failed": "No se pudieron actualizar las tareas.",
+    "tasks.project_changed": "El proyecto activo cambió. Abre Tareas de nuevo."
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

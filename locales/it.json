@@ -3667,7 +3667,12 @@
     "export.project.ready": "Download del progetto pronto.",
     "export.project.failed": "Impossibile scaricare il progetto.",
     "export.project.unsupported_title": "Questo progetto richiede un’istantanea di ripristino web",
-    "export.project.unsupported_body": "Alcuni dati salvati non possono ancora essere convertiti nel formato desktop. Non è stato rimosso nulla. Lo ZIP leggibile conserva copie leggibili e l’istantanea web originale. Ripristinala tramite l’app web, nei suoi limiti di dimensione e formato."
+    "export.project.unsupported_body": "Alcuni dati salvati non possono ancora essere convertiti nel formato desktop. Non è stato rimosso nulla. Lo ZIP leggibile conserva copie leggibili e l’istantanea web originale. Ripristinala tramite l’app web, nei suoi limiti di dimensione e formato.",
+    "reviews.participant_project_changed": "Il progetto attivo è cambiato. Riapri la finestra dei partecipanti.",
+    "canvas.populate_unavailable": "Compilazione non disponibile. Riapri il menu per riprovare.",
+    "tasks.status_failed": "Impossibile salvare lo stato dell’attività.",
+    "tasks.refresh_failed": "Impossibile aggiornare le attività.",
+    "tasks.project_changed": "Il progetto attivo è cambiato. Riapri le attività."
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

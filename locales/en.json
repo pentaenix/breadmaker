@@ -3667,7 +3667,12 @@
     "export.project.ready": "Project download ready.",
     "export.project.failed": "Project could not be downloaded.",
     "export.project.unsupported_title": "This project needs a hosted recovery snapshot",
-    "export.project.unsupported_body": "Some saved state in this project cannot yet be converted to a desktop-native project. Nothing has been removed. Readable ZIP preserves readable copies and the original hosted snapshot. Restore that snapshot through the web app, subject to its size and format limits."
+    "export.project.unsupported_body": "Some saved state in this project cannot yet be converted to a desktop-native project. Nothing has been removed. Readable ZIP preserves readable copies and the original hosted snapshot. Restore that snapshot through the web app, subject to its size and format limits.",
+    "reviews.participant_project_changed": "The active project changed. Open the participant dialog again.",
+    "canvas.populate_unavailable": "Populate is unavailable. Reopen this menu to try again.",
+    "tasks.status_failed": "Task status could not be saved.",
+    "tasks.refresh_failed": "Tasks could not be refreshed.",
+    "tasks.project_changed": "The active project changed. Open Tasks again."
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",
