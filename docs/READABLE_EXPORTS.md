@@ -46,6 +46,40 @@ copies use the existing `img_<24 hash characters>` manuscript asset names, with
 validated one-to-one aliases and collision refusal. The included recovery package
 retains its original member names and bytes.
 
+## Hosted size and restore limits
+
+The current browser project importer posts the extracted `Project.breadmaker`
+as one multipart upload to `/api/projects/import`. It does not select a durable
+large-file transfer job. Its application file cap is **64 MiB (67,108,864 bytes)**,
+or a lower configured package cap. This is an upper bound, not a promise that
+every file below it can be restored.
+
+The current deployment source uses a Cloud Run container port without `h2c`,
+running Uvicorn's HTTP/1 server. Cloud Run has a **32 MiB HTTP/1 request limit**,
+including multipart overhead. It also limits HTTP/1 responses to 32 MiB unless
+they use chunked transfer or streaming. The readable ZIP route currently returns
+a buffered `Response` with a content length. Therefore the application cap must
+not be advertised as the effective hosted upload limit, and large ZIP downloads
+also need a streaming or bounded direct-transfer path before broad size claims.
+These platform limits are based on the deployed source configuration and
+[Cloud Run's limits](https://docs.cloud.google.com/run/quotas); no large live
+upload or download probe was performed.
+
+The hosted-v3 package importer additionally limits expanded content to 256 MiB,
+each archive member to 64 MiB, each asset to 12 MiB, and member count to 25,000.
+The readable source accepts up to 50,000 members, so its successful rendering
+alone does not prove the recovery snapshot will pass import. The included hosted
+README describes the file cap and lower hosting limits. Larger recovery files
+are preserved unchanged; the readable copies can still be used independently.
+No upload, decoder or infrastructure limit is raised by this documentation.
+
+An isolated 17-byte boundary probe confirmed that the upload reader refuses a
+configured 16-byte limit with HTTP 413, while the current import handler's error
+adapter converts that refusal to generic HTTP 500. That error presentation is an
+existing compatibility issue for a separate fix; the package importer is not
+called after an oversized upload. This probe ran extracted current source
+functions without a server or project and did not allocate a large payload.
+
 `formats/manuscript_docx.py` now owns the shared Word renderer used by local export,
 hosted export and ZIP copies. Semantic headings, bold, italics, underline, tabs, line
 breaks, supported images, image rows, widths, captions and descriptions are retained.
