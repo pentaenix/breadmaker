@@ -1,5 +1,5 @@
 # Isolated staging recovery: only an immutable archive reader, no HTTP listener.
-FROM python:3.14.7-slim-trixie
+FROM python:3.15.0-slim-trixie
 WORKDIR /app
 COPY requirements.txt requirements-hosted.txt ./
 RUN python -m pip install --no-cache-dir -r requirements-hosted.txt
