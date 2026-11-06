@@ -3656,13 +3656,18 @@
     "targets.history_group": "{count}/{total} objectifs atteints",
     "export.zip.menu": "ZIP lisible…",
     "export.zip.title": "Exporter un ZIP lisible",
-    "export.zip.description": "Copies Word, HTML et texte de chaque document, images originales et projet Breadmaker restaurable. Extrayez le ZIP et ouvrez START-HERE.html.",
+    "export.zip.description": "Copies Word, HTML et texte de chaque document, images originales et instantané original du projet. La compatibilité de restauration et les limites de téléversement dépendent de l’application et du contenu. Extrayez le ZIP, ouvrez START-HERE.html et lisez README.txt.",
     "export.zip.create": "Créer le ZIP",
     "export.zip.creating": "Création du ZIP…",
     "export.zip.ready": "ZIP exporté",
     "export.zip.failed": "Échec de l’export ZIP.",
     "export.zip.project_changed": "Le projet actif a changé. Rouvrez l’export.",
-    "canvas.links_retry": "Réessayer"
+    "canvas.links_retry": "Réessayer",
+    "export.project.preparing": "Préparation du téléchargement du projet…",
+    "export.project.ready": "Téléchargement du projet prêt.",
+    "export.project.failed": "Impossible de télécharger le projet.",
+    "export.project.unsupported_title": "Ce projet nécessite un instantané de récupération web",
+    "export.project.unsupported_body": "Certaines données enregistrées ne peuvent pas encore être converties au format de bureau. Rien n’a été supprimé. Le ZIP lisible conserve les copies lisibles et l’instantané web original. Restaurez-le dans l’application web, selon ses limites de taille et de format."
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

@@ -11,6 +11,39 @@ async function downloadResponseFile(response,fallbackName){
   const href=URL.createObjectURL(blob),a=document.createElement('a');a.href=href;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),1500);
 }
 
+// Keep failed exports in the writing workspace; never navigate to an API error.
+let projectFileExportInFlight=false;
+async function downloadProjectFile(projectId,{json=false}={}){
+  if(projectFileExportInFlight){toast(i18nText('export.project.preparing'));return}
+  if(currentProjectIdentity()!==projectId){toast(i18nText('export.zip.project_changed'));return}
+  const url=projectScopedUrl(`/api/projects/${encodeURIComponent(projectId)}/${json?'export-json':'export'}`);
+  projectFileExportInFlight=true;toast(i18nText('export.project.preparing'));
+  try{
+    await flushSave();
+    if(currentProjectIdentity()!==projectId)throw new Error(i18nText('export.zip.project_changed'));
+    const response=await fetch(url,{headers:projectScopedHeaders({'X-Breadmaker-Locale':i18nLocale()}),redirect:'error'});
+    if(currentProjectIdentity()!==projectId)throw new Error(i18nText('export.zip.project_changed'));
+    if(!response.ok){
+      const payload=await response.json().catch(()=>({}));
+      const detail=payload?.detail,code=String(typeof detail==='string'?detail:detail?.code||'');
+      if(!json&&code.startsWith('HOSTED_PORTABLE_')){
+        if(!$('#modal').classList.contains('hidden')){toast(i18nText('export.project.unsupported_title'),6000);return}
+        $('#brandButton').focus({preventScroll:true});
+        showModal(i18nText('export.project.unsupported_title'),`<p class="dialog-message">${escapeHtml(i18nText('export.project.unsupported_body'))}</p>`,
+          `<button id="projectExportClose">${escapeHtml(i18nText('ui.close'))}</button><button id="projectExportReadable">${escapeHtml(i18nText('export.zip.menu'))}</button>`);
+        $('#projectExportClose').onclick=()=>closeModal();
+        $('#projectExportReadable').onclick=()=>{if(currentProjectIdentity()!==projectId){toast(i18nText('export.zip.project_changed'));return}closeModal();openReadableZipExport()};
+        return;
+      }
+      throw breadmakerErrorFromPayload(payload,response.status);
+    }
+    if((response.headers.get('content-type')||'').includes('text/html'))throw new Error(i18nText('export.project.failed'));
+    await downloadResponseFile(response,json?'project.json':'project.breadmaker');
+    toast(i18nText('export.project.ready'));
+  }catch(error){toast(error.message||i18nText('export.project.failed'),4500)}
+  finally{projectFileExportInFlight=false}
+}
+
 let readableZipExportInFlight=false;
 function openReadableZipExport(){
   if(readableZipExportInFlight){toast(i18nText('export.zip.creating'));return}

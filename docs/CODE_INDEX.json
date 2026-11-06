@@ -23115,7 +23115,7 @@
     },
     {
       "file": "static/js/features/projects/export_recovery.js",
-      "lines": 81,
+      "lines": 114,
       "symbols": [
         {
           "name": "downloadPostFile",
@@ -23128,34 +23128,39 @@
           "line": 8
         },
         {
+          "name": "downloadProjectFile",
+          "kind": "function",
+          "line": 16
+        },
+        {
           "name": "openReadableZipExport",
           "kind": "function",
-          "line": 15
+          "line": 48
         },
         {
           "name": "openPdfExport",
           "kind": "function",
-          "line": 38
+          "line": 71
         },
         {
           "name": "sync",
           "kind": "function",
-          "line": 53
+          "line": 86
         },
         {
           "name": "verifyProject",
           "kind": "function",
-          "line": 56
+          "line": 89
         },
         {
           "name": "formatBytes",
           "kind": "function",
-          "line": 68
+          "line": 101
         },
         {
           "name": "openRecovery",
           "kind": "function",
-          "line": 70
+          "line": 103
         }
       ]
     },

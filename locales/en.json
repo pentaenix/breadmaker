@@ -3656,13 +3656,18 @@
     "targets.history_group": "{count}/{total} goals reached",
     "export.zip.menu": "Readable ZIP…",
     "export.zip.title": "Export readable ZIP",
-    "export.zip.description": "Word, HTML and text copies of every document, original images, and a restorable Breadmaker project. Extract the ZIP and open START-HERE.html.",
+    "export.zip.description": "Word, HTML and text copies of every document, original images, and the original project snapshot. Restore compatibility and upload limits depend on the app and project contents. Extract the ZIP, open START-HERE.html and read README.txt.",
     "export.zip.create": "Create ZIP",
     "export.zip.creating": "Creating ZIP…",
     "export.zip.ready": "ZIP exported",
     "export.zip.failed": "ZIP export failed.",
     "export.zip.project_changed": "The active project changed. Open the export again.",
-    "canvas.links_retry": "Retry"
+    "canvas.links_retry": "Retry",
+    "export.project.preparing": "Preparing project download…",
+    "export.project.ready": "Project download ready.",
+    "export.project.failed": "Project could not be downloaded.",
+    "export.project.unsupported_title": "This project needs a hosted recovery snapshot",
+    "export.project.unsupported_body": "Some saved state in this project cannot yet be converted to a desktop-native project. Nothing has been removed. Readable ZIP preserves readable copies and the original hosted snapshot. Restore that snapshot through the web app, subject to its size and format limits."
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

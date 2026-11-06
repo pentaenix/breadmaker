@@ -89,8 +89,8 @@ function showProjectSubmenu(kind,anchor){
   }else if(kind==='export'){
     $('#projectMenuExportDocx').onclick=async()=>{hideProjectMenu();await flushSave();location.href=projectScopedUrl('/api/export/docx')};
     $('#projectMenuExportPdf').onclick=()=>{hideProjectMenu();openPdfExport()};
-    $('#projectMenuExportJsonProject').onclick=async()=>{hideProjectMenu();if(active){await flushSave();location.href=projectScopedUrl(`/api/projects/${active.id}/export-json`)}};
-    $('#projectMenuExportProject').onclick=async()=>{hideProjectMenu();if(active){await flushSave();location.href=projectScopedUrl(`/api/projects/${active.id}/export`)}};
+    $('#projectMenuExportJsonProject').onclick=()=>{hideProjectMenu();if(active)downloadProjectFile(active.id,{json:true})};
+    $('#projectMenuExportProject').onclick=()=>{hideProjectMenu();if(active)downloadProjectFile(active.id)};
     $('#projectMenuExportZip').onclick=()=>{hideProjectMenu();openReadableZipExport()};
     $('#projectMenuExportCuts').onclick=()=>{hideProjectMenu();location.href=projectScopedUrl('/api/cuts/export')};
   }
