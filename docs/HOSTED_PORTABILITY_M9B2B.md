@@ -31,6 +31,17 @@ recovery format for GCS/Firestore disaster recovery.
   column. Unknown data payload fields still abort; this is not an unchecked
   field-drop policy.
 
+## Current Review scopes (10.5.93)
+
+Hosted `scope_ids` selections are projected to
+native Chapter/Scene association tables, with all references rebased. Entire
+manuscript scope retains its empty selection. Equivalent inline and relational
+selections are reconciled; conflicting, malformed, empty selected-item or dangling
+selections abort explicitly. Selection is a set, displayed in document order by
+the native editor. Multiple Reviews may select the same Chapter or Scene without
+colliding association identities. The original hosted recovery snapshot is
+preserved; frozen-history support remains limited as described below.
+
 ## Intentional refusals (not silently converted)
 
 - Hosted Canvas-version frozen node/edge geometry, which cannot be represented

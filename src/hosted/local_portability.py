@@ -22,6 +22,7 @@ from storage.schema import SCHEMA_SQL, SCHEMA_VERSION
 from hosted.portability_history import (HistoryShapeError, prepare_review_rounds,
     checkpoint_v1, finalize_review_round_hashes)
 from hosted.portability_editing import project_row, REGISTRY as EDITING_REGISTRY
+from hosted.portability_reviews import ReviewScopeShapeError, prepare_review_scopes
 
 _MAX_INPUT = 64 * 1024 * 1024
 _MAX_EXPANDED = 192 * 1024 * 1024
@@ -242,8 +243,9 @@ def to_local_package(source: bytes, *, project_generation: int, created_at: str 
     created = str(created_at or when)
     mapping = _mapping()
     try:
-        records, review_round_ids = prepare_review_rounds(document['entities'])
-    except HistoryShapeError as exc:
+        scoped_records = prepare_review_scopes(document['entities'], pid)
+        records, review_round_ids = prepare_review_rounds(scoped_records)
+    except (HistoryShapeError, ReviewScopeShapeError) as exc:
         raise LocalPortabilityError(str(exc)) from exc
     # Preflight incompatible frozen Canvas history before the relational build.
     # Parent Canvas rows may be incomplete for the local Schema 42 layout; an
