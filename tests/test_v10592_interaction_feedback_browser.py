@@ -139,3 +139,25 @@ def test_local_review_participant_keeps_existing_undo(tmp_path):
 
 def test_local_task_uncheck_keeps_existing_undo(tmp_path):
     test_task_uncheck_moves_before_patch_and_keeps_structural_undo(tmp_path,local=True)
+
+
+def test_task_milestones_render_and_reopen_after_status_feedback_change(tmp_path,local=False):
+    with browser(tmp_path,local=local) as (_,page,_):
+        errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
+        page.evaluate("async()=>{setView('tasks');await loadTasks();await openTaskDetails(null)}")
+        page.locator('#taskName').fill('Synthetic milestone rendering')
+        page.locator('#taskMilestoneNew').fill('First revision')
+        page.locator('#taskMilestoneNew').press('Enter')
+        card=page.locator('[data-milestone-id="draft_1"]')
+        expect(card).to_be_visible()
+        expect(card.locator('[data-milestone-check]')).to_be_enabled()
+        page.locator('#saveTask').click();expect(page.locator('#modal')).to_be_hidden()
+        page.locator('.task-row').filter(has_text='Synthetic milestone rendering').click()
+        expect(page.locator('#taskMilestones .milestone-card')).to_have_count(1)
+        expect(page.locator('#taskMilestones')).to_contain_text('First revision')
+        expect(page.locator('[data-milestone-check]')).to_be_enabled()
+        assert not errors,errors
+
+
+def test_local_task_milestones_render_and_reopen(tmp_path):
+    test_task_milestones_render_and_reopen_after_status_feedback_change(tmp_path,local=True)
