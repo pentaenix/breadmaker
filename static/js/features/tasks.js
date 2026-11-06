@@ -30,8 +30,11 @@ function queueTaskDescriptionHover(task,row){
     card.innerHTML=escapeHtml(description).replace(/\n/g,'<br>');positionTaskDescriptionHover(card,row);
   },300);
 }
+let taskListRenderEpoch=0;
+const pendingTaskStatuses=new Map();
+function taskStatusKey(id){return `${currentProjectIdentity()}|${id}`}
 function invalidateTaskCache(){state.taskCache=null}
-async function getTasks({force=false}={}){if(!force&&Array.isArray(state.taskCache))return state.taskCache;state.taskCache=await apiList('/api/tasks','tasks');return state.taskCache}
+async function getTasks({force=false}={}){if(!force&&Array.isArray(state.taskCache))return state.taskCache;const projectId=currentProjectIdentity(),tasks=await apiList('/api/tasks','tasks');if(currentProjectIdentity()===projectId)state.taskCache=tasks;return tasks}
 function milestoneQuickEntries(task){return String(task?.milestone_quick_data||'').split('\x1f').filter(Boolean).map(entry=>{const [idAndTitle='',description='']=entry.split('\x1e'),split=idAndTitle.indexOf('\x1d');return{id:entityId(idAndTitle.slice(0,split))||0,title:split>=0?idAndTitle.slice(split+1):idAndTitle,description}})}
 function taskMilestoneMatch(task,query){if(!query)return null;const q=query.toLocaleLowerCase(i18nLocale());return milestoneQuickEntries(task).find(m=>`${m.title} ${m.description}`.toLocaleLowerCase(i18nLocale()).includes(q))||null}
 function taskEmptyState(filter){
@@ -42,17 +45,19 @@ function taskEmptyState(filter){
 
 async function loadTasks(){
   hideTaskDescriptionHover();
-  const tasks=await getTasks(),query=String(state.taskSearch||'').trim().toLocaleLowerCase(i18nLocale()),list=$('#taskList');
+  const epoch=++taskListRenderEpoch,projectId=currentProjectIdentity(),saved=await getTasks();
+  if(epoch!==taskListRenderEpoch||projectId!==currentProjectIdentity())return;
+  const tasks=saved.map(task=>pendingTaskStatuses.has(taskStatusKey(task.id))?{...task,status:pendingTaskStatuses.get(taskStatusKey(task.id))}:task),query=String(state.taskSearch||'').trim().toLocaleLowerCase(i18nLocale()),list=$('#taskList');
   let filtered=state.taskFilter==='all'?tasks:tasks.filter(t=>t.status===state.taskFilter);
   if(query)filtered=filtered.filter(t=>[t.title,t.description,t.marker_name,t.milestone_search_text].some(value=>String(value||'').toLocaleLowerCase(i18nLocale()).includes(query)));
   list.innerHTML='';const search=$('#taskSearch');if(search&&search.value!==state.taskSearch)search.value=state.taskSearch;
   if(!filtered.length){if(query){list.innerHTML=`<div class="workspace-empty task-workspace-empty" style="position:relative;min-height:260px"><b>${escapeHtml(i18nText('tasks.search_empty'))}</b><button type="button" data-search-task-add>${escapeHtml(i18nText('tasks.create_from_search',{title:state.taskSearch.trim()}))}</button></div>`;list.querySelector('[data-search-task-add]').onclick=()=>openTaskDetails(null,{defaultStatus:taskCreateStatusForFilter(),initialTitle:state.taskSearch.trim()});return}list.innerHTML=taskEmptyState(state.taskFilter);const add=list.querySelector('[data-empty-task-add]');if(add)add.onclick=()=>openTaskDetails(null,{defaultStatus:taskCreateStatusForFilter()});return}
   for(const task of filtered){
     const row=document.createElement('div'),status=task.status,isArchived=status==='archived',milestoneCount=+task.milestone_count||0,milestoneDone=+task.milestone_completed_count||0,meta=[task.marker_name,task.reference_count?i18nCount(task.reference_count,'tasks.links.one','tasks.links.many'):'',milestoneCount?i18nText('tasks.milestones.summary',{done:i18nNumber(milestoneDone),total:i18nNumber(milestoneCount)}):''].filter(Boolean).join(' · '),ownSearchMatch=query?[task.title,task.description,task.marker_name].some(value=>String(value||'').toLocaleLowerCase(i18nLocale()).includes(query)):false,milestoneMatch=query&&!ownSearchMatch?taskMilestoneMatch(task,query):null;
-    row.className='task-row'+(isArchived?' archived':'');row.tabIndex=0;
+    row.className='task-row'+(isArchived?' archived':'');row.tabIndex=0;const pending=pendingTaskStatuses.has(taskStatusKey(task.id));if(pending)row.setAttribute('aria-busy','true');
     const progress=milestoneCount?`<div class="task-milestone-progress" title="${escapeHtml(i18nText('tasks.milestones.progress_title',{done:i18nNumber(milestoneDone),total:i18nNumber(milestoneCount)}))}"><span style="width:${Math.round(milestoneDone/milestoneCount*100)}%"></span></div>`:'';
     const markerName=task.marker_name||i18nSource('Marker'),markerSwatch=task.marker_color?`<span class="task-marker-swatch" title="${escapeHtml(markerName)}" aria-label="${escapeHtml(i18nText('tasks.marker.aria',{name:markerName}))}" style="background:${escapeHtml(task.marker_color)}"></span>`:'';
-    row.innerHTML=`<label class="task-check"><input type="checkbox" ${status==='done'?'checked':''} ${isArchived?'disabled':''} aria-label="{{i18n:dynamic.html.attr.aria.label.f1533346}}"></label><div class="task-title"><div class="task-title-text">${escapeHtml(task.title)}</div>${meta?`<div class="task-meta">${escapeHtml(meta)}</div>`:''}${milestoneMatch?`<div class="task-search-match">${escapeHtml(i18nText('tasks.milestone_match',{title:milestoneMatch.title||i18nSource('Milestone')}))}</div>`:''}${progress}</div><div class="task-actions">${markerSwatch}<button data-link-task title="{{i18n:dynamic.html.attr.title.5bae2c43}}" ${isArchived?'disabled':''}>${LINK_ICON}</button><button class="manuscript-item-more task-more-button" data-task-more title="{{i18n:dynamic.html.attr.title.bcb69dec}}">⋮</button></div>`;
+    row.innerHTML=`<label class="task-check"><input type="checkbox" ${status==='done'?'checked':''} ${isArchived||pending?'disabled':''} aria-label="{{i18n:dynamic.html.attr.aria.label.f1533346}}"></label><div class="task-title"><div class="task-title-text">${escapeHtml(task.title)}</div>${meta?`<div class="task-meta">${escapeHtml(meta)}</div>`:''}${milestoneMatch?`<div class="task-search-match">${escapeHtml(i18nText('tasks.milestone_match',{title:milestoneMatch.title||i18nSource('Milestone')}))}</div>`:''}${progress}</div><div class="task-actions">${markerSwatch}<button data-link-task title="{{i18n:dynamic.html.attr.title.5bae2c43}}" ${isArchived?'disabled':''}>${LINK_ICON}</button><button class="manuscript-item-more task-more-button" data-task-more title="{{i18n:dynamic.html.attr.title.bcb69dec}}">⋮</button></div>`;
     const open=()=>{hideTaskDescriptionHover();openTaskDetails(task.id)};row.onclick=e=>{if(e.target.closest('button,input,label'))return;open()};row.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button,input')){e.preventDefault();open()}};row.onmouseenter=()=>queueTaskDescriptionHover(task,row);row.onmouseleave=hideTaskDescriptionHover;
     if(!isArchived)row.querySelector('.task-check input').onchange=async e=>{const changed=await setTaskStatus(task.id,e.target.checked?'done':'open',task);if(!changed)e.target.checked=status==='done'};
     row.querySelector('[data-link-task]').onclick=e=>{e.stopPropagation();if(!isArchived)openReferenceManager('task',String(task.id),{subtitle:task.title,onChanged:()=>loadTasks()})};
@@ -69,7 +74,21 @@ $$('[data-task-filter]').forEach(button=>button.onclick=()=>{$$('[data-task-filt
 const taskSearch=$('#taskSearch');if(taskSearch){taskSearch.value=state.taskSearch;taskSearch.oninput=()=>{state.taskSearch=taskSearch.value;loadTasks()}}
 $('#newTaskBtn').onclick=()=>openTaskDetails(null,{defaultStatus:taskCreateStatusForFilter()});
 $('#tasksView')?.addEventListener('scroll',hideTaskDescriptionHover,{passive:true});
-async function setTaskStatus(id,status,knownTask=null){let task=knownTask;if(status==='done'){if(!task){task=(await getTasks()).find(row=>row.id===id)}if(task?.status!=='done'&&!await confirmTaskCompletion(task))return false}await withStructuralUndo('Change task status',()=>api(`/api/tasks/${id}`,{method:'PATCH',body:JSON.stringify({status})}),{view:'tasks'});await loadTasks();return true}
+async function setTaskStatus(id,status,knownTask=null){
+  const projectId=currentProjectIdentity(),key=taskStatusKey(id);
+  if(pendingTaskStatuses.has(key))return false;
+  let task=knownTask;
+  if(status==='done'){if(!task)task=(await getTasks()).find(row=>row.id===id);if(task?.status!=='done'&&!await confirmTaskCompletion(task))return false}
+  if(currentProjectIdentity()!==projectId)return false;
+  pendingTaskStatuses.set(key,status);
+  try{
+    await loadTasks();
+    if(currentProjectIdentity()!==projectId)return false;
+    await withStructuralUndo('Change task status',()=>{if(currentProjectIdentity()!==projectId)throw new Error(i18nText('tasks.project_changed'));return api(`/api/tasks/${id}`,{method:'PATCH',body:JSON.stringify({status})})},{view:'tasks'});
+    return true;
+  }catch(error){toast(error.message||i18nText('tasks.status_failed'),4500);return false}
+  finally{pendingTaskStatuses.delete(key);if(currentProjectIdentity()===projectId){try{await loadTasks()}catch(error){toast(error.message||i18nText('tasks.refresh_failed'),4500)}}}
+}
 async function unarchiveTask(task){await setTaskStatus(task.id,task.archived_from_status||'open',task);if($('#modal').classList.contains('hidden')===false)dismissModalTree()}
 async function duplicateTask(task){let copy;await withStructuralUndo(i18nText('tasks.undo.duplicate',{title:task.title}),async()=>{copy=await api(`/api/tasks/${task.id}/duplicate`,{method:'POST'})},{view:'tasks'});await loadTasks();toast(i18nText('tasks.duplicated',{title:copy.title}))}
 async function deleteTask(id){await withStructuralUndo('Delete task',()=>api(`/api/tasks/${id}`,{method:'DELETE'}),{view:'tasks'});await loadTasks();undoToast(i18nText('tasks.deleted'))}

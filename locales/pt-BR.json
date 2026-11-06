@@ -3667,7 +3667,15 @@
     "export.project.ready": "Download do projeto pronto.",
     "export.project.failed": "Não foi possível baixar o projeto.",
     "export.project.unsupported_title": "Este projeto precisa de um instantâneo de recuperação web",
-    "export.project.unsupported_body": "Alguns dados salvos ainda não podem ser convertidos para o formato desktop. Nada foi removido. O ZIP legível preserva cópias legíveis e o instantâneo web original. Restaure-o pelo aplicativo web, respeitando os limites de tamanho e formato."
+    "export.project.unsupported_body": "Alguns dados salvos ainda não podem ser convertidos para o formato desktop. Nada foi removido. O ZIP legível preserva cópias legíveis e o instantâneo web original. Restaure-o pelo aplicativo web, respeitando os limites de tamanho e formato.",
+    "reviews.participant_project_changed": "O projeto ativo mudou. Abra novamente a caixa de participantes.",
+    "canvas.populate_unavailable": "O preenchimento não está disponível. Reabra o menu para tentar novamente.",
+    "tasks.status_failed": "Não foi possível salvar o estado da tarefa.",
+    "tasks.refresh_failed": "Não foi possível atualizar as tarefas.",
+    "tasks.project_changed": "O projeto ativo mudou. Abra as tarefas novamente.",
+    "missing_page.title": "Página não encontrada",
+    "missing_page.message": "Este link pode estar desatualizado. Volte ao seu espaço de escrita para continuar.",
+    "missing_page.return": "Voltar ao Breadmaker"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

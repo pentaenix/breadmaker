@@ -1,0 +1,5 @@
+/* Shared Breadmaker identity-card typography and controls. */
+.missing-page-code{text-align:center;color:var(--muted);font-size:12px;letter-spacing:.08em;margin:0 0 10px}
+.missing-page-message{color:var(--muted);font-size:14px;line-height:1.6;margin:0 0 24px}
+.missing-page-return{display:block;text-align:center;text-decoration:none}
+.missing-page-return:focus-visible{outline:2px solid var(--accent);outline-offset:3px}

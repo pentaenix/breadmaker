@@ -3667,7 +3667,15 @@
     "export.project.ready": "プロジェクトのダウンロードの準備ができました。",
     "export.project.failed": "プロジェクトをダウンロードできませんでした。",
     "export.project.unsupported_title": "このプロジェクトにはWeb復元用スナップショットが必要です",
-    "export.project.unsupported_body": "保存されたデータの一部は、まだデスクトップ形式に変換できません。データは削除されていません。読み取り用ZIPには、閲覧用コピーと元のWebスナップショットが保存されます。Webアプリのサイズと形式の制限内で復元してください。"
+    "export.project.unsupported_body": "保存されたデータの一部は、まだデスクトップ形式に変換できません。データは削除されていません。読み取り用ZIPには、閲覧用コピーと元のWebスナップショットが保存されます。Webアプリのサイズと形式の制限内で復元してください。",
+    "reviews.participant_project_changed": "現在のプロジェクトが変わりました。参加者ダイアログを開き直してください。",
+    "canvas.populate_unavailable": "自動配置を利用できません。メニューを開き直して再試行してください。",
+    "tasks.status_failed": "タスクの状態を保存できませんでした。",
+    "tasks.refresh_failed": "タスクを更新できませんでした。",
+    "tasks.project_changed": "現在のプロジェクトが変わりました。タスクを開き直してください。",
+    "missing_page.title": "ページが見つかりません",
+    "missing_page.message": "リンクが古い可能性があります。執筆スペースに戻って続けてください。",
+    "missing_page.return": "Breadmakerに戻る"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

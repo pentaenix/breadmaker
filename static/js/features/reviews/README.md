@@ -12,3 +12,10 @@ Reviews is package-owned in 10.3.5. The package preserves the existing classic-s
 - `lifecycle.js` — round/state history presentation and Reviews DOM event wiring.
 
 Do not recreate `features/reviews.js` as a facade. Cross-file calls intentionally use the shared classic-script global namespace; ownership is the file containing the implementation.
+
+Hosted Participant mutations use the normal authorized/idempotent write path, not
+the product Undo journal: participant/access/lifecycle records remain denied by
+that journal. Successful hosted changes discard stale structural receipts while
+preserving manuscript edit history; local Participant Undo remains unchanged.
+Bootstrap and Review-list responses include the same authorized participant
+projection so refresh/reopen does not hide successfully saved participants.

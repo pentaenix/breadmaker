@@ -3667,7 +3667,15 @@
     "export.project.ready": "Téléchargement du projet prêt.",
     "export.project.failed": "Impossible de télécharger le projet.",
     "export.project.unsupported_title": "Ce projet nécessite un instantané de récupération web",
-    "export.project.unsupported_body": "Certaines données enregistrées ne peuvent pas encore être converties au format de bureau. Rien n’a été supprimé. Le ZIP lisible conserve les copies lisibles et l’instantané web original. Restaurez-le dans l’application web, selon ses limites de taille et de format."
+    "export.project.unsupported_body": "Certaines données enregistrées ne peuvent pas encore être converties au format de bureau. Rien n’a été supprimé. Le ZIP lisible conserve les copies lisibles et l’instantané web original. Restaurez-le dans l’application web, selon ses limites de taille et de format.",
+    "reviews.participant_project_changed": "Le projet actif a changé. Rouvrez la boîte de dialogue des participants.",
+    "canvas.populate_unavailable": "Le remplissage est indisponible. Rouvrez ce menu pour réessayer.",
+    "tasks.status_failed": "Impossible d’enregistrer l’état de la tâche.",
+    "tasks.refresh_failed": "Impossible d’actualiser les tâches.",
+    "tasks.project_changed": "Le projet actif a changé. Rouvrez les tâches.",
+    "missing_page.title": "Page introuvable",
+    "missing_page.message": "Ce lien est peut-être obsolète. Retournez à votre espace d’écriture pour continuer.",
+    "missing_page.return": "Retour à Breadmaker"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

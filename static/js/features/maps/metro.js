@@ -141,8 +141,22 @@ function openMetroView(){
   const rerender=()=>{state.metroView.title=$('#metroTitle').value.trim()||state.project?.title||state.mapData.map.name;state.metroView.orientation=$('#metroOrientation').value;state.metroView.labels=$('#metroLabels').value;state.metroView.terrain=$('#metroTerrain').value;document.querySelectorAll('[data-metro-line-toggle]').forEach(input=>state.metroView.lineVisibility[String(input.dataset.metroLineToggle)]=input.checked);renderMetroPosterPreview()};$('#metroTitle').oninput=rerender;$('#metroOrientation').onchange=rerender;$('#metroLabels').onchange=rerender;$('#metroTerrain').onchange=rerender;document.querySelectorAll('[data-metro-line-toggle]').forEach(input=>input.onchange=rerender);$('#metroRegenerate').onclick=()=>{state.metroView.seedOffset=(state.metroView.seedOffset||0)+1;renderMetroPosterPreview()};$('#metroDownloadSvg').onclick=metroDownloadSvg;$('#metroDownloadPng').onclick=metroDownloadPng;$('#metroPrint').onclick=metroPrintPoster;renderMetroPosterPreview()
 }
 
-async function loadMapPopulateCatalog(){state.mapPopulateCatalog=await api('/api/map-populate');return state.mapPopulateCatalog}
-function mapPopulateMenuChildren({mapId=state.currentMap?.id,line=null}={}){const catalog=state.mapPopulateCatalog;if(!catalog)return[{label:'Loading…',disabled:true}];return(catalog.categories||[]).map(category=>({label:i18nSource(category.label),children:(category.templates||[]).map(template=>{const localizedLabel=i18nSource(template.label);return{label:`${localizedLabel}${Number.isFinite(template.item_count)?` · ${i18nNumber(template.item_count)}`:''}`,disabled:template.item_count===0,action:()=>line?populateExistingLine(line,template.id,template.label):populateMap(mapId,template.id,template.label)}})}))}
+async function loadMapPopulateCatalog(){const projectId=currentProjectIdentity(),catalog=await api('/api/map-populate');if(currentProjectIdentity()===projectId)state.mapPopulateCatalog=catalog;return catalog}
+function mapPopulateMenuChildren({mapId=state.currentMap?.id,line=null,catalog=state.mapPopulateCatalog}={}){if(!catalog)return[{label:'Loading…',disabled:true}];return(catalog.categories||[]).map(category=>({label:i18nSource(category.label),children:(category.templates||[]).map(template=>{const localizedLabel=i18nSource(template.label);return{label:`${localizedLabel}${Number.isFinite(template.item_count)?` · ${i18nNumber(template.item_count)}`:''}`,disabled:template.item_count===0,action:()=>line?populateExistingLine(line,template.id,template.label):populateMap(mapId,template.id,template.label)}})}))}
+// General Map commands must not wait on optional Populate configuration.
+async function openMapContextMenu(x,y,items,options={},mapId=state.currentMap?.id){
+  const projectId=currentProjectIdentity(),selectedMapId=state.currentMap?.id;
+  openContextMenu(x,y,items.map(item=>item.testId==='map-populate-menu'?{...item,children:[{label:i18nSource('Loading…'),disabled:true}]}:item),options);
+  const root=$('#contextMenu'),button=root.querySelector('[data-testid="map-populate-menu"]');
+  if(!button)return;
+  const row=button.parentElement,submenu=row.querySelector('.context-submenu');let children;
+  try{children=mapPopulateMenuChildren({mapId,catalog:await loadMapPopulateCatalog()})}
+  catch(error){console.warn('Could not load Map population catalog',error);children=[{label:i18nText('canvas.populate_unavailable'),disabled:true}]}
+  if(!submenu.isConnected||root.classList.contains('hidden')||projectId!==currentProjectIdentity()||selectedMapId!==state.currentMap?.id)return;
+  submenu.replaceChildren();contextMenuItems(submenu,children,root);
+  if(row.classList.contains('submenu-open'))positionContextSubmenu(row,submenu);
+}
+
 let mapPopulationBusy=false;
 async function withMapPopulationFeedback(label,operation){
   if(mapPopulationBusy)return;mapPopulationBusy=true;
@@ -182,7 +196,7 @@ document.addEventListener('keydown',event=>{if(!$('#mapsView')?.classList.contai
 $('#mapStage')?.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey))return;e.preventDefault();setMapZoom(state.mapZoom+(e.deltaY<0?.1:-.1))},{passive:false});
 $('#mapStage')?.addEventListener('scroll',queueMapViewportPersist,{passive:true});
 $('#mapStage')?.addEventListener('dblclick',e=>{if(state.mapPendingConnection)return;e.preventDefault();clearMapLineFocus()});
-$('#mapEmpty')?.addEventListener('contextmenu',async e=>{if(!state.currentMap)return;e.preventDefault();try{await loadMapPopulateCatalog()}catch{}openContextMenu(e.clientX,e.clientY,mapBackgroundMenu())});
+$('#mapEmpty')?.addEventListener('contextmenu',e=>{if(!state.currentMap)return;e.preventDefault();openMapContextMenu(e.clientX,e.clientY,mapBackgroundMenu())});
 
 
 async function jumpToScene(sceneId){

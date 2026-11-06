@@ -15,3 +15,9 @@ and starts from an empty viewport without duplicate detail/viewport reads. Local
 creation loads its manuscript ruler projection once before selecting the Map.
 Existing Map selection still restores its saved viewport. Structural Undo/Redo
 and failed-finish rollback remain authoritative.
+
+Context menus render general commands before optional Populate configuration
+loads. Only the existing Populate submenu is filled asynchronously, with
+project/selection/menu-lifetime guards; dismissed or replaced menus stay closed.
+Line menus do not fetch Populate data they do not display. Selecting an inactive
+Map still resolves that Map before line actions to retain correct action context.

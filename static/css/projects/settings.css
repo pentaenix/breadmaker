@@ -15,6 +15,7 @@
 .targets-form>.project-settings-switch-row{border-bottom:0}
 .targets-form .project-settings-switch-row>b{font-size:12px}
 .targets-form .project-settings-switch-row{padding:10px 0}
+.targets-celebration-section:has(.targets-sounds.hidden) .project-settings-switch-row{border-bottom:0}
 .targets-form .project-settings-section-title{margin:0}
 .targets-form .small-muted{font-size:11px;line-height:1.5}
 .targets-goal{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(72px,.8fr) 28px;gap:8px;align-items:center;margin-bottom:6px}

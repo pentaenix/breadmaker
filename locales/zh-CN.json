@@ -3667,7 +3667,15 @@
     "export.project.ready": "项目下载已就绪。",
     "export.project.failed": "无法下载项目。",
     "export.project.unsupported_title": "此项目需要网页版恢复快照",
-    "export.project.unsupported_body": "此项目的部分已保存数据暂时无法转换为桌面原生格式。未删除任何数据。可读ZIP保留可读副本和原始网页版快照。请在网页版应用的大小和格式限制内恢复该快照。"
+    "export.project.unsupported_body": "此项目的部分已保存数据暂时无法转换为桌面原生格式。未删除任何数据。可读ZIP保留可读副本和原始网页版快照。请在网页版应用的大小和格式限制内恢复该快照。",
+    "reviews.participant_project_changed": "当前项目已更改。请重新打开参与者对话框。",
+    "canvas.populate_unavailable": "无法自动填充。请重新打开菜单重试。",
+    "tasks.status_failed": "无法保存任务状态。",
+    "tasks.refresh_failed": "无法刷新任务。",
+    "tasks.project_changed": "当前项目已更改。请重新打开任务。",
+    "missing_page.title": "找不到页面",
+    "missing_page.message": "此链接可能已过期。请返回写作空间继续。",
+    "missing_page.return": "返回Breadmaker"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

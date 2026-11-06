@@ -45,8 +45,8 @@
 .brand-mark{
   width:32px;height:32px;flex:none;border:0!important;border-radius:0!important;
   background:var(--text)!important;color:var(--text)!important;
-  -webkit-mask:url('/static/breadmaker_logo.svg?v=10.5.91') center/contain no-repeat;
-  mask:url('/static/breadmaker_logo.svg?v=10.5.91') center/contain no-repeat;
+  -webkit-mask:url('/static/breadmaker_logo.svg?v=10.5.92') center/contain no-repeat;
+  mask:url('/static/breadmaker_logo.svg?v=10.5.92') center/contain no-repeat;
 }
 :root[data-theme=dark] .brand-mark,:root[data-theme=dusk] .brand-mark{background:var(--text)!important;color:var(--text)!important}
 
@@ -576,10 +576,10 @@ body.reviewer-mode-active #app{display:none!important}
 
 /* 8.17.7 — Review Marker empty-state parity and compact feedback text previews. */
 .review-markers-panel .marker-list.empty{display:flex;align-items:center;justify-content:center;min-height:0;flex:1}
-.review-marker-empty-actions{margin-top:4px;display:flex;align-items:center;justify-content:center;gap:5px}
+.review-marker-empty-actions{margin:4px auto 0;width:max-content;max-width:100%}
 .review-marker-empty-actions>button:first-child{border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:7px 10px}
 .review-marker-empty-actions>button:first-child:hover{background:var(--surface2);border-color:var(--line2)}
-.review-marker-empty-more{width:28px;height:28px;min-width:28px;padding:0!important;display:grid!important;place-items:center}
+
 .review-marker-attached-indicator{width:16px;flex:none;text-align:center;color:var(--muted);font-size:11px;opacity:0}
 .review-marker-attached-indicator.visible{opacity:.72}
 .review-feedback-preview{position:relative;margin-top:2px;padding:8px 9px;border:1px solid var(--line);border-radius:6px;background:var(--surface2);overflow:hidden}
@@ -699,3 +699,7 @@ body.reviewer-mode-active #app{display:none!important}
 .review-draft-empty button:hover{background:var(--surface2);border-color:var(--line2)}
 @media(max-width:700px){.review-scope-summary{max-width:72vw}.review-draft-empty{min-height:150px}}
 
+
+.review-marker-empty-actions .review-split-more{min-width:26px;margin:0}
+
+.review-marker-empty-actions .review-split-main{margin:0}

@@ -42,10 +42,14 @@ def browser(home,*,local=False):
         except BaseException:
             log.seek(0);print(log.read()[-2000:]);traceback.print_exc();raise
         finally:
-            if driver is not None:
-                try:
-                    if page is not None:page.close()
-                finally:close_browser(driver,instance)
-            proc.terminate()
-            try:proc.wait(timeout=3)
-            except subprocess.TimeoutExpired:proc.kill();proc.wait(timeout=3)
+            try:
+                if driver is not None:
+                    try:
+                        if page is not None:page.close()
+                    finally:close_browser(driver,instance)
+            finally:
+                # A browser-close failure/watchdog must not strand the fixture
+                # server. Preserve that failure while always reaping this child.
+                proc.terminate()
+                try:proc.wait(timeout=3)
+                except subprocess.TimeoutExpired:proc.kill();proc.wait(timeout=3)
