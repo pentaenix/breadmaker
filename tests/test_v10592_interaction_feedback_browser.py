@@ -111,8 +111,8 @@ def test_task_moves_before_patch_returns_and_failure_restores_it(tmp_path):
         assert saved['status']=='open'
 
 
-def test_task_uncheck_moves_before_patch_and_keeps_structural_undo(tmp_path):
-    with browser(tmp_path,local=False) as (_,page,_):
+def test_task_uncheck_moves_before_patch_and_keeps_structural_undo(tmp_path,local=False):
+    with browser(tmp_path,local=local) as (_,page,_):
         task=_task(page)
         page.evaluate('async(id)=>{await setTaskStatus(id,"done");state.taskFilter="done";await loadTasks()}',task)
         held=[];page.route(f'**/api/tasks/{task}*',lambda route:held.append(route) if route.request.method=='PATCH' else route.continue_())
@@ -135,3 +135,7 @@ def test_local_review_participant_keeps_existing_undo(tmp_path):
         expect(page.locator('#reviewParticipantsPanelBody')).to_contain_text('Local synthetic reviewer')
         page.evaluate('async()=>{await state.structuralChain;await performUndo()}')
         expect(page.locator('#reviewParticipantsPanelBody')).not_to_contain_text('Local synthetic reviewer')
+
+
+def test_local_task_uncheck_keeps_existing_undo(tmp_path):
+    test_task_uncheck_moves_before_patch_and_keeps_structural_undo(tmp_path,local=True)

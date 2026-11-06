@@ -21344,7 +21344,7 @@
     },
     {
       "file": "static/js/features/maps/metro.js",
-      "lines": 192,
+      "lines": 206,
       "symbols": [
         {
           "name": "metroClamp",
@@ -21832,64 +21832,69 @@
           "line": 145
         },
         {
-          "name": "withMapPopulationFeedback",
+          "name": "openMapContextMenu",
           "kind": "function",
           "line": 147
         },
         {
-          "name": "populateMap",
-          "kind": "function",
-          "line": 154
-        },
-        {
-          "name": "populateExistingLine",
-          "kind": "function",
-          "line": 155
-        },
-        {
-          "name": "jumpToMapAnchor",
-          "kind": "function",
-          "line": 156
-        },
-        {
-          "name": "jumpToMapItem",
-          "kind": "function",
-          "line": 158
-        },
-        {
-          "name": "addSceneToMap",
-          "kind": "function",
-          "line": 159
-        },
-        {
-          "name": "mapFromChapter",
+          "name": "withMapPopulationFeedback",
           "kind": "function",
           "line": 161
         },
         {
-          "name": "renderTarget",
+          "name": "populateMap",
           "kind": "function",
-          "line": 165
+          "line": 168
         },
         {
-          "name": "render",
+          "name": "populateExistingLine",
           "kind": "function",
-          "line": 166
+          "line": 169
         },
         {
-          "name": "mapFromSelection",
+          "name": "jumpToMapAnchor",
           "kind": "function",
           "line": 170
         },
         {
+          "name": "jumpToMapItem",
+          "kind": "function",
+          "line": 172
+        },
+        {
+          "name": "addSceneToMap",
+          "kind": "function",
+          "line": 173
+        },
+        {
+          "name": "mapFromChapter",
+          "kind": "function",
+          "line": 175
+        },
+        {
+          "name": "renderTarget",
+          "kind": "function",
+          "line": 179
+        },
+        {
+          "name": "render",
+          "kind": "function",
+          "line": 180
+        },
+        {
+          "name": "mapFromSelection",
+          "kind": "function",
+          "line": 184
+        },
+        {
           "name": "openMapAtItem",
           "kind": "function",
-          "line": 171
+          "line": 185
         },
         {
           "name": "jumpToScene",
           "kind": "function",
-          "line": 186
+          "line": 200
         }
       ]
     },
