@@ -1,6 +1,6 @@
 # Read-only M10B operator image: source allowlist, non-root, no web listener.
 # This is deliberately distinct from the web/backup-write images.
-FROM python:3.14.7-slim-trixie
+FROM python:3.15.0-slim-trixie
 WORKDIR /app
 COPY requirements.txt requirements-hosted.txt ./
 RUN python -m pip install --no-cache-dir -r requirements-hosted.txt
