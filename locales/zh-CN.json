@@ -3656,13 +3656,18 @@
     "targets.history_group": "已达成 {count}/{total} 个目标",
     "export.zip.menu": "可读ZIP…",
     "export.zip.title": "导出可读ZIP",
-    "export.zip.description": "包含每份文档的Word、HTML和文本副本、原始图片以及可恢复的Breadmaker项目。解压ZIP后打开START-HERE.html。",
+    "export.zip.description": "包含每份文档的Word、HTML和文本副本、原始图片及原始项目快照。恢复兼容性和上传限制取决于应用和项目内容。解压ZIP，打开START-HERE.html并阅读README.txt。",
     "export.zip.create": "创建ZIP",
     "export.zip.creating": "正在创建ZIP…",
     "export.zip.ready": "ZIP已导出",
     "export.zip.failed": "ZIP导出失败。",
     "export.zip.project_changed": "当前项目已更改。请重新打开导出。",
-    "canvas.links_retry": "重试"
+    "canvas.links_retry": "重试",
+    "export.project.preparing": "正在准备项目下载…",
+    "export.project.ready": "项目下载已就绪。",
+    "export.project.failed": "无法下载项目。",
+    "export.project.unsupported_title": "此项目需要网页版恢复快照",
+    "export.project.unsupported_body": "此项目的部分已保存数据暂时无法转换为桌面原生格式。未删除任何数据。可读ZIP保留可读副本和原始网页版快照。请在网页版应用的大小和格式限制内恢复该快照。"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

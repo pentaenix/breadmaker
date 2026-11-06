@@ -118,3 +118,20 @@ bytes, followed by hosted reimport and a second native export. Invalid positions
 conflicting aliases and unsupported frozen Canvas history remain explicit errors.
 This does not broaden native representation of frozen node/edge histories or
 claim that every hosted-v3 recovery snapshot is desktop-native compatible.
+
+## Hosted frozen history and export feedback (10.5.91)
+
+Native conversion still rejects hosted frozen Canvas nodes/edges and unrecognized
+checkpoint captures. Local `canvas_version_items` represent chapter/scene
+placements; hosted items freeze node/edge payloads and connectors. They are not
+interchangeable histories. Default hosted checkpoint creation can retain a whole
+project capture, whereas the existing native checkpoint codec accepts a strict
+version-1 manuscript subset. UI comparison projections do not establish a
+lossless export codec. No state is omitted or rewritten to force a native export.
+
+Project export failures now stay inside the writing workspace. A portability
+refusal explains the readable ZIP alternative; that archive preserves its original
+hosted recovery snapshot for the web importer, subject to the documented transfer
+and decoder limits. It does not promise desktop restoration of arbitrary history.
+Native support for these shapes requires a versioned representation, historical
+ID/asset preservation, and real restore/compare tests before widening acceptance.
