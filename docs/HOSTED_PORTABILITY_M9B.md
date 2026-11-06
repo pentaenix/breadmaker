@@ -101,3 +101,20 @@ asset validation. Hosted/local Review IDs and main-Manuscript Tab roles are
 reconciled. Richer hosted Canvas geometry histories, multi-round or advanced
 Review semantics and project-shaped hosted checkpoints still fail closed.
 **M9B remains partially complete, not fully lossless for all hosted content.**
+
+## Sparse hosted Canvas and Map records
+
+Native conversion materializes an omitted Canvas `position` as zero, matching
+hosted display-order semantics. It preserves supplied positions and retains
+normal numeric validation. Map `title`/`name` aliases are collapsed only when
+identical (or when `title` supplies an otherwise absent name); conflicting values
+still abort conversion. An omitted Map-line color uses the same default as the
+hosted Map response. Other unknown fields remain rejected.
+
+Native reimport resolves a Canvas `parent_id` through Canvas identities, rather
+than a same-number document Tab. Focused regressions cover the actual local
+package verifier/importer, hierarchy, geometry, connectors and embedded image
+bytes, followed by hosted reimport and a second native export. Invalid positions,
+conflicting aliases and unsupported frozen Canvas history remain explicit errors.
+This does not broaden native representation of frozen node/edge histories or
+claim that every hosted-v3 recovery snapshot is desktop-native compatible.

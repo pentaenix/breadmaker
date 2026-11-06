@@ -3661,7 +3661,8 @@
     "export.zip.creating": "Creazione ZIP…",
     "export.zip.ready": "ZIP esportato",
     "export.zip.failed": "Esportazione ZIP non riuscita.",
-    "export.zip.project_changed": "Il progetto attivo è cambiato. Riapri l’esportazione."
+    "export.zip.project_changed": "Il progetto attivo è cambiato. Riapri l’esportazione.",
+    "canvas.links_retry": "Riprova"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

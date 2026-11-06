@@ -3661,7 +3661,8 @@
     "export.zip.creating": "正在创建ZIP…",
     "export.zip.ready": "ZIP已导出",
     "export.zip.failed": "ZIP导出失败。",
-    "export.zip.project_changed": "当前项目已更改。请重新打开导出。"
+    "export.zip.project_changed": "当前项目已更改。请重新打开导出。",
+    "canvas.links_retry": "重试"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

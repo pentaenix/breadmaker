@@ -710,7 +710,9 @@ class HostedProjectPackageService:
                     # _stage_entity assigns fresh server-owned values; keep its
                     # managed-field rejection intact for all other callers.
                     if key in {'id','project_id','created_at','updated_at','generation'}:continue
-                    target=field_targets.get(key)
+                    # parent_id is polymorphic across native tables: Canvas
+                    # hierarchy must never resolve to a same-number document Tab.
+                    target='canvas' if logical=='canvas' and key=='parent_id' else field_targets.get(key)
                     if target and value is not None:value=id_maps.get((target,str(value)),str(value))
                     payload[key]=_json_safe(value)
                 # Schema-42 checkpoints store compressed snapshot bytes. Preserve them

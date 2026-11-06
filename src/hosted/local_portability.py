@@ -329,6 +329,23 @@ def to_local_package(source: bytes, *, project_generation: int, created_at: str 
                 row = project_row(table, row, meta['id'], created, editing_registry)
             except ValueError as exc:
                 raise LocalPortabilityError(str(exc)) from exc
+            # Sparse hosted Canvas rows use zero as the default display order,
+            # just like HostedDomainStore.list. Native canvases require an
+            # explicit value; retain all supplied values for normal validation.
+            if table == 'canvases':
+                row = {'position': 0, **row}
+            # Hosted Maps may retain the UI title alias. Collapse only an exact
+            # alias, never two distinct strings that would lose source data.
+            if table in {'story_maps', 'map_lines'} and 'title' in row:
+                row = dict(row)
+                title = row.pop('title')
+                if 'name' in row and row['name'] != title:
+                    raise LocalPortabilityError(f'HOSTED_PORTABLE_TITLE_ALIAS_CONFLICT:{table}')
+                row['name'] = title
+            if table == 'map_lines' and 'color' not in row:
+                # Same materialized default as the hosted Map response; populated
+                # lines need not store a custom color to display this value.
+                row = {**row, 'color': '#4f7d8a'}
             # Hosted document Tabs encode the primary Manuscript role using
             # `kind`; local Schema 42 uses `is_manuscript`. This role is not
             # merely decorative: local project invariants require exactly one.

@@ -11,7 +11,10 @@ The archive contains:
 - `assets/` with original project image files, referenced relatively by the HTML copies.
 - `data/project-content.json`, a readable reference for current manuscript structure,
   markers, Canvas, Maps, Tasks and links. This is explicitly **not** an import format.
-- `Project.breadmaker`, the unchanged portable project snapshot used for restoration.
+- `Project.breadmaker`, the unchanged project snapshot used for restoration. Local
+  exports include the native package; hosted exports include the hosted-v3 package
+  and explicitly instruct restoration through the web app. A hosted recovery file
+  is not claimed to be a desktop-native package.
 
 The browser saves pending writing before export and shows a disabled “Creating ZIP…”
 button while the download is prepared. Failed requests can be retried. Completing an
@@ -22,8 +25,13 @@ PDF dialog body, modal lifecycle and download helper; no new CSS or panel langua
 
 The readable files are all derived from one portable snapshot. Local exports reuse the
 existing frozen canonical-generation package exporter, then render only that snapshot.
-Hosted exports reuse the existing membership-authorized, generation-fenced hosted-to-local
-codec, including its experimental-encryption refusal and unsupported-state checks. A
+Hosted exports fence the existing membership-authorized hosted-v3 package with canonical
+project generation checks before and after capture. They retain its experimental-encryption
+refusal. Readable copies are rendered from that immutable package without further provider
+reads. Hosted Canvas geometry history and sparse Canvas/Map records do not have to fit
+native Schema 42 to make readable files; their unchanged hosted state remains in the
+included recovery package. The separate native compatibility codec and all of its
+unsupported-state refusals remain in effect for native exports. A
 single per-instance worker limits hosted archive assembly; the existing heavy-request
 rate limit covers the new route. No local Workspace is created by hosted export.
 
@@ -32,6 +40,45 @@ fixed or use safe, numbered filenames. HTML titles/attributes are escaped and ma
 inline formatting uses the canonical sanitizer. Credentials, installations and account
 membership authority remain excluded by the existing portable-project policy. Temporary
 snapshot/archive files are cleaned after download or failure.
+
+Hosted-v3 snapshots name asset members with their full content hash. Readable
+copies use the existing `img_<24 hash characters>` manuscript asset names, with
+validated one-to-one aliases and collision refusal. The included recovery package
+retains its original member names and bytes.
+
+## Hosted size and restore limits
+
+The current browser project importer posts the extracted `Project.breadmaker`
+as one multipart upload to `/api/projects/import`. It does not select a durable
+large-file transfer job. Its application file cap is **64 MiB (67,108,864 bytes)**,
+or a lower configured package cap. This is an upper bound, not a promise that
+every file below it can be restored.
+
+The current deployment source uses a Cloud Run container port without `h2c`,
+running Uvicorn's HTTP/1 server. Cloud Run has a **32 MiB HTTP/1 request limit**,
+including multipart overhead. It also limits HTTP/1 responses to 32 MiB unless
+they use chunked transfer or streaming. The readable ZIP route currently returns
+a buffered `Response` with a content length. Therefore the application cap must
+not be advertised as the effective hosted upload limit, and large ZIP downloads
+also need a streaming or bounded direct-transfer path before broad size claims.
+These platform limits are based on the deployed source configuration and
+[Cloud Run's limits](https://docs.cloud.google.com/run/quotas); no large live
+upload or download probe was performed.
+
+The hosted-v3 package importer additionally limits expanded content to 256 MiB,
+each archive member to 64 MiB, each asset to 12 MiB, and member count to 25,000.
+The readable source accepts up to 50,000 members, so its successful rendering
+alone does not prove the recovery snapshot will pass import. The included hosted
+README describes the file cap and lower hosting limits. Larger recovery files
+are preserved unchanged; the readable copies can still be used independently.
+No upload, decoder or infrastructure limit is raised by this documentation.
+
+An isolated 17-byte boundary probe confirmed that the upload reader refuses a
+configured 16-byte limit with HTTP 413, while the current import handler's error
+adapter converts that refusal to generic HTTP 500. That error presentation is an
+existing compatibility issue for a separate fix; the package importer is not
+called after an oversized upload. This probe ran extracted current source
+functions without a server or project and did not allocate a large payload.
 
 `formats/manuscript_docx.py` now owns the shared Word renderer used by local export,
 hosted export and ZIP copies. Semantic headings, bold, italics, underline, tabs, line
@@ -75,3 +122,11 @@ keyboard focus, busy/error feedback and stale-modal completion.
 Full Editor and Cloud release gates and authenticated live QA remain required before
 production promotion. The release coordinator owns version allocation and deployment;
 this feature does not change production independently of that release.
+
+The initial 10.5.89 deployment passed its full release gates but authenticated live
+ZIP verification exposed `HOSTED_PORTABLE_SCHEMA_CONFLICT:canvas` on a legitimate
+hosted Canvas without a position field. The corrective source removes the unnecessary
+native conversion boundary from hosted readable export. Regressions cover sparse
+Canvas/Maps, frozen Canvas history, byte-preserved hosted recovery and web import,
+generation changes during capture, and immutable rendering after capture. This note
+records the observed failure and design; it is not a claim of verified live correction.
