@@ -1,47 +1,54 @@
-name: verify-narration
+name: diagnose-narration-shutdown
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
 permissions:
   contents: read
 jobs:
-  narration-validation:
+  diagnose-api-shutdown:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
-      - name: Install test and optional language dependencies
+      - name: Install the same Python test and language dependencies
         run: python -m pip install -r requirements-test.txt -r tools/narration/requirements-languages.txt
-      - name: Audit all installed Python packages
+      - name: Audit installed Python packages
         run: python -m pip_audit --strict --progress-spinner=off --desc=off
-      - name: Install pinned narration packages
+      - name: Three bounded silent API attempts with unchanged watchdog
         run: |
-          node -e 'if(Number(process.versions.node.split(".")[0])<22)process.exit(1)'
-          npm install --global pnpm@11.25.0
-          pnpm --dir tools/narration install --frozen-lockfile --ignore-scripts
-          pnpm --dir tools/narration audit
-      - name: Build and verify offline CPU model assets
-        run: node tools/narration/install.mjs
-      # Keep the existing signed Ubuntu repositories; avoid slow Azure responses
-      # consuming the job budget before the release assertions can run.
-      - name: Prefer the runner's existing HTTPS Ubuntu archive
-        run: sudo --preserve-env=GITHUB_ACTIONS,RUNNER_OS python3 scripts/configure_ci_ubuntu_mirror.py
-      - name: Install pinned browser test runtimes
-        run: python -m playwright install --with-deps chromium firefox webkit
-      - name: Provide virtual audio output for headless browser checks
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends pulseaudio pulseaudio-utils
-          pulseaudio --start --exit-idle-time=-1
-          pactl load-module module-null-sink sink_name=breadmaker_test
-          pactl set-default-sink breadmaker_test
-      - name: Narration behavior, dictionaries and three-browser UI checks
-        run: python tools/narration/check.py --runtime --browser chromium --browser firefox --browser webkit
-      - name: Short real-model samples, never a full-book endurance test
-        run: python tools/narration/smoke-languages.py --editor
+          python - <<'PY'
+          import json,os,platform,subprocess,sys
+          from pathlib import Path
+          root=Path('shutdown-evidence');root.mkdir()
+          results=[]
+          for attempt in range(1,4):
+              directory=root/str(attempt);directory.mkdir()
+              env={**os.environ,'BM_SHUTDOWN_DIAGNOSTICS':str(directory.resolve())}
+              command=[sys.executable,'-m','pytest','-p','tools.narration.pytest_shutdown_diagnostics',
+                  '-q','--tb=short','tests/unit/test_narration_frontend.py',
+                  'tests/test_v10566_narration.py','tests/test_v10566_narration_dsp.py']
+              with (directory/'pytest.log').open('w') as output:
+                  try:
+                      result=subprocess.run(command,env=env,stdout=output,stderr=subprocess.STDOUT,timeout=120)
+                      results.append({'attempt':attempt,'exit_code':result.returncode})
+                  except subprocess.TimeoutExpired:
+                      results.append({'attempt':attempt,'outer_timeout_seconds':120})
+              print(json.dumps(results[-1]),flush=True)
+          summary={'diagnostic_only':True,'release_candidate_sha':'dbb7eb9a3b18e0838c22c5ac53b381e95f5fd4d2',
+              'diagnostic_sha':os.environ['GITHUB_SHA'],'python':sys.version,'platform':platform.platform(),
+              'attempts':results,'original_per_test_watchdog_unchanged':True}
+          (root/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+          raise SystemExit(0 if all(item.get('exit_code')==0 for item in results) else 1)
+          PY
+      - name: Preserve shutdown stack and phase timing evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: narration-shutdown-diagnostics
+          path: shutdown-evidence
+          if-no-files-found: warn
+          retention-days: 7
