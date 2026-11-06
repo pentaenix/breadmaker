@@ -28,6 +28,8 @@ if not getattr(_platform_app.state,'feature_routers_installed',False):
         _platform_app.include_router(product_router)
         _platform_app.include_router(hosted_compat_router)
         _platform_app.include_router(readable_export_router)
+        from hosted.missing_page import install as _install_missing_page
+        _install_missing_page(_platform_app)
     _platform_app.state.feature_routers_installed=True
 
 app=_platform_app

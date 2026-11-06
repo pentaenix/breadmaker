@@ -3672,7 +3672,10 @@
     "canvas.populate_unavailable": "Le remplissage est indisponible. Rouvrez ce menu pour réessayer.",
     "tasks.status_failed": "Impossible d’enregistrer l’état de la tâche.",
     "tasks.refresh_failed": "Impossible d’actualiser les tâches.",
-    "tasks.project_changed": "Le projet actif a changé. Rouvrez les tâches."
+    "tasks.project_changed": "Le projet actif a changé. Rouvrez les tâches.",
+    "missing_page.title": "Page introuvable",
+    "missing_page.message": "Ce lien est peut-être obsolète. Retournez à votre espace d’écriture pour continuer.",
+    "missing_page.return": "Retour à Breadmaker"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

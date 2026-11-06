@@ -3672,7 +3672,10 @@
     "canvas.populate_unavailable": "自動配置を利用できません。メニューを開き直して再試行してください。",
     "tasks.status_failed": "タスクの状態を保存できませんでした。",
     "tasks.refresh_failed": "タスクを更新できませんでした。",
-    "tasks.project_changed": "現在のプロジェクトが変わりました。タスクを開き直してください。"
+    "tasks.project_changed": "現在のプロジェクトが変わりました。タスクを開き直してください。",
+    "missing_page.title": "ページが見つかりません",
+    "missing_page.message": "リンクが古い可能性があります。執筆スペースに戻って続けてください。",
+    "missing_page.return": "Breadmakerに戻る"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

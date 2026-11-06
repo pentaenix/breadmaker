@@ -6024,7 +6024,7 @@
     },
     {
       "file": "src/app.py",
-      "lines": 33,
+      "lines": 35,
       "symbols": []
     },
     {
@@ -11467,6 +11467,37 @@
           "name": "refresh_chapter_read_cache",
           "kind": "function",
           "line": 127
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/missing_page.py",
+      "lines": 70,
+      "symbols": [
+        {
+          "name": "_preferences",
+          "kind": "function",
+          "line": 14
+        },
+        {
+          "name": "_copy",
+          "kind": "function",
+          "line": 27
+        },
+        {
+          "name": "_language",
+          "kind": "function",
+          "line": 33
+        },
+        {
+          "name": "missing_page",
+          "kind": "async_function",
+          "line": 42
+        },
+        {
+          "name": "install",
+          "kind": "function",
+          "line": 69
         }
       ]
     },

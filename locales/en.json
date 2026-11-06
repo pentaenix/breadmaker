@@ -3672,7 +3672,10 @@
     "canvas.populate_unavailable": "Populate is unavailable. Reopen this menu to try again.",
     "tasks.status_failed": "Task status could not be saved.",
     "tasks.refresh_failed": "Tasks could not be refreshed.",
-    "tasks.project_changed": "The active project changed. Open Tasks again."
+    "tasks.project_changed": "The active project changed. Open Tasks again.",
+    "missing_page.title": "Page not found",
+    "missing_page.message": "This link may be outdated. Return to your writing space to continue.",
+    "missing_page.return": "Return to Breadmaker"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

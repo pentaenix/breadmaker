@@ -3672,7 +3672,10 @@
     "canvas.populate_unavailable": "无法自动填充。请重新打开菜单重试。",
     "tasks.status_failed": "无法保存任务状态。",
     "tasks.refresh_failed": "无法刷新任务。",
-    "tasks.project_changed": "当前项目已更改。请重新打开任务。"
+    "tasks.project_changed": "当前项目已更改。请重新打开任务。",
+    "missing_page.title": "找不到页面",
+    "missing_page.message": "此链接可能已过期。请返回写作空间继续。",
+    "missing_page.return": "返回Breadmaker"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

@@ -3672,7 +3672,10 @@
     "canvas.populate_unavailable": "Compilazione non disponibile. Riapri il menu per riprovare.",
     "tasks.status_failed": "Impossibile salvare lo stato dell’attività.",
     "tasks.refresh_failed": "Impossibile aggiornare le attività.",
-    "tasks.project_changed": "Il progetto attivo è cambiato. Riapri le attività."
+    "tasks.project_changed": "Il progetto attivo è cambiato. Riapri le attività.",
+    "missing_page.title": "Pagina non trovata",
+    "missing_page.message": "Questo collegamento potrebbe non essere aggiornato. Torna al tuo spazio di scrittura per continuare.",
+    "missing_page.return": "Torna a Breadmaker"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

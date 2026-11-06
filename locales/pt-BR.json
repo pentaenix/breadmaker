@@ -3672,7 +3672,10 @@
     "canvas.populate_unavailable": "O preenchimento não está disponível. Reabra o menu para tentar novamente.",
     "tasks.status_failed": "Não foi possível salvar o estado da tarefa.",
     "tasks.refresh_failed": "Não foi possível atualizar as tarefas.",
-    "tasks.project_changed": "O projeto ativo mudou. Abra as tarefas novamente."
+    "tasks.project_changed": "O projeto ativo mudou. Abra as tarefas novamente.",
+    "missing_page.title": "Página não encontrada",
+    "missing_page.message": "Este link pode estar desatualizado. Volte ao seu espaço de escrita para continuar.",
+    "missing_page.return": "Voltar ao Breadmaker"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",
