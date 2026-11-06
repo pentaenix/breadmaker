@@ -11370,7 +11370,7 @@
     },
     {
       "file": "src/hosted/local_portability.py",
-      "lines": 486,
+      "lines": 503,
       "symbols": [
         {
           "name": "LocalPortabilityError",
@@ -12138,7 +12138,7 @@
     },
     {
       "file": "src/hosted/packages.py",
-      "lines": 724,
+      "lines": 726,
       "symbols": [
         {
           "name": "_fields",
@@ -16595,7 +16595,7 @@
     },
     {
       "file": "static/js/features/canvas/hierarchy.js",
-      "lines": 262,
+      "lines": 263,
       "symbols": [
         {
           "name": "restoreCanvasUIState",
@@ -17131,7 +17131,7 @@
     },
     {
       "file": "static/js/features/canvas/nodes.js",
-      "lines": 439,
+      "lines": 447,
       "symbols": [
         {
           "name": "canvasShapeIcon",
@@ -17794,29 +17794,34 @@
           "line": 394
         },
         {
+          "name": "loadLinks",
+          "kind": "function",
+          "line": 398
+        },
+        {
           "name": "mixedChoice",
           "kind": "function",
-          "line": 407
+          "line": 415
         },
         {
           "name": "mixedValue",
           "kind": "function",
-          "line": 408
+          "line": 416
         },
         {
           "name": "openMultiNodeInspector",
           "kind": "function",
-          "line": 409
+          "line": 417
         },
         {
           "name": "bulk",
           "kind": "function",
-          "line": 412
+          "line": 420
         },
         {
           "name": "deleteSelectedNodes",
           "kind": "function",
-          "line": 416
+          "line": 424
         }
       ]
     },
@@ -21334,7 +21339,7 @@
     },
     {
       "file": "static/js/features/maps/metro.js",
-      "lines": 184,
+      "lines": 192,
       "symbols": [
         {
           "name": "metroClamp",
@@ -21822,59 +21827,64 @@
           "line": 145
         },
         {
-          "name": "populateMap",
-          "kind": "function",
-          "line": 146
-        },
-        {
-          "name": "populateExistingLine",
+          "name": "withMapPopulationFeedback",
           "kind": "function",
           "line": 147
         },
         {
+          "name": "populateMap",
+          "kind": "function",
+          "line": 154
+        },
+        {
+          "name": "populateExistingLine",
+          "kind": "function",
+          "line": 155
+        },
+        {
           "name": "jumpToMapAnchor",
           "kind": "function",
-          "line": 148
+          "line": 156
         },
         {
           "name": "jumpToMapItem",
           "kind": "function",
-          "line": 150
+          "line": 158
         },
         {
           "name": "addSceneToMap",
           "kind": "function",
-          "line": 151
+          "line": 159
         },
         {
           "name": "mapFromChapter",
           "kind": "function",
-          "line": 153
+          "line": 161
         },
         {
           "name": "renderTarget",
           "kind": "function",
-          "line": 157
+          "line": 165
         },
         {
           "name": "render",
           "kind": "function",
-          "line": 158
+          "line": 166
         },
         {
           "name": "mapFromSelection",
           "kind": "function",
-          "line": 162
+          "line": 170
         },
         {
           "name": "openMapAtItem",
           "kind": "function",
-          "line": 163
+          "line": 171
         },
         {
           "name": "jumpToScene",
           "kind": "function",
-          "line": 178
+          "line": 186
         }
       ]
     },
@@ -24709,7 +24719,7 @@
     },
     {
       "file": "static/js/features/split_view.js",
-      "lines": 186,
+      "lines": 198,
       "symbols": [
         {
           "name": "clearCheckpointLiveHighlights",
@@ -24769,122 +24779,127 @@
         {
           "name": "closeSplitView",
           "kind": "function",
-          "line": 60
+          "line": 61
         },
         {
           "name": "showSplit",
           "kind": "function",
-          "line": 61
+          "line": 62
         },
         {
           "name": "splitManuscriptBlockHtml",
           "kind": "function",
-          "line": 62
+          "line": 63
         },
         {
           "name": "splitTabRows",
           "kind": "function",
-          "line": 68
+          "line": 69
         },
         {
           "name": "splitSceneRows",
           "kind": "function",
-          "line": 69
+          "line": 70
         },
         {
           "name": "openSplitViewChooser",
           "kind": "function",
-          "line": 70
+          "line": 71
         },
         {
           "name": "option",
           "kind": "function",
-          "line": 74
+          "line": 75
         },
         {
           "name": "tabOptions",
           "kind": "function",
-          "line": 86
+          "line": 87
         },
         {
           "name": "emptyTarget",
           "kind": "function",
-          "line": 88
+          "line": 89
         },
         {
           "name": "entityOptions",
           "kind": "function",
-          "line": 89
+          "line": 90
         },
         {
           "name": "field",
           "kind": "function",
-          "line": 90
+          "line": 91
         },
         {
           "name": "refresh",
           "kind": "function",
-          "line": 91
+          "line": 92
         },
         {
           "name": "openChapterSplit",
           "kind": "function",
-          "line": 140
+          "line": 141
         },
         {
           "name": "openSceneSplit",
           "kind": "function",
-          "line": 141
+          "line": 142
         },
         {
           "name": "openTabSplit",
           "kind": "function",
-          "line": 142
+          "line": 143
+        },
+        {
+          "name": "wireSplitCanvasPan",
+          "kind": "function",
+          "line": 144
         },
         {
           "name": "openCanvasSplit",
           "kind": "function",
-          "line": 143
+          "line": 155
         },
         {
           "name": "openMapSplit",
           "kind": "function",
-          "line": 154
+          "line": 166
         },
         {
           "name": "splitTasksEmptyHtml",
           "kind": "function",
-          "line": 156
+          "line": 168
         },
         {
           "name": "splitTaskHasOpenMilestones",
           "kind": "function",
-          "line": 158
+          "line": 170
         },
         {
           "name": "completeTaskFromSplit",
           "kind": "function",
-          "line": 159
+          "line": 171
         },
         {
           "name": "renderSplitMilestoneRows",
           "kind": "function",
-          "line": 166
+          "line": 178
         },
         {
           "name": "expandSplitTaskMilestones",
           "kind": "function",
-          "line": 172
+          "line": 184
         },
         {
           "name": "renderTasksSplitBody",
           "kind": "function",
-          "line": 178
+          "line": 190
         },
         {
           "name": "openTasksSplit",
           "kind": "function",
-          "line": 183
+          "line": 195
         }
       ]
     },
