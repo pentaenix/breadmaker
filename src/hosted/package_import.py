@@ -59,6 +59,22 @@ class _GuardedObjects:
     def __init__(self, objects, check):
         self.objects, self.check = objects, check
 
+    def __getattr__(self, name):
+        # Expose only the provider's existing optional small-object fast read.
+        # Do not turn this authority wrapper into a general provider proxy.
+        if name != 'read_verified_bytes':
+            raise AttributeError(name)
+        read = getattr(self.objects, name, None)
+        if not callable(read):
+            raise AttributeError(name)
+        def verified(name, *, if_generation_match, expected_size, expected_sha256):
+            self.check()
+            result = read(name, if_generation_match=if_generation_match,
+                          expected_size=expected_size, expected_sha256=expected_sha256)
+            self.check()
+            return result
+        return verified
+
     def write_chunks(self, name, chunks, **kwargs):
         self.check()
         result = self.objects.write_chunks(name, chunks, **kwargs)
