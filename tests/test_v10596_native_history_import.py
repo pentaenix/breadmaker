@@ -139,6 +139,14 @@ def test_oversized_checkpoint_decompression_is_bounded(monkeypatch):
         native_history._unpack(zlib.compress(b'x' * 10000))
 
 
+def test_frozen_relational_tables_have_an_aggregate_read_bound(monkeypatch):
+    from hosted import native_history
+    con, ids, _ = _fixture()
+    monkeypatch.setattr(native_history, '_MAX_HISTORY_ROWS', 3)
+    with pytest.raises(ValueError, match='ROW_LIMIT'):
+        prepare_native_history(con, PID, ids)
+
+
 @pytest.mark.parametrize('fragment,path,kind', [
     ('<img src=x onerror=alert(1)>', '', 'paragraph'),
     ('<b onclick=alert(1)>Frozen text</b>', '', 'paragraph'),

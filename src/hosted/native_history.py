@@ -22,6 +22,7 @@ from storage.values import review_snapshot_content_hash
 
 _LIMIT = 8 * 1024 * 1024
 _TOTAL_LIMIT = 192 * 1024 * 1024
+_MAX_HISTORY_ROWS = 100_000
 _GROUPS = ('chapters', 'scenes', 'blocks', 'markers', 'questions', 'checkpoints')
 _SOURCE_FIELDS = {
     'source_tab_id': 'document_tab', 'source_chapter_id': 'chapter',
@@ -98,11 +99,17 @@ def prepare_native_history(con, pid, id_maps):
     plan = NativeHistoryPlan()
     tables = {row[0] for row in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     cache = {}
+    row_count = 0
 
     def rows(table):
+        nonlocal row_count
         if table not in cache:
-            cache[table] = ([dict(row) for row in con.execute(f'SELECT * FROM "{table}"')]
+            remaining = _MAX_HISTORY_ROWS - row_count
+            cache[table] = ([dict(row) for row in con.execute(f'SELECT * FROM "{table}" LIMIT {remaining + 1}')]
                             if table in tables else [])
+            row_count += len(cache[table])
+            if row_count > _MAX_HISTORY_ROWS:
+                _fail('ROW_LIMIT')
         return cache[table]
 
     def identity(kind, value):
