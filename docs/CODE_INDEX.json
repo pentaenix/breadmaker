@@ -24093,187 +24093,197 @@
     },
     {
       "file": "static/js/features/projects/targets.js",
-      "lines": 313,
+      "lines": 334,
       "symbols": [
         {
           "name": "targetText",
           "kind": "function",
-          "line": 7
+          "line": 8
         },
         {
           "name": "targetHtml",
           "kind": "function",
-          "line": 8
+          "line": 9
         },
         {
           "name": "targetsContext",
           "kind": "function",
-          "line": 9
+          "line": 10
         },
         {
           "name": "targetsAcknowledged",
           "kind": "function",
-          "line": 10
+          "line": 11
         },
         {
           "name": "targetsMergePending",
           "kind": "function",
-          "line": 11
+          "line": 12
         },
         {
           "name": "targetsPreviewPending",
           "kind": "function",
-          "line": 15
+          "line": 16
         },
         {
           "name": "targetsRequest",
           "kind": "function",
-          "line": 16
+          "line": 17
         },
         {
           "name": "targetsHideTips",
           "kind": "function",
-          "line": 21
+          "line": 24
         },
         {
           "name": "loadTargets",
           "kind": "function",
-          "line": 22
+          "line": 25
         },
         {
           "name": "loading",
           "kind": "function",
-          "line": 28
+          "line": 32
         },
         {
           "name": "targetsEnqueue",
           "kind": "function",
-          "line": 40
+          "line": 44
         },
         {
           "name": "flushTargets",
           "kind": "function",
-          "line": 53
+          "line": 57
         },
         {
           "name": "save",
           "kind": "function",
-          "line": 57
+          "line": 61
         },
         {
           "name": "targetsClock",
           "kind": "function",
-          "line": 85
+          "line": 89
         },
         {
           "name": "targetsActivity",
           "kind": "function",
-          "line": 100
+          "line": 104
         },
         {
           "name": "targetsManuscriptText",
           "kind": "function",
-          "line": 109
+          "line": 113
         },
         {
           "name": "targetsCaptureWriting",
           "kind": "function",
-          "line": 110
+          "line": 114
         },
         {
           "name": "targetsFinishWriting",
           "kind": "function",
-          "line": 115
+          "line": 119
         },
         {
           "name": "targetsStopSound",
           "kind": "function",
-          "line": 145
+          "line": 149
         },
         {
           "name": "targetsPlaySound",
           "kind": "function",
-          "line": 146
+          "line": 150
         },
         {
           "name": "targetsCelebrate",
           "kind": "function",
-          "line": 151
+          "line": 155
         },
         {
           "name": "targetsAmount",
           "kind": "function",
-          "line": 156
+          "line": 160
         },
         {
           "name": "targetsProgressLabel",
           "kind": "function",
-          "line": 162
+          "line": 166
         },
         {
           "name": "targetsRing",
           "kind": "function",
-          "line": 163
+          "line": 167
         },
         {
           "name": "renderTargets",
           "kind": "function",
-          "line": 164
+          "line": 168
         },
         {
           "name": "targetsSwitch",
           "kind": "function",
-          "line": 191
+          "line": 195
         },
         {
           "name": "targetsGoalRow",
           "kind": "function",
-          "line": 192
+          "line": 196
         },
         {
           "name": "field",
           "kind": "function",
-          "line": 193
+          "line": 197
         },
         {
           "name": "targetsHistoryRows",
           "kind": "function",
-          "line": 196
+          "line": 200
         },
         {
           "name": "targetsHistoryChart",
           "kind": "function",
-          "line": 199
+          "line": 203
         },
         {
           "name": "openTargetsHistory",
           "kind": "function",
-          "line": 212
+          "line": 216
         },
         {
           "name": "render",
           "kind": "function",
-          "line": 221
+          "line": 225
         },
         {
           "name": "openTargets",
           "kind": "function",
-          "line": 230
+          "line": 234
         },
         {
           "name": "readGoals",
           "kind": "function",
-          "line": 255
+          "line": 259
         },
         {
           "name": "syncGoalPicker",
           "kind": "function",
-          "line": 256
+          "line": 260
         },
         {
           "name": "wireRows",
           "kind": "function",
-          "line": 262
+          "line": 266
+        },
+        {
+          "name": "suspendTargetsForNavigation",
+          "kind": "function",
+          "line": 308
+        },
+        {
+          "name": "resumeTargetsAfterNavigation",
+          "kind": "function",
+          "line": 313
         }
       ]
     },
