@@ -138,7 +138,7 @@ async function performHostedProjectImport(file,chapterHeading,fd){
   let progress;
   if(pending.job){
     try{progress=await api(`/api/import/jobs/${encodeURIComponent(pending.job)}`)}
-    catch(error){if(error.status!==404)throw error;pending={signature,key:uid(),created:Date.now()};sessionStorage.setItem(storageKey,JSON.stringify(pending))}
+    catch(error){if(error.status!==404&&!(error.status===409&&(error.code||error.message)==='HOSTED_IMPORT_RESTART_REQUIRED'))throw error;pending={signature,key:uid(),created:Date.now()};sessionStorage.setItem(storageKey,JSON.stringify(pending))}
   }
   if(!progress){
     progress=await api(`/api/import/new-project?resumable=true&chapter_heading=${encodeURIComponent(chapterHeading)}&project_name=${encodeURIComponent(importedProjectName(file))}`,{method:'POST',body:fd,idempotencyKey:pending.key});

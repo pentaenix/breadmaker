@@ -781,3 +781,16 @@ The hosted image pins the explicit `python:3.14.7-slim-trixie` base tag. Patch/b
 The hosted image ceiling applies before image bytes are materialized from Cuts, portable BreadReview, and native project-package imports. Hosted project packages are rejected before activation if any `assets/` member exceeds the configured image ceiling or is not a structurally valid PNG/JPEG/WebP. Portable BreadReview decoding receives the same per-asset ceiling. These archive paths do not create a decoder exception.
 
 </details>
+
+
+## Hosted manuscript import authority (10.5.94)
+
+Resumable DOCX/TXT imports use the same durable actor-bound reservation and
+unpublished project scope as native package imports. Each worker receives its
+own copy of the authenticated request context; object and document writes retain
+the production account-erasure fences. The job stores its server operation so
+reconstructed replicas can re-enter the exact reserved scope for each batch and
+final publication. A project and its owner membership become visible only after
+all verified batches finish. Older jobs without this authority must restart with
+a new operation; the browser keeps the writer in the existing project until the
+new import succeeds. Local, accountless import behavior remains unchanged.

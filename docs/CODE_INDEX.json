@@ -8087,12 +8087,12 @@
     },
     {
       "file": "src/hosted/document_import.py",
-      "lines": 163,
+      "lines": 176,
       "symbols": [
         {
           "name": "DocumentImport",
           "kind": "class",
-          "line": 29
+          "line": 31
         }
       ]
     },
@@ -12174,32 +12174,32 @@
     },
     {
       "file": "src/hosted/packages.py",
-      "lines": 735,
+      "lines": 740,
       "symbols": [
         {
           "name": "_fields",
           "kind": "function",
-          "line": 46
+          "line": 47
         },
         {
           "name": "_public",
           "kind": "function",
-          "line": 50
+          "line": 51
         },
         {
           "name": "_json_safe",
           "kind": "function",
-          "line": 56
+          "line": 57
         },
         {
           "name": "_restore_safe",
           "kind": "function",
-          "line": 64
+          "line": 65
         },
         {
           "name": "HostedProjectPackageService",
           "kind": "class",
-          "line": 73
+          "line": 74
         }
       ]
     },
