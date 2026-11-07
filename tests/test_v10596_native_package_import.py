@@ -419,3 +419,51 @@ def test_native_checkpoint_image_projection_imports_with_original_api_path(tmp_p
         assert service.domain.list('checkpoint', {'project_id': again['id']}, user_id=OWNER)[0]['snapshot']['blocks'][0]['image_path'] == image_path
     finally:
         con.close()
+
+
+def test_native_asset_aliases_survive_deduplicated_v3_roundtrip(tmp_path):
+    from hosted.native_package import prepare_project_package
+    from hosted.runtime_services import HostedCommittedAssetStore
+    con, path = database(tmp_path)
+    try:
+        con.execute("UPDATE manuscript_blocks SET block_type='image',content_html='',text_content='',image_path='/api/assets/img_original.png'")
+        source = package(con, path, files={'assets/img_original.png': PNG, 'assets/img_alias.png': PNG})
+        service, _, _ = fenced_service()
+        original = service.import_bytes(source, OWNER)
+        exported = service.export_bytes(original['id'], OWNER)
+        with zipfile.ZipFile(io.BytesIO(exported)) as archive:
+            assert len(archive.namelist()) == len(set(archive.namelist()))
+            assert len([name for name in archive.namelist() if name.startswith('assets/')]) == 1
+            manifest = json.loads(archive.read('manifest.json'))
+            assert list(manifest['asset_paths'].values()) == [['/api/assets/img_alias.png', '/api/assets/img_original.png']]
+        assert len(prepare_project_package(exported, TARGET)['assets']) == 2
+        restored = service.import_bytes(exported, OWNER)
+        store = HostedCommittedAssetStore(service.documents, service.objects, lambda: OWNER, lambda: restored['id'])
+        assert store.read_blob('/api/assets/img_original.png') == PNG
+        assert store.read_blob('/api/assets/img_alias.png') == PNG
+    finally:
+        con.close()
+
+
+@pytest.mark.parametrize('case', ['duplicate', 'traversal', 'foreign_blob', 'extension'])
+def test_v3_asset_alias_maps_cannot_change_blob_identity_or_escape_paths(case):
+    from hosted.native_package import prepare_project_package
+    from hosted.runtime_services import HostedCommittedAssetStore
+    _, _, _, _, projects = _services()
+    pid = projects.create('Safe image source')['id']
+    store = HostedCommittedAssetStore(projects.documents, projects.objects, lambda: OWNER, lambda: pid)
+    image = store.put_blob(PNG, '.png')
+    service = HostedProjectPackageService(projects)
+    source = service.export_bytes(pid, OWNER)
+    def edit(entries):
+        manifest = json.loads(entries['manifest.json'])
+        name = next(name for name in entries if name.startswith('assets/'))
+        if case == 'foreign_blob':
+            manifest['asset_paths'] = {'assets/' + 'f'*64 + '.png': [image.api_path]}
+        else:
+            values = {'duplicate': [image.api_path, image.api_path], 'traversal': ['/api/assets/../escape.png'],
+                      'extension': ['/api/assets/img_image.jpg']}
+            manifest['asset_paths'] = {name: values[case]}
+        entries['manifest.json'] = json.dumps(manifest).encode()
+    with pytest.raises(ValueError, match='ASSET_ALIAS_MAP_INVALID'):
+        prepare_project_package(rewrite(source, edit), TARGET)

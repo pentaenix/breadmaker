@@ -114,7 +114,8 @@ def _portable_import_payload(logical, data, *, ids=None, entity_id=None):
         elif isinstance(value, list):
             stack.extend(value)
     fields = _HYBRID_PAYLOAD_FIELDS.get(logical)
-    if fields and not any(key in result and result[key] is not None for key in fields):
+    image_body = logical == 'manuscript_block' and result.get('block_type') == 'image' and bool(result.get('image_path'))
+    if fields and not image_body and not any(key in result and result[key] is not None for key in fields):
         raise ValueError('HOSTED_PACKAGE_BODY_MISSING')
     if ids is not None and entity_id is not None:
         expected = {**ids, _ID_FIELDS[logical][0]: entity_id, 'id': entity_id}
@@ -274,8 +275,8 @@ class HostedProjectPackageService:
             'title':str(project.get('title') or 'Untitled'),'authorization_portable':False,
         }
         buffer=io.BytesIO()
+        written_assets=set();asset_paths={}
         with zipfile.ZipFile(buffer,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as archive:
-            archive.writestr('manifest.json',json.dumps(manifest,sort_keys=True,separators=(',',':')))
             archive.writestr('project.json',json.dumps({'entities':records},sort_keys=True,separators=(',',':'),ensure_ascii=False))
             # Export only assets that are authoritative in Firestore. Prefix scans may
             # include immutable orphan candidates left by failed pointer-last commits and
@@ -311,7 +312,18 @@ class HostedProjectPackageService:
                     raise ValueError('HOSTED_PACKAGE_ASSET_EXTENSION_INVALID')
                 if self.domain.encrypted_objects is not None:
                     inspect_hosted_image_bytes(payload,ext,byte_limit=_MAX_INLINE_ASSET)
-                archive.writestr('assets/'+digest+ext,payload)
+                archive_name='assets/'+digest+ext
+                api_path='/api/assets/'+name
+                asset_paths.setdefault(archive_name,[]).append(api_path)
+                if archive_name not in written_assets:
+                    archive.writestr(archive_name,payload)
+                    written_assets.add(archive_name)
+            # Logical asset names are product data, not GCS pointers. Canonical
+            # packages need no extra mapping; aliases share one verified blob.
+            if any(paths!=['/api/assets/img_'+name.split('/')[-1][:24]+'.'+name.rsplit('.',1)[-1]]
+                   for name,paths in asset_paths.items()):
+                manifest['asset_paths']={name:sorted(set(paths)) for name,paths in asset_paths.items()}
+            archive.writestr('manifest.json',json.dumps(manifest,sort_keys=True,separators=(',',':')))
         data=buffer.getvalue()
         if len(data)>_MAX_PACKAGE:raise ValueError('HOSTED_PACKAGE_TOO_LARGE')
         return data

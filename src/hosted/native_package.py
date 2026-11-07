@@ -604,11 +604,28 @@ def _prepare_hosted_archive(archive, manifest, pid, *, name_override=None, exclu
             if len(records) + len(annotations) > _MAX_ROWS:
                 raise ValueError('HOSTED_PACKAGE_ENTITY_LIMIT')
     assets = _validated_assets(archive)
+    aliases = manifest.get('asset_paths')
+    names = {'assets/' + asset['path'].rsplit('/', 1)[-1] for asset in assets}
+    if aliases is not None and (not isinstance(aliases, dict) or set(aliases) != names):
+        raise ValueError('HOSTED_PACKAGE_ASSET_ALIAS_MAP_INVALID')
+    expanded, seen = [], set()
     for asset in assets:
         leaf = asset['path'].rsplit('/', 1)[-1]
         if leaf != asset['sha256'] + asset['extension']:
             raise ValueError('HOSTED_PACKAGE_ASSET_HASH_MISMATCH')
-        asset['path'] = '/api/assets/img_' + asset['sha256'][:24] + asset['extension']
+        paths = aliases['assets/' + leaf] if aliases is not None else [
+            '/api/assets/img_' + asset['sha256'][:24] + asset['extension']]
+        if not isinstance(paths, list) or not paths:
+            raise ValueError('HOSTED_PACKAGE_ASSET_ALIAS_MAP_INVALID')
+        for path in paths:
+            if (not isinstance(path, str) or not re.fullmatch(r'/api/assets/[A-Za-z0-9_-]{1,160}\.(?:png|jpg|webp)', path)
+                    or not path.endswith(asset['extension']) or path in seen):
+                raise ValueError('HOSTED_PACKAGE_ASSET_ALIAS_MAP_INVALID')
+            seen.add(path)
+            if len(seen) > 25000:
+                raise ValueError('HOSTED_PACKAGE_ASSET_ALIAS_LIMIT')
+            expanded.append({**asset, 'path': path})
+    assets = expanded
     _require_asset_closure(records, {asset['path'] for asset in assets})
     title = str(name_override or manifest.get('title') or 'Imported Project').strip()[:240] or 'Imported Project'
     return {'title': title, 'records': records, 'annotations': annotations, 'assets': assets}

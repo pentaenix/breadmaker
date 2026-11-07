@@ -60,3 +60,18 @@ resumable transport use the same plan. Public exports omit provider metadata and
 participant account bindings; sealed private recovery keeps its separate policy.
 Imported participants retain feedback state, but capability/account fields and
 unknown participant schemas are rejected before staging.
+
+## Asset names and v3 compatibility
+
+A native package may give identical image bytes multiple safe basenames. Hosted
+asset rows preserve those API paths while objects remain content-addressed. V3
+exports write each digest blob once. When aliases exist, the optional manifest
+`asset_paths` map binds each archive asset name to its preserved API paths; imports
+validate the entire map, each digest, extensions, uniqueness and reference closure.
+No provider key or generation is accepted in this mapping. Original frozen source
+bytes and hashes are not rewritten.
+
+Canonical v3 archives need no alias map and remain compatible with prior importers.
+An archive containing noncanonical aliases requires the updated importer: older
+versions ignore the optional mapping. Published hosted asset records remain in the
+existing storage format and remain readable by the previous runtime.
