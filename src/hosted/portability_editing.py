@@ -11,6 +11,14 @@ REGISTRY = 'editing-search-markers/v1'
 
 
 def project_row(table, row, native_id, created, registry):
+    if table in {'document_tabs', 'chapters'} and 'native_created_at' in row:
+        timestamp = row['native_created_at']
+        if not isinstance(timestamp, str) or not timestamp or len(timestamp) > 128:
+            raise ValueError('HOSTED_PORTABLE_NATIVE_LINEAGE_INVALID')
+        # Import kept the original lineage separately from fresh hosted server
+        # timestamps. Restore that portable source value, never hosted authority.
+        row = {key: value for key, value in row.items() if key != 'native_created_at'}
+        row['created_at'] = timestamp
     if table == 'annotations' and 'source_generation' in row:
         # Authorized canonical reads already materialized staleness. A provider
         # revision has no meaning as write authority in the new local database.

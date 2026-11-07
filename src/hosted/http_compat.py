@@ -464,12 +464,21 @@ async def hosted_review_reorder(request:Request):
     return {'ok':True}
 @router.get('/api/reviews/{rid}/snapshot')
 def hosted_review_snapshot(rid:str,request:Request):
-    snapshots=_list('review_snapshot',{'project_id':_pid(request),'review_id':rid});return snapshots[-1] if snapshots else None
+    from hosted.review_history_ui import snapshot_payload
+    pid=_pid(request);sid=str(request.query_params.get('snapshot_id') or '')
+    if sid:return snapshot_payload(_get('review_snapshot',{'project_id':pid,'review_id':rid,'snapshot_id':sid}))
+    try:return snapshot_payload(_active_review_snapshot(pid,rid))
+    except HTTPException as exc:
+        if exc.status_code==409 and str(exc.detail).startswith('REVIEW_SNAPSHOT_001:'):return None
+        raise
 @router.get('/api/reviews/{rid}/manuscript-round')
-def hosted_review_round(rid:str,request:Request):return hosted_review_snapshot(rid,request)
+def hosted_review_round(rid:str,request:Request):
+    snapshot=hosted_review_snapshot(rid,request)
+    if not snapshot:raise HTTPException(404,detail='REVIEW_SNAPSHOT_002: Review round not found.')
+    return {'snapshot':snapshot,'feedback':_review_feedback_rows(_pid(request),rid,snapshot_id=str(snapshot['id']),snapshot_record=snapshot)}
 @router.get('/api/reviews/{rid}/feedback')
 def hosted_review_feedback(rid:str,request:Request):
-    pid=_pid(request);return {'comments':_list('review_comment',{'project_id':pid,'review_id':rid}),'highlights':_list('review_highlight',{'project_id':pid,'review_id':rid}),'suggestions':_list('review_suggestion',{'project_id':pid,'review_id':rid}),'feedback':_list('review_general_feedback',{'project_id':pid,'review_id':rid})}
+    return _review_feedback_rows(_pid(request),rid)
 
 
 # ---------------------------------------------------------------------------
@@ -876,18 +885,19 @@ def _active_review_snapshot(pid:str,rid:str) -> dict[str,Any]:
     sid=str(review.get('active_snapshot_id') or '')
     if sid:
         try:return _get('review_snapshot',{'project_id':pid,'review_id':rid,'snapshot_id':sid})
-        except HTTPException:pass
+        except HTTPException as exc:
+            if exc.status_code!=404:raise
     snapshots=_list('review_snapshot',{'project_id':pid,'review_id':rid})
     if not snapshots:raise HTTPException(409,detail='REVIEW_SNAPSHOT_001: Review has not been started.')
-    return snapshots[-1]
+    from hosted.review_history_ui import round_order
+    active=[row for row in snapshots if row.get('status') in {'open','active','paused'} and str(row.get('id')) not in set(review.get('closed_snapshot_ids') or [])]
+    return max(active or snapshots,key=round_order)
 
 
-def _review_feedback_rows(pid:str,rid:str,participant_id:str|None=None) -> dict[str,list[dict[str,Any]]]:
-    def rows(logical:str):
-        values=_list(logical,{'project_id':pid,'review_id':rid})
-        if participant_id is not None:values=[row for row in values if str(row.get('participant_id') or '')==participant_id]
-        return values
-    return {'highlights':rows('review_highlight'),'comments':rows('review_comment'),'suggestions':rows('review_suggestion'),'feedback':rows('review_general_feedback')}
+def _review_feedback_rows(pid:str,rid:str,participant_id:str|None=None,snapshot_id:str|None=None,snapshot_record=None) -> dict[str,list[dict[str,Any]]]:
+    from hosted.review_history_ui import feedback_rows
+    records=None if snapshot_record is None else [snapshot_record]
+    return feedback_rows(pid,rid,_list,participant_id,snapshot_id,records)
 
 
 @router.get('/api/reviews/populate-options')
@@ -915,11 +925,15 @@ def hosted_review_participant_reader(rid:str,participant_id:str,request:Request)
     pid=_pid(request);review=_get('review',{'project_id':pid,'review_id':rid});participant=_get('review_participant',{'project_id':pid,'review_id':rid,'participant_id':participant_id})
     if str(participant.get('status') or '')=='revoked':raise HTTPException(403,detail='REVIEW_READER_003: This participant\'s Review access has been revoked.')
     if str(review.get('status') or '') not in {'active','open','paused'}:raise HTTPException(409,detail='REVIEW_READER_001: This Review is not open.')
-    snapshot=_active_review_snapshot(pid,rid);visibility=str(review.get('reviewer_visibility') or 'private')
+    from hosted.review_history_ui import snapshot_payload
+    snapshot=_active_review_snapshot(pid,rid);frozen=snapshot_payload(snapshot);sid=str(snapshot['id']);visibility=str(review.get('reviewer_visibility') or 'private')
     visible=None if visibility=='shared' else participant_id
     assignments=_list('review_questionnaire_assignment',{'project_id':pid,'review_id':rid})
     answers=_list('review_question_answer',{'project_id':pid,'review_id':rid})
-    return {'review':review,'participant':participant,'snapshot':snapshot.get('snapshot') or snapshot,'feedback':_review_feedback_rows(pid,rid,visible),'form':{'questionnaires':assignments,'answers':[row for row in answers if str(row.get('participant_id') or '')==participant_id]},'bookmark':participant.get('bookmark')}
+    answers=[row for row in answers if str(row.get('participant_id') or '')==participant_id and str(row.get('snapshot_id') or '')==sid]
+    general=[row for row in _list('review_general_feedback',{'project_id':pid,'review_id':rid}) if str(row.get('participant_id') or '')==participant_id and str(row.get('snapshot_id') or '')==sid]
+    form={'snapshot_id':sid,'round_number':frozen.get('round_number'),'questionnaires':assignments,'questions':frozen.get('questions',[]),'answers':answers,'general_feedback':str(general[0].get('body') or '') if general else '','saved':bool(answers or general)}
+    return {'review':review,'participant':participant,'snapshot':frozen,'feedback':_review_feedback_rows(pid,rid,visible,sid,snapshot),'form':form if frozen.get('permission_feedback',review.get('permission_feedback')) else None,'bookmark':participant.get('bookmark')}
 
 
 @router.post('/api/reviews/{rid}/participants/{participant_id}/begin')

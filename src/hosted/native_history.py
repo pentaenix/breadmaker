@@ -17,6 +17,7 @@ import zlib
 
 from hosted.domain_store import _ID_FIELDS
 from hosted.firestore.ids import require_opaque_id, require_project_id
+from security.content_security import is_safe_inline_html, is_safe_project_asset_path
 from storage.values import review_snapshot_content_hash
 
 _LIMIT = 8 * 1024 * 1024
@@ -71,6 +72,20 @@ def _unpack(blob):
     return raw, result
 
 
+def _validate_blocks(blocks):
+    if not isinstance(blocks, list) or any(not isinstance(block, dict) for block in blocks):
+        _fail('BLOCK_INVALID')
+    for block in blocks:
+        kind = str(block.get('block_type') or 'paragraph')
+        fragment, path = str(block.get('content_html') or ''), str(block.get('image_path') or '')
+        if kind == 'image':
+            if fragment or not path or not is_safe_project_asset_path(path):
+                _fail('UNSAFE_HTML')
+        elif (kind not in {'paragraph', 'text'} or path
+              or fragment and not is_safe_inline_html(fragment, str(block.get('text_content') or ''))):
+            _fail('UNSAFE_HTML')
+
+
 def prepare_native_history(con, pid, id_maps):
     """Return payload/field overrides and validated historical image bytes.
 
@@ -118,6 +133,8 @@ def prepare_native_history(con, pid, id_maps):
                 plan.payloads[(logical, str(row['id']))] = {'native_created_at': row['created_at']}
 
     total = 0
+    checkpoints = {str(row['id']): row for row in rows('checkpoints')}
+    anchor_rounds = {str(row['id']): str(row['snapshot_id']) for row in rows('review_anchors')}
     snapshots = {str(row['id']): row for row in rows('review_snapshots')}
     frozen = {sid: {group: [] for group in _GROUPS} for sid in snapshots}
     for group in _GROUPS:
@@ -130,6 +147,7 @@ def prepare_native_history(con, pid, id_maps):
             groups[group].sort(key=lambda row: (row.get('ordinal', row.get('position', 0)), str(row['id'])))
     for sid, row in snapshots.items():
         groups = frozen[sid]
+        _validate_blocks(groups['blocks'])
         expected = review_snapshot_content_hash(row['review_id'], row['source_generation'], row['scope_type'],
             row, groups['chapters'], groups['scenes'], groups['blocks'], groups['questions'], groups['markers'])
         if expected != row.get('content_hash'):
@@ -158,10 +176,24 @@ def prepare_native_history(con, pid, id_maps):
                     if key in saved:
                         saved[key] = (strict(logical, saved[key]) if key == 'checkpoint_id'
                                       else identity(logical, saved[key]))
+                if group == 'checkpoints':
+                    checkpoint = checkpoints.get(str(original['checkpoint_id']))
+                    if checkpoint is None:
+                        _fail('REFERENCE_INVALID')
+                    for key in ('scope', 'name', 'description', 'source_chapter_title', 'word_count'):
+                        if key in checkpoint:
+                            saved[key] = checkpoint[key]
+                    saved['checkpoint_updated_at'] = checkpoint.get('updated_at')
                 output.append(saved)
             projected[group] = output
             projected[group[:-1] + '_count' if group != 'chapters' else 'chapter_count'] = len(output)
         projected['checkpoint_ids'] = [item['checkpoint_id'] for item in projected['checkpoints']]
+        for table, key in (('review_comments', 'comment_count'), ('review_highlights', 'highlight_count'),
+                           ('review_suggestions', 'suggestion_count')):
+            projected[key] = sum(anchor_rounds.get(str(item.get('anchor_id'))) == sid for item in rows(table))
+        projected['answer_count'] = sum(str(item['snapshot_id']) == sid for item in rows('review_question_answers'))
+        projected['general_feedback_count'] = sum(str(item['snapshot_id']) == sid and bool(str(item.get('body') or '').strip())
+                                                   for item in rows('review_general_feedback'))
         projected['checkpoint_update_allowed'] = False
         projected['checkpoint_update_blocker'] = 'HOSTED_REVIEW_CHECKPOINT_UPDATE_UNSUPPORTED'
         if len(_json(projected)) > _LIMIT:
@@ -185,6 +217,13 @@ def prepare_native_history(con, pid, id_maps):
                 'closed_snapshot_ids': [strict('review_snapshot', row['id']) for row in rounds if row['status'] == 'closed'],
                 'native_rounds': summaries,
             }
+        scope_type = review.get('scope_type', 'manuscript')
+        scopes = []
+        if scope_type in ('chapters', 'scenes'):
+            kind = 'chapter' if scope_type == 'chapters' else 'scene'
+            scopes = [strict(kind, item[kind + '_id']) for item in rows('review_scope_' + scope_type)
+                      if item['review_id'] == review['id']]
+        plan.payloads.setdefault(('review', str(review['id'])), {})['scope_ids'] = scopes
 
     for marker in rows('review_markers'):
         plan.payloads[('review_marker_assignment', str(marker['id']))] = {
@@ -278,6 +317,7 @@ def prepare_native_history(con, pid, id_maps):
             _fail('CHECKPOINT_FORMAT_UNSUPPORTED')
         if not isinstance(source.get('tab'), dict) or not isinstance(source.get('blocks'), list):
             _fail('CHECKPOINT_INVALID')
+        _validate_blocks(source['blocks'])
         snapshot = deepcopy(source)
         refs = asset_refs.get(old, [])
         required = {block.get('image_path') for block in source['blocks']
