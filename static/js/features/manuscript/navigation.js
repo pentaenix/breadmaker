@@ -346,10 +346,9 @@ async function cutChapter(chapter){
   const next=manuscriptTabChapterRows(state.activeDocumentId)[0];if(next)await selectChapter(next.id,false);else await openWholeBook(false);await showCutsOnboardingOnce();
 }
 async function deleteChapterPermanently(chapter){
-  if(!await confirmDialog('Delete Chapter',i18nText('confirm.delete_chapter',{title:chapter.title}),{confirmLabel:'Delete Chapter',danger:true}))return;
   const documentId=chapter.tab_id||state.activeDocumentId,target=chapterAfterRemovalTarget(chapter);clearManuscriptSelection();keepStructureVisibleAfterDelete('chapters',documentId);
   await withStructuralUndo(`Delete chapter: ${chapter.title}`,()=>api(`/api/chapters/${chapter.id}/permanent`,{method:'DELETE'}),{view:'manuscript'});await refresh(false);
-  if(target&&visibleChapterById(target.id))await selectChapter(target.id,false,false);else{const fallback=manuscriptTabChapterRows(documentId)[0];if(fallback)await selectChapter(fallback.id,false,false);else await openWholeBook(false,false)}clearManuscriptSelection();toast('Chapter deleted');
+  if(target&&visibleChapterById(target.id))await selectChapter(target.id,false,false);else{const fallback=manuscriptTabChapterRows(documentId)[0];if(fallback)await selectChapter(fallback.id,false,false);else await openWholeBook(false,false)}clearManuscriptSelection();toast('Chapter deleted',6000,{label:i18nText('action.undo'),onClick:()=>appUndo()});
 }
 
 async function dissolveChapterBoundary(chapterId,{stayInBook=state.viewMode==='book',titleStyle=null}={}){
@@ -374,7 +373,7 @@ async function deleteFocusedChapterSelection(chapterId){
   catch(error){toast(error?.message||'That Chapter could not be deleted.',5000);return}
   await refresh(false);
   if(target&&visibleChapterById(target.id))await selectChapter(target.id,false,false);else{const remaining=manuscriptTabChapterRows(documentId);if(remaining.length)await selectChapter(remaining[0].id,false,false);else await openWholeBook(false,false)}clearManuscriptSelection();
-  toast('Chapter and contents deleted.');
+  toast('Chapter and contents deleted.',6000,{label:i18nText('action.undo'),onClick:()=>appUndo()});
 }
 
 function scrollBookChapter(chapterId){const heading=$(`.book-chapter-heading[data-chapter-id="${chapterId}"]`),firstBlock=$(`.manuscript-block-wrap[data-chapter-id="${chapterId}"]`);(heading||firstBlock)?.scrollIntoView({behavior:'auto',block:'start'});}

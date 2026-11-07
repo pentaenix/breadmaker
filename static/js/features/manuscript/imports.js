@@ -11,7 +11,7 @@ $('#documentImportInput').onchange=async event=>{
   if(isWord){try{const saved=await api('/api/ui-state/import-chapter-heading');if(/^heading[1-6]$/.test(String(saved.value||'')))preferredHeading=String(saved.value)}catch(error){console.warn('Could not restore import chapter marker',error)}}
   const headingOptions=[1,2,3,4,5,6].map(level=>`<option value="heading${level}" ${preferredHeading===`heading${level}`?'selected':''}>${escapeHtml(i18nText('import.heading',{level:i18nNumber(level)}))}</option>`).join('');
   showModal('Import Tabs',`<p><b>${escapeHtml(file.name)}</b></p><p class="small-muted">${escapeHtml(i18nText('import.tabs_append_after',{title:afterDocumentTitle}))}</p>${isWord?`<div class="field"><label>{{i18n:dynamic.html.text.label.58994380}}</label><select id="documentImportChapterHeading">${headingOptions}</select></div><p class="small-muted">{{i18n:dynamic.html.text.p.8c525689}}</p>`:''}`,`<button id="confirmDocumentImport">{{i18n:dynamic.html.text.button.1da0fe67}}</button>`);
-  $('#confirmDocumentImport').onclick=async()=>{const chapterHeading=$('#documentImportChapterHeading')?.value||'heading1';if(isWord)await api('/api/ui-state/import-chapter-heading',{method:'PUT',body:JSON.stringify({value:chapterHeading})});currentModalDismiss=null;dismissModalTree();try{await performDocumentTabImport(file,chapterHeading,afterDocumentId)}finally{input.value=''}};
+  $('#confirmDocumentImport').onclick=async()=>{const chapterHeading=$('#documentImportChapterHeading')?.value||'heading1';if(!await confirmExistingDocumentImport('Import Tabs',i18nText('import.append_warning')))return;if(isWord)await api('/api/ui-state/import-chapter-heading',{method:'PUT',body:JSON.stringify({value:chapterHeading})});currentModalDismiss=null;dismissModalTree();try{await performDocumentTabImport(file,chapterHeading,afterDocumentId)}finally{input.value=''}};
 };
 async function performDocumentTabImport(file,chapterHeading,afterDocumentId){
   await flushSave();const fd=new FormData();fd.append('file',file);setSaveState('Importing…');
@@ -41,6 +41,12 @@ function importHeadingControl(file,preferredHeading,id='importChapterHeading'){
 }
 async function rememberImportHeading(file,chapterHeading){if(/\.docx?$/i.test(file?.name||''))await api('/api/ui-state/import-chapter-heading',{method:'PUT',body:JSON.stringify({value:chapterHeading})})}
 async function importReadiness(){try{return await api('/api/import/readiness')}catch(error){console.warn('Could not inspect manuscript import readiness',error);return {manuscript_empty:false,reason:'unknown'}}}
+
+async function confirmExistingDocumentImport(title,message){
+  await flushSave();const current=await importReadiness();
+  if(current.manuscript_empty)return await confirmDialog(title,message,{confirmLabel:'Import',danger:title==='Replace Main Manuscript'});
+  return (await dangerCodeDialog(title,typedConfirmationCode(5),i18nSource('Import'),{message,nested:true}))!==null;
+}
 
 let manuscriptImportProgressTimer=null;
 function stopManuscriptImportProgress(){if(manuscriptImportProgressTimer){clearInterval(manuscriptImportProgressTimer);manuscriptImportProgressTimer=null}}
@@ -99,26 +105,26 @@ $('#importInput').onchange=async event=>{
   showModal('Import Manuscript',`
     <p><b>${escapeHtml(file.name)}</b></p>
     ${importHeadingControl(file,preferredHeading)}
-    ${hostedImport?'<p class="small-muted">Hosted imports currently create a separate project and preserve this one. Replacement and appending are unavailable until safe publication and recovery support is complete.</p>':''}
+    ${hostedImport?`<p class="small-muted">${escapeHtml(i18nText('import.existing_hosted_limit'))}</p>`:''}
     <div class="import-destination-list">
-      <button id="importDestinationReplace" class="project-settings-row import-destination-row" type="button" ${hostedImport?'disabled aria-disabled="true"':''}><span><b>{{i18n:dynamic.html.text.b.68a52141}}</b><small>{{i18n:dynamic.html.text.small.eb38cc20}}</small></span><span class="project-settings-row-caret" aria-hidden="true">›</span></button>
+      <button id="importDestinationReplace" class="project-settings-row import-destination-row" type="button"><span><b>{{i18n:dynamic.html.text.b.68a52141}}</b><small>{{i18n:dynamic.html.text.small.eb38cc20}}</small></span><span class="project-settings-row-caret" aria-hidden="true">›</span></button>
       <button id="importDestinationNew" class="project-settings-row import-destination-row" type="button"><span><b>{{i18n:dynamic.html.text.b.4fd07995}}</b><small>Create a separate project named “${escapeHtml(importedProjectName(file))}” and import the document there. This project stays untouched.</small></span><span class="project-settings-row-caret" aria-hidden="true">›</span></button>
-      <button id="importDestinationTabs" class="project-settings-row import-destination-row" type="button" ${hostedImport?'disabled aria-disabled="true"':''}><span><b>{{i18n:dynamic.html.text.b.d7612017}}</b><small>{{i18n:dynamic.html.text.small.da7c50c5}}</small></span><span class="project-settings-row-caret" aria-hidden="true">›</span></button>
+      <button id="importDestinationTabs" class="project-settings-row import-destination-row" type="button"><span><b>{{i18n:dynamic.html.text.b.d7612017}}</b><small>{{i18n:dynamic.html.text.small.da7c50c5}}</small></span><span class="project-settings-row-caret" aria-hidden="true">›</span></button>
     </div>`, cancelActions, dismissImport);
   $('#cancelImportManuscript').onclick=()=>closeModal();
   const heading=()=>$('#importChapterHeading')?.value||'heading1';
   $('#importDestinationReplace').onclick=async()=>{
     const chapterHeading=heading();await rememberImportHeading(file,chapterHeading);
-    const confirmed=await confirmDialog('Replace Main Manuscript',i18nText('confirm.replace_main_manuscript',{file:file.name}),{confirmLabel:'Replace Main Manuscript',danger:true});
+    const confirmed=await confirmExistingDocumentImport('Replace Main Manuscript',i18nText('confirm.replace_main_manuscript',{file:file.name}));
     if(!confirmed)return;
-    const outcome=await runManuscriptImportWithProgress(file,'Preparing replacement…',()=>performManuscriptImport(file,chapterHeading));if(outcome.ok)finish();
+    const outcome=await runManuscriptImportWithProgress(file,'Preparing replacement…',()=>performManuscriptImport(file,chapterHeading,true));if(outcome.ok)finish();
   };
   $('#importDestinationNew').onclick=async()=>{const chapterHeading=heading();await rememberImportHeading(file,chapterHeading);const outcome=await runManuscriptImportWithProgress(file,'Preparing new project…',()=>performManuscriptImportAsNewProject(file,chapterHeading),{reload:true});if(outcome.ok)input.value=''};
-  $('#importDestinationTabs').onclick=async()=>{const chapterHeading=heading();await rememberImportHeading(file,chapterHeading);const docs=[...(state.documents||[])].sort((a,b)=>(+a.position||0)-(+b.position||0)||compareEntityIds(a.id,b.id)),last=docs.at(-1);if(!last)return toast('No Tab is available to append after.');const outcome=await runManuscriptImportWithProgress(file,'Preparing Tabs…',()=>performDocumentTabImport(file,chapterHeading,last.id));if(outcome.ok)finish()};
+  $('#importDestinationTabs').onclick=async()=>{const chapterHeading=heading();if(!await confirmExistingDocumentImport('Import Tabs',i18nText('import.append_warning')))return;await rememberImportHeading(file,chapterHeading);const docs=[...(state.documents||[])].sort((a,b)=>(+a.position||0)-(+b.position||0)||compareEntityIds(a.id,b.id)),last=docs.at(-1);if(!last)return toast('No Tab is available to append after.');const outcome=await runManuscriptImportWithProgress(file,'Preparing Tabs…',()=>performDocumentTabImport(file,chapterHeading,last.id));if(outcome.ok)finish()};
 };
-async function performManuscriptImport(file,chapterHeading){
+async function performManuscriptImport(file,chapterHeading,confirmed=false){
   await flushSave();const fd=new FormData();fd.append('file',file);setSaveState('Importing…');
-  try{let result;await withStructuralUndo('Import manuscript',async()=>{result=await api(`/api/import?chapter_heading=${encodeURIComponent(chapterHeading)}`,{method:'POST',body:fd})},{view:'manuscript'});await refresh(false);const primary=state.documents.find(d=>d.is_manuscript)||state.documents[0];state.activeDocumentId=primary?.id||null;renderDocuments();renderChapterTree();const first=visibleChapters(state.activeDocumentId)[0];if(first)await selectChapter(first.id,false);toast(i18nText('import.chapter_summary',{chapters:i18nCount(result.chapters,'import.chapters.one','import.chapters.many'),images:result.images?` · ${i18nCount(result.images,'import.images.one','import.images.many')}`:''}))}finally{setSaveState('Saved')}
+  try{let result;await withStructuralUndo('Import manuscript',async()=>{result=await api(`/api/import?chapter_heading=${encodeURIComponent(chapterHeading)}&confirmed=${confirmed}`,{method:'POST',body:fd})},{view:'manuscript'});await refresh(false);const primary=state.documents.find(d=>d.is_manuscript)||state.documents[0];state.activeDocumentId=primary?.id||null;renderDocuments();renderChapterTree();const first=visibleChapters(state.activeDocumentId)[0];if(first)await selectChapter(first.id,false);toast(i18nText('import.chapter_summary',{chapters:i18nCount(result.chapters,'import.chapters.one','import.chapters.many'),images:result.images?` · ${i18nCount(result.images,'import.images.one','import.images.many')}`:''}))}finally{setSaveState('Saved')}
 }
 async function performManuscriptImportAsNewProject(file,chapterHeading){
   await flushSave();const fd=new FormData();fd.append('file',file);setSaveState('Importing…');

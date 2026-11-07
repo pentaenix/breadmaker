@@ -20,7 +20,7 @@ Project administration is package-owned in 10.3.5. The package keeps destructive
   active route from server authority before accepting more input; a new project
   revision must never be attached to an old manuscript snapshot.
   Hosted project deletion uses the existing recoverable owner-only tombstone
-  after confirmation and a successful manuscript save. Save conflicts keep their
+  after a five-character typed confirmation and a successful manuscript save. Save conflicts keep their
   recovery dialog and text; failed deletion keeps the current project open.
   Global/account deletion and native typed-code confirmation remain separate.
 - `editing_search.js` — local-only experimental editing actions, existing marker

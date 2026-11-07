@@ -129,16 +129,20 @@ async function openProjectMetadata(onDismiss=null){
 function dangerFirstDialog(title,message,{allowExternalErase=false}={}){
   return new Promise(resolve=>{let settled=false;const settle=value=>{if(settled)return;settled=true;currentModalDismiss=null;resolve(value);closeModal(false)};const option=allowExternalErase?`<label class="danger-extra-option"><input id="dangerEraseExternal" type="checkbox"><span>${escapeHtml(i18nText('danger.erase_external_backups'))}</span></label><p class="small-muted">${escapeHtml(i18nText('danger.erase_external_backups_help'))}</p>`:'';showNestedModal(title,`<p class="dialog-message">${escapeHtml(i18nSource(message))}</p>${option}`,`<button id="dialogCancel">${escapeHtml(i18nText('dynamic.html.text.button.92113f72'))}</button><a id="dangerDownloadData" class="quiet-button danger-download-data" href="/api/data/export" download target="_blank" rel="noopener">${escapeHtml(i18nText('release.download_data_zip'))}</a><button id="dialogConfirm" class="danger">${escapeHtml(i18nText('dynamic.html.text.button.d7cf19d2'))}</button>`,()=>{if(!settled){settled=true;resolve({confirmed:false,eraseExternal:false})}});$('#dialogCancel').onclick=()=>settle({confirmed:false,eraseExternal:false});$('#dialogConfirm').onclick=()=>settle({confirmed:true,eraseExternal:!!$('#dangerEraseExternal')?.checked})});
 }
-function dangerCodeDialog(title,code,actionLabel){
+function typedConfirmationCode(length=5){
+  const alphabet='abcdefghijklmnopqrstuvwxyz0123456789',values=crypto.getRandomValues(new Uint8Array(length));
+  return Array.from(values,value=>alphabet[value%alphabet.length]).join('');
+}
+function dangerCodeDialog(title,code,actionLabel,{message='',nested=false}={}){
   return new Promise(resolve=>{
     let settled=false;const settle=value=>{if(settled)return;settled=true;currentModalDismiss=null;resolve(value);closeModal(false)};
-    showModal(title,`<p class="danger-confirm-copy">{{i18n:dynamic.html.text.p.bb27388c}}</p><div class="danger-confirm-code" aria-label="{{i18n:dynamic.html.attr.aria.label.99ea43b0}}">${escapeHtml(code)}</div><div class="field"><label>{{i18n:dynamic.html.text.label.5d464b5e}}</label><input id="dangerConfirmInput" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="10" inputmode="text"></div>`,`<button id="dangerCodeCancel">{{i18n:dynamic.html.text.button.92113f72}}</button><button id="dangerCodeConfirm" class="danger" disabled>${escapeHtml(actionLabel)}</button>`,()=>{if(!settled){settled=true;resolve(null)}});
+    (nested?showNestedModal:showModal)(title,`<p class="danger-confirm-copy">${escapeHtml(i18nText('danger.type_code',{count:code.length}))}</p>${message?`<p class="small-muted">${escapeHtml(message)}</p>`:''}<div class="danger-confirm-code" aria-label="{{i18n:dynamic.html.attr.aria.label.99ea43b0}}">${escapeHtml(code)}</div><div class="field"><label>{{i18n:dynamic.html.text.label.5d464b5e}}</label><input id="dangerConfirmInput" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="${code.length}" inputmode="text"></div>`,`<button id="dangerCodeCancel">{{i18n:dynamic.html.text.button.92113f72}}</button><button id="dangerCodeConfirm" class="danger" disabled>${escapeHtml(actionLabel)}</button>`,()=>{if(!settled){settled=true;resolve(null)}});
     const input=$('#dangerConfirmInput'),button=$('#dangerCodeConfirm'),shown=$('.danger-confirm-code');
     ['copy','cut','contextmenu','dragstart','selectstart'].forEach(type=>shown.addEventListener(type,e=>e.preventDefault()));
     input.addEventListener('paste',e=>e.preventDefault());
     const sync=()=>{button.disabled=input.value!==code};input.oninput=sync;
     input.onkeydown=e=>{if(e.key==='Enter'&&!button.disabled){e.preventDefault();settle(input.value)}};
-    $('#dangerCodeCancel').onclick=()=>settle(null);button.onclick=()=>settle(input.value);queueMicrotask(()=>input.focus());
+    $('#dangerCodeCancel').onclick=()=>settle(null);button.onclick=()=>{if(input.value===code)settle(input.value)};queueMicrotask(()=>input.focus());
   });
 }
 
@@ -191,7 +195,11 @@ async function runDangerDelete(action,active,onReturn=openProjectSettings){
   const first=await dangerFirstDialog(deletingAll?'Delete All Breadmaker Data':'Delete Project',firstMessage,{allowExternalErase:deletingAll});
   if(!first.confirmed){if(onReturn)await onReturn();return}
   try{
-    if(hostedTrash){await trashHostedProject(active);return}
+    if(hostedTrash){
+      const typed=await dangerCodeDialog('Delete Project',typedConfirmationCode(5),'Delete Project');
+      if(typed===null){if(onReturn)await onReturn();return}
+      await trashHostedProject(active);return;
+    }
     const challenge=await api('/api/danger/challenge',{method:'POST',body:JSON.stringify({action,...(!deletingAll&&active?.id?{project_id:active.id}:{})})});
     const typed=await dangerCodeDialog(deletingAll?'Final Confirmation':'Delete Project',challenge.code,deletingAll?'Delete All Data':'Delete Project');
     if(typed===null){if(onReturn)await onReturn();return}

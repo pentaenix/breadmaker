@@ -18,7 +18,7 @@ def _new_danger_challenge(action:str,*,actor_id:str,target_id:str) -> dict[str,s
         raise HTTPException(400,detail="Unknown destructive action.")
     if not actor_id or not target_id:raise HTTPException(400,detail='Destructive confirmation requires an actor and target.')
     challenge_id=secrets.token_urlsafe(18)
-    code=''.join(secrets.choice(_DANGER_ALPHABET) for _ in range(10))
+    code=''.join(secrets.choice(_DANGER_ALPHABET) for _ in range(5 if action=="delete_project" else 10))
     created=time.monotonic()
     with _DANGER_CHALLENGE_LOCK:
         expired=[key for key,value in _DANGER_CHALLENGES.items() if created-float(value.get("created",0))>_DANGER_CHALLENGE_TTL_SECONDS]
