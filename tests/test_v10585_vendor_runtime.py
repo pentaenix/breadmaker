@@ -41,13 +41,13 @@ def test_helper_removes_actual_sqlite_and_bootstrap_payload_and_records(staged):
     assert evidence['contract_sha256']==hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-@pytest.mark.parametrize('change',['version','checksum','unknown','missing'])
+@pytest.mark.parametrize('change',['version','checksum','architecture','source','unknown','missing'])
 def test_package_drift_fails_before_removing_payload(staged,change):
     root,db,contract,path,_=staged;rows=owner.records(db.read_text())
     if change=='missing':rows.pop('zlib')
     elif change=='unknown':rows['unexpected']=({'P':'unexpected'},'P:unexpected\nV:1-r0')
     else:
-        fields,block=rows['zlib'];key='V' if change=='version' else 'C';block=block.replace(key+':'+fields[key],key+':changed');rows['zlib']=(fields,block)
+        fields,block=rows['zlib'];key={'version':'V','checksum':'C','architecture':'A','source':'c'}[change];block=block.replace(key+':'+fields[key],key+':changed');rows['zlib']=(fields,block)
     db.write_text('\n\n'.join(block for _,block in rows.values()))
     with pytest.raises(ValueError,match='GRAPH_MISMATCH'):owner.stage(root,'helper',contract['base_digest'],contract_path=path)
     assert (root/'usr/lib/libsqlite3.so.0').read_bytes()==b'synthetic vendor file'
@@ -85,3 +85,19 @@ def test_install_cannot_target_a_populated_directory_or_root(staged,monkeypatch)
     for unsafe in [root,Path('/')]:
         with pytest.raises(ValueError,match='MUST_BE_EMPTY'):owner.install(unsafe,contract)
     assert (root/'usr/lib/libsqlite3.so.0').read_bytes()==b'synthetic vendor file'
+
+
+def test_install_pins_entire_reviewed_graph(tmp_path, monkeypatch):
+    contract=json.loads((ROOT/'deploy/vendor-runtime.json').read_bytes())
+    monkeypatch.setattr(owner.shutil,'copytree',lambda *a,**k:None)
+    monkeypatch.setattr(owner.shutil,'copyfile',lambda *a,**k:None)
+    calls=[]
+    monkeypatch.setattr(owner.subprocess,'run',lambda *a,**k:calls.append((a,k)))
+    root=tmp_path/'runtime'
+    owner.install(root,contract)
+    assert calls==[((['apk','--root',str(root),'--initdb','--no-scripts','add','--no-cache',
+                     *[row['P']+'='+row['V'] for row in sorted(contract['packages']['x86_64'],key=lambda row:row['P'])]],),
+                   {'check':True})]
+    # Regression: these transitive packages previously floated to 2.44-r14.
+    for name in ('glibc-2.44','glibc-2.44-locale-posix','ld-linux-2.44'):
+        assert name+'=2.44-r13' in calls[0][0][0]

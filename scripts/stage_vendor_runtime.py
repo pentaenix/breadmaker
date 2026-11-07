@@ -59,10 +59,9 @@ def install(root, contract):
     (root / 'etc/apk').mkdir(parents=True, exist_ok=True)
     shutil.copytree('/etc/apk/keys', root / 'etc/apk/keys', dirs_exist_ok=True)
     shutil.copyfile('/etc/apk/repositories', root / 'etc/apk/repositories')
-    roots = {'python-3.14': contract['python_package'], 'zlib': contract['zlib_package']}
-    # Match the actual authenticated vendor package versions, not mutable aliases.
-    graph = {row['P']:row['V'] for row in contract['packages']['x86_64']}
-    roots.update({name:graph[name] for name in ('libstdc++', 'ca-certificates-bundle')})
+    # Pin the complete reviewed graph: mutable repositories otherwise allow
+    # transitive upgrades. Unavailable pins must fail, never refresh the lock.
+    roots = {row['P']: row['V'] for row in contract['packages']['x86_64']}
     if any(not re.fullmatch(r'[A-Za-z0-9_.+\-]+', k+v) for k,v in roots.items()):
         raise ValueError('VENDOR_PACKAGE_PIN_INVALID')
     subprocess.run(['apk','--root',str(root),'--initdb','--no-scripts','add','--no-cache',
