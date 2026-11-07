@@ -14811,7 +14811,7 @@
     },
     {
       "file": "src/storage/values.py",
-      "lines": 69,
+      "lines": 77,
       "symbols": [
         {
           "name": "now",
@@ -14831,27 +14831,27 @@
         {
           "name": "sha_file",
           "kind": "function",
-          "line": 37
+          "line": 45
         },
         {
           "name": "uid",
           "kind": "function",
-          "line": 45
+          "line": 53
         },
         {
           "name": "block_content_hash",
           "kind": "function",
-          "line": 49
+          "line": 57
         },
         {
           "name": "chapter_revision_from_rows",
           "kind": "function",
-          "line": 56
+          "line": 64
         },
         {
           "name": "chapter_revision",
           "kind": "function",
-          "line": 65
+          "line": 73
         }
       ]
     },
