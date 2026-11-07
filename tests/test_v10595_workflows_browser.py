@@ -1,5 +1,4 @@
 """Requested delete/import controls use the real local/hosted UI and persistence."""
-import pytest
 from playwright.sync_api import expect
 from tests.readable_export_browser_fixture import browser
 
@@ -14,8 +13,7 @@ def _confirm_code(page):
     page.locator('#dangerCodeConfirm').click()
 
 
-@pytest.mark.parametrize('local', [True, False])
-def test_chapter_delete_has_no_modal_and_toast_undo_restores_prose(tmp_path, local):
+def _chapter_delete_has_no_modal_and_toast_undo_restores_prose(tmp_path, *, local):
     with browser(tmp_path, local=local) as (base, page, pid):
         page.locator('.manuscript-block').first.fill('Chapter prose to recover')
         page.wait_for_function('()=>!state.dirty&&!state.saveInFlight')
@@ -29,6 +27,14 @@ def test_chapter_delete_has_no_modal_and_toast_undo_restores_prose(tmp_path, loc
         expect(page.locator('.manuscript-block').first).to_have_text('Chapter prose to recover')
         page.reload(wait_until='domcontentloaded')
         expect(page.locator('.manuscript-block').first).to_have_text('Chapter prose to recover')
+
+
+def test_local_chapter_delete_has_no_modal_and_toast_undo_restores_prose(tmp_path):
+    _chapter_delete_has_no_modal_and_toast_undo_restores_prose(tmp_path, local=True)
+
+
+def test_hosted_chapter_delete_has_no_modal_and_toast_undo_restores_prose(tmp_path):
+    _chapter_delete_has_no_modal_and_toast_undo_restores_prose(tmp_path, local=False)
 
 
 def test_hosted_replace_append_are_enabled_and_existing_prose_requires_five_characters(tmp_path):
