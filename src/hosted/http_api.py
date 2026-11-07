@@ -593,10 +593,19 @@ def hosted_book(request:Request):
         bundled=request.query_params.get('bundled')=='true'
         data=_project_snapshot(pid,manuscript_only=True,manifest_only=manifest or bundled)
         timings['manifest']=perf_counter()-started
-        if manifest or bundled:
-            if tab and not any(str(row['id'])==tab for row in data['tabs']):
+        if tab:
+            if not any(str(row['id'])==tab for row in data['tabs']):
                 raise DocumentNotFound('DOCUMENT_NOT_FOUND')
-            data['chapters']=[row for row in data['chapters'] if not tab or str(row.get('tab_id'))==tab]
+            data['chapters']=[row for row in data['chapters'] if str(row.get('tab_id'))==tab]
+            chapter_ids={str(row['id']) for row in data['chapters']}
+            # Plain Full Text requests need the same source-tab boundary as
+            # manifests/bundles. Legacy tabless blocks belong to their chapter.
+            data['blocks']=[row for row in data['blocks'] if str(row.get('chapter_id')) in chapter_ids
+                and (not row.get('tab_id') or str(row['tab_id'])==tab)]
+            data['scenes']=[row for row in data['scenes']
+                if (str(row.get('chapter_id')) in chapter_ids if row.get('chapter_id') else str(row.get('tab_id'))==tab)
+                and (not row.get('tab_id') or str(row['tab_id'])==tab)]
+            data['cache_refresh_chapters']=[cid for cid in data.get('cache_refresh_chapters',[]) if str(cid) in chapter_ids]
         if bundled:
             phase=perf_counter()
             blocks=None

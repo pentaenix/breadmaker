@@ -17,6 +17,7 @@ from hosted.account_lifecycle import AccountLifecycleDocumentStore
 from hosted.firestore.contracts import (DocumentConflict, DocumentNotFound, HostedValidationError,
     ProjectUnavailable, require_collection_page_query)
 from hosted.firestore.ids import require_opaque_id, require_project_id, require_user_id
+from hosted.firestore.repositories import HostedProjectRepository
 from hosted.idempotency import stable_entity_id
 from hosted.manuscript_visibility import (FORMAT_FIELD, FORMAT_VERSION, ManuscriptDocumentStore,
     _MANAGED, decode_project_root)
@@ -60,9 +61,13 @@ class LegacyManuscriptAdoption:
                 or root.data.get('_bm_erasure_operation') or member.data.get('role') not in {'owner', 'editor'}
                 or member.data.get('user_id') != uid):
             raise ProjectUnavailable('PROJECT_NOT_FOUND')
-        if type(root.data.get('generation')) is not int or root.data['generation'] != generation:
+        # This plaintext-only validator must not infer safety from visible
+        # metadata on a private project or perform a format-only private upgrade.
+        HostedProjectRepository(None)._open_project(pid, root.data)
+        if (type(root.data.get('generation')) is not int or root.data['generation'] < 1
+                or generation is not None and root.data['generation'] != generation):
             raise DocumentConflict('HOSTED_GENERATION_CONFLICT')
-        if bool(FORMAT_FIELD in physical.data) != enabled:
+        if enabled is not None and bool(FORMAT_FIELD in physical.data) != enabled:
             raise DocumentConflict('HOSTED_MANUSCRIPT_ADOPTION_FORMAT_CHANGED')
         if set(physical.data) & (_MANAGED - {FORMAT_FIELD}):
             raise HostedValidationError('HOSTED_MANUSCRIPT_LEGACY_MARKER_REPAIR_REQUIRED')
@@ -123,22 +128,28 @@ class LegacyManuscriptAdoption:
             'ready': data['state'] in {'ready', 'activated'}, 'activated': data['state'] == 'activated',
             'source_generation': data['source_generation']}
 
-    def begin(self, pid, uid, *, generation, operation):
+    def begin(self, pid, uid, *, generation=None, operation):
         pid, uid = self._scope(pid, uid)
         operation = require_opaque_id(operation, label='operation')
-        if type(generation) is not int or generation < 1:
+        if generation is not None and (type(generation) is not int or generation < 1):
             raise HostedValidationError('HOSTED_MANUSCRIPT_ADOPTION_GENERATION_INVALID')
         job = self._job(pid, uid, operation)
         def create(tx):
+            physical = self._authority(tx, pid, uid, generation=generation, enabled=None)
+            current_generation = physical.data['generation']
+            if FORMAT_FIELD in physical.data:
+                # The exact codec and all live authority fences were checked
+                # above. No new scan/job is needed for an already-adopted root.
+                return {'job_id': None, 'next_step': 0, 'records_validated': 0,
+                    'family': None, 'ready': True, 'activated': True, 'source_generation': current_generation}
             row = tx.get(self._path(pid, job))
             if row is not None:
                 data, _ = self._load(tx, pid, uid, job)
-                if data['source_generation'] != generation:
+                if data['source_generation'] != current_generation:
                     raise DocumentConflict('HOSTED_GENERATION_CONFLICT')
                 return self._public(job, data)
-            self._authority(tx, pid, uid, generation=generation)
             data = {'version': 1, 'project_id': pid, 'actor_user_id': uid, 'operation': operation,
-                'source_generation': generation, 'expires_at': self.now() + _EXPIRY_SECONDS,
+                'source_generation': current_generation, 'expires_at': self.now() + _EXPIRY_SECONDS,
                 'state': 'scanning', 'family_index': 0, 'cursor': None, 'next_step': 0, 'records': 0,
                 'digest': hashlib.sha256(b'legacy-manuscript-adoption-v1').hexdigest()}
             tx.create(self._path(pid, job), data)

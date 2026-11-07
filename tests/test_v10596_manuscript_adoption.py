@@ -95,6 +95,57 @@ def test_exact_full_page_requires_terminal_probe_and_cannot_skip_steps():
     assert sum(not page.rows and page.next_cursor is None for page in pages) == 4
 
 
+def test_prepare_derives_generation_inside_authorized_transaction_when_omitted():
+    raw, trace, view, service = world()
+    raw.run_transaction(lambda tx: tx.set(ROOT, {**tx.get(ROOT).data, 'generation': 8}))
+    progress = service.begin(PID, EDITOR, operation='implicit_generation')
+    assert progress['source_generation'] == 8 and not progress['ready']
+    assert raw.get(service._path(PID, progress['job_id'])).data['source_generation'] == 8
+    assert service.begin(PID, EDITOR, operation='implicit_generation') == progress
+    with pytest.raises(DocumentConflict, match='GENERATION_CONFLICT'):
+        service.begin(PID, EDITOR, operation='implicit_generation', generation=7)
+
+
+@pytest.mark.parametrize('generation', [None, 7])
+def test_already_adopted_prepare_returns_terminal_without_new_job_or_manuscript_scan(generation):
+    raw, trace, view, service = world()
+    progress = ready(service, begin(service))
+    service.finish(PID, EDITOR, progress['job_id'])
+    before = deepcopy(raw._documents)
+    trace.calls.clear()
+    result = service.begin(PID, EDITOR, operation='already_adopted', generation=generation)
+    assert result == {'job_id': None, 'next_step': 0, 'records_validated': 0, 'family': None,
+        'ready': True, 'activated': True, 'source_generation': 7}
+    assert raw._documents == before
+    assert not any(call[0] in {'create', 'set', 'delete'} for call in trace.calls)
+    assert [call[1][0] for call in trace.calls if call[0].startswith('query_collection')] == [ROOT + ('members',)]
+    with pytest.raises(DocumentConflict, match='GENERATION_CONFLICT'):
+        service.begin(PID, EDITOR, operation='already_adopted', generation=6)
+
+
+@pytest.mark.parametrize('change', ['actor', 'membership', 'private', 'actor_lock', 'owner_lock', 'owner_profile', 'format'])
+def test_already_adopted_prepare_still_requires_all_live_authority_and_codec_checks(change):
+    raw, trace, view, service = world()
+    progress = ready(service, begin(service))
+    service.finish(PID, EDITOR, progress['job_id'])
+    def change_authority(tx):
+        if change == 'membership':
+            tx.delete(ROOT + ('members', EDITOR))
+        elif change == 'private':
+            tx.set(ROOT, {**tx.get(ROOT).data, '_bm_private_title': {'sealed': 'synthetic'}})
+        elif change.endswith('_lock'):
+            tx.create(('account_erasure_locks', EDITOR if change == 'actor_lock' else UID), {'operation': 'synthetic'})
+        elif change == 'owner_profile':
+            tx.set(('users', UID), {'status': 'erasure_pending'})
+        elif change == 'format':
+            tx.set(ROOT, {**tx.get(ROOT).data, FORMAT_FIELD: None})
+    raw.run_transaction(change_authority)
+    before = deepcopy(raw._documents)
+    with pytest.raises((HostedValidationError, ProjectUnavailable, DocumentConflict)):
+        service.begin(PID, UID if change == 'actor' else EDITOR, operation='terminal_denied')
+    assert raw._documents == before
+
+
 @pytest.mark.parametrize('phase', ['scanning', 'ready'])
 def test_generation_change_invalidates_proof_even_for_insert_before_cursor(phase):
     raw, trace, view, service = world(blocks=205)
@@ -235,6 +286,29 @@ def test_invalid_physical_root_marker_is_never_treated_as_already_adopted(marker
     raw.run_transaction(lambda tx: tx.set(ROOT, {**tx.get(ROOT).data, FORMAT_FIELD: marker}))
     with pytest.raises(HostedValidationError, match='FORMAT_UNSUPPORTED'):
         begin(service)
+
+
+@pytest.mark.parametrize('phase', ['begin', 'step', 'finish'])
+def test_private_root_refuses_plaintext_adoption_before_scanning_or_activation(phase):
+    raw, trace, view, service = world()
+    if phase != 'begin':
+        progress = begin(service)
+        if phase == 'finish':
+            progress = ready(service, progress)
+    raw.run_transaction(lambda tx: tx.set(ROOT, {**tx.get(ROOT).data,
+        '_bm_private_title': {'sealed': 'synthetic-private-root'}}))
+    before = deepcopy(raw._documents)
+    trace.calls.clear()
+    with pytest.raises(HostedValidationError, match='PRIVATE_TITLE_CODEC_REQUIRED'):
+        if phase == 'begin':
+            begin(service)
+        elif phase == 'step':
+            service.step(PID, EDITOR, progress['job_id'], progress['next_step'])
+        else:
+            service.finish(PID, EDITOR, progress['job_id'])
+    assert raw._documents == before
+    assert not any(call[0].startswith('query_collection') for call in trace.calls)
+    assert FORMAT_FIELD not in raw.get(ROOT).data
 
 
 def test_provider_page_scope_order_missing_cursor_and_explicit_null_predicate():
