@@ -71,6 +71,59 @@ def _restore_safe(value:Any) -> Any:
     return value
 
 
+_PROVIDER_FIELDS = frozenset({'payload_object', 'object_name', 'object_generation',
+    'object_sha256', 'object_size', 'encryption_operation', 'encryption_format'})
+_PARTICIPANT_AUTHORITY = frozenset({'user_id', 'owner_user_id', 'member_id', 'role',
+    'session_id', 'invitation_id', 'invitation_token', 'token', 'access_grant',
+    'invite_token', 'access_token', 'session_token', 'reviewer_session_id',
+    'auth_token', 'invite_url', 'invite_id', 'invited_user_id', 'reviewer_user_id',
+    'external_user_id', 'magic_link', 'secret'})
+_PARTICIPANT_PORTABLE = frozenset({'id', 'participant_id', 'review_id', 'project_id',
+    'display_name', 'name', 'notes', 'email', 'status', 'started', 'completed',
+    'bookmark', 'position', 'started_at', 'completed_at', 'revoked_at'})
+
+
+def _portable_export_payload(logical, value):
+    # Ordinary downloads carry hydrated product values, never provider pointers
+    # or participant account bindings. Sealed private recovery does not use this.
+    if isinstance(value, dict):
+        return {key: _portable_export_payload('', child) for key, child in value.items()
+                if key not in _PROVIDER_FIELDS and not key.startswith('_bm_')
+                and not (logical == 'review_participant' and key in _PARTICIPANT_AUTHORITY)}
+    if isinstance(value, list):
+        return [_portable_export_payload('', child) for child in value]
+    return value
+
+
+def _portable_import_payload(logical, data, *, ids=None, entity_id=None):
+    """Untrusted public records cannot smuggle provider access or identities."""
+    from hosted.domain_store import _HYBRID_PAYLOAD_FIELDS
+    result = dict(data)
+    if logical == 'review_participant':
+        if _PARTICIPANT_AUTHORITY & set(result):
+            raise ValueError('HOSTED_PACKAGE_PARTICIPANT_AUTHORITY_FORBIDDEN')
+        if set(result) - _PARTICIPANT_PORTABLE:
+            raise ValueError('HOSTED_PACKAGE_PARTICIPANT_SCHEMA_UNSUPPORTED')
+    stack = [result]
+    while stack:
+        value = stack.pop()
+        if isinstance(value, dict):
+            if any(key in _PROVIDER_FIELDS or str(key).startswith('_bm_') for key in value):
+                raise ValueError('HOSTED_PACKAGE_PROVIDER_FIELDS_FORBIDDEN')
+            stack.extend(value.values())
+        elif isinstance(value, list):
+            stack.extend(value)
+    fields = _HYBRID_PAYLOAD_FIELDS.get(logical)
+    if fields and not any(key in result and result[key] is not None for key in fields):
+        raise ValueError('HOSTED_PACKAGE_BODY_MISSING')
+    if ids is not None and entity_id is not None:
+        expected = {**ids, _ID_FIELDS[logical][0]: entity_id, 'id': entity_id}
+        for key, value in expected.items():
+            if key != 'project_id' and key in result and str(result[key]) != str(value):
+                raise ValueError('HOSTED_PACKAGE_PAYLOAD_IDENTITY_MISMATCH')
+    return result
+
+
 class HostedProjectPackageService:
     def __init__(self, projects) -> None:
         self.projects=projects
@@ -84,7 +137,9 @@ class HostedProjectPackageService:
         # manuscript/Review data from the experimental private storage modes.
         if self.domain.encrypted_objects is not None or self.domain.encrypted_fields is not None:
             raise ValueError('HOSTED_ENCRYPTED_PACKAGE_EXPORT_NOT_READY')
-        return self._collect_authorized_records(project_id, user_id)
+        records=self._collect_authorized_records(project_id, user_id)
+        return {logical:[{**item,'data':_portable_export_payload(logical,item['data'])} for item in rows]
+                for logical,rows in records.items()}
 
     def _collect_authorized_records(self, project_id:str, user_id:str) -> dict[str,list[dict[str,Any]]]:
         # Reads through HostedDomainStore.list, which checks membership BEFORE
@@ -405,7 +460,9 @@ class HostedProjectPackageService:
         full_ids['project_id']=require_project_id(str(full_ids.get('project_id') or ''))
         full_ids[final]=require_opaque_id(entity_id,label=final)
         path=render_model_path(model,**full_ids)
-        public=_canonical_payload(self.domain._payload_with_identity(logical,data,entity_id))
+        portable=(dict(data) if logical=='project_asset' else
+                  _portable_import_payload(logical,data,ids=full_ids,entity_id=entity_id))
+        public=_canonical_payload(self.domain._payload_with_identity(logical,portable,entity_id))
         _reject_managed_create_fields(public)
         hybrid=self.domain._hybrid_payload(logical,public)
         if hybrid is not None:
@@ -565,7 +622,7 @@ class HostedProjectPackageService:
                 if old is None:tx.create(path,stored)
         self.documents.run_transaction(stage)
 
-    def _stage_asset(self,pid:str,user_id:str,data:bytes,extension:str,*,expected_digest:str|None=None) -> None:
+    def _stage_asset(self,pid:str,user_id:str,data:bytes,extension:str,*,expected_digest:str|None=None,source_path:str|None=None) -> None:
         ext='.'+str(extension or '').lower().lstrip('.')
         try:
             info=inspect_hosted_image_bytes(bytes(data),ext,byte_limit=HOSTED_DEFAULT_IMAGE_BYTES)
@@ -575,16 +632,23 @@ class HostedProjectPackageService:
         digest=hashlib.sha256(data).hexdigest()
         if expected_digest is not None and digest!=str(expected_digest):
             raise ValueError('HOSTED_PACKAGE_ASSET_HASH_MISMATCH')
+        canonical_name=f'img_{digest[:24]}{info.extension}'
+        name=canonical_name
+        if source_path is not None:
+            import re
+            if not re.fullmatch(r'/api/assets/[A-Za-z0-9_-]{1,160}\.(?:png|jpg|webp)',source_path):
+                raise ValueError('HOSTED_PACKAGE_ASSET_PATH_INVALID')
+            name=source_path.removeprefix('/api/assets/')
+        asset_id='asset_'+(digest if name==canonical_name else hashlib.sha256(source_path.encode()).hexdigest())
         publication=ImmutableObjectPublisher(self.objects).publish_bytes(
             project_asset_key(pid,digest,info.extension),data,max_bytes=HOSTED_DEFAULT_IMAGE_BYTES,
             content_type=info.media_type,metadata={'breadmaker-entity':'project_asset'},
         )
         obj=publication.object
-        name=f'img_{digest[:24]}{info.extension}'
         self._stage_entity(
             'project_asset',{'project_id':pid},
             {'api_path':'/api/assets/'+name,'name':name,'sha256':digest,'object_name':obj.name,'object_generation':obj.generation,'object_sha256':obj.sha256,'object_size':obj.size},
-            entity_id='asset_'+digest,
+            entity_id=asset_id,
             unpublished_only=True,
         )
 
@@ -607,134 +671,41 @@ class HostedProjectPackageService:
         return None
 
     def _import_v3(self,archive:zipfile.ZipFile,manifest:Mapping[str,Any],user_id:str,*,name_override:str|None,import_operation:str|None=None):
-        snapshot=json.loads(archive.read('project.json').decode('utf-8'))
-        entities=snapshot.get('entities')
-        if not isinstance(entities,dict):raise ValueError('HOSTED_PACKAGE_INVALID')
-        title=str(name_override or manifest.get('title') or 'Imported Project').strip()[:240] or 'Imported Project'
+        from hosted.native_package import _prepare_hosted_archive
         pid=self._new_import_project_id(import_operation)
+        plan=_prepare_hosted_archive(archive,manifest,pid,name_override=name_override,excluded=_SKIP)
         try:
-            ordered=sorted(
-                ((name,MODELS[name]) for name in entities if name in MODELS and name not in _SKIP),
-                key=lambda pair:(len(pair[1].path_template.split('/')),pair[0]),
-            )
-            for logical,model in ordered:
-                if logical=='annotation':continue
-                final=_fields(model.path_template)[-1]
-                for item in entities.get(logical) or []:
-                    if not isinstance(item,dict) or not isinstance(item.get('ids'),dict) or not isinstance(item.get('data'),dict):raise ValueError('HOSTED_PACKAGE_INVALID')
-                    ids={str(k):str(v) for k,v in item['ids'].items()};ids['project_id']=pid
-                    eid=str(ids.get(final) or '')
-                    parents={k:v for k,v in ids.items() if k!=final}
-                    data={k:_restore_safe(v) for k,v in item['data'].items()}
-                    data.pop('project_id',None)
-                    self._stage_entity(logical,{**parents,'project_id':pid},data,entity_id=eid)
-            self._stage_annotation_records(pid,entities.get('annotation') or [])
-            for name in sorted(archive.namelist()):
-                if not name.startswith('assets/') or name.endswith('/'):continue
-                leaf=name.split('/')[-1];parts=leaf.split('.',1)
-                if len(parts)!=2 or len(parts[0])!=64:raise ValueError('HOSTED_PACKAGE_ASSET_INVALID')
-                digest,ext=parts;self._stage_asset(pid,user_id,archive.read(name),'.'+ext,expected_digest=digest)
-            return self._finish_import(pid,title,user_id)
+            self._stage_native_plan(pid,user_id,plan)
+            return self._finish_import(pid,plan['title'],user_id)
         except Exception:
             self._fail_import(pid,user_id);raise
 
     def _import_legacy_v2(self,archive:zipfile.ZipFile,manifest:Mapping[str,Any],user_id:str,*,name_override:str|None,import_operation:str|None=None):
-        db_name=next((name for name in archive.namelist() if name.endswith('project.sqlite3')),None)
-        if not db_name:raise ValueError('HOSTED_PACKAGE_DATABASE_MISSING')
-        database=archive.read(db_name)
-        con=sqlite3.connect(':memory:');con.row_factory=sqlite3.Row
+        from hosted.native_package import prepare_native_archive
+        pid=self._new_import_project_id(import_operation)
+        plan=prepare_native_archive(archive,manifest,pid,name_override=name_override,excluded=_SKIP)
         try:
-            if not hasattr(con,'deserialize'):raise ValueError('HOSTED_LEGACY_IMPORT_DESERIALIZE_UNAVAILABLE')
-            con.deserialize(database)
-            if str(con.execute('PRAGMA integrity_check').fetchone()[0]).lower()!='ok':raise ValueError('HOSTED_PACKAGE_DATABASE_INVALID')
-            if con.execute('PRAGMA foreign_key_check').fetchone() is not None:raise ValueError('HOSTED_PACKAGE_DATABASE_INVALID')
-            title_row=con.execute('SELECT title FROM projects ORDER BY id LIMIT 1').fetchone()
-            title=str(name_override or (title_row['title'] if title_row else '') or manifest.get('name') or 'Imported Project').strip()[:240] or 'Imported Project'
-            pid=self._new_import_project_id(import_operation)
-            try:
-                self._translate_legacy_tables(con,pid,user_id)
-                for name in archive.namelist():
-                    marker='/assets/'
-                    if marker not in '/'+name or name.endswith('/'):continue
-                    leaf=name.rsplit('/',1)[-1]
-                    if not leaf.startswith('img_') or '.' not in leaf:continue
-                    ext='.'+leaf.rsplit('.',1)[1].lower()
-                    if ext not in {'.png','.jpg','.webp'}:continue
-                    self._stage_asset(pid,user_id,archive.read(name),ext)
-                return self._finish_import(pid,title,user_id)
-            except Exception:
-                self._fail_import(pid,user_id);raise
-        finally:con.close()
+            self._stage_native_plan(pid,user_id,plan)
+            return self._finish_import(pid,plan['title'],user_id)
+        except Exception:
+            self._fail_import(pid,user_id);raise
+
+    def _stage_native_plan(self,pid:str,user_id:str,plan) -> None:
+        for item in plan['records']:
+            self._stage_entity(item['entity'],item['parents'],item['data'],entity_id=item['id'])
+        self._stage_annotation_records(pid,plan['annotations'])
+        for asset in plan['assets']:
+            self._stage_asset(pid,user_id,asset['data'],asset['extension'],expected_digest=asset['sha256'],source_path=asset['path'])
 
     def _translate_legacy_tables(self,con:sqlite3.Connection,pid:str,user_id:str) -> None:
-        from hosted.portability_editing import native_categories,native_annotation_ids
-        editing_categories=native_categories(con);annotations=[]
-        contract=json.loads((__import__('pathlib').Path(__file__).resolve().parents[2]/'docs'/'HOSTED_DATA_MODEL_V1.json').read_text(encoding='utf-8'))
-        mappings=[row for row in contract['schema42_mappings'] if row['logical_entity'] in MODELS and row['logical_entity'] not in _SKIP and row['logical_entity'] in _ID_FIELDS]
-        mappings.sort(key=lambda row:(len(MODELS[row['logical_entity']].path_template.split('/')),row['logical_entity']))
-        id_maps:dict[tuple[str,str],str]={}
-        field_targets={
-            'tab_id':'document_tab','parent_id':'document_tab','chapter_id':'chapter','scene_id':'scene','block_id':'manuscript_block',
-            'label_id':'markup_label','thread_id':'comment_thread','canvas_id':'canvas','from_node_id':'canvas_node','to_node_id':'canvas_node',
-            'map_id':'story_map','line_id':'map_line','from_line_id':'map_line','to_line_id':'map_line','from_item_id':'map_item','to_item_id':'map_item',
-            'task_id':'task','review_id':'review','participant_id':'review_participant','questionnaire_id':'questionnaire',
-        }
-        tables={str(row[0]) for row in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-        rows_by_entity={}
-        # Allocate every translated ID before resolving any cross-table link.
-        # For example, chapters are visited before their document tabs.
-        for mapping in mappings:
-            table=mapping['source_table'];logical=mapping['logical_entity']
-            if table not in tables:continue
-            rows=[dict(row) for row in con.execute(f'SELECT * FROM "{table}"')]
-            rows_by_entity[logical]=rows
-            for row in rows:
-                old=str(row.get('id') or '')
-                if not old:continue
-                new_id=f"{_ID_FIELDS[logical][1]}legacy_{old}"
-                id_maps[(logical,old)]=new_id
-        for old,eid in native_annotation_ids(pid,rows_by_entity).items():
-            id_maps[('annotation',old)]=eid
-        for mapping in mappings:
-            logical=mapping['logical_entity']
-            model=MODELS[logical];fields=_fields(model.path_template);final=fields[-1]
-            rows=rows_by_entity.get(logical,[])
-            for row in rows:
-                old=str(row.get('id') or '')
-                if not old:continue
-                eid=id_maps[(logical,old)]
-                if logical in {'review_scope_chapter','review_scope_scene'}:
-                    # Local association PKs are independent of their selected
-                    # Chapter/Scene. Hosted paths use the selected entity ID,
-                    # scoped under the Review, not the local join-row number.
-                    scope_field='chapter_id' if logical=='review_scope_chapter' else 'scene_id'
-                    target=field_targets[scope_field]
-                    eid=id_maps.get((target,str(row.get(scope_field) or '')))
-                    if eid is None:raise ValueError('HOSTED_PACKAGE_REVIEW_SCOPE_REFERENCE_INVALID')
-                    id_maps[(logical,old)]=eid
-                ids={'project_id':pid}
-                for parent in fields[1:-1]:
-                    raw=row.get(parent)
-                    if raw is None:continue
-                    target=field_targets.get(parent)
-                    ids[parent]=id_maps.get((target,str(raw)),str(raw)) if target else str(raw)
-                payload={}
-                for key,value in row.items():
-                    # Legacy timestamps/generation are not hosted authority.
-                    # _stage_entity assigns fresh server-owned values; keep its
-                    # managed-field rejection intact for all other callers.
-                    if key in {'id','project_id','created_at','updated_at','generation'}:continue
-                    # parent_id is polymorphic across native tables: Canvas
-                    # hierarchy must never resolve to a same-number document Tab.
-                    target='canvas' if logical=='canvas' and key=='parent_id' else field_targets.get(key)
-                    if target and value is not None:value=id_maps.get((target,str(value)),str(value))
-                    payload[key]=_json_safe(value)
-                # Schema-42 checkpoints store compressed snapshot bytes. Preserve them
-                # as a portable opaque value rather than treating SQLite bytes as hosted authority.
-                if logical=='checkpoint' and 'snapshot_blob' in payload:
-                    payload['snapshot']={'legacy_snapshot_blob':payload.pop('snapshot_blob')}
-                if logical=='markup_label' and old in editing_categories:
-                    payload['editing_search_categories']=editing_categories[old]
-                if logical=='annotation':annotations.append({'ids':{**ids,final:eid},'data':{**payload,'id':eid}})
-                else:self._stage_entity(logical,ids,payload,entity_id=eid)
+        from hosted.native_package import plan_native_records
+        # Resolve the entire relational graph first, including nested parent
+        # paths. A late invalid Map/Canvas cannot leave thousands of uploads.
+        planned=plan_native_records(con,pid,excluded=_SKIP)
+        annotations=[]
+        for item in planned:
+            if item['entity']=='annotation':
+                annotations.append({'ids':{**item['parents'],'annotation_id':item['id']},'data':{**item['data'],'id':item['id']}})
+            else:
+                self._stage_entity(item['entity'],item['parents'],item['data'],entity_id=item['id'])
         self._stage_annotation_records(pid,annotations)
