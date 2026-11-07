@@ -105,9 +105,17 @@ class _BufferedTransaction:
             return None if value is None else StoredDocument(path, deepcopy(value), 0)
         return self.tx.get(path)
 
+    def get_many(self, paths):
+        keys = [tuple(path) for path in paths]
+        missing = list(dict.fromkeys(path for path in keys if path not in self.pending))
+        rows = dict(zip(missing, self.tx.get_many(missing), strict=True)) if missing else {}
+        return [self.get(path) if path in self.pending else rows[path] for path in keys]
+
     def annotation_source_visible(self, pid, anchor):
         # Read-only and exact: never forward arbitrary provider methods around
         # the journal buffer. Legacy stores preserve their orphan semantics.
+        if self.pending:
+            raise HostedValidationError('HOSTED_ACTION_QUERY_AFTER_WRITE')
         visible = getattr(self.tx, 'annotation_source_visible', None)
         return True if visible is None else visible(pid, anchor)
 
