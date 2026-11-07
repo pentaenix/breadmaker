@@ -72,7 +72,10 @@ async function api(url, options={}) {
   // Personal UI state is outside canonical Undo. Background preference saves
   // can overlap an action, but member-state entities cannot join its journal.
   const personalStateRequest=/^\/api\/ui-state(?:\/|\?|$)/.test(url);
-  const nonceHeaders=hosted&&mutates?{'Idempotency-Key':String(options.idempotencyKey||uid()),...(hostedStructuralActionToken&&!url.startsWith('/api/undo/')&&!narrationRequest&&!personalStateRequest?{'X-Breadmaker-Action':hostedStructuralActionToken}:{})}:{};
+  // Package import creates a distinct project; it cannot join an in-flight
+  // structural Undo journal belonging to the currently open manuscript.
+  const projectPackageImportRequest=/^\/api\/projects\/import(?:\/|\?|$)/.test(url);
+  const nonceHeaders=hosted&&mutates?{'Idempotency-Key':String(options.idempotencyKey||uid()),...(hostedStructuralActionToken&&!url.startsWith('/api/undo/')&&!narrationRequest&&!personalStateRequest&&!projectPackageImportRequest?{'X-Breadmaker-Action':hostedStructuralActionToken}:{})}:{};
   const {idempotencyKey,acceptNotModified,rawResponse,...fetchOptions}=options;
   const response = await fetch(url, {...fetchOptions, headers:{...headers, ...contextHeaders, ...nonceHeaders, 'X-Breadmaker-Client':CLIENT_ID, 'X-Breadmaker-Locale':i18nLocale(), ...(options.headers||{})}});
   if(response.status===304&&acceptNotModified&&method==='GET')return null;
