@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from typing import Any, Callable, Iterable, Mapping, Protocol, TypeVar
 
 
@@ -48,6 +49,18 @@ class StoredDocument:
     revision: int
 
 
+@dataclass(frozen=True)
+class CollectionPage:
+    """An exclusive scan cursor, not necessarily the last emitted row.
+
+    None proves this collection/predicate is exhausted in this transaction.
+    Overlays may produce underfilled or empty nonterminal pages. Cross-request
+    callers must independently fence mutations; a cursor is not a snapshot.
+    """
+    rows: tuple[StoredDocument, ...]
+    next_cursor: str | None
+
+
 class Transaction(Protocol):
     def get(self, path: tuple[str, ...]) -> StoredDocument | None: ...
     def get_many(self, paths: list[tuple[str, ...]]) -> list[StoredDocument | None]: ...
@@ -57,6 +70,10 @@ class Transaction(Protocol):
     def query_collection_in(
         self, collection_path: tuple[str, ...], *, field: str, values: list[str] | tuple[str, ...]
     ) -> list[StoredDocument]: ...
+    def query_collection_page(
+        self, collection_path: tuple[str, ...], *, limit: int = 100, after: str | None = None,
+        field: str | None = None, value: Any = None
+    ) -> CollectionPage: ...
     def create(self, path: tuple[str, ...], data: Mapping[str, Any]) -> None: ...
     def set(self, path: tuple[str, ...], data: Mapping[str, Any]) -> None: ...
     def delete(self, path: tuple[str, ...]) -> None: ...
@@ -96,6 +113,37 @@ class Clock(Protocol):
 
 
 MAX_MEMBERSHIP_QUERY_VALUES = 30
+MAX_COLLECTION_PAGE_SIZE = 100
+
+
+def require_collection_page_query(collection_path, *, limit, after, field, value):
+    prefix = require_collection_path(collection_path)
+    if type(limit) is not int or not 1 <= limit <= MAX_COLLECTION_PAGE_SIZE:
+        raise HostedValidationError('HOSTED_COLLECTION_PAGE_LIMIT_INVALID')
+    if after is not None:
+        if not isinstance(after, str):
+            raise HostedValidationError('HOSTED_COLLECTION_PAGE_CURSOR_INVALID')
+        require_document_path(prefix + (after,))
+    # The memory and Google implementations share only top-level field equality.
+    if (field is not None and (not isinstance(field, str) or not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', field)
+            or field == '__name__') or field is None and value is not None):
+        raise HostedValidationError('HOSTED_COLLECTION_PAGE_FILTER_INVALID')
+    return prefix
+
+
+def collection_page(rows, prefix, *, limit, after, field, value):
+    """Validate the provider's bounded, scoped, strictly ordered result."""
+    rows = tuple(rows)
+    previous = after
+    if len(rows) > limit:
+        raise HostedValidationError('HOSTED_COLLECTION_PAGE_RESULT_INVALID')
+    for row in rows:
+        if (row.path[:-1] != prefix or previous is not None and row.path[-1] <= previous
+                or field is not None and (field not in row.data or row.data[field] != value)):
+            raise HostedValidationError('HOSTED_COLLECTION_PAGE_RESULT_INVALID')
+        require_document_path(row.path)
+        previous = row.path[-1]
+    return CollectionPage(rows, previous if len(rows) == limit else None)
 
 
 def require_string_membership_query(field, values) -> tuple[str, ...]:

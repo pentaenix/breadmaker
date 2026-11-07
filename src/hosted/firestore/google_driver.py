@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Callable, Mapping, TypeVar
+from itertools import islice
 
 from .contracts import (
     DocumentAlreadyExists,
@@ -10,6 +11,9 @@ from .contracts import (
     require_collection_path,
     require_document_path,
     require_string_membership_query,
+    CollectionPage,
+    collection_page,
+    require_collection_page_query,
 )
 
 _T = TypeVar("_T")
@@ -71,6 +75,27 @@ class _GoogleTransaction(Transaction):
         key = require_collection_path(collection_path)
         results = self._client.collection('/'.join(key)).count(alias='total').get(transaction=self._transaction)
         return int(results[0][0].value)
+
+    def query_collection_page(
+        self, collection_path: tuple[str, ...], *, limit: int = 100, after: str | None = None,
+        field: str | None = None, value: Any = None
+    ) -> CollectionPage:
+        prefix = require_collection_page_query(collection_path, limit=limit, after=after, field=field, value=value)
+        query = self._client.collection('/'.join(prefix))
+        if field is not None:
+            try:
+                from google.cloud.firestore_v1.base_query import FieldFilter
+            except ImportError as exc:  # pragma: no cover
+                raise RuntimeError('HOSTED_FIRESTORE_SDK_REQUIRED') from exc
+            query = query.where(filter=FieldFilter(field, '==', value))
+        query = query.order_by('__name__')
+        if after is not None:
+            query = query.start_after({'__name__': self._ref(prefix + (after,))})
+        snapshots = query.limit(limit).stream(transaction=self._transaction)
+        # A malformed provider result cannot turn a bounded page into a scan.
+        rows = [StoredDocument(tuple(doc.reference.path.split('/')), doc.to_dict() or {},
+            _snapshot_revision(doc)) for doc in islice(snapshots, limit + 1)]
+        return collection_page(rows, prefix, limit=limit, after=after, field=field, value=value)
 
     def create(self, path: tuple[str, ...], data: Mapping[str, Any]) -> None:
         self._transaction.create(self._ref(path), dict(data))

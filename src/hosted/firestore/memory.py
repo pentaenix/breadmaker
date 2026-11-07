@@ -12,6 +12,9 @@ from .contracts import (
     require_collection_path,
     require_document_path,
     require_string_membership_query,
+    CollectionPage,
+    collection_page,
+    require_collection_page_query,
 )
 
 _T = TypeVar("_T")
@@ -59,6 +62,21 @@ class _MemoryTransaction(Transaction):
         if key in self._owner._documents:
             raise DocumentAlreadyExists("HOSTED_DOCUMENT_ALREADY_EXISTS")
         self._owner._write_locked(key, data)
+
+    def query_collection_page(
+        self, collection_path: tuple[str, ...], *, limit: int = 100, after: str | None = None,
+        field: str | None = None, value: Any = None
+    ) -> CollectionPage:
+        prefix = require_collection_page_query(collection_path, limit=limit, after=after, field=field, value=value)
+        rows = []
+        for path in sorted(self._owner._documents):
+            data = self._owner._documents[path][0]
+            if (path[:-1] == prefix and (after is None or path[-1] > after)
+                    and (field is None or field in data and data[field] == value)):
+                rows.append(self._owner._get_locked(path))
+                if len(rows) == limit:
+                    break
+        return collection_page(rows, prefix, limit=limit, after=after, field=field, value=value)
 
     def set(self, path: tuple[str, ...], data: Mapping[str, Any]) -> None:
         self._owner._write_locked(require_document_path(path), data)

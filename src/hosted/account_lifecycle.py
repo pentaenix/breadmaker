@@ -11,7 +11,8 @@ from copy import deepcopy
 import re
 
 from hosted.firestore.contracts import (DocumentAlreadyExists, DocumentConflict,
-    ProjectUnavailable, StoredDocument, require_document_path, require_string_membership_query)
+    ProjectUnavailable, StoredDocument, require_document_path, require_string_membership_query,
+    CollectionPage, require_collection_page_query)
 from hosted.storage.keys import require_object_name
 from hosted.import_staging import permits_unpublished_import, import_authority_paths
 
@@ -92,6 +93,27 @@ class _LifecycleTransaction:
                 else:
                     by_path[key] = self.get(key)
         return [self._copy(row) for _, row in sorted(by_path.items()) if row.data.get(field) in members]
+
+    def query_collection_page(self, path, *, limit=100, after=None, field=None, value=None):
+        prefix = require_collection_page_query(path, limit=limit, after=after, field=field, value=value)
+        page = self.tx.query_collection_page(prefix, limit=limit, after=after, field=field, value=value)
+        by_path = {}
+        for row in page.rows:
+            self.original.setdefault(row.path, row)
+            by_path[row.path] = row
+        # Merge only the provider's scanned interval. Deleted/changed rows may
+        # underfill it; preserve its cursor instead of refilling without bound.
+        for key, data in self.pending.items():
+            if (key[:-1] == prefix and (after is None or key[-1] > after)
+                    and (page.next_cursor is None or key[-1] <= page.next_cursor)):
+                if data is None:
+                    by_path.pop(key, None)
+                else:
+                    by_path[key] = self.get(key)
+        rows = [self._copy(row) for _, row in sorted(by_path.items())
+            if field is None or field in row.data and row.data[field] == value]
+        cursor = rows[limit - 1].path[-1] if len(rows) > limit else page.next_cursor
+        return CollectionPage(tuple(rows[:limit]), cursor)
 
     def create(self, path, data):
         key = require_document_path(path)
