@@ -80,6 +80,10 @@ function withStructuralUndo(label,fn,context={}){
   const projectId=currentProjectIdentity();context={...context,projectId};
   const run=async()=>withManuscriptMutationBarrier(async()=>{
     if(projectId!==currentProjectIdentity())throw new BreadmakerError('The active project changed before the action started.',0,'STRUCTURAL_PROJECT_CHANGED');
+    // Bounded representation preparation must serialize with this action and
+    // immediate Undo, but must not become part of its before/after journal.
+    if(context.beforeBegin)await context.beforeBegin();
+    if(projectId!==currentProjectIdentity())throw new BreadmakerError('The active project changed before the action started.',0,'STRUCTURAL_PROJECT_CHANGED');
     const scope=context.undoScope||'full',scopeId=scope==='canvas'?(context.canvasId||state.currentCanvas?.id||null):scope==='maps'?(context.mapId||state.currentMap?.id||null):null;const before=await beginStructuralUndo(label,scope,scopeId,projectId);
     let result;
     try{

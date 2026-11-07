@@ -278,8 +278,12 @@ function applyBootstrapData(bootstrap,{oldDoc=null}={}){
   applyFeatureFlags();applyCanvasConfig();
   state.activeDocumentId=oldDoc&&state.documents.some(d=>d.id===oldDoc)?oldDoc:(state.documents.find(d=>d.is_manuscript)?.id||state.documents[0]?.id||null);
 }
-async function refresh(preserve=true) {
-  const bootstrap = await api(runtimeSupports('hosted_projects')?'/api/bootstrap?navigation_only=true':'/api/bootstrap');invalidateTaskCache();invalidateQuickOpenDetailIndex();state.bookCache.clear();
+async function refresh(preserve=true,{projectId=null,actor=null}={}) {
+  const scoped=projectId!==null,current=()=>!scoped||(String(projectId)===String(currentProjectIdentity())&&(actor===null||actor===currentUserIdentity()));
+  if(!current())return false;
+  const bootstrap = await api(runtimeSupports('hosted_projects')?'/api/bootstrap?navigation_only=true':'/api/bootstrap',scoped?{headers:{'X-Breadmaker-Project':String(projectId)}}:{});
+  if(!current())return false;
+  invalidateTaskCache();invalidateQuickOpenDetailIndex();state.bookCache.clear();
   const oldChapter = preserve ? state.chapter?.id : null;
   const oldScene = preserve && state.viewMode==='scene' ? state.scene?.id : null;
   const oldSceneGap = preserve && state.viewMode==='scene-gap' ? state.sceneGap?.first_block_id : null;
@@ -301,5 +305,6 @@ async function refresh(preserve=true) {
   else if(oldSceneGap){const gap=state.sceneGaps.find(item=>String(item.first_block_id)===String(oldSceneGap));if(gap)await selectSceneGap(gap,false)}
   else if (oldChapter && visibleChapters().some(ch => ch.id === oldChapter)) await selectChapter(oldChapter, false);
   if (oldCanvas && state.canvases.some(c => c.id === oldCanvas)) await selectCanvas(oldCanvas);
+  if(scoped)return current();
 }
 

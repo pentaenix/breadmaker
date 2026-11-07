@@ -345,11 +345,86 @@ async function cutChapter(chapter){
   await withStructuralUndo(`Cut chapter: ${chapter.title}`,()=>api(`/api/chapters/${chapter.id}`,{method:'DELETE'}),{view:'manuscript'});await refresh(false);await notifyCutsChanged();
   const next=manuscriptTabChapterRows(state.activeDocumentId)[0];if(next)await selectChapter(next.id,false);else await openWholeBook(false);await showCutsOnboardingOnce();
 }
+
+let hostedChapterDeletion=null;
+function chapterDeletionOrigin(){return {projectId:currentProjectIdentity(),actor:currentUserIdentity()}}
+function chapterDeletionOriginCurrent(origin){return origin.projectId===currentProjectIdentity()&&origin.actor===currentUserIdentity()}
+function chapterDeletionPreparation(chapter,origin){
+  const initialRevision=modalRevision,navigation=workspaceNavigation,selection=state.manuscriptSelectionRequest;
+  let owner=null,timer=null,cancelled=false,deleting=false,records=0;
+  const ownsModal=()=>!!owner&&owner.node.isConnected&&$('#modalBody').contains(owner.node)&&!$('#modal').classList.contains('hidden')&&modalRevision===owner.revision;
+  const current=()=>chapterDeletionOriginCurrent(origin)&&navigation===workspaceNavigation&&selection===state.manuscriptSelectionRequest&&(owner?ownsModal():modalRevision===initialRevision&&$('#modal').classList.contains('hidden'));
+  const stopTimer=()=>{clearTimeout(timer);timer=null};
+  const cancel=()=>{if(deleting)return;cancelled=true;stopTimer()};
+  const check=()=>{if(cancelled)throw new BreadmakerError('Chapter deletion cancelled.',0,'HOSTED_CHAPTER_DELETE_CANCELLED');if(!current())throw new BreadmakerError('The manuscript or dialog changed. The chapter was not deleted.',0,'HOSTED_CHAPTER_DELETE_CONTEXT_CHANGED')};
+  const paint=()=>{if(ownsModal())$('#chapterPreparationStatus').textContent=records?`Checked ${i18nNumber(records)} records…`:i18nSource('Checking the manuscript…')};
+  return {
+    current,check,cancelled:()=>cancelled,
+    start(){
+      check();timer=setTimeout(()=>{
+        if(cancelled||!current())return;
+        showModal('Preparing chapter deletion',`<p><b>${escapeHtml(chapter.title||'Chapter')}</b></p><p class="small-muted">${escapeHtml(i18nSource('This manuscript needs one-time preparation for chapter changes. This may take a while.'))}</p><p id="chapterPreparationStatus" class="small-muted" role="status" aria-live="polite"></p>`,`<button id="cancelChapterPreparation" type="button">{{i18n:dynamic.html.text.button.92113f72}}</button>`,cancel);
+        owner={node:$('#modalBody').firstElementChild,revision:modalRevision};paint();
+        $('#cancelChapterPreparation').onclick=()=>{cancel();if(ownsModal())closeModal()};
+      },350);
+    },
+    update(status){check();records=Number.isSafeInteger(status.records_validated)&&status.records_validated>=0?status.records_validated:records;paint()},
+    prepared(){check();stopTimer()},
+    beginDelete(){check();stopTimer();deleting=true;if(ownsModal()){$('#chapterPreparationStatus').textContent=i18nSource('Deleting chapter…');$('#cancelChapterPreparation').disabled=true;$('#modalClose').disabled=true;$('#modalClose').setAttribute('aria-disabled','true')}},
+    dispose(){stopTimer();if(ownsModal()){currentModalDismiss=null;$('#modalClose').disabled=false;$('#modalClose').removeAttribute('aria-disabled');closeModal(false)}}
+  };
+}
+async function prepareHostedChapterDeletion(control,origin){
+  control.start();await flushSave();control.check();
+  const storageKey=`breadmaker-pending-chapter-adoption:${JSON.stringify([origin.projectId,origin.actor])}`;
+  let pending=null;
+  try{pending=JSON.parse(sessionStorage.getItem(storageKey)||'null')}catch{}
+  if(!pending?.key)pending={key:uid()};
+  const persist=()=>sessionStorage.setItem(storageKey,JSON.stringify(pending)),clear=()=>sessionStorage.removeItem(storageKey);
+  const request=async(url,options={})=>{control.check();const response=await api(url,{...options,headers:{'X-Breadmaker-Project':String(origin.projectId)}});control.check();return response};
+  const jobUrl=()=>`/api/manuscript/adoptions/${encodeURIComponent(pending.job)}`;
+  try{
+    persist();let status;
+    if(pending.job)status=await request(jobUrl());
+    else{
+      status=await request('/api/manuscript/adoptions',{method:'POST',body:JSON.stringify({}),idempotencyKey:pending.key});
+      if(status.job_id){pending.job=status.job_id;persist()}
+    }
+    while(status.activated!==true){
+      control.update(status);
+      if(!pending.job)throw new Error('Chapter preparation could not be verified. The chapter was not deleted.');
+      if(status.ready){status=await request(`${jobUrl()}/finish`,{method:'POST'});if(status.activated!==true)throw new Error('Chapter preparation has not finished. The chapter was not deleted.');break}
+      if(!Number.isSafeInteger(status.next_step)||status.next_step<0)throw new Error('Chapter preparation progress could not be verified. The chapter was not deleted.');
+      status=await request(`${jobUrl()}/step?batch=${status.next_step}`,{method:'POST'});
+    }
+    if(status.ready!==true)throw new Error('Chapter preparation could not be verified. The chapter was not deleted.');
+    clear();control.prepared();
+  }catch(error){
+    if(['HOSTED_GENERATION_CONFLICT','ADOPTION_EXPIRED','ADOPTION_OUT_OF_ORDER','ADOPTION_NOT_READY'].includes(error.code||error.message)||error.status===404||error.status===410){
+      clear();throw new BreadmakerError('This preparation is no longer current. The chapter was not deleted. Try Delete again to prepare the current manuscript.',error.status,error.code||error.message);
+    }
+    if(!['HOSTED_CHAPTER_DELETE_CANCELLED','HOSTED_CHAPTER_DELETE_CONTEXT_CHANGED'].includes(error.code))throw new BreadmakerError(`The chapter was not deleted. Preparation could not be completed: ${error.message||'Please try Delete again.'}`,error.status,error.code);
+    throw error;
+  }
+}
+async function deleteChapterWithPreparation(chapter,context,origin){
+  const label=`Delete chapter: ${chapter.title}`,url=`/api/chapters/${chapter.id}/permanent`;
+  if(!hostedManuscriptRevisions()){await withStructuralUndo(label,()=>api(url,{method:'DELETE'}),context);return true}
+  if(hostedChapterDeletion){toast('Finishing the current chapter change…',1800);return false}
+  const control=chapterDeletionPreparation(chapter,origin);hostedChapterDeletion=control;
+  try{
+    await withStructuralUndo(label,()=>{control.beginDelete();return api(url,{method:'DELETE',headers:{'X-Breadmaker-Project':String(origin.projectId)}})},{...context,beforeBegin:()=>prepareHostedChapterDeletion(control,origin),quietRollbackCodes:['HOSTED_CHAPTER_DELETE_CANCELLED','HOSTED_CHAPTER_DELETE_CONTEXT_CHANGED']});
+    return control.current();
+  }catch(error){
+    if(control.cancelled()||!control.current()||['HOSTED_CHAPTER_DELETE_CANCELLED','HOSTED_CHAPTER_DELETE_CONTEXT_CHANGED','STRUCTURAL_PROJECT_CHANGED'].includes(error.code))return false;
+    throw error;
+  }finally{control.dispose();if(hostedChapterDeletion===control)hostedChapterDeletion=null}
+}
 async function deleteChapterPermanently(chapter){
-  const documentId=chapter.tab_id||state.activeDocumentId,target=chapterAfterRemovalTarget(chapter);clearManuscriptSelection();keepStructureVisibleAfterDelete('chapters',documentId);
-  try{await withStructuralUndo(`Delete chapter: ${chapter.title}`,()=>api(`/api/chapters/${chapter.id}/permanent`,{method:'DELETE'}),{view:'manuscript',chapterId:chapter.id,documentId})}
+  const origin=chapterDeletionOrigin(),guarded=hostedManuscriptRevisions(),documentId=chapter.tab_id||state.activeDocumentId,target=chapterAfterRemovalTarget(chapter);clearManuscriptSelection();keepStructureVisibleAfterDelete('chapters',documentId);
+  try{if(!await deleteChapterWithPreparation(chapter,{view:'manuscript',chapterId:chapter.id,documentId},origin))return}
   catch(error){toast(error?.message||'That Chapter could not be deleted.',6000);return}
-  await refresh(false);
+  if(await refresh(false,guarded?origin:{})===false)return;
   if(target&&visibleChapterById(target.id))await selectChapter(target.id,false,false);else{const fallback=manuscriptTabChapterRows(documentId)[0];if(fallback)await selectChapter(fallback.id,false,false);else await openWholeBook(false,false)}clearManuscriptSelection();toast('Chapter deleted',6000,{label:i18nText('action.undo'),onClick:()=>appUndo()});
 }
 
@@ -369,11 +444,11 @@ async function dissolveChapterBoundary(chapterId,{stayInBook=state.viewMode==='b
 
 async function deleteFocusedChapterSelection(chapterId){
   chapterId=entityId(chapterId);const chapter=visibleChapterById(chapterId);if(!chapter)return;
-  const documentId=chapter.tab_id||state.activeDocumentId,target=chapterAfterRemovalTarget(chapter);
-  await flushSave();clearManuscriptSelection();keepStructureVisibleAfterDelete('chapters',documentId);
-  try{await withStructuralUndo(`Delete chapter: ${chapter.title}`,()=>api(`/api/chapters/${chapterId}/permanent`,{method:'DELETE'}),{view:'manuscript',chapterId,documentId,manuscriptViewMode:'chapter'})}
+  const origin=chapterDeletionOrigin(),guarded=hostedManuscriptRevisions(),documentId=chapter.tab_id||state.activeDocumentId,target=chapterAfterRemovalTarget(chapter);
+  await flushSave();if(guarded&&!chapterDeletionOriginCurrent(origin))return;clearManuscriptSelection();keepStructureVisibleAfterDelete('chapters',documentId);
+  try{if(!await deleteChapterWithPreparation(chapter,{view:'manuscript',chapterId,documentId,manuscriptViewMode:'chapter'},origin))return}
   catch(error){toast(error?.message||'That Chapter could not be deleted.',5000);return}
-  await refresh(false);
+  if(await refresh(false,guarded?origin:{})===false)return;
   if(target&&visibleChapterById(target.id))await selectChapter(target.id,false,false);else{const remaining=manuscriptTabChapterRows(documentId);if(remaining.length)await selectChapter(remaining[0].id,false,false);else await openWholeBook(false,false)}clearManuscriptSelection();
   toast('Chapter and contents deleted.',6000,{label:i18nText('action.undo'),onClick:()=>appUndo()});
 }
