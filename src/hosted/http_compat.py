@@ -681,12 +681,14 @@ def _canvas_version_payload(pid:str,cid:str) -> dict[str,Any]:
 
 @router.get('/api/canvases/{cid}/versions')
 def hosted_canvas_versions(cid:str,request:Request):
-    rows=_list('canvas_version',{'project_id':_pid(request),'canvas_id':cid});return [row for row in rows if str(row.get('status') or '')!='deleted']
+    rows=_list('canvas_version',{'project_id':_pid(request),'canvas_id':cid});return {'versions':[row for row in rows if str(row.get('status') or '')!='deleted']}
 
 @router.get('/api/canvases/{cid}/versions/{vid}')
 def hosted_canvas_version_detail(cid:str,vid:str,request:Request):
     pid=_pid(request);version=_get('canvas_version',{'project_id':pid,'canvas_id':cid,'version_id':vid});items=_list('canvas_version_item',{'project_id':pid,'canvas_id':cid,'version_id':vid})
-    return {'version':version,'items':items}
+    from hosted.canvas_versions import workspace
+    try:return {'version':version,'items':items,'workspace':workspace(version)}
+    except Exception as exc:raise _error(exc)
 
 def _create_canvas_version(pid:str,cid:str,name:str) -> dict[str,Any]:
     snapshot=_canvas_version_payload(pid,cid)
@@ -715,21 +717,10 @@ async def hosted_canvas_version_refresh(cid:str,vid:str,request:Request):
 
 @router.post('/api/canvases/{cid}/versions/{vid}/activate')
 def hosted_canvas_version_activate(cid:str,vid:str,request:Request):
-    pid=_pid(request);items=_list('canvas_version_item',{'project_id':pid,'canvas_id':cid,'version_id':vid});
-    # Snapshot activation is a bounded best-effort reconciliation over canonical CAS.
-    for item in items:
-        kind=str(item.get('kind') or '');payload=item.get('payload') if isinstance(item.get('payload'),dict) else {};source_id=str(item.get('source_id') or payload.get('id') or '')
-        if kind=='node' and source_id:
-            try:_update('canvas_node',{'project_id':pid,'canvas_id':cid,'node_id':source_id},payload)
-            except HTTPException as exc:
-                if exc.status_code==404:_create('canvas_node',{'project_id':pid,'canvas_id':cid},payload,entity_id=source_id)
-                else:raise
-        if kind=='edge' and source_id:
-            try:_update('canvas_edge',{'project_id':pid,'canvas_id':cid,'edge_id':source_id},payload)
-            except HTTPException as exc:
-                if exc.status_code==404:_create('canvas_edge',{'project_id':pid,'canvas_id':cid},payload,entity_id=source_id)
-                else:raise
-    return {'ok':True,'version_id':vid}
+    from hosted.canvas_versions import activate
+    try:return activate(_domain(),_pid(request),_uid(),cid,vid,
+                        operation=operation_for('canvas_version_activate') or operation_id('canvas_version_activate'))
+    except Exception as exc:raise _error(exc)
 
 @router.delete('/api/canvases/{cid}/versions/{vid}')
 def hosted_canvas_version_delete(cid:str,vid:str,request:Request):return _update('canvas_version',{'project_id':_pid(request),'canvas_id':cid,'version_id':vid},{'status':'deleted'})
