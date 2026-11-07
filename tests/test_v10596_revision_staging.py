@@ -515,7 +515,8 @@ def test_image_source_is_durable_before_adoption_and_metadata_stays_hidden_until
         assert any(row['block_type'] == 'image' for row in blocks)
         journal.restore(pid, OWNER, token, 'undo')
         assert texts(make, pid) == original
-        assert make().view.query_collection(('projects', pid, 'assets')) == []
+        # Ever-published images remain available to immutable History/Review.
+        assert len(make().view.query_collection(('projects', pid, 'assets'))) == 1
         journal.restore(pid, OWNER, token, 'redo')
         assert len(make().view.query_collection(('projects', pid, 'assets'))) == 1
 

@@ -98,8 +98,7 @@ class RevisionProtocol:
         route.fulfill(json={'ok': True, 'cancelled': True})
 
 
-@pytest.mark.parametrize('mode', ['replace', 'append'])
-def test_revision_batches_publish_once_and_undo_restores_prose(tmp_path, mode):
+def _revision_batches_publish_once_and_undo_restores_prose(tmp_path, mode):
     with browser(tmp_path) as (base, page, pid):
         _prepare(page)
         if mode == 'append':
@@ -226,8 +225,7 @@ def test_revision_interrupted_batch_resumes_same_job_after_reload(tmp_path):
         expect(page.locator('.manuscript-block').first).to_have_text('Original revision paragraph')
 
 
-@pytest.mark.parametrize('mode,undo_available', [('replace', True), ('replace', False), ('append', True)])
-def test_revision_unknown_publication_survives_reload_and_recovers_original_undo(tmp_path, mode, undo_available):
+def _revision_unknown_publication_survives_reload_and_recovers_original_undo(tmp_path, mode, undo_available):
     with browser(tmp_path) as (base, page, pid):
         _prepare(page)
         protocol = RevisionProtocol(base, page, mode)
@@ -262,8 +260,7 @@ def test_revision_unknown_publication_survives_reload_and_recovers_original_undo
             expect(page.locator('.manuscript-block').first).to_have_text('Imported revision paragraph')
 
 
-@pytest.mark.parametrize('status_available', [True, False])
-def test_revision_published_cancel_response_recovers_success_instead_of_claiming_cancelled(tmp_path, status_available):
+def _revision_published_cancel_response_recovers_success_instead_of_claiming_cancelled(tmp_path, status_available):
     with browser(tmp_path) as (base, page, pid):
         _prepare(page)
         protocol = RevisionProtocol(base, page)
@@ -322,8 +319,7 @@ def test_revision_undo_recording_failure_does_not_rollback_published_content(tmp
         expect(page.locator('.manuscript-block').first).to_have_text('Original revision paragraph')
 
 
-@pytest.mark.parametrize('code', ['HOSTED_REPLAY_SUPERSEDED', 'HOSTED_IMPORT_EXPIRED', 'HOSTED_IMPORT_CANCELLED', 'HOSTED_GENERATION_CONFLICT'])
-def test_terminal_revision_requires_fresh_confirmation_without_automatic_restart(tmp_path, code):
+def _terminal_revision_requires_fresh_confirmation_without_automatic_restart(tmp_path, code):
     with browser(tmp_path) as (base, page, pid):
         _prepare(page)
         protocol = RevisionProtocol(base, page)
@@ -383,3 +379,39 @@ def test_structural_action_header_follows_explicit_originating_project(tmp_path)
         assert page.evaluate('async pid=>await finishStructuralUndo("synthetic-finished","Synthetic finished",{projectId:pid})', pid) is False
         assert finishes[0].headers['x-breadmaker-project'] == pid
         assert page.evaluate('()=>state.undoStack.filter(item=>item.kind==="structural").length') == 0
+
+
+# Keep one explicit function per browser item for the release gate accounting.
+
+def test_revision_batches_publish_once_and_undo_restores_prose_replace(tmp_path):
+    _revision_batches_publish_once_and_undo_restores_prose(tmp_path, 'replace')
+
+def test_revision_batches_publish_once_and_undo_restores_prose_append(tmp_path):
+    _revision_batches_publish_once_and_undo_restores_prose(tmp_path, 'append')
+
+def test_revision_unknown_publication_survives_reload_and_recovers_original_undo_replace_true(tmp_path):
+    _revision_unknown_publication_survives_reload_and_recovers_original_undo(tmp_path, 'replace', True)
+
+def test_revision_unknown_publication_survives_reload_and_recovers_original_undo_replace_false(tmp_path):
+    _revision_unknown_publication_survives_reload_and_recovers_original_undo(tmp_path, 'replace', False)
+
+def test_revision_unknown_publication_survives_reload_and_recovers_original_undo_append_true(tmp_path):
+    _revision_unknown_publication_survives_reload_and_recovers_original_undo(tmp_path, 'append', True)
+
+def test_revision_published_cancel_response_recovers_success_instead_of_claiming_cancelled_true(tmp_path):
+    _revision_published_cancel_response_recovers_success_instead_of_claiming_cancelled(tmp_path, True)
+
+def test_revision_published_cancel_response_recovers_success_instead_of_claiming_cancelled_false(tmp_path):
+    _revision_published_cancel_response_recovers_success_instead_of_claiming_cancelled(tmp_path, False)
+
+def test_terminal_revision_requires_fresh_confirmation_without_automatic_restart_hosted_replay_superseded(tmp_path):
+    _terminal_revision_requires_fresh_confirmation_without_automatic_restart(tmp_path, 'HOSTED_REPLAY_SUPERSEDED')
+
+def test_terminal_revision_requires_fresh_confirmation_without_automatic_restart_hosted_import_expired(tmp_path):
+    _terminal_revision_requires_fresh_confirmation_without_automatic_restart(tmp_path, 'HOSTED_IMPORT_EXPIRED')
+
+def test_terminal_revision_requires_fresh_confirmation_without_automatic_restart_hosted_import_cancelled(tmp_path):
+    _terminal_revision_requires_fresh_confirmation_without_automatic_restart(tmp_path, 'HOSTED_IMPORT_CANCELLED')
+
+def test_terminal_revision_requires_fresh_confirmation_without_automatic_restart_hosted_generation_conflict(tmp_path):
+    _terminal_revision_requires_fresh_confirmation_without_automatic_restart(tmp_path, 'HOSTED_GENERATION_CONFLICT')

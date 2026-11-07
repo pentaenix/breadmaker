@@ -71,8 +71,7 @@ class AdoptionProtocol:
         return [request for request in self.requests if '/api/undo/begin?' in request.url]
 
 
-@pytest.mark.parametrize('focused', [False, True])
-def test_bounded_adoption_finishes_before_delete_undo_and_does_not_read_prose(tmp_path, focused):
+def _bounded_adoption_finishes_before_delete_undo_and_does_not_read_prose(tmp_path, focused):
     with browser(tmp_path) as (base, page, pid):
         _prepare(page)
         if focused:
@@ -105,8 +104,7 @@ def test_bounded_adoption_finishes_before_delete_undo_and_does_not_read_prose(tm
         expect(page.locator('.manuscript-block').first).to_have_text('Chapter prose to retain')
 
 
-@pytest.mark.parametrize('capability', [False, True])
-def test_small_or_already_adopted_delete_does_not_flash_preparation_modal(tmp_path, capability):
+def _small_or_already_adopted_delete_does_not_flash_preparation_modal(tmp_path, capability):
     with browser(tmp_path) as (base, page, pid):
         _prepare(page, capability=capability)
         protocol = AdoptionProtocol(page)
@@ -121,8 +119,7 @@ def test_small_or_already_adopted_delete_does_not_flash_preparation_modal(tmp_pa
         expect(page.locator('#modal')).to_be_hidden()
 
 
-@pytest.mark.parametrize('stage,dismiss', [('start', 'Escape'), ('step', 'button'), ('finish', 'close')])
-def test_cancel_close_or_escape_prevents_delete_even_after_preparation_response(tmp_path, stage, dismiss):
+def _cancel_close_or_escape_prevents_delete_even_after_preparation_response(tmp_path, stage, dismiss):
     with browser(tmp_path) as (base, page, pid):
         _prepare(page)
         protocol = AdoptionProtocol(page)
@@ -166,8 +163,7 @@ def test_immediate_undo_waits_for_preparation_and_delete_as_one_action(tmp_path)
         expect(page.locator('.manuscript-block').first).to_have_text('Chapter prose to retain')
 
 
-@pytest.mark.parametrize('stage', ['undo_begin', 'delete'])
-def test_preparation_cancel_wins_until_actual_delete_starts(tmp_path, stage):
+def _preparation_cancel_wins_until_actual_delete_starts(tmp_path, stage):
     with browser(tmp_path) as (base, page, pid):
         _prepare(page)
         protocol = AdoptionProtocol(page)
@@ -201,8 +197,7 @@ def test_preparation_cancel_wins_until_actual_delete_starts(tmp_path, stage):
             assert page.evaluate('()=>state.undoStack.filter(item=>item.kind==="structural").length') == 0
 
 
-@pytest.mark.parametrize('status,code', [(409, 'HOSTED_GENERATION_CONFLICT'), (410, 'ADOPTION_EXPIRED'), (400, 'HOSTED_PRIVATE_BATCH_NOT_READY')])
-def test_preparation_failure_never_falls_back_to_old_delete(tmp_path, status, code):
+def _preparation_failure_never_falls_back_to_old_delete(tmp_path, status, code):
     with browser(tmp_path) as (base, page, pid):
         _prepare(page)
         protocol = AdoptionProtocol(page)
@@ -220,8 +215,7 @@ def _switch_context(page):
     page.evaluate('''()=>{state.workspace.active_project_id='another-project';state.project={name:'Other project sentinel'};state.documents=[{id:'other-document',title:'Other tab'}];state.undoStack=[];state.undoBytes=0;showModal('Other dialog','<p>Keep this dialog</p>')}''')
 
 
-@pytest.mark.parametrize('stage', ['adoption', 'delete', 'refresh'])
-def test_switch_during_preparation_delete_or_refresh_never_installs_stale_state(tmp_path, stage):
+def _switch_during_preparation_delete_or_refresh_never_installs_stale_state(tmp_path, stage):
     with browser(tmp_path) as (base, page, pid):
         _prepare(page)
         protocol = AdoptionProtocol(page)
@@ -260,3 +254,51 @@ def test_switch_during_preparation_delete_or_refresh_never_installs_stale_state(
             assert protocol.deletes()[0].headers['x-breadmaker-project'] == pid
             finishes = [request for request in protocol.requests if '/api/undo/finish/' in request.url]
             assert len(finishes) == 1 and finishes[0].headers['x-breadmaker-project'] == pid
+
+
+# Keep one explicit function per browser item for the release gate accounting.
+
+def test_bounded_adoption_finishes_before_delete_undo_and_does_not_read_prose_false(tmp_path):
+    _bounded_adoption_finishes_before_delete_undo_and_does_not_read_prose(tmp_path, False)
+
+def test_bounded_adoption_finishes_before_delete_undo_and_does_not_read_prose_true(tmp_path):
+    _bounded_adoption_finishes_before_delete_undo_and_does_not_read_prose(tmp_path, True)
+
+def test_small_or_already_adopted_delete_does_not_flash_preparation_modal_false(tmp_path):
+    _small_or_already_adopted_delete_does_not_flash_preparation_modal(tmp_path, False)
+
+def test_small_or_already_adopted_delete_does_not_flash_preparation_modal_true(tmp_path):
+    _small_or_already_adopted_delete_does_not_flash_preparation_modal(tmp_path, True)
+
+def test_cancel_close_or_escape_prevents_delete_even_after_preparation_response_start_escape(tmp_path):
+    _cancel_close_or_escape_prevents_delete_even_after_preparation_response(tmp_path, 'start', 'Escape')
+
+def test_cancel_close_or_escape_prevents_delete_even_after_preparation_response_step_button(tmp_path):
+    _cancel_close_or_escape_prevents_delete_even_after_preparation_response(tmp_path, 'step', 'button')
+
+def test_cancel_close_or_escape_prevents_delete_even_after_preparation_response_finish_close(tmp_path):
+    _cancel_close_or_escape_prevents_delete_even_after_preparation_response(tmp_path, 'finish', 'close')
+
+def test_preparation_cancel_wins_until_actual_delete_starts_undo_begin(tmp_path):
+    _preparation_cancel_wins_until_actual_delete_starts(tmp_path, 'undo_begin')
+
+def test_preparation_cancel_wins_until_actual_delete_starts_delete(tmp_path):
+    _preparation_cancel_wins_until_actual_delete_starts(tmp_path, 'delete')
+
+def test_preparation_failure_never_falls_back_to_old_delete_409_hosted_generation_conflict(tmp_path):
+    _preparation_failure_never_falls_back_to_old_delete(tmp_path, 409, 'HOSTED_GENERATION_CONFLICT')
+
+def test_preparation_failure_never_falls_back_to_old_delete_410_adoption_expired(tmp_path):
+    _preparation_failure_never_falls_back_to_old_delete(tmp_path, 410, 'ADOPTION_EXPIRED')
+
+def test_preparation_failure_never_falls_back_to_old_delete_400_hosted_private_batch_not_ready(tmp_path):
+    _preparation_failure_never_falls_back_to_old_delete(tmp_path, 400, 'HOSTED_PRIVATE_BATCH_NOT_READY')
+
+def test_switch_during_preparation_delete_or_refresh_never_installs_stale_state_adoption(tmp_path):
+    _switch_during_preparation_delete_or_refresh_never_installs_stale_state(tmp_path, 'adoption')
+
+def test_switch_during_preparation_delete_or_refresh_never_installs_stale_state_delete(tmp_path):
+    _switch_during_preparation_delete_or_refresh_never_installs_stale_state(tmp_path, 'delete')
+
+def test_switch_during_preparation_delete_or_refresh_never_installs_stale_state_refresh(tmp_path):
+    _switch_during_preparation_delete_or_refresh_never_installs_stale_state(tmp_path, 'refresh')

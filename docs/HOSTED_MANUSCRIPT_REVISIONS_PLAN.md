@@ -1,10 +1,10 @@
 # Large manuscript revisions: implementation and activation plan
 
-Status: **inactive reader/publication experiments, not a production feature**. The 10.5.95
-limits in `HOSTED_IMPORT_RECOVERY_LIMITS.md` still apply. No application/runtime
-constructs the experimental reader, no project is upgraded, and no import or Undo
-limit has been increased. A passing reader test is not evidence of a complete
-publication, recovery, or erasure protocol.
+Status: **writer-disabled integration, not a production feature**. The deployed
+10.5.95 limits in `HOSTED_IMPORT_RECOVERY_LIMITS.md` still apply. This branch now
+composes the compatible reader, while the new writer capability remains false
+by default. No production project is upgraded and no deployment has occurred.
+A passing reader test is not evidence of complete publication, recovery or erasure.
 
 ## Why publication must change
 
@@ -29,7 +29,7 @@ History Restore or Checkpoint Apply; both currently fail closed independently.
 
 ## Experimental shared reader
 
-`src/hosted/manuscript_visibility.py` implements an uncomposed candidate facade:
+`src/hosted/manuscript_visibility.py` implements the shared compatible facade:
 
 - Point, batched point, collection, collection-group, count, and transactional
   writes use the same visibility rules.
@@ -82,8 +82,9 @@ budgets actual current before/after images with the tab records (95 rows and
 Images already shared with other content remain available. See
 `HOSTED_REVISION_IMAGES_EXPERIMENT.md`.
 
-These tests do not prove runtime integration, every operator's rollback behavior,
-or production performance. No runtime constructs these services.
+Focused API/runtime integration and browser tests exist, but the complete release
+gate, every operator rollback path and real Cloud performance remain unproved.
+The writer flag remains disabled. See `HOSTED_MANUSCRIPT_RUNTIME_GATE.md`.
 
 ## Integration gates before enabling any writer
 
@@ -206,3 +207,34 @@ inactive reader or synthetic pointer-publication test.
   including unknown nested records and descendants of missing parents.
 - Old-reader rejection after active-to-trash-to-restore transitions, plus a release
   rollback rehearsal. No live user manuscript should be used as the test fixture.
+
+
+## Integration checkpoint, November 7
+
+Work is paused at the user's request while other product review takes priority.
+There is no main merge, new release, production format adoption or flag activation.
+The current integrated image publication receipt fix keeps previously published
+image URLs available to History/Review after import Undo or rollback. Staged
+images remain invisible before their first atomic publication.
+
+The 33 new browser scenarios now have explicit function names so the existing
+release verifier accounts for each independently. A combined rerun encountered
+two unchanged 15-second watchdog failures during browser/server teardown while
+other test work was active; four cases passed before that run stopped. Those
+failures need isolated reruns, not a watchdog change or an assumed pass. Earlier
+worker runs passed the same behavior cases. The integrated image API rerun had
+37 passes and one now-corrected expectation that Undo should hide published
+assets; the corrected expectation has not yet been rerun.
+
+A separate scalable-plan implementation removes the 10,000-record/32 MiB plan
+aggregate assumptions using bounded receipt documents and small job state. Its
+focused checks passed, but it is not yet merged into this checkpoint. Scaling
+image publication beyond the current 64-image aggregate bound is also unfinished.
+These are implementation work items, not a claim of unrestricted imports.
+
+A representative DOCX was exported from the synthetic public-domain Treasure
+Island test project: 34 chapters, 67,655 source prose words, two embedded images,
+and 971,804 bytes. Parsing preserves the captions as 25 additional words and
+produces 1,412 blocks. Export took 2.51 seconds and parsing 3.99 seconds locally.
+These are fixture preparation timings, not end-to-end import or Cloud latency.
+No full benchmark was run before the pause.

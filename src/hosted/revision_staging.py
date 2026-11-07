@@ -541,6 +541,9 @@ class ManuscriptRevisionImport:
                     after[HEAD_FIELD] = job
                 changes.append((path, after, False))
             changes.extend(self.images.publication_changes(tx, pid, uid, job, verified_images))
+            asset_publications = self.images.publication_receipts(tx, pid, uid, job, verified_images)
+            if len(asset_publications) > 64 or len(_json(asset_publications)) > 100_000:
+                raise HostedValidationError('HOSTED_IMPORT_ASSET_PUBLICATION_LIMIT')
             before_images = tx.get_many([path for path, _, _ in changes])
             journal_bytes = len(_json([{'path': path, 'before': dict(before.data) if before else None, 'after': after}
                 for (path, after, _), before in zip(changes, before_images, strict=True)]))
@@ -549,6 +552,8 @@ class ManuscriptRevisionImport:
             self.domain._advance_project(tx, ('projects', pid), root, expected_generation=data['generation'], stamp=self.domain.clock.now_iso())
             for path, value, create in changes:
                 (tx.create if create else tx.set)(path, value)
+            for path, value in asset_publications:
+                tx.create_asset_publication(path, value)
             result = {**data['result'], 'undo_token': _ACTION.get()[0]}
             tx.create(receipt_path, {'actor': uid, 'generation': data['generation']+1, 'digest': data['digest'], 'result': result})
             return {**result, 'undo_available': True}

@@ -101,7 +101,8 @@ def test_real_docx_append_publishes_images_and_large_chapter_delete_undo(monkeyp
         assert len(book_rows(runtime, pid)) == len(before) + 132
         assert client.post(f'/api/undo/apply/{token}', headers=headers).status_code == 200
         assert book_rows(runtime, pid) == before
-        assert runtime.projects.documents.query_collection(('projects', pid, 'assets')) == []
+        # Published image URLs remain valid for immutable History/Review captures.
+        assert len(runtime.projects.documents.query_collection(('projects', pid, 'assets'))) == 2
 
 
 def test_multipart_image_source_interruption_retries_without_adopting_or_publishing(monkeypatch):
