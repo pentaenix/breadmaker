@@ -59,6 +59,8 @@ def annotation_view(domain,pid,uid,*,tab='',chapter=''):
                 if (tab or chapter) and head.get('tab_id') not in selected_tabs:continue
                 source.extend(packs.rows(pid,head))
             else:source.append(domain._hydrate('annotation',head))
+    if any('source_generation' in row for row in source):
+        source=packs._project_rows(pid,uid,generation,source,strict=any(FIELD in row for row in physical))
     result=[]
     for row in source:
         cid=blocks.get(row.get('block_id'),{}).get('chapter_id') if row.get('block_id') else row.get('chapter_id')
@@ -182,6 +184,30 @@ class PackedAnnotations:
         return {**head,FIELD:dict(v=1,count=len(rows),decoded_bytes=len(body),object_name=name,object_generation=written.object.generation,
             object_size=len(encoded),object_sha256=digest)}
 
+    def _project_rows(self,pid,uid,generation,rows,*,strict):
+        """Filter logical anchors without changing verified immutable bodies.
+
+        The revision view owns visibility; ordinary stores retain legacy orphan
+        annotations as stale. Batch source metadata in the same authorized
+        generation snapshot, including when an action-journal callback is bound.
+        """
+        def read(tx):
+            root=self.authorize(tx,pid,uid,strict=strict)
+            if int(root['generation'])!=generation:raise DocumentConflict('HOSTED_GENERATION_CONFLICT')
+            bids=list(dict.fromkeys(row['block_id'] for row in rows if 'source_generation' in row and row.get('block_id')))
+            sources=dict(zip(bids,tx.get_many([('projects',pid,'blocks',bid) for bid in bids]),strict=True)) if bids else {}
+            visible=getattr(tx,'annotation_source_visible',None)
+            result=[]
+            for row in rows:
+                if visible is not None and not visible(pid,row):continue
+                if 'source_generation' in row:
+                    source=sources.get(row.get('block_id'))
+                    row={**row,'stale':row.get('stale',False) or source is None
+                        or row['source_generation']!=source.data.get('generation')}
+                result.append(row)
+            return result
+        return self.domain.documents.run_transaction(read)
+
     def list(self,pid,uid,*,field=None,value=None,order_by=('position','created_at','id')):
         generation,physical=self.snapshot(pid,uid)
         rows=[]
@@ -189,12 +215,7 @@ class PackedAnnotations:
             rows.extend(self.rows(pid,row) if FIELD in row else [self.domain._hydrate('annotation',row,ids={
                 'project_id':pid,'annotation_id':row['id']},user_id=uid)])
         if any('source_generation' in row for row in rows):
-            def sources(tx):
-                self.authorize(tx,pid,uid,strict=False)
-                return {row.path[-1]:row.data.get('generation') for row in tx.query_collection(('projects',pid,'blocks'))}
-            generations=self.domain.documents.run_transaction(sources)
-            rows=[{**row,'stale':row.get('stale',False) or row['source_generation']!=generations.get(row.get('block_id'))}
-                if 'source_generation' in row else row for row in rows]
+            rows=self._project_rows(pid,uid,generation,rows,strict=any(FIELD in row for row in physical))
         # Current authority AND generation after object I/O; never return a mixed
         # head snapshot after revocation or an intervening canonical mutation.
         self.fence(pid,uid,generation,strict=any(FIELD in row for row in physical))
@@ -208,12 +229,10 @@ class PackedAnnotations:
         generation,physical=self.snapshot(pid,uid)
         head=next((row for row in physical if row['id']=='epack_'+match[1] and FIELD in row),None)
         row=next((row for row in self.rows(pid,head) if row['id']==iid),None) if head else None
+        rows=self._project_rows(pid,uid,generation,[row] if row is not None else [],strict=True)
         self.fence(pid,uid,generation,strict=True)
-        if row is None:raise DocumentNotFound('HOSTED_DOCUMENT_NOT_FOUND')
-        source=self.domain.documents.get(('projects',pid,'blocks',row['block_id']))
-        if source is None or row['source_generation']!=source.data.get('generation'):row['stale']=True
-        self.fence(pid,uid,generation,strict=True)
-        return generation,head,row
+        if not rows:raise DocumentNotFound('HOSTED_DOCUMENT_NOT_FOUND')
+        return generation,head,rows[0]
 
     def fence(self,pid,uid,generation,*,strict=False):
         def read(tx):
