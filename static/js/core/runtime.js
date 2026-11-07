@@ -39,6 +39,7 @@ const EDITORS_EYE_PRESETS = [
 ];
 
 let hostedStructuralActionToken=null;
+let hostedStructuralActionProject=null;
 class BreadmakerError extends Error {
   constructor(message, status=0, code='', params={}) { super(message); this.status=status; this.code=code; this.params=params||{}; }
 }
@@ -58,7 +59,7 @@ function breadmakerErrorFromPayload(payload,status=0){
 function localizedDiagnostic(value){return value==null||value===''?'':breadmakerErrorFromPayload({detail:value},0).message;}
 async function api(url, options={}) {
   const headers = options.body instanceof FormData ? {} : {'Content-Type':'application/json'};
-  const projectId=currentProjectIdentity(),userId=runtimeSupports('account_sessions')?'':currentUserIdentity();
+  const projectId=String(options.headers?.['X-Breadmaker-Project']??currentProjectIdentity()),userId=runtimeSupports('account_sessions')?'':currentUserIdentity();
   const contextHeaders={...(projectId?{'X-Breadmaker-Project':projectId}:{}),...(userId?{'X-Breadmaker-User':userId}:{})};
   // M8: attach one request-specific nonce to each hosted mutation. Proxies may
   // replay the exact HTTP request after an instance dies; Firestore performs the
@@ -72,7 +73,7 @@ async function api(url, options={}) {
   // Personal UI state is outside canonical Undo. Background preference saves
   // can overlap an action, but member-state entities cannot join its journal.
   const personalStateRequest=/^\/api\/ui-state(?:\/|\?|$)/.test(url);
-  const nonceHeaders=hosted&&mutates?{'Idempotency-Key':String(options.idempotencyKey||uid()),...(hostedStructuralActionToken&&!url.startsWith('/api/undo/')&&!narrationRequest&&!personalStateRequest?{'X-Breadmaker-Action':hostedStructuralActionToken}:{})}:{};
+  const nonceHeaders=hosted&&mutates?{'Idempotency-Key':String(options.idempotencyKey||uid()),...(hostedStructuralActionToken&&String(hostedStructuralActionProject)===projectId&&!url.startsWith('/api/undo/')&&!narrationRequest&&!personalStateRequest?{'X-Breadmaker-Action':hostedStructuralActionToken}:{})}:{};
   const {idempotencyKey,acceptNotModified,rawResponse,...fetchOptions}=options;
   const response = await fetch(url, {...fetchOptions, headers:{...headers, ...contextHeaders, ...nonceHeaders, 'X-Breadmaker-Client':CLIENT_ID, 'X-Breadmaker-Locale':i18nLocale(), ...(options.headers||{})}});
   if(response.status===304&&acceptNotModified&&method==='GET')return null;

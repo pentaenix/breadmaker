@@ -69,35 +69,49 @@ async function reopenAfterStructuralRestore(target){
   if(target.manuscriptViewMode==='scene'&&target.sceneId&&state.scenes.some(scene=>entityId(scene.id)===entityId(target.sceneId))){await selectScene(entityId(target.sceneId),false);return}
   const chapterId=target.chapterId&&!!visibleChapterById(target.chapterId)?target.chapterId:visibleChapters(state.activeDocumentId)[0]?.id;if(chapterId)await selectChapter(chapterId,false);
 }
-async function beginStructuralUndo(label,scope='full',scopeId=null){await flushPendingCanvasNodeSaves();await flushSave();const suffix=scopeId!==null&&scopeId!==undefined?`&scope_id=${encodeURIComponent(scopeId)}`:'';const started=await api(`/api/undo/begin?label=${encodeURIComponent(label)}&scope=${encodeURIComponent(scope||'full')}${suffix}`,{method:'POST'});return started.token}
+async function beginStructuralUndo(label,scope='full',scopeId=null,projectId=currentProjectIdentity()){await flushPendingCanvasNodeSaves();await flushSave();const suffix=scopeId!==null&&scopeId!==undefined?`&scope_id=${encodeURIComponent(scopeId)}`:'';const started=await api(`/api/undo/begin?label=${encodeURIComponent(label)}&scope=${encodeURIComponent(scope||'full')}${suffix}`,{method:'POST',headers:{'X-Breadmaker-Project':String(projectId)}});return started.token}
 async function finishStructuralUndo(token,label,context={}){
-  const finished=await api(`/api/undo/finish/${token}`,{method:'POST'});
-  if(!finished.changed)return false;
+  const projectId=context.projectId??currentProjectIdentity();
+  const finished=await api(`/api/undo/finish/${token}`,{method:'POST',headers:{'X-Breadmaker-Project':String(projectId)}});
+  if(!finished.changed||String(projectId)!==String(currentProjectIdentity())||state.undoStack.some(item=>item.kind==='structural'&&item.token===token))return false;
   historyPush('undo',{kind:'structural',token,label,view:context.view||currentView(),chapterId:context.chapterId||state.chapter?.id||null,sceneId:context.sceneId||state.scene?.id||null,documentId:context.documentId||null,manuscriptViewMode:context.manuscriptViewMode||null,canvasId:context.canvasId||state.currentCanvas?.id||null,mapId:context.mapId||state.currentMap?.id||null});historyClear('redo');return true;
 }
 function withStructuralUndo(label,fn,context={}){
+  const projectId=currentProjectIdentity();context={...context,projectId};
   const run=async()=>withManuscriptMutationBarrier(async()=>{
-    const scope=context.undoScope||'full',scopeId=scope==='canvas'?(context.canvasId||state.currentCanvas?.id||null):scope==='maps'?(context.mapId||state.currentMap?.id||null):null;const before=await beginStructuralUndo(label,scope,scopeId);
+    if(projectId!==currentProjectIdentity())throw new BreadmakerError('The active project changed before the action started.',0,'STRUCTURAL_PROJECT_CHANGED');
+    const scope=context.undoScope||'full',scopeId=scope==='canvas'?(context.canvasId||state.currentCanvas?.id||null):scope==='maps'?(context.mapId||state.currentMap?.id||null):null;const before=await beginStructuralUndo(label,scope,scopeId,projectId);
+    let result;
     try{
-      if(runtimeSupports('hosted_persistence'))hostedStructuralActionToken=before;
-      const result=await fn();
-      hostedStructuralActionToken=null;
-      await finishStructuralUndo(before,label,context);
-      invalidateTaskCache();invalidateQuickOpenDetailIndex();
+      if(projectId!==currentProjectIdentity())throw new BreadmakerError('The active project changed before the action started.',0,'STRUCTURAL_PROJECT_CHANGED');
+      if(runtimeSupports('hosted_persistence')){hostedStructuralActionToken=before;hostedStructuralActionProject=projectId}
+      result=await fn();
+      hostedStructuralActionToken=null;hostedStructuralActionProject=null;
+      if(!(context.preservePublishedRevision&&result?.undo_available===false))await finishStructuralUndo(before,label,context);
+      if(projectId===currentProjectIdentity()){invalidateTaskCache();invalidateQuickOpenDetailIndex()}
       return result;
     }catch(error){
-      hostedStructuralActionToken=null;
+      hostedStructuralActionToken=null;hostedStructuralActionProject=null;
+      // A revision finish may have committed even when both response and status
+      // are unavailable. Keep its server action open for explicit resume/Undo.
+      if(context.preserveUncertainAction&&error?.code==='HOSTED_IMPORT_PUBLICATION_UNCERTAIN')throw error;
+      if(context.preservePublishedRevision&&(result?.undo_token||error?.code==='HOSTED_IMPORT_UNDO_UNCONFIRMED')){
+        const failure=new BreadmakerError('The import completed, but Undo could not be confirmed. Reopen Import with the same document and destination to recover Undo.',0,'HOSTED_IMPORT_UNDO_UNCONFIRMED');
+        failure.publishedResult=result||error.publishedResult;throw failure;
+      }
       // Treat a multi-step user action as one application-level transaction. API
       // calls inside fn may each be valid SQLite transactions, but a later failure
       // must not strand an earlier successful step or destructive DOM mutation.
       try{
-        clearTimeout(state.saveTimer);
-        await api(`/api/undo/rollback/${before}`,{method:'POST'});
+        if(projectId===currentProjectIdentity())clearTimeout(state.saveTimer);
+        await api(`/api/undo/rollback/${before}`,{method:'POST',headers:{'X-Breadmaker-Project':String(projectId)}});
+        if(projectId!==currentProjectIdentity())throw error;
         resetDirtyState();setSaveState('Saved');
         const reopen=async()=>{await refresh(false);await reopenAfterStructuralRestore({kind:'structural',view:context.view||currentView(),chapterId:context.chapterId||null,canvasId:context.canvasId||null,mapId:context.mapId||null})};
         if(currentView()==='manuscript')await preserveManuscriptViewport(reopen);else await reopen();
         if(!(context.quietRollbackCodes||[]).includes(error?.code))toast(i18nText('action.rollback_restored',{label:i18nSource(label)}),4200);
       }catch(rollbackError){
+        if(projectId!==currentProjectIdentity())throw error;
         console.error('STRUCTURAL_ROLLBACK_001', {label,error,rollbackError});
         toast('The action failed and automatic rollback could not be confirmed. Stop editing and reopen Breadmaker before continuing.',8000);
       }
