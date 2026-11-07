@@ -1,8 +1,9 @@
-"""Inactive, resumable text-only manuscript revision publication rehearsal.
+"""Inactive, resumable manuscript revision publication rehearsal.
 
 No HTTP route or runtime constructs this service. It requires the revision-aware
-reader and a bound structural action for publication. Image staging, HTTP/UI
-integration, operator compatibility and retention gates remain separate work.
+reader and a bound structural action for publication. Adoption and image phases
+are durable and bounded. Runtime/operator rollout and retention gates remain
+separate work; this module itself enables no production capability.
 """
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import copy_context
@@ -14,20 +15,26 @@ import time
 
 from hosted.action_journal import ActionDocumentStore, _ACTION, _path as action_path
 from hosted.account_lifecycle import AccountLifecycleDocumentStore, AccountLifecycleObjectStore
-from hosted.document_io import manuscript_is_default_blank
+from hosted.document_io import manuscript_is_default_blank, parse_document_bytes
 from hosted.domain_store import _ID_FIELDS
 from hosted.firestore.contracts import DocumentConflict, DocumentNotFound, HostedValidationError
 from hosted.firestore.ids import require_opaque_id, require_project_id, require_user_id
 from hosted.firestore.repositories import HostedProjectRepository, _canonical_payload, _fingerprint, render_model_path
 from hosted.idempotency import stable_entity_id
 from hosted.storage.keys import require_hybrid_entity_object_key
-from hosted.manuscript_visibility import (FORMAT_FIELD, HEAD_FIELD, REVISION_FIELD,
-    DELETED_FIELD, ManuscriptDocumentStore, _RevisionTransaction, _MANAGED)
+from hosted.manuscript_visibility import (HEAD_FIELD, REVISION_FIELD,
+    DELETED_FIELD, ManuscriptDocumentStore)
+from hosted.manuscript_adoption import LegacyManuscriptAdoption
+from hosted.revision_images import RevisionImageStager, prepare_revision_images
+from security.image_security import HOSTED_DEFAULT_IMAGE_BYTES, inspect_hosted_image_bytes
 
 BATCH_SIZE = 64
 MAX_RECORDS = 10_000
 MAX_PLAN_BYTES = 32 * 1024 * 1024
 MAX_BATCH_BYTES = 4 * 1024 * 1024
+ADOPTION_PAGES_PER_STEP = 4
+MAX_PUBLICATION_ROWS = 95
+MAX_PUBLICATION_BYTES = 300_000
 
 
 def _json(value):
@@ -69,53 +76,6 @@ def _require_action(pid, uid):
         raise HostedValidationError('HOSTED_MANUSCRIPT_UNDO_ACTION_REQUIRED')
 
 
-def enable_revision_format(view, pid, uid, generation):
-    """Monotonic physical codec upgrade; never changes semantic authority/state.
-
-    Legacy orphan/mismatched manuscript rows refuse activation rather than become
-    invisible. The inner store is still lifecycle-fenced, not the raw provider.
-    """
-    _require_actor(view, uid)
-    def upgrade(tx):
-        semantic = _RevisionTransaction(tx, include_retained=True)
-        authority = HostedProjectRepository(None)
-        root, member = authority._require_member(semantic, pid, uid)
-        authority._open_project(pid, root)  # Never upgrade a private root without its codec.
-        if member.get('role') not in {'owner', 'editor'}:
-            raise DocumentNotFound('HOSTED_DOCUMENT_NOT_FOUND')
-        _require_live_accounts(semantic, pid, uid)
-        if int(root['generation']) != generation:
-            raise DocumentConflict('HOSTED_GENERATION_CONFLICT')
-        physical = tx.get(('projects', pid))
-        if FORMAT_FIELD in physical.data:
-            return  # _require_member already validated the exact known codec.
-        tabs = {row.path[-1]: row for row in tx.query_collection(('projects', pid, 'tabs'))}
-        chapters = {row.path[-1]: row for row in tx.query_collection(('projects', pid, 'chapters'))}
-        if any(set(row.data) & _MANAGED for row in [*tabs.values(), *chapters.values()]):
-            raise HostedValidationError('HOSTED_MANUSCRIPT_LEGACY_MARKER_REPAIR_REQUIRED')
-        if any(row.data.get('tab_id') not in tabs for row in chapters.values()):
-            raise HostedValidationError('HOSTED_MANUSCRIPT_LEGACY_PARENT_REPAIR_REQUIRED')
-        for row in tx.query_collection(('projects', pid, 'blocks')):
-            if set(row.data) & _MANAGED:
-                raise HostedValidationError('HOSTED_MANUSCRIPT_LEGACY_MARKER_REPAIR_REQUIRED')
-            chapter = chapters.get(row.data.get('chapter_id'))
-            if chapter is None or (row.data.get('tab_id') and row.data['tab_id'] != chapter.data.get('tab_id')):
-                raise HostedValidationError('HOSTED_MANUSCRIPT_LEGACY_PARENT_REPAIR_REQUIRED')
-        for row in tx.query_collection(('projects', pid, 'scenes')):
-            if set(row.data) & _MANAGED:
-                raise HostedValidationError('HOSTED_MANUSCRIPT_LEGACY_MARKER_REPAIR_REQUIRED')
-            chapter = chapters.get(row.data.get('chapter_id'))
-            if (row.data.get('chapter_id') and chapter is None
-                    or not row.data.get('chapter_id') and row.data.get('tab_id') not in tabs
-                    or chapter is not None and row.data.get('tab_id')
-                    and row.data['tab_id'] != chapter.data.get('tab_id')):
-                raise HostedValidationError('HOSTED_MANUSCRIPT_LEGACY_PARENT_REPAIR_REQUIRED')
-        if any(set(row.data) & _MANAGED for row in tx.query_collection(('projects', pid, 'assets'))):
-            raise HostedValidationError('HOSTED_MANUSCRIPT_LEGACY_MARKER_REPAIR_REQUIRED')
-        tx.set(('projects', pid), {**physical.data, FORMAT_FIELD: 1, 'status': 'active_manuscript_v1'})
-    view.store.run_transaction(upgrade)
-
-
 class ManuscriptRevisionImport:
     def __init__(self, domain):
         if domain.encrypted_fields is not None or domain.encrypted_objects is not None:
@@ -127,6 +87,8 @@ class ManuscriptRevisionImport:
             raise HostedValidationError('HOSTED_IMPORT_OBJECT_ERASURE_FENCE_REQUIRED')
         self.retained = self.view.retained_view()
         self.publication = ActionDocumentStore(self.retained)
+        self.adoption = LegacyManuscriptAdoption(self.view)
+        self.images = RevisionImageStager(domain, self._load)
 
     @staticmethod
     def _path(pid, job):
@@ -160,9 +122,44 @@ class ManuscriptRevisionImport:
 
     @staticmethod
     def _public(job, data):
-        return {'job_id': job, 'next_batch': data['next_batch'],
-            'total_batches': data['total_batches'], 'chapters': data['result']['chapters'],
-            'ready': data['state'] == 'staging' and data['next_batch'] == data['total_batches']}
+        phase = ('adopting' if not data['adoption_ready'] else
+            'images' if data['image_cursor'] < len(data['asset_manifest']) else 'content')
+        remaining = data['total_batches'] - data['next_batch']
+        remaining += (len(data['asset_manifest']) - data['image_cursor'] + 7) // 8
+        if not data['adoption_ready']:
+            remaining += 1  # Estimate only; legacy page count is deliberately not scanned.
+        return {'job_id': job, 'next_batch': data['step_cursor'],
+            'total_batches': data['step_cursor'] + remaining, 'phase': phase,
+            'content_batch': data['next_batch'], 'content_batches': data['total_batches'],
+            'adoption': data['adoption'], 'image_next': data['image_cursor'],
+            'image_total': len(data['asset_manifest']), 'chapters': data['result']['chapters'],
+            'images': data['result']['images'], 'warnings': data['result'].get('warnings', []),
+            'ready': data['state'] == 'staging' and data['adoption_ready']
+                and data['image_cursor'] == len(data['asset_manifest'])
+                and data['next_batch'] == data['total_batches']}
+
+    def _adopted(self, pid, uid, generation):
+        def check(tx):
+            self._root(tx, pid, uid, generation)
+            return tx._enabled(pid)
+        return self.retained.run_transaction(check)
+
+    def begin_document(self, pid, uid, raw, filename, heading, *, operation,
+            replace_main=False, after_document_id='', confirmed=False):
+        # Authorize before parsing or retaining document/image bytes.
+        self.retained.run_transaction(lambda tx: self._root(tx, pid, uid))
+        assets = {}
+        def collect_image(blob, extension):
+            info = inspect_hosted_image_bytes(blob, extension, byte_limit=HOSTED_DEFAULT_IMAGE_BYTES)
+            digest = hashlib.sha256(blob).hexdigest()
+            path = '/api/assets/img_' + digest[:24] + info.extension
+            assets[path] = (blob, info.extension)
+            if len(assets) > 64 or sum(len(value[0]) for value in assets.values()) > MAX_PLAN_BYTES:
+                raise HostedValidationError('HOSTED_IMPORT_IMAGE_BUDGET_EXCEEDED')
+            return path
+        tabs, warnings = parse_document_bytes(raw, filename, heading, image_store=collect_image)
+        return self.begin(pid, uid, tabs, operation=operation, replace_main=replace_main,
+            after_document_id=after_document_id, confirmed=confirmed, assets=assets, warnings=warnings)
 
     @staticmethod
     def _completed_result(tx, pid, uid, root, receipt):
@@ -192,12 +189,16 @@ class ManuscriptRevisionImport:
             return self._public(job, self._load(tx, pid, uid, job))
         return self.retained.run_transaction(status)
 
-    def begin(self, pid, uid, tabs, *, operation, replace_main=False, after_document_id='', confirmed=False):
+    def begin(self, pid, uid, tabs, *, operation, replace_main=False, after_document_id='', confirmed=False,
+            assets=None, warnings=None):
         pid, uid = require_project_id(pid), require_user_id(uid)
         _require_actor(self.view, uid)
         operation = require_opaque_id(operation, label='operation')
         job = stable_entity_id('revision_', f'{pid}_{uid}_{operation}')
-        digest = _fingerprint({'tabs': tabs, 'replace': replace_main, 'after': after_document_id, 'confirmed': confirmed})
+        assets = assets or {}
+        digest = _fingerprint({'tabs': tabs, 'replace': replace_main, 'after': after_document_id, 'confirmed': confirmed,
+            'assets': {key: [hashlib.sha256(value[0]).hexdigest(), value[1]] for key, value in assets.items()},
+            'warnings': warnings or []})
         generation = self.retained.run_transaction(lambda tx: int(self._root(tx, pid, uid)['generation']))
         if replace_main and not confirmed and not manuscript_is_default_blank(self.domain, pid, uid):
             raise DocumentConflict('Confirm replacement of the existing manuscript before importing.')
@@ -212,7 +213,7 @@ class ManuscriptRevisionImport:
                 self._load(tx, pid, uid, job)  # Reject cancelled/expired/stale retries before upload.
             return rows, prior
         existing, prior = self.retained.run_transaction(inspect)
-        if prior is not None and prior.data.get('state') == 'staging':
+        if prior is not None and prior.data.get('source_ready'):
             return self.status(pid, uid, job)
         main = next((row for row in existing if row.data.get('is_manuscript') or row.data.get('kind') == 'manuscript'), None)
         if main is None:
@@ -221,8 +222,9 @@ class ManuscriptRevisionImport:
         if not replace_main and after_document_id and after_document_id not in positions:
             raise DocumentNotFound('HOSTED_IMPORT_DESTINATION_NOT_FOUND')
         insert_at = positions.get(after_document_id, len(existing)-1) + 1
-        stamp = self.domain.clock.now_iso()
+        stamp = prior.data['created_at'] if prior is not None else self.domain.clock.now_iso()
         entries, new_tabs, document_ids, chapters = [], [], [], 0
+        image_destinations, image_count = {}, 0
         def prepare(entity, eid, public):
             ids = self.domain._ids_with_entity(entity, {'project_id': pid}, eid)
             public = _canonical_payload(self.domain._payload_with_identity(entity, public, eid))
@@ -254,11 +256,19 @@ class ManuscriptRevisionImport:
                     'position': chapters if replace_main else cpos})
                 chapters += 1
                 for bpos, block in enumerate(chapter.get('blocks') or [{'text': '', 'html': ''}]):
-                    if block.get('kind') == 'image' or block.get('image_path'):
-                        raise HostedValidationError('HOSTED_REVISION_IMAGE_STAGING_NOT_IMPLEMENTED')
+                    is_image = block.get('kind') == 'image' or bool(block.get('image_path'))
+                    extra = {}
+                    if is_image:
+                        image_path = block.get('image_path')
+                        if image_path not in assets:
+                            raise HostedValidationError('HOSTED_REVISION_IMAGE_STAGING_SOURCE_REQUIRED')
+                        image_destinations.setdefault(image_path, set()).add(tid)
+                        image_count += 1
+                        extra = {'image_path': image_path, 'image_width': 100, 'image_footer': '',
+                            'image_description': '', 'image_row_id': ''}
                     add('manuscript_block', {'tab_id': tid, 'chapter_id': cid, 'position': bpos,
-                        'block_type': 'paragraph', 'semantic_style': block.get('style') or 'body',
-                        'scene_id': None, 'text_content': block.get('text') or '', 'content_html': block.get('html') or ''})
+                        'block_type': 'image' if is_image else 'paragraph', 'semantic_style': block.get('style') or 'body',
+                        'scene_id': None, 'text_content': block.get('text') or '', 'content_html': block.get('html') or '', **extra})
         if not entries:
             raise HostedValidationError('HOSTED_IMPORT_DOCUMENT_EMPTY')
         shifted = [] if replace_main else [
@@ -266,22 +276,32 @@ class ManuscriptRevisionImport:
             for index, row in enumerate(existing)
             if float(row.data.get('position') or 0) != index + (len(new_tabs) if index >= insert_at else 0)]
         # Bound only final publication/journal rows, not the novel's paragraph count.
-        if len(new_tabs) + len(shifted) + int(replace_main) > 90:
+        asset_manifest, image_payloads = prepare_revision_images(pid, [
+            {'data': assets[path][0], 'extension': assets[path][1], 'tab_ids': sorted(destinations)}
+            for path, destinations in image_destinations.items()])
+        if {entry['api_path'] for entry in asset_manifest} != set(image_destinations):
+            raise HostedValidationError('HOSTED_REVISION_IMAGE_STAGING_SOURCE_REQUIRED')
+        if len(new_tabs) + len(shifted) + int(replace_main) + len(asset_manifest) > MAX_PUBLICATION_ROWS:
             raise HostedValidationError('HOSTED_IMPORT_TAB_PUBLICATION_LIMIT')
         plans = [_json(entries[index:index+BATCH_SIZE]) for index in range(0, len(entries), BATCH_SIZE)]
         if sum(map(len, plans)) > MAX_PLAN_BYTES or any(len(part) > MAX_BATCH_BYTES for part in plans):
             raise HostedValidationError('HOSTED_IMPORT_DOCUMENT_TOO_LARGE')
         data = {'actor': uid, 'actor_user_id': uid, 'generation': generation, 'digest': digest, 'operation': operation,
-            'expires_at': time.time()+86400, 'state': 'preparing', 'next_batch': 0, 'total_batches': len(plans),
+            'expires_at': time.time()+86400, 'created_at': stamp, 'state': 'preparing',
+            'next_batch': 0, 'step_cursor': 0, 'total_batches': len(plans),
+            'source_ready': False, 'adoption_ready': False, 'adoption': None, 'image_cursor': 0,
+            'asset_manifest': asset_manifest,
             'plans': [], 'records': len(entries),
             'chapter_tabs': {entry['ids']['chapter_id']: entry['data']['tab_id'] for entry in entries if entry['entity'] == 'chapter'},
             'new_tabs': new_tabs, 'shifted': shifted,
             'main': {'path': list(main.path), 'before': dict(main.data)} if replace_main else None,
             'result': {'ok': True, 'document_ids': document_ids, 'first_document_id': document_ids[0],
-                'tabs': len(document_ids), 'chapters': chapters, 'images': 0}}
+                'tabs': len(document_ids), 'chapters': chapters, 'images': image_count, 'warnings': warnings or []}}
         if len(_json(data)) > 300_000:
             raise HostedValidationError('HOSTED_IMPORT_TAB_PUBLICATION_LIMIT')
-        enable_revision_format(self.view, pid, uid, generation)
+        data['adoption_ready'] = self._adopted(pid, uid, generation)
+        if not data['adoption_ready']:
+            data['adoption'] = self.adoption.begin(pid, uid, generation=generation, operation=operation)
         def reserve(tx):
             self._root(tx, pid, uid, generation)
             current = tx.get(self._path(pid, job))
@@ -290,6 +310,7 @@ class ManuscriptRevisionImport:
             elif current.data.get('digest') != digest or current.data.get('actor') != uid or current.data.get('generation') != generation:
                 raise DocumentConflict('HOSTED_IMPORT_REQUEST_CHANGED')
         self.retained.run_transaction(reserve)
+        self.images.publish_sources(pid, uid, job, image_payloads)
         def publish(item):
             index, part = item
             return self.domain._publish_hybrid('manuscript_block', {'project_id': pid, 'block_id': f'b_{job}_plan_{index}'},
@@ -300,7 +321,7 @@ class ManuscriptRevisionImport:
         def ready(tx):
             current = self._load(tx, pid, uid, job)
             if current['state'] == 'preparing':
-                tx.set(self._path(pid, job), {**current, 'plans': pointers, 'state': 'staging'})
+                tx.set(self._path(pid, job), {**current, 'plans': pointers, 'state': 'staging', 'source_ready': True})
         self.retained.run_transaction(ready)
         return self.status(pid, uid, job)
 
@@ -330,7 +351,9 @@ class ManuscriptRevisionImport:
             ids = {'project_id': pid, id_field: eid}
             stored = entry['data']
             if (entry['ids'] != ids or entry['path'] != list(render_model_path(self.domain._model(entity), **ids))
-                    or set(stored) != fields[entity] or stored['id'] != eid or stored[id_field] != eid
+                    or set(stored) != (fields[entity] | ({'image_path', 'image_width', 'image_footer',
+                        'image_description', 'image_row_id'} if entity == 'manuscript_block' and stored.get('block_type') == 'image' else set()))
+                    or stored['id'] != eid or stored[id_field] != eid
                     or type(stored['generation']) is not int or stored['generation'] != 1
                     or stored['_bm_create_operation'] != data['operation']
                     or not isinstance(stored['created_at'], str) or len(stored['created_at']) > 64
@@ -346,22 +369,61 @@ class ManuscriptRevisionImport:
                         or not isinstance(stored['title'], str) or len(stored['title']) > 240):
                     raise HostedValidationError('HOSTED_IMPORT_PLAN_SCHEMA_INVALID')
             elif (data['chapter_tabs'].get(stored['chapter_id']) != stored['tab_id']
-                    or stored['block_type'] != 'paragraph' or stored['scene_id'] is not None
+                    or stored['block_type'] not in {'paragraph', 'image'} or stored['scene_id'] is not None
                     or any(not isinstance(stored[field], str) for field in ('semantic_style', 'text_content', 'content_html'))):
                 raise HostedValidationError('HOSTED_IMPORT_PLAN_SCHEMA_INVALID')
+            if entity == 'manuscript_block' and stored['block_type'] == 'image':
+                paths = {entry['api_path'] for entry in data['asset_manifest'] if stored['tab_id'] in entry['tab_ids']}
+                if (stored['image_path'] not in paths or type(stored['image_width']) is not int or stored['image_width'] != 100
+                        or any(stored[key] != '' for key in ('image_footer', 'image_description', 'image_row_id'))):
+                    raise HostedValidationError('HOSTED_IMPORT_PLAN_SCHEMA_INVALID')
             public = {key: value for key, value in stored.items()
                 if key not in {'generation', 'created_at', 'updated_at'} and not key.startswith('_bm_')}
             if stored['_bm_create_fingerprint'] != _fingerprint(public):
                 raise HostedValidationError('HOSTED_IMPORT_PLAN_SCHEMA_INVALID')
 
+    def _phase_commit(self, pid, uid, job, before, updates):
+        def commit(tx):
+            current = self._load(tx, pid, uid, job)
+            if current['step_cursor'] > before['step_cursor']:
+                return self._public(job, current)
+            mutable = {'asset_next_index', 'asset_receipts'}
+            if ({key: value for key, value in current.items() if key not in mutable}
+                    != {key: value for key, value in before.items() if key not in mutable}):
+                raise DocumentConflict('HOSTED_IMPORT_PLAN_CHANGED')
+            current.update(updates, step_cursor=current['step_cursor'] + 1)
+            tx.set(self._path(pid, job), current)
+            return self._public(job, current)
+        return self.retained.run_transaction(commit)
+
     def step(self, pid, uid, job, index):
         data = self.retained.run_transaction(lambda tx: self._load(tx, pid, uid, job))
-        if data['state'] != 'staging' or type(index) is not int or not 0 <= index < data['total_batches']:
+        if data['state'] != 'staging' or not data['source_ready'] or type(index) is not int or index < 0:
             raise HostedValidationError('HOSTED_IMPORT_BATCH_INVALID')
-        if index < data['next_batch']:
+        if index < data['step_cursor']:
             return self._public(job, data)
-        if index != data['next_batch']:
+        if index != data['step_cursor']:
             raise DocumentConflict('HOSTED_IMPORT_BATCH_OUT_OF_ORDER')
+        if not data['adoption_ready']:
+            progress = data['adoption']
+            if self._adopted(pid, uid, data['generation']):
+                # Another authorized proof may have activated this exact generation.
+                progress = {**progress, 'ready': True, 'activated': True}
+            else:
+                for expected in range(progress['next_step'], progress['next_step'] + ADOPTION_PAGES_PER_STEP):
+                    progress = self.adoption.step(pid, uid, progress['job_id'], expected)
+                    if progress['ready']:
+                        progress = self.adoption.finish(pid, uid, progress['job_id'])
+                        break
+            return self._phase_commit(pid, uid, job, data,
+                {'adoption': progress, 'adoption_ready': progress['activated']})
+        if data['image_cursor'] < len(data['asset_manifest']):
+            progress = self.images.stage_sources(pid, uid, job, data['image_cursor'])
+            return self._phase_commit(pid, uid, job, data, {'image_cursor': progress['asset_next_index']})
+        content_index = data['next_batch']
+        if content_index == data['total_batches']:
+            return self._public(job, data)
+        index = content_index
         pointer = data['plans'][index]
         try:
             if (not isinstance(pointer, dict) or set(pointer) != {'object_name', 'object_generation', 'object_sha256', 'object_size'}
@@ -395,7 +457,7 @@ class ManuscriptRevisionImport:
             staged = [future.result() for future in futures]
         def commit(tx):
             current = self._load(tx, pid, uid, job)
-            immutable = lambda value: {key: item for key, item in value.items() if key != 'next_batch'}
+            immutable = lambda value: {key: item for key, item in value.items() if key not in {'next_batch', 'step_cursor'}}
             if immutable(current) != immutable(data):
                 raise DocumentConflict('HOSTED_IMPORT_PLAN_CHANGED')
             if current['next_batch'] > index:
@@ -419,6 +481,7 @@ class ManuscriptRevisionImport:
             for path, stored in staged:
                 tx.create(path, stored)
             current['next_batch'] += 1
+            current['step_cursor'] += 1
             tx.set(self._path(pid, job), current)
             return self._public(job, current)
         return self.retained.run_transaction(commit)
@@ -443,6 +506,12 @@ class ManuscriptRevisionImport:
         pid, uid = require_project_id(pid), require_user_id(uid)
         _require_action(pid, uid)
         receipt_path = ('projects', pid, 'mutation_receipts', job)
+        status = self.status(pid, uid, job)
+        if status.get('completed'):
+            return status['result']
+        if not status['ready']:
+            raise DocumentConflict('HOSTED_IMPORT_NOT_FINISHED')
+        verified_images = self.images.verify_for_publication(pid, uid, job)
         def commit(tx):
             root = self._root(tx, pid, uid)
             receipt = tx.get(receipt_path)
@@ -451,7 +520,7 @@ class ManuscriptRevisionImport:
                     raise DocumentConflict('HOSTED_REPLAY_SUPERSEDED')
                 return self._completed_result(tx, pid, uid, root, receipt.data)
             data = self._load(tx, pid, uid, job)
-            if data['state'] != 'staging' or data['next_batch'] != data['total_batches']:
+            if not self._public(job, data)['ready']:
                 raise DocumentConflict('HOSTED_IMPORT_NOT_FINISHED')
             changes = []
             for entry in data['new_tabs']:
@@ -471,6 +540,12 @@ class ManuscriptRevisionImport:
                 else:
                     after[HEAD_FIELD] = job
                 changes.append((path, after, False))
+            changes.extend(self.images.publication_changes(tx, pid, uid, job, verified_images))
+            before_images = tx.get_many([path for path, _, _ in changes])
+            journal_bytes = len(_json([{'path': path, 'before': dict(before.data) if before else None, 'after': after}
+                for (path, after, _), before in zip(changes, before_images, strict=True)]))
+            if len(changes) > MAX_PUBLICATION_ROWS or journal_bytes > MAX_PUBLICATION_BYTES:
+                raise HostedValidationError('HOSTED_IMPORT_TAB_PUBLICATION_LIMIT')
             self.domain._advance_project(tx, ('projects', pid), root, expected_generation=data['generation'], stamp=self.domain.clock.now_iso())
             for path, value, create in changes:
                 (tx.create if create else tx.set)(path, value)
@@ -491,7 +566,8 @@ def delete_chapter_revision(domain, pid, cid, uid):
     chapter = view.get(('projects', pid, 'chapters', cid))
     if chapter is None:
         raise DocumentNotFound('HOSTED_DOCUMENT_NOT_FOUND')
-    enable_revision_format(view, pid, uid, generation)
+    if not service._adopted(pid, uid, generation):
+        raise HostedValidationError('HOSTED_MANUSCRIPT_ADOPTION_REQUIRED')
     def remove(tx):
         root = service._root(tx, pid, uid, generation)
         current = tx.get(chapter.path)

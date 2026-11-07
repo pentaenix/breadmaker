@@ -13,13 +13,21 @@ from tests.test_v10594 import actor, fenced_replicas
 from tests.test_v10353 import OWNER
 
 
-def setup():
+def setup(*, adopt=True):
     make, raw, objects, pid = fenced_replicas()
     def replica():
         source = make()
         view = ManuscriptDocumentStore(source.documents)
         domain = HostedDomainStore(ActionDocumentStore(view), source.domain.objects)
         return ManuscriptRevisionImport(domain)
+    if adopt:
+        with actor():
+            service = replica()
+            generation = raw.get(('projects', pid)).data['generation']
+            progress = service.adoption.begin(pid, OWNER, generation=generation, operation='fixture-adoption')
+            while not progress['ready']:
+                progress = service.adoption.step(pid, OWNER, progress['job_id'], progress['next_step'])
+            service.adoption.finish(pid, OWNER, progress['job_id'])
     return replica, raw, objects, pid
 
 
@@ -195,8 +203,8 @@ def test_cancelled_job_cannot_resume_or_publish_and_late_cancel_requires_undo():
 
 
 @pytest.mark.parametrize('corruption', ['head', 'orphan'])
-def test_legacy_upgrade_repair_cases_leave_root_content_and_objects_unchanged(corruption):
-    make, raw, objects, pid = setup()
+def test_legacy_upgrade_repair_cases_leave_root_and_canonical_content_unchanged(corruption):
+    make, raw, objects, pid = setup(adopt=False)
     with actor():
         if corruption == 'head':
             tab = raw.query_collection(('projects', pid, 'tabs'))[0]
@@ -206,12 +214,12 @@ def test_legacy_upgrade_repair_cases_leave_root_content_and_objects_unchanged(co
             raw.run_transaction(lambda tx: tx.set(block.path, {**block.data, 'chapter_id': 'chapter_missing'}))
         root = deepcopy(raw.get(('projects', pid)))
         blocks = deepcopy(raw.query_collection(('projects', pid, 'blocks')))
-        object_names = [row.name for row in objects.list_prefix(f'projects/{pid}/')]
+        progress = make().begin(pid, OWNER, parsed(), operation='needs-repair', replace_main=True, confirmed=True)
         with pytest.raises(HostedValidationError, match='REPAIR_REQUIRED'):
-            make().begin(pid, OWNER, parsed(), operation='needs-repair', replace_main=True, confirmed=True)
+            while not progress['ready']:
+                progress = make().step(pid, OWNER, progress['job_id'], progress['next_batch'])
         assert raw.get(('projects', pid)) == root
         assert raw.query_collection(('projects', pid, 'blocks')) == blocks
-        assert [row.name for row in objects.list_prefix(f'projects/{pid}/')] == object_names
 
 
 def test_cancelled_begin_retry_does_not_upload_more_objects(monkeypatch):
@@ -433,3 +441,124 @@ def test_completion_remains_truthful_when_the_original_undo_token_is_gone():
         assert status['completed'] and not status['result']['undo_available']
         assert status['result']['undo_token'] == token
         assert raw.get(('projects', pid)) == root
+
+
+def test_legacy_import_uses_bounded_replay_safe_adoption_before_content():
+    make, raw, objects, pid = setup(adopt=False)
+    with actor():
+        original = texts(make, pid)
+        root = deepcopy(raw.get(('projects', pid)))
+        progress = make().begin(pid, OWNER, parsed(100), operation='phased-adoption', replace_main=True)
+        assert progress['phase'] == 'adopting' and not progress['ready']
+        assert raw.get(('projects', pid)) == root
+        assert len(raw.query_collection(('projects', pid, 'blocks'))) == len(original)
+        phases = []
+        while not progress['ready']:
+            phases.append(progress['phase'])
+            cursor = progress['next_batch']
+            progress = make().step(pid, OWNER, progress['job_id'], cursor)
+            assert make().step(pid, OWNER, progress['job_id'], cursor) == progress
+            assert texts(make, pid) == original
+        assert phases == ['adopting', 'adopting', 'content', 'content']
+        assert progress['content_batch'] == progress['content_batches'] == 2
+        assert progress['next_batch'] == 4
+        publish(make, pid, progress['job_id'])
+        assert len(texts(make, pid)) == 100
+
+
+def test_legacy_delete_requires_explicit_bounded_adoption_without_mutation():
+    make, raw, objects, pid = setup(adopt=False)
+    with actor():
+        chapter = raw.query_collection(('projects', pid, 'chapters'))[0]
+        before = deepcopy(raw.get(('projects', pid)))
+        journal = ActionJournal(make().domain.documents)
+        token = journal.begin(pid, OWNER)['token']
+        with bind_action(token, pid, OWNER), pytest.raises(HostedValidationError, match='ADOPTION_REQUIRED'):
+            delete_chapter_revision(make().domain, pid, chapter.path[-1], OWNER)
+        assert raw.get(('projects', pid)) == before
+        assert raw.get(chapter.path) == chapter
+
+
+def test_image_source_is_durable_before_adoption_and_metadata_stays_hidden_until_publication():
+    import io
+    from docx import Document
+    from PIL import Image
+    make, raw, objects, pid = setup(adopt=False)
+    image = io.BytesIO()
+    Image.new('RGB', (2, 2), color='orange').save(image, format='PNG')
+    document = Document()
+    document.add_paragraph('Synthetic image import')
+    document.add_picture(io.BytesIO(image.getvalue()))
+    content = io.BytesIO(); document.save(content)
+    with actor():
+        original = texts(make, pid)
+        service = make()
+        progress = service.begin_document(pid, OWNER, content.getvalue(), 'illustrated.docx', 'heading1',
+            operation='illustrated-phases', replace_main=True)
+        assert progress['phase'] == 'adopting'
+        assert raw.query_collection(('projects', pid, 'assets')) == []
+        job = progress['job_id']
+        data = raw.get(service._path(pid, job)).data
+        assert len(data['asset_source_receipts']) == 1
+        phases = []
+        while not progress['ready']:
+            phases.append(progress['phase'])
+            cursor = progress['next_batch']
+            progress = make().step(pid, OWNER, job, cursor)
+            assert make().step(pid, OWNER, job, cursor) == progress
+            assert texts(make, pid) == original
+            assert make().view.query_collection(('projects', pid, 'assets')) == []
+        assert 'images' in phases and progress['images'] == 1
+        journal, token, result = publish(make, pid, job)
+        assert len(make().view.query_collection(('projects', pid, 'assets'))) == 1
+        blocks = make().domain.list('manuscript_block', {'project_id': pid}, user_id=OWNER)
+        assert any(row['block_type'] == 'image' for row in blocks)
+        journal.restore(pid, OWNER, token, 'undo')
+        assert texts(make, pid) == original
+        assert make().view.query_collection(('projects', pid, 'assets')) == []
+        journal.restore(pid, OWNER, token, 'redo')
+        assert len(make().view.query_collection(('projects', pid, 'assets'))) == 1
+
+
+def test_lost_adoption_phase_response_retries_fixed_pages_not_extra_work(monkeypatch):
+    make, raw, objects, pid = setup(adopt=False)
+    with actor():
+        service = make()
+        progress = service.begin(pid, OWNER, parsed(3), operation='lost-adoption-phase', replace_main=True)
+        real_commit = service._phase_commit
+        def interrupted(*args, **kwargs):
+            raise RuntimeError('synthetic phase response lost')
+        monkeypatch.setattr(service, '_phase_commit', interrupted)
+        with pytest.raises(RuntimeError, match='response lost'):
+            service.step(pid, OWNER, progress['job_id'], 0)
+        data = raw.get(service._path(pid, progress['job_id'])).data
+        adoption = service.adoption.status(pid, OWNER, data['adoption']['job_id'])
+        assert adoption['next_step'] == 4 and data['step_cursor'] == 0
+        monkeypatch.setattr(service, '_phase_commit', real_commit)
+        retried = service.step(pid, OWNER, progress['job_id'], 0)
+        assert retried['adoption']['next_step'] == 4 and retried['next_batch'] == 1
+        assert not retried['adoption']['ready']
+        assert service.step(pid, OWNER, progress['job_id'], 0) == retried
+        final_adoption = service.step(pid, OWNER, progress['job_id'], 1)
+        assert final_adoption['phase'] == 'content'
+        assert final_adoption['adoption']['next_step'] == 5
+
+
+def test_cancel_between_adoption_and_phase_commit_never_publishes_content(monkeypatch):
+    make, raw, objects, pid = setup(adopt=False)
+    with actor():
+        service = make()
+        original = texts(make, pid)
+        progress = service.begin(pid, OWNER, parsed(3), operation='cancel-phase', replace_main=True)
+        progress = service.step(pid, OWNER, progress['job_id'], 0)
+        real_commit = service._phase_commit
+        def cancelled(*args, **kwargs):
+            service.cancel(pid, OWNER, progress['job_id'])
+            return real_commit(*args, **kwargs)
+        monkeypatch.setattr(service, '_phase_commit', cancelled)
+        with pytest.raises(DocumentConflict, match='CANCELLED'):
+            service.step(pid, OWNER, progress['job_id'], progress['next_batch'])
+        assert raw.get(('projects', pid)).data[FORMAT_FIELD] == 1
+        assert texts(make, pid) == original
+        assert len(raw.query_collection(('projects', pid, 'blocks'))) == len(original)
+        assert raw.get(('projects', pid, 'mutation_receipts', progress['job_id'])) is None

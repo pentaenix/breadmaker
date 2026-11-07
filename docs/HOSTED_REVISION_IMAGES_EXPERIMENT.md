@@ -1,8 +1,8 @@
 # Inactive manuscript revision image helpers
 
 `hosted.revision_images` is a synthetic helper experiment, not an enabled import
-path. It does not change runtime construction, routes, the structural journal's
-allowlist or limits, the format reader, deployment, or private-project support.
+path. Runtime activation and deployment remain separate. The existing journal
+limits and private-project restrictions are unchanged.
 All activation gates in `HOSTED_MANUSCRIPT_REVISIONS_PLAN.md` remain required.
 
 ## Protocol and integration contract
@@ -74,7 +74,7 @@ canonical project asset collection, and bytes use `project_asset_key`; browser
 paths remain `img_<24 hex>.<extension>`. Name-prefix and metadata collisions reject
 rather than overwrite. No images are served by object-prefix discovery.
 
-## Exact journal budget and hook still required
+## Integrated journal budget and exact path hook
 
 Final publication adds **zero to 64 asset records**: zero for existing globally
 available assets, one per hidden asset promoted. The parent must reserve these
@@ -88,9 +88,10 @@ serialized total, not an average per-image estimate.
 The only additional journal path eligibility is the exact four-component
 `projects/<authorized project>/assets/<asset id>` product path. Asset descendants,
 other projects, memberships, permissions, root authority and receipts remain
-non-restorable. The isolated tests monkeypatch this proposed capability in one
-synthetic journal rehearsal, explicitly without changing the production allowlist.
-The parent owns the narrow production hook, its path tests and aggregate budgets.
+non-restorable. The exact canonical asset-ID hook is implemented and exercised
+by real source staging, publication, Undo and Redo tests. Atomic rejection tests
+cover both the unchanged journal limits and oversized retained before-images.
+The staged publisher checks the combined conservative budget before any writes.
 
 Cancellation, interrupted objects, collisions, failed journal commits and Undo
 never delete immutable bytes. Such bytes remain retained/orphan candidates for the

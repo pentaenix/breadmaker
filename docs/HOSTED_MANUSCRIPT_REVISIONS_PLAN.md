@@ -51,7 +51,7 @@ History Restore or Checkpoint Apply; both currently fail closed independently.
   on subsequent root writes. It never masks `erasure_pending` or an erasure
   operation. The marker is not an authorization grant.
 
-The synthetic suites now also cover an inactive text-only resumable publisher
+The synthetic suites now also cover an inactive resumable publisher
 (`revision_staging.py`), including a 100,000-word manuscript, one-pointer
 replacement/Undo, append, one-record large chapter deletion/Undo, cancellation,
 interruption, missing actor contexts, private-root rejection, malicious valid-hash
@@ -68,7 +68,18 @@ Current chapter/block reads have an indexed, bounded membership-query prototype:
 61 live chapters require six logical provider reads, unchanged with 40,000
 retired/tombstoned blocks. This is synthetic query-count evidence, not production
 latency. Root-only compatibility is implemented for account closure and narration
-GC. Image helpers are separate and still require caller integration; see
+GC. The staged publisher now persists immutable image sources before migration,
+validates legacy collections in at most four 100-row pages per request, stages
+at most eight image metadata records per phase, then stages 64 content records.
+A single replay cursor covers every phase. Repeating an interrupted phase never
+advances an extra batch. First-use adoption preserves semantic generation and
+refuses malformed legacy parents/markers or private roots.
+
+Final image promotion shares the tab publication transaction and original Undo
+action. Only exact canonical project asset IDs are journal-eligible. The caller
+budgets actual current before/after images with the tab records (95 rows and
+300,000 bytes); the journal's existing 100-row/450,000-byte ceiling is unchanged.
+Images already shared with other content remain available. See
 `HOSTED_REVISION_IMAGES_EXPERIMENT.md`.
 
 These tests do not prove runtime integration, every operator's rollback behavior,
