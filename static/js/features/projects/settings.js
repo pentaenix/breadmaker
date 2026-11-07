@@ -66,7 +66,12 @@ function openNarrationExportSettings(context,selection,captured=null){
 }
 
 async function openProjectSettings(){
-  try{state.workspace=await api('/api/workspace')}catch{}
+  // Hosted bootstrap already supplies the active project's settings summary.
+  // Enumerating every project and trash item must not block opening this dialog.
+  // Each settings action still performs its own current server authorization.
+  if(!runtimeSupports('hosted_persistence')||!activeWorkspaceProject()){
+    try{state.workspace=await api('/api/workspace')}catch{}
+  }
   const recovery=state.workspace?.recovery||null,active=activeWorkspaceProject();
   const candidate=recovery?(state.workspace?.recovery_candidates||[]).find(item=>String(item.id)===String(recovery.active_project_id)):null;
   const fallbackName=recovery?.active_project_name||i18nText('project.settings_unavailable_name');

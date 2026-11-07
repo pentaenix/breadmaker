@@ -32,7 +32,8 @@ The Manuscript browser domain is split by responsibility while preserving Breadm
   Marker menu visibility is a browser-local per-user/project display preference,
   applied to marker paint and marker-navigation paint without deleting annotations.
 - `find_replace.js` — the Manuscript inline Find/Replace navigator entry surface.
-- `imports.js` — document-tab append import, Main Manuscript import, new-project import, import destination selection, and import progress UI.
+- Chapter deletion uses the existing structural Undo transaction without a confirmation modal, then exposes Undo in the toast. Hosted deletion commits a bounded chapter in one transaction, without downloading its prose; larger chapters fail before deleting content.
+- `imports.js` — document-tab append import, Main Manuscript import, new-project import, import destination selection, and import progress UI. Existing text requires five-character confirmation. Hosted text-only replacement/append publishes one bounded transaction and uses structural Undo; imports exceeding the journal budget or containing images explicitly require the resumable new-project path until segmented publication/recovery is implemented.
 
 These are runtime owners, not compatibility wrappers. Application Undo/Redo/structural history belongs to `static/js/core/history.js`; routing/view discovery belongs to `core/routing.js`; generic collection-rail helpers belong to `core/collections.js`. Do not move implementations back to `static/app.js`, `core/ui.js`, or unrelated features. The dedicated Notes/comments workspace lives under `static/js/features/notes/`, and History/Cuts lives under `features/durability/`.
 

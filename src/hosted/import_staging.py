@@ -39,3 +39,17 @@ def permits_unpublished_import(tx, project_id, actor):
             or tx.get(('account_erasure_locks', uid)) is not None):
         raise DocumentConflict('HOSTED_ACCOUNT_ERASURE_PENDING')
     return True
+
+
+def import_authority_paths(project_id):
+    """Read-ahead paths only; permits_unpublished_import remains the authority.
+
+    These rows must be read in the same fresh provider transaction as the
+    object-write fence. Nothing is cached between writes or requests.
+    """
+    scope = _ACTIVE.get()
+    if scope is None or scope[0] != project_id:
+        return ()
+    _, uid, operation = scope
+    return (('hosted_import_operations', operation), ('users', uid),
+            ('account_erasure_locks', uid))

@@ -20,11 +20,19 @@ def sha(value: str | bytes) -> str:
 
 
 def review_snapshot_content_hash(review_id:str, source_generation:int, scope_type:str, permissions:dict, chapters:list[dict], scenes:list[dict], blocks:list[dict], questions:list[dict]|None=None, markers:list[dict]|None=None) -> str:
+    frozen_scenes=[]
+    for row in scenes:
+        scene={k:row.get(k) for k in ('source_scene_id','source_tab_id','ordinal','position','title','description')}
+        # The snapshot column has INTEGER affinity: SQLite stores whole REAL
+        # positions as integers, but retains fractional positions without truncation.
+        position=float(row.get('position') or 0)
+        scene['position']=int(position) if position.is_integer() else position
+        frozen_scenes.append(scene)
     canonical={
         'review_id':str(review_id),'source_generation':int(source_generation),'scope_type':str(scope_type),
         'permissions':{field:bool(permissions.get(field)) for field in ('permission_read','permission_comment','permission_suggest','permission_feedback')},
         'chapters':[{k:row.get(k) for k in ('source_chapter_id','source_tab_id','ordinal','position','title','is_implicit','description')} for row in chapters],
-        'scenes':[{k:row.get(k) for k in ('source_scene_id','source_tab_id','ordinal','position','title','description')} for row in scenes],
+        'scenes':frozen_scenes,
         'blocks':[{k:row.get(k) for k in ('source_block_id','source_tab_id','source_chapter_id','source_scene_id','ordinal','position','block_type','semantic_style','content_html','text_content','image_path','content_hash')} for row in blocks],
     }
     if questions is not None:

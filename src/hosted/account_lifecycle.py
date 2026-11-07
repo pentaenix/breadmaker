@@ -13,7 +13,7 @@ import re
 from hosted.firestore.contracts import (DocumentAlreadyExists, DocumentConflict,
     ProjectUnavailable, StoredDocument, require_document_path)
 from hosted.storage.keys import require_object_name
-from hosted.import_staging import permits_unpublished_import
+from hosted.import_staging import permits_unpublished_import, import_authority_paths
 
 _USER = re.compile(r'usr_[0-9a-f]{32}')
 _USER_FIELDS = frozenset({'user_id', 'owner_user_id', 'actor_user_id'})
@@ -185,6 +185,17 @@ class AccountLifecycleObjectStore:
             raise DocumentConflict('HOSTED_ACCOUNT_OBJECT_SCOPE_INVALID')
         actor = self.documents.actor()
         def check(tx):
+            # The same current fence, fetched with one BatchGet rather than a
+            # serial round trip per root/reservation/user/lock for each paragraph.
+            paths = []
+            if parts[0] == 'projects':
+                paths.append(('projects', parts[1]))
+                paths.extend(import_authority_paths(parts[1]))
+            elif parts[0] == 'users' and _USER.fullmatch(parts[1]):
+                paths.append(('users', parts[1]))
+            if actor:
+                paths.append(('users', actor))
+            tx.get_many(list(dict.fromkeys(paths)))
             if parts[0] == 'projects':
                 row = tx.get(('projects', parts[1]))
                 if row is None:

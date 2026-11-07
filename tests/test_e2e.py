@@ -2944,7 +2944,7 @@ def test_browser_v4126_project_metadata_and_danger_zone(live_server,browser_runt
         page.locator('#settingsDeleteProject').click();page.wait_for_function("document.querySelector('#modalTitle')?.textContent==='Delete Project'")
         page.locator('#dialogConfirm').click();page.wait_for_selector('#dangerConfirmInput')
         code=page.locator('.danger-confirm-code').inner_text().strip()
-        assert len(code)==10 and code.isalnum() and code==code.lower()
+        assert len(code)==5 and code.isalnum() and code==code.lower()
         assert page.locator('#dangerCodeConfirm').is_disabled()
         page.locator('#dangerConfirmInput').fill(code)
         assert page.locator('#dangerCodeConfirm').is_enabled()
@@ -2980,7 +2980,7 @@ def test_browser_v4127_danger_zone_download_and_manual_code(live_server,browser_
         paste_prevented=input_box.evaluate("el=>{const e=new Event('paste',{cancelable:true});el.dispatchEvent(e);return e.defaultPrevented}")
         assert paste_prevented is True
         challenge=code.inner_text().strip()
-        assert len(challenge)==10 and challenge==challenge.lower()
+        assert len(challenge)==5 and challenge==challenge.lower()
         input_box.press_sequentially(challenge)
         assert page.locator('#dangerCodeConfirm').is_enabled()
         page.locator('#dangerCodeCancel').click();page.wait_for_function("document.querySelector('#modalTitle')?.textContent==='Project Settings'")

@@ -144,10 +144,18 @@ def export_pdf_bytes(domain,assets,project:Mapping[str,Any],project_id:str,user_
 
 
 def manuscript_is_default_blank(domain,project_id:str,user_id:str) -> bool:
-    tab,chapters,grouped=ordered_book(domain,project_id,user_id)
-    if not tab or len(chapters)!=1:return False
-    blocks=grouped.get(str(chapters[0].get('id')),[])
-    return len(blocks)==1 and str(blocks[0].get('block_type') or 'paragraph')=='paragraph' and not str(blocks[0].get('text_content') or '').strip() and not str(blocks[0].get('image_path') or '').strip()
+    generation=domain.project_generation(project_id,user_id)
+    tabs=domain.list('document_tab',{'project_id':project_id},user_id=user_id)
+    tab=next((row for row in tabs if row.get('is_manuscript') or row.get('kind')=='manuscript'),None)
+    if not tab:return False
+    chapters=domain.list('chapter',{'project_id':project_id},user_id=user_id,field='tab_id',value=str(tab['id']))
+    if len(chapters)!=1:return False
+    # Two blocks suffice to reject the default blank state. Never download an
+    # entire novel just to open its import destination chooser.
+    blocks=domain.list('manuscript_block',{'project_id':project_id},user_id=user_id,
+        field='chapter_id',value=str(chapters[0]['id']),page_size=2)
+    empty=len(blocks)==1 and str(blocks[0].get('block_type') or 'paragraph')=='paragraph' and not str(blocks[0].get('text_content') or '').strip() and not str(blocks[0].get('image_path') or '').strip()
+    return empty and domain.project_generation(project_id,user_id)==generation
 
 
 def install_parsed_tabs(domain,project_id:str,user_id:str,tabs:list[dict[str,Any]],*,replace_default:bool=False,after_document_id:str='') -> dict[str,Any]:

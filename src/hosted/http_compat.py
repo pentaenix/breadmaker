@@ -359,9 +359,9 @@ def hosted_chapter_dissolve(cid:str,request:Request):
     _delete('chapter',{'project_id':pid,'chapter_id':cid});return {'ok':True,'chapter_id':target_id}
 @router.delete('/api/chapters/{cid}/permanent')
 def hosted_chapter_permanent(cid:str,request:Request):
-    pid=_pid(request)
-    for block in list(_list('manuscript_block',{'project_id':pid},field='chapter_id',value=cid)):_delete('manuscript_block',{'project_id':pid,'block_id':str(block.get('id'))})
-    return _delete('chapter',{'project_id':pid,'chapter_id':cid})
+    from hosted.chapter_deletion import delete_chapter_atomic
+    try:return delete_chapter_atomic(_domain(),_pid(request),cid,_uid())
+    except Exception as exc:raise _error(exc)
 @router.post('/api/chapters/{cid}/split')
 async def hosted_chapter_split(cid:str,request:Request):
     pid=_pid(request);body=await _body(request);chapter=_get('chapter',{'project_id':pid,'chapter_id':cid});blocks=_sort_position(_list('manuscript_block',{'project_id':pid},field='chapter_id',value=cid));at=str(body.get('block_id') or body.get('at_block_id') or '');index=next((i for i,b in enumerate(blocks) if str(b.get('id'))==at),len(blocks));new=_create('chapter',{'project_id':pid},{'tab_id':chapter.get('tab_id'),'title':str(body.get('title') or 'New Chapter'),'position':int(chapter.get('position') or 0)+1})
@@ -1233,16 +1233,23 @@ def hosted_import_readiness(request:Request):
     return {'empty':empty,'manuscript_empty':empty,'hosted':True,'supported_extensions':['.docx','.txt']}
 
 
+def _parse_existing_import(raw, filename, heading):
+    from hosted.document_io import parse_document_bytes
+    def reject_image(*args):
+        raise ValueError('Import documents with images as a new project. Existing-project image import is not available yet.')
+    return parse_document_bytes(raw, filename, heading, image_store=reject_image)
+
+
 @router.post('/api/import')
-async def hosted_import_manuscript(request:Request,file:UploadFile=File(...),chapter_heading:str='heading1'):
-    from hosted.document_io import manuscript_is_default_blank,parse_document_bytes,install_parsed_tabs
-    pid=_pid(request);uid=_uid()
-    if not await run_in_threadpool(manuscript_is_default_blank,_domain(),pid,uid):raise HTTPException(409,detail='HOSTED_IMPORT_MAIN_MANUSCRIPT_NOT_EMPTY')
+async def hosted_import_manuscript(request:Request,file:UploadFile=File(...),chapter_heading:str='heading1',confirmed:bool=False):
+    from hosted.document_mutations import install_existing_document
     raw=await _upload_bytes(file)
-    try:tabs,warnings=await run_in_threadpool(parse_document_bytes,raw,file.filename or 'book.docx',chapter_heading)
-    except ValueError as exc:raise HTTPException(400 if str(exc)!='HOSTED_LEGACY_DOC_DISABLED' else 415,detail=str(exc)) from exc
-    result=await run_in_threadpool(install_parsed_tabs,_domain(),pid,uid,tabs,replace_default=True)
-    return {'ok':True,'reload':True,**result,'warnings':warnings}
+    try:
+        tabs,warnings=await _run_document_import(_parse_existing_import,raw,file.filename or 'book.docx',chapter_heading)
+        result=await _run_document_import(install_existing_document,_domain(),_pid(request),_uid(),tabs,
+            operation=operation_for('document_replace'),replace_main=True,confirmed=confirmed)
+        return {**result,'warnings':warnings}
+    except Exception as exc:raise _error(exc)
 
 
 @router.post('/api/import/new-project')
@@ -1289,12 +1296,14 @@ async def hosted_document_import_finish(job_id:str):
 
 @router.post('/api/documents/import')
 async def hosted_import_document_tabs(request:Request,file:UploadFile=File(...),after_document_id:str='',chapter_heading:str='heading1'):
-    from hosted.document_io import parse_document_bytes,install_parsed_tabs
+    from hosted.document_mutations import install_existing_document
     raw=await _upload_bytes(file)
-    try:tabs,warnings=await run_in_threadpool(parse_document_bytes,raw,file.filename or 'document.docx',chapter_heading)
-    except ValueError as exc:raise HTTPException(400 if str(exc)!='HOSTED_LEGACY_DOC_DISABLED' else 415,detail=str(exc)) from exc
-    result=await run_in_threadpool(install_parsed_tabs,_domain(),_pid(request),_uid(),tabs,replace_default=False,after_document_id=after_document_id)
-    return {'ok':True,'reload':False,**result,'warnings':warnings}
+    try:
+        tabs,warnings=await _run_document_import(_parse_existing_import,raw,file.filename or 'document.docx',chapter_heading)
+        result=await _run_document_import(install_existing_document,_domain(),_pid(request),_uid(),tabs,
+            operation=operation_for('document_append'),after_document_id=after_document_id)
+        return {**result,'warnings':warnings}
+    except Exception as exc:raise _error(exc)
 
 
 @router.get('/api/export/docx')

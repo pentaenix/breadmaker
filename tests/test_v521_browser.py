@@ -39,9 +39,10 @@ def test_v521_manuscript_import_uses_blank_fast_path_and_nonempty_destination_ch
         assert page.locator('#importDestinationTabs').is_visible()
         page.locator('#importDestinationReplace').click()
         page.wait_for_function("document.querySelector('#modalTitle')?.textContent==='Replace Main Manuscript'")
-        assert page.locator('#dialogConfirm').inner_text().strip()=='Replace Main Manuscript'
+        assert len(page.locator('.danger-confirm-code').inner_text())==5
+        assert page.locator('#dangerCodeConfirm').is_disabled()
         assert 'verified recovery backup' in page.locator('#modalBody').inner_text().lower()
-        page.locator('#dialogCancel').click()
+        page.locator('#dangerCodeCancel').click()
         page.wait_for_function("document.querySelector('#importDestinationReplace') && !document.querySelector('#modal').classList.contains('hidden')")
         assert not errors,errors
     finally:
