@@ -40,7 +40,7 @@ function renderReviewerSnapshot(payload){
   if(!canRead){paper.replaceChildren();return}
   if(!blocks.length){paper.innerHTML=`<div class="reviewer-empty">${escapeHtml(i18nText('reviews.reviewer_empty'))}</div>`;return}
   const byChapter=new Map();for(const block of blocks){const cid=entityId(block.source_chapter_id);if(!byChapter.has(cid))byChapter.set(cid,[]);byChapter.get(cid).push(block)}
-  paper.innerHTML=chapters.filter(chapter=>byChapter.has(entityId(chapter.source_chapter_id))).map(chapter=>{let lastScene=null;const content=byChapter.get(entityId(chapter.source_chapter_id)).map(block=>{let scene='';const sid=block.source_scene_id==null?null:entityId(block.source_scene_id);if(sid!==null&&sid!==lastScene){const found=reviewerSceneById(snapshot,sid);if(found)scene=`<h3 class="reviewer-scene-title">${escapeHtml(found.title||i18nText('reviews.untitled_scene'))}</h3>`;lastScene=sid}return scene+reviewerBlockHtml(block)}).join('');return `<section class="reviewer-chapter" data-reviewer-chapter="${chapter.source_chapter_id}"><h2 class="reviewer-chapter-title">${escapeHtml(chapter.title||i18nText('reviews.untitled_chapter'))}</h2>${content}</section>`}).join('');bindReadOnlyImageDescriptions(paper)
+  paper.innerHTML=chapters.filter(chapter=>byChapter.has(entityId(chapter.source_chapter_id))).map(chapter=>{let lastScene=null;const content=byChapter.get(entityId(chapter.source_chapter_id)).map(block=>{let scene='';const sid=block.source_scene_id==null?null:entityId(block.source_scene_id);if(sid!==null&&sid!==lastScene){const found=reviewerSceneById(snapshot,sid);if(found)scene=`<h3 class="reviewer-scene-title">${escapeHtml(found.title||i18nText('reviews.untitled_scene'))}</h3>`;lastScene=sid}return scene+reviewerBlockHtml(block)}).join('');return `<section class="reviewer-chapter" data-reviewer-chapter="${escapeHtml(chapter.source_chapter_id)}"><h2 class="reviewer-chapter-title">${escapeHtml(chapter.title||i18nText('reviews.untitled_chapter'))}</h2>${content}</section>`}).join('');bindReadOnlyImageDescriptions(paper)
 }
 let reviewerFeedbackSaveTimer=null,reviewerFeedbackSaveRevision=0,reviewerFeedbackSavedRevision=0,reviewerFeedbackSaveQueue=Promise.resolve();
 function autoSizeReviewerFeedbackArea(area){if(!area)return;area.style.height='auto';const style=getComputedStyle(area),line=parseFloat(style.lineHeight)||20,pad=(parseFloat(style.paddingTop)||0)+(parseFloat(style.paddingBottom)||0),border=(parseFloat(style.borderTopWidth)||0)+(parseFloat(style.borderBottomWidth)||0),max=Math.ceil(line*3+pad+border);const height=Math.min(Math.max(Math.ceil(area.scrollHeight),Math.ceil(line+pad+border)),max);area.style.height=`${height}px`;area.style.overflowY=area.scrollHeight>max?'auto':'hidden'}
@@ -105,7 +105,7 @@ function openReviewMarkerPicker(){
   const rect=reviewSelectionRect(selection.getRangeAt(0));
   list.replaceChildren();
   for(const marker of markers){
-    const button=document.createElement('button');button.type='button';button.className='selection-highlight-marker';button.setAttribute('role','menuitem');button.title=marker.name||i18nText('reviews.marker');button.innerHTML=`<span class="color-chip" style="background:${escapeHtml(marker.color||'#f2c94c')}"></span><span>${escapeHtml(marker.name||i18nText('reviews.marker'))}</span>`;
+    const button=document.createElement('button');button.type='button';button.className='selection-highlight-marker';button.setAttribute('role','menuitem');button.title=marker.name||i18nText('reviews.marker');button.innerHTML=`<span class="color-chip" style="background:${reviewerHighlightCssColor(marker.color)}"></span><span>${escapeHtml(marker.name||i18nText('reviews.marker'))}</span>`;
     button.onpointerdown=event=>{event.preventDefault();event.stopPropagation()};
     button.onclick=()=>createReviewHighlight(marker.source_marker_id??marker.marker_id).catch(error=>toast(error.message,5000));
     list.appendChild(button)
@@ -119,7 +119,7 @@ function reviewRangeForAnchor(item){const start=reviewDomPoint(item.start_block_
 function reviewerFeedbackBlock(blockId){return $(`#reviewerPaper .reviewer-block[data-review-block-id="${CSS.escape(String(blockId))}"]`)}
 let reviewerHighlightHoverTimer=null,reviewerHighlightHoverKey='';
 function hideReviewerHighlightHover(){clearTimeout(reviewerHighlightHoverTimer);reviewerHighlightHoverTimer=null;reviewerHighlightHoverKey='';$('#markupHoverCard')?.classList.add('hidden')}
-function queueReviewerHighlightHover(item,target){hideReviewerHighlightHover();const key=`${item.id}@${item.start_block_id}`;reviewerHighlightHoverKey=key;reviewerHighlightHoverTimer=setTimeout(()=>{if(reviewerHighlightHoverKey!==key||!target.isConnected||!target.matches(':hover'))return;const card=$('#markupHoverCard');if(!card)return;const color=item.marker_color||'#f2c94c',name=item.marker_name||i18nText('reviews.marker');card.innerHTML=`<span class="markup-hover-dot reviewer-highlight-hover-dot" style="background:${escapeHtml(color)}"></span><span>${escapeHtml(item.participant_name||i18nText('reviews.participant'))} · ${escapeHtml(name)}</span>`;positionMarkupHoverCard(card,target)},300)}
+function queueReviewerHighlightHover(item,target){hideReviewerHighlightHover();const key=`${item.id}@${item.start_block_id}`;reviewerHighlightHoverKey=key;reviewerHighlightHoverTimer=setTimeout(()=>{if(reviewerHighlightHoverKey!==key||!target.isConnected||!target.matches(':hover'))return;const card=$('#markupHoverCard');if(!card)return;const color=reviewerHighlightCssColor(item.marker_color),name=item.marker_name||i18nText('reviews.marker');card.innerHTML=`<span class="markup-hover-dot reviewer-highlight-hover-dot" style="background:${escapeHtml(color)}"></span><span>${escapeHtml(item.participant_name||i18nText('reviews.participant'))} · ${escapeHtml(name)}</span>`;positionMarkupHoverCard(card,target)},300)}
 let reviewerCommentHoverTimer=null,reviewerCommentHoverKey='';
 function hideReviewerCommentHover(){clearTimeout(reviewerCommentHoverTimer);reviewerCommentHoverTimer=null;reviewerCommentHoverKey='';$('#commentHoverCard')?.classList.add('hidden')}
 function reviewerCommentHoverHtml(items){const heading=items.length>1?`<div class="comment-hover-heading">${escapeHtml(i18nText('reviews.comment_count',{count:i18nNumber(items.length)}))}</div>`:'';return heading+items.map(item=>`<div class="comment-hover-thread reviewer-comment-preview"><small>${escapeHtml(item.participant_name||i18nText('reviews.participant'))}</small><span>${escapeHtml(item.body||i18nText('reviews.comment'))}</span></div>`).join('')}
@@ -163,7 +163,7 @@ function renderReviewerMarginAnnotations(payload){
       const seen=new Set();
       for(const item of group.items){
         const key=`${item.participant_id||item.participant_name||item.id}|${item.marker_name||''}|${item.marker_color||''}`;if(seen.has(key))continue;seen.add(key);
-        const swatch=document.createElement('button');swatch.type='button';swatch.className='markup-gutter-swatch reviewer-highlight-swatch';swatch.style.background=item.marker_color||'#f2c94c';
+        const swatch=document.createElement('button');swatch.type='button';swatch.className='markup-gutter-swatch reviewer-highlight-swatch';swatch.style.background=reviewerHighlightCssColor(item.marker_color);
         swatch.setAttribute('aria-label',`${item.participant_name||i18nText('reviews.participant')} · ${item.marker_name||i18nText('reviews.marker')}`);swatch.dataset.reviewItemIds=String(item.id||'');
         swatch.onpointerdown=e=>{e.preventDefault();e.stopPropagation()};swatch.onmouseenter=()=>queueReviewerHighlightHover(item,swatch);swatch.onmouseleave=hideReviewerHighlightHover;gutter.appendChild(swatch)
       }
@@ -197,7 +197,7 @@ function renderReviewerMarginAnnotations(payload){
   syncReviewerBookmarkUI()
 }
 let reviewerMarkerHighlightNames=[];
-function reviewerHighlightCssColor(value){return /^#[0-9a-f]{3,8}$/i.test(String(value||''))?String(value):'#f2c94c'}
+function reviewerHighlightCssColor(value){const color=String(value||'').trim();return /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(color)?color:'#f2c94c'}
 function applyReviewerAnnotations(payload){
   // Annotation UI lives inside reviewer blocks for positioning, but it must never
   // participate in manuscript text ranges. Remove the previous gutter UI before
