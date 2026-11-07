@@ -806,6 +806,7 @@
     "dynamic.html.text.p.b3ce6986": "Adicione este fragmento ao projeto atual como uma única ação que pode ser desfeita. O texto e os objetos existentes não serão substituídos.",
     "dynamic.html.text.p.b46014e2": "Ainda não há backups completos do projeto.",
     "dynamic.html.text.p.b7a06247": "O padrão segue o tema atual do Breadmaker. As cores personalizadas permanecem exatas.",
+    "import.replace_hosted_warning": "Substituir o manuscrito principal por “{file}”? O texto e as cenas existentes serão removidos. As outras abas permanecem inalteradas. Você pode desfazer após a importação.",
     "import.append_warning": "Adicione este documento como abas extras. Seu manuscrito existente permanece inalterado e você pode desfazer a importação.",
     "import.existing_hosted_limit": "Substitua ou acrescente aqui um documento curto somente de texto. Documentos maiores ou com imagens precisam de um novo projeto para manter a importação recuperável.",
     "danger.type_code": "Digite exatamente o código de {count} caracteres abaixo para continuar.",

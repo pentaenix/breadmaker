@@ -11,7 +11,16 @@ $('#documentImportInput').onchange=async event=>{
   if(isWord){try{const saved=await api('/api/ui-state/import-chapter-heading');if(/^heading[1-6]$/.test(String(saved.value||'')))preferredHeading=String(saved.value)}catch(error){console.warn('Could not restore import chapter marker',error)}}
   const headingOptions=[1,2,3,4,5,6].map(level=>`<option value="heading${level}" ${preferredHeading===`heading${level}`?'selected':''}>${escapeHtml(i18nText('import.heading',{level:i18nNumber(level)}))}</option>`).join('');
   showModal('Import Tabs',`<p><b>${escapeHtml(file.name)}</b></p><p class="small-muted">${escapeHtml(i18nText('import.tabs_append_after',{title:afterDocumentTitle}))}</p>${isWord?`<div class="field"><label>{{i18n:dynamic.html.text.label.58994380}}</label><select id="documentImportChapterHeading">${headingOptions}</select></div><p class="small-muted">{{i18n:dynamic.html.text.p.8c525689}}</p>`:''}`,`<button id="confirmDocumentImport">{{i18n:dynamic.html.text.button.1da0fe67}}</button>`);
-  $('#confirmDocumentImport').onclick=async()=>{const chapterHeading=$('#documentImportChapterHeading')?.value||'heading1';if(!await confirmExistingDocumentImport('Import Tabs',i18nText('import.append_warning')))return;if(isWord)await api('/api/ui-state/import-chapter-heading',{method:'PUT',body:JSON.stringify({value:chapterHeading})});currentModalDismiss=null;dismissModalTree();try{await performDocumentTabImport(file,chapterHeading,afterDocumentId)}finally{input.value=''}};
+  $('#confirmDocumentImport').onclick=async()=>{
+    const button=$('#confirmDocumentImport'),owner=importDialogOwner();if(button.disabled)return;button.disabled=true;
+    const chapterHeading=$('#documentImportChapterHeading')?.value||'heading1';
+    try{
+      if(!await confirmExistingDocumentImport('Import Tabs',i18nText('import.append_warning'),owner))return;
+      if(isWord)await api('/api/ui-state/import-chapter-heading',{method:'PUT',body:JSON.stringify({value:chapterHeading})});
+      if(!ownsImportDialog(owner))return;
+      currentModalDismiss=null;dismissModalTree();try{await performDocumentTabImport(file,chapterHeading,afterDocumentId)}finally{input.value=''}
+    }finally{if(button.isConnected)button.disabled=false}
+  };
 };
 async function performDocumentTabImport(file,chapterHeading,afterDocumentId){
   await flushSave();const fd=new FormData();fd.append('file',file);setSaveState('Importing…');
@@ -42,10 +51,16 @@ function importHeadingControl(file,preferredHeading,id='importChapterHeading'){
 async function rememberImportHeading(file,chapterHeading){if(/\.docx?$/i.test(file?.name||''))await api('/api/ui-state/import-chapter-heading',{method:'PUT',body:JSON.stringify({value:chapterHeading})})}
 async function importReadiness(){try{return await api('/api/import/readiness')}catch(error){console.warn('Could not inspect manuscript import readiness',error);return {manuscript_empty:false,reason:'unknown'}}}
 
-async function confirmExistingDocumentImport(title,message){
-  await flushSave();const current=await importReadiness();
-  if(current.manuscript_empty)return await confirmDialog(title,message,{confirmLabel:'Import',danger:title==='Replace Main Manuscript'});
-  return (await dangerCodeDialog(title,typedConfirmationCode(5),i18nSource('Import'),{message,nested:true}))!==null;
+function importDialogOwner(){return {node:$('#modalBody').firstElementChild,revision:modalRevision,project:currentProjectIdentity()}}
+function ownsImportDialog(owner,checkRevision=false){return owner.project===currentProjectIdentity()&&owner.node?.isConnected&&$('#modalBody').contains(owner.node)&&!$('#modal').classList.contains('hidden')&&(!checkRevision||owner.revision===modalRevision)}
+async function confirmExistingDocumentImport(title,message,owner=importDialogOwner()){
+  if(!ownsImportDialog(owner,true))return false;
+  await flushSave();if(!ownsImportDialog(owner,true))return false;
+  const current=await importReadiness();if(!ownsImportDialog(owner,true))return false;
+  const confirmed=current.manuscript_empty&&(state.documents||[]).length<=1
+    ?await confirmDialog(title,message,{confirmLabel:'Import',danger:title==='Replace Main Manuscript'})
+    :(await dangerCodeDialog(title,typedConfirmationCode(5),i18nSource('Import'),{message,nested:true}))!==null;
+  return confirmed&&ownsImportDialog(owner);
 }
 
 let manuscriptImportProgressTimer=null;
@@ -113,14 +128,29 @@ $('#importInput').onchange=async event=>{
     </div>`, cancelActions, dismissImport);
   $('#cancelImportManuscript').onclick=()=>closeModal();
   const heading=()=>$('#importChapterHeading')?.value||'heading1';
-  $('#importDestinationReplace').onclick=async()=>{
+  let destinationBusy=false;
+  const activate=async action=>{
+    if(destinationBusy)return;destinationBusy=true;
+    const owner=importDialogOwner(),buttons=$$('.import-destination-row');buttons.forEach(button=>button.disabled=true);
+    try{await action(owner)}finally{destinationBusy=false;buttons.forEach(button=>{if(button.isConnected)button.disabled=false})}
+  };
+  $('#importDestinationReplace').onclick=()=>activate(async owner=>{
     const chapterHeading=heading();await rememberImportHeading(file,chapterHeading);
-    const confirmed=await confirmExistingDocumentImport('Replace Main Manuscript',i18nText('confirm.replace_main_manuscript',{file:file.name}));
+    const confirmed=await confirmExistingDocumentImport('Replace Main Manuscript',i18nText(hostedImport?'import.replace_hosted_warning':'confirm.replace_main_manuscript',{file:file.name}),owner);
     if(!confirmed)return;
     const outcome=await runManuscriptImportWithProgress(file,'Preparing replacement…',()=>performManuscriptImport(file,chapterHeading,true));if(outcome.ok)finish();
-  };
-  $('#importDestinationNew').onclick=async()=>{const chapterHeading=heading();await rememberImportHeading(file,chapterHeading);const outcome=await runManuscriptImportWithProgress(file,'Preparing new project…',()=>performManuscriptImportAsNewProject(file,chapterHeading),{reload:true});if(outcome.ok)input.value=''};
-  $('#importDestinationTabs').onclick=async()=>{const chapterHeading=heading();if(!await confirmExistingDocumentImport('Import Tabs',i18nText('import.append_warning')))return;await rememberImportHeading(file,chapterHeading);const docs=[...(state.documents||[])].sort((a,b)=>(+a.position||0)-(+b.position||0)||compareEntityIds(a.id,b.id)),last=docs.at(-1);if(!last)return toast('No Tab is available to append after.');const outcome=await runManuscriptImportWithProgress(file,'Preparing Tabs…',()=>performDocumentTabImport(file,chapterHeading,last.id));if(outcome.ok)finish()};
+  });
+  $('#importDestinationNew').onclick=()=>activate(async owner=>{
+    const chapterHeading=heading();await rememberImportHeading(file,chapterHeading);if(!ownsImportDialog(owner,true))return;
+    const outcome=await runManuscriptImportWithProgress(file,'Preparing new project…',()=>performManuscriptImportAsNewProject(file,chapterHeading),{reload:true});if(outcome.ok)input.value='';
+  });
+  $('#importDestinationTabs').onclick=()=>activate(async owner=>{
+    const chapterHeading=heading();if(!await confirmExistingDocumentImport('Import Tabs',i18nText('import.append_warning'),owner))return;
+    await rememberImportHeading(file,chapterHeading);if(!ownsImportDialog(owner))return;
+    const docs=[...(state.documents||[])].sort((a,b)=>(+a.position||0)-(+b.position||0)||compareEntityIds(a.id,b.id)),last=docs.at(-1);
+    if(!last)return toast('No Tab is available to append after.');
+    const outcome=await runManuscriptImportWithProgress(file,'Preparing Tabs…',()=>performDocumentTabImport(file,chapterHeading,last.id));if(outcome.ok)finish();
+  });
 };
 async function performManuscriptImport(file,chapterHeading,confirmed=false){
   await flushSave();const fd=new FormData();fd.append('file',file);setSaveState('Importing…');

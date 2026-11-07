@@ -60,7 +60,8 @@ def install_existing_document(domain, project_id, user_id, tabs, *, operation,
             # Scene metadata belongs to the replaced chapters. Other tabs and
             # linked planning/review records are deliberately not rewritten.
             removed += [row for row in tx.query_collection(('projects', pid, 'scenes'))
-                        if str(row.data.get('chapter_id') or '') in chapter_ids]
+                        if str(row.data.get('tab_id') or '') == main.path[-1]
+                        or str(row.data.get('chapter_id') or '') in chapter_ids]
         if len(removed) > MAX_CHANGED_RECORDS or _size([row.data for row in removed]) > MAX_METADATA_BYTES:
             raise HostedValidationError(_LIMIT)
         return existing, removed, None
@@ -116,7 +117,10 @@ def install_existing_document(domain, project_id, user_id, tabs, *, operation,
                     'scene_id': None, 'text_content': block.get('text') or '', 'content_html': block.get('html') or ''})
     if not prepared:
         raise HostedValidationError('HOSTED_IMPORT_DOCUMENT_EMPTY')
-    shifted = [] if replace_main else [row for row in existing if positions[row.path[-1]] >= insert_at]
+    target_positions = {row.path[-1]: index + (len(tabs) if index >= insert_at else 0)
+                        for index, row in enumerate(existing)}
+    shifted = [] if replace_main else [row for row in existing
+        if float(row.data.get('position') or 0) != target_positions[row.path[-1]]]
     if len(prepared) + len(removed) + len(shifted) > MAX_CHANGED_RECORDS:
         raise HostedValidationError(_LIMIT)
     # Bound text before publishing objects, then bound the actual journal metadata.
@@ -162,7 +166,7 @@ def install_existing_document(domain, project_id, user_id, tabs, *, operation,
         for row in removed:
             tx.delete(row.path)
         for row in shifted:
-            tx.set(row.path, {**row.data, 'position': positions[row.path[-1]] + len(tabs),
+            tx.set(row.path, {**row.data, 'position': target_positions[row.path[-1]],
                 'generation': int(row.data.get('generation') or 0)+1, 'updated_at': stamp})
         for _, _, path, stored in prepared:
             tx.create(path, stored)

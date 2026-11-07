@@ -105,3 +105,41 @@ def test_chapter_delete_is_one_commit_and_undo_restores_content_without_object_r
         assert journal.finish(pid, OWNER, token)['changed']
         journal.restore(pid, OWNER, token, 'undo')
         assert sorted(row['text_content'] for row in service.domain.list('manuscript_block', {'project_id': pid}, user_id=OWNER)) == ['Chapter prose', 'Second paragraph']
+
+
+def test_append_after_tab_with_position_gaps_and_replace_removes_only_main_scenes():
+    service, raw, objects, pid = service_and_project()
+    with actor():
+        main = raw.query_collection(('projects', pid, 'tabs'))[0].path[-1]
+        third = service.domain.create('document_tab', {'project_id': pid}, {'title': 'C', 'position': 3}, user_id=OWNER)
+        fourth = service.domain.create('document_tab', {'project_id': pid}, {'title': 'D', 'position': 4}, user_id=OWNER)
+        imported = install(service, pid, 'Appended', operation='after-gap', after_document_id=fourth['id'])
+        tabs = sorted(raw.query_collection(('projects', pid, 'tabs')), key=lambda row: row.data['position'])
+        assert [row.path[-1] for row in tabs] == [main, third['id'], fourth['id'], imported['first_document_id']]
+        old_scene = service.domain.create('scene', {'project_id': pid}, {'title': 'Old main scene', 'tab_id': main}, user_id=OWNER)
+        keep_scene = service.domain.create('scene', {'project_id': pid}, {'title': 'Keep other scene', 'tab_id': third['id']}, user_id=OWNER)
+        journal = ActionJournal(service.domain.documents)
+        token = journal.begin(pid, OWNER)['token']
+        with bind_action(token, pid, OWNER):
+            install(service, pid, 'New main', operation='replace-scenes', replace_main=True, confirmed=True)
+        journal.finish(pid, OWNER, token)
+        assert raw.get(('projects', pid, 'scenes', old_scene['id'])) is None
+        assert raw.get(('projects', pid, 'scenes', keep_scene['id'])) is not None
+        journal.restore(pid, OWNER, token, 'undo')
+        assert raw.get(('projects', pid, 'scenes', old_scene['id'])) is not None
+
+
+def test_readiness_does_not_download_the_whole_manuscript(monkeypatch):
+    from hosted.document_io import manuscript_is_default_blank
+    service, raw, objects, pid = service_and_project()
+    with actor():
+        assert manuscript_is_default_blank(service.domain, pid, OWNER)
+        install(service, pid, '\n'.join('Paragraph '+str(i) for i in range(30)), operation='readiness-prose', replace_main=True)
+        reads = []
+        original = objects.read_chunks
+        def read(*args, **kwargs):
+            reads.append(args[0])
+            return original(*args, **kwargs)
+        monkeypatch.setattr(objects, 'read_chunks', read)
+        assert not manuscript_is_default_blank(service.domain, pid, OWNER)
+        assert len(reads) <= 2

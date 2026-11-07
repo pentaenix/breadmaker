@@ -806,6 +806,7 @@
     "dynamic.html.text.p.b3ce6986": "Aggiungi questo frammento al progetto attuale come un’unica azione annullabile. La prosa e gli oggetti esistenti non vengono sostituiti.",
     "dynamic.html.text.p.b46014e2": "Nessun backup completo del progetto disponibile.",
     "dynamic.html.text.p.b7a06247": "L’impostazione predefinita segue il tema Breadmaker attuale. I colori personalizzati restano invariati.",
+    "import.replace_hosted_warning": "Sostituire il manoscritto principale con “{file}”? Il testo e le scene esistenti saranno rimossi. Le altre schede restano invariate. Puoi annullare dopo l’importazione.",
     "import.append_warning": "Aggiungi questo documento come schede extra. Il manoscritto esistente resta invariato e puoi annullare l’importazione.",
     "import.existing_hosted_limit": "Qui puoi sostituire o aggiungere un documento breve di solo testo. I documenti più grandi o con immagini richiedono un nuovo progetto per consentire il recupero.",
     "danger.type_code": "Digita esattamente il seguente codice di {count} caratteri per continuare.",

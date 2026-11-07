@@ -806,6 +806,7 @@
     "dynamic.html.text.p.b3ce6986": "Agrega este fragmento al proyecto actual como una sola acción que se puede deshacer. El texto y los objetos existentes no se reemplazarán.",
     "dynamic.html.text.p.b46014e2": "Aún no hay copias de seguridad completas del proyecto.",
     "dynamic.html.text.p.b7a06247": "El valor predeterminado sigue el tema actual de Breadmaker. Los colores personalizados se conservan exactamente.",
+    "import.replace_hosted_warning": "¿Reemplazar el manuscrito principal con «{file}»? Se eliminarán su texto y sus escenas actuales. Las otras pestañas no cambiarán. Puedes deshacer la importación.",
     "import.append_warning": "Añade este documento como pestañas adicionales. Tu manuscrito actual no cambia y puedes deshacer la importación.",
     "import.existing_hosted_limit": "Aquí puedes reemplazar o añadir documentos cortos que solo contengan texto. Los documentos más grandes o con imágenes necesitan un proyecto nuevo para mantener una importación recuperable.",
     "danger.type_code": "Escribe exactamente el siguiente código de {count} caracteres para continuar.",

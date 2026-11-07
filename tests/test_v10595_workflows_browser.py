@@ -63,3 +63,23 @@ def test_hosted_replace_append_are_enabled_and_existing_prose_requires_five_char
         expect(page.locator('.manuscript-block').first).to_have_text('Existing manuscript stays until confirmed')
         page.reload(wait_until='domcontentloaded')
         expect(page.locator('.manuscript-block').first).to_have_text('Existing manuscript stays until confirmed')
+
+
+def test_cancel_while_import_confirmation_readiness_is_pending_stays_closed(tmp_path):
+    with browser(tmp_path, local=False) as (base, page, pid):
+        page.locator('.manuscript-block').first.fill('Keep this draft')
+        page.wait_for_function('()=>!state.dirty&&!state.saveInFlight')
+        payload = {'name': 'Synthetic.txt', 'mimeType': 'text/plain', 'buffer': b'Never imported'}
+        page.locator('#importInput').set_input_files(payload)
+        expect(page.locator('#importDestinationReplace')).to_be_visible()
+        held = []
+        page.route('**/api/import/readiness', lambda route: held.append(route))
+        with page.expect_request('**/api/import/readiness'):
+            page.locator('#importDestinationReplace').click()
+        expect(page.locator('#importDestinationReplace')).to_be_disabled()
+        page.locator('#cancelImportManuscript').click()
+        expect(page.locator('#modal')).to_be_hidden()
+        held[0].fulfill(status=200, json={'manuscript_empty': False})
+        page.wait_for_function('()=>!document.querySelector("#importDestinationReplace")?.disabled')
+        expect(page.locator('#modal')).to_be_hidden()
+        expect(page.locator('.manuscript-block').first).to_have_text('Keep this draft')

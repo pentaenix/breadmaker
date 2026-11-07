@@ -347,7 +347,9 @@ async function cutChapter(chapter){
 }
 async function deleteChapterPermanently(chapter){
   const documentId=chapter.tab_id||state.activeDocumentId,target=chapterAfterRemovalTarget(chapter);clearManuscriptSelection();keepStructureVisibleAfterDelete('chapters',documentId);
-  await withStructuralUndo(`Delete chapter: ${chapter.title}`,()=>api(`/api/chapters/${chapter.id}/permanent`,{method:'DELETE'}),{view:'manuscript'});await refresh(false);
+  try{await withStructuralUndo(`Delete chapter: ${chapter.title}`,()=>api(`/api/chapters/${chapter.id}/permanent`,{method:'DELETE'}),{view:'manuscript',chapterId:chapter.id,documentId})}
+  catch(error){toast(error?.message||'That Chapter could not be deleted.',6000);return}
+  await refresh(false);
   if(target&&visibleChapterById(target.id))await selectChapter(target.id,false,false);else{const fallback=manuscriptTabChapterRows(documentId)[0];if(fallback)await selectChapter(fallback.id,false,false);else await openWholeBook(false,false)}clearManuscriptSelection();toast('Chapter deleted',6000,{label:i18nText('action.undo'),onClick:()=>appUndo()});
 }
 

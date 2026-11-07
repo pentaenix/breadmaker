@@ -806,6 +806,7 @@
     "dynamic.html.text.p.b3ce6986": "Add this fragment to the current project as one Undoable action. Existing prose and objects are not replaced.",
     "dynamic.html.text.p.b46014e2": "No full project backups yet.",
     "dynamic.html.text.p.b7a06247": "Default follows the current Breadmaker theme. Custom colors stay exact.",
+    "import.replace_hosted_warning": "Replace the current Main Manuscript with “{file}”? Its existing prose and scenes will be removed. Other tabs stay unchanged. You can use Undo after importing.",
     "import.append_warning": "Add this document as extra tabs. Your existing manuscript stays unchanged, and you can undo the import.",
     "import.existing_hosted_limit": "Replace or append a short, text-only document here. Larger documents and documents with images currently need a new project to keep the import recoverable.",
     "danger.type_code": "Type the following {count}-character code exactly to continue.",

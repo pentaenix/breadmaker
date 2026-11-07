@@ -8048,6 +8048,17 @@
       ]
     },
     {
+      "file": "src/hosted/chapter_deletion.py",
+      "lines": 30,
+      "symbols": [
+        {
+          "name": "delete_chapter_atomic",
+          "kind": "function",
+          "line": 10
+        }
+      ]
+    },
+    {
       "file": "src/hosted/chapter_mutations.py",
       "lines": 245,
       "symbols": [
@@ -8098,7 +8109,7 @@
     },
     {
       "file": "src/hosted/document_io.py",
-      "lines": 178,
+      "lines": 186,
       "symbols": [
         {
           "name": "read_upload_bytes_sync",
@@ -8138,7 +8149,23 @@
         {
           "name": "install_parsed_tabs",
           "kind": "function",
-          "line": 153
+          "line": 161
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/document_mutations.py",
+      "lines": 175,
+      "symbols": [
+        {
+          "name": "_size",
+          "kind": "function",
+          "line": 23
+        },
+        {
+          "name": "install_existing_document",
+          "kind": "function",
+          "line": 27
         }
       ]
     },
@@ -9209,7 +9236,7 @@
     },
     {
       "file": "src/hosted/http_compat.py",
-      "lines": 1421,
+      "lines": 1430,
       "symbols": [
         {
           "name": "_run_document_import",
@@ -10999,9 +11026,14 @@
           ]
         },
         {
+          "name": "_parse_existing_import",
+          "kind": "function",
+          "line": 1236
+        },
+        {
           "name": "hosted_import_manuscript",
           "kind": "async_function",
-          "line": 1237,
+          "line": 1244,
           "routes": [
             {
               "method": "POST",
@@ -11012,7 +11044,7 @@
         {
           "name": "hosted_import_new_project",
           "kind": "async_function",
-          "line": 1249,
+          "line": 1256,
           "routes": [
             {
               "method": "POST",
@@ -11023,7 +11055,7 @@
         {
           "name": "hosted_document_import_status",
           "kind": "function",
-          "line": 1270,
+          "line": 1277,
           "routes": [
             {
               "method": "GET",
@@ -11034,7 +11066,7 @@
         {
           "name": "hosted_document_import_step",
           "kind": "async_function",
-          "line": 1277,
+          "line": 1284,
           "routes": [
             {
               "method": "POST",
@@ -11045,7 +11077,7 @@
         {
           "name": "hosted_document_import_finish",
           "kind": "async_function",
-          "line": 1284,
+          "line": 1291,
           "routes": [
             {
               "method": "POST",
@@ -11056,7 +11088,7 @@
         {
           "name": "hosted_import_document_tabs",
           "kind": "async_function",
-          "line": 1291,
+          "line": 1298,
           "routes": [
             {
               "method": "POST",
@@ -11067,7 +11099,7 @@
         {
           "name": "hosted_export_docx",
           "kind": "function",
-          "line": 1301,
+          "line": 1310,
           "routes": [
             {
               "method": "GET",
@@ -11078,7 +11110,7 @@
         {
           "name": "hosted_export_pdf",
           "kind": "async_function",
-          "line": 1308,
+          "line": 1317,
           "routes": [
             {
               "method": "POST",
@@ -11089,12 +11121,12 @@
         {
           "name": "_hosted_json_upload",
           "kind": "async_function",
-          "line": 1318
+          "line": 1327
         },
         {
           "name": "hosted_project_json_preview",
           "kind": "async_function",
-          "line": 1327,
+          "line": 1336,
           "routes": [
             {
               "method": "POST",
@@ -11105,7 +11137,7 @@
         {
           "name": "hosted_project_json_import",
           "kind": "async_function",
-          "line": 1336,
+          "line": 1345,
           "routes": [
             {
               "method": "POST",
@@ -11116,7 +11148,7 @@
         {
           "name": "hosted_any_json_preview",
           "kind": "async_function",
-          "line": 1345,
+          "line": 1354,
           "routes": [
             {
               "method": "POST",
@@ -11127,7 +11159,7 @@
         {
           "name": "hosted_any_json_import",
           "kind": "async_function",
-          "line": 1353,
+          "line": 1362,
           "routes": [
             {
               "method": "POST",
@@ -11138,7 +11170,7 @@
         {
           "name": "hosted_project_json_export",
           "kind": "function",
-          "line": 1361,
+          "line": 1370,
           "routes": [
             {
               "method": "GET",
@@ -11149,7 +11181,7 @@
         {
           "name": "hosted_portable_review_status",
           "kind": "function",
-          "line": 1372,
+          "line": 1381,
           "routes": [
             {
               "method": "GET",
@@ -11160,7 +11192,7 @@
         {
           "name": "hosted_portable_review_unavailable",
           "kind": "function",
-          "line": 1395,
+          "line": 1404,
           "routes": [
             {
               "method": "POST",
@@ -11239,7 +11271,7 @@
         {
           "name": "hosted_backup_recovery_unavailable",
           "kind": "function",
-          "line": 1418,
+          "line": 1427,
           "routes": [
             {
               "method": "POST",
@@ -19687,7 +19719,7 @@
     },
     {
       "file": "static/js/features/manuscript/imports.js",
-      "lines": 156,
+      "lines": 192,
       "symbols": [
         {
           "name": "beginDocumentImport",
@@ -19697,97 +19729,112 @@
         {
           "name": "performDocumentTabImport",
           "kind": "function",
-          "line": 16
+          "line": 25
         },
         {
           "name": "importedProjectName",
           "kind": "function",
-          "line": 31
+          "line": 40
         },
         {
           "name": "preferredImportChapterHeading",
           "kind": "function",
-          "line": 32
+          "line": 41
         },
         {
           "name": "importHeadingControl",
           "kind": "function",
-          "line": 37
+          "line": 46
         },
         {
           "name": "rememberImportHeading",
           "kind": "function",
-          "line": 42
+          "line": 51
         },
         {
           "name": "importReadiness",
           "kind": "function",
-          "line": 43
+          "line": 52
         },
         {
-          "name": "stopManuscriptImportProgress",
-          "kind": "function",
-          "line": 46
-        },
-        {
-          "name": "setManuscriptImportProgress",
-          "kind": "function",
-          "line": 47
-        },
-        {
-          "name": "beginManuscriptImportProgress",
+          "name": "importDialogOwner",
           "kind": "function",
           "line": 53
         },
         {
+          "name": "ownsImportDialog",
+          "kind": "function",
+          "line": 55
+        },
+        {
+          "name": "confirmExistingDocumentImport",
+          "kind": "function",
+          "line": 56
+        },
+        {
+          "name": "stopManuscriptImportProgress",
+          "kind": "function",
+          "line": 67
+        },
+        {
+          "name": "setManuscriptImportProgress",
+          "kind": "function",
+          "line": 68
+        },
+        {
+          "name": "beginManuscriptImportProgress",
+          "kind": "function",
+          "line": 74
+        },
+        {
           "name": "completeManuscriptImportProgress",
           "kind": "function",
-          "line": 66
+          "line": 87
         },
         {
           "name": "failManuscriptImportProgress",
           "kind": "function",
-          "line": 70
+          "line": 91
         },
         {
           "name": "restoreImportModalClose",
           "kind": "function",
-          "line": 77
+          "line": 98
         },
         {
           "name": "runManuscriptImportWithProgress",
           "kind": "function",
-          "line": 78
+          "line": 99
         },
         {
           "name": "finish",
           "kind": "function",
-          "line": 90
+          "line": 111
         },
         {
           "name": "dismissImport",
           "kind": "function",
-          "line": 91
+          "line": 112
         },
         {
           "name": "heading",
           "kind": "function",
-          "line": 109
+          "line": 130
         },
         {
           "name": "performManuscriptImport",
           "kind": "function",
-          "line": 119
+          "line": 155
         },
         {
           "name": "performManuscriptImportAsNewProject",
           "kind": "function",
-          "line": 123
+          "line": 159
         },
         {
           "name": "performHostedProjectImport",
           "kind": "function",
-          "line": 130
+          "line": 166
         }
       ]
     },
@@ -20225,7 +20272,7 @@
     },
     {
       "file": "static/js/features/manuscript/navigation.js",
-      "lines": 381,
+      "lines": 382,
       "symbols": [
         {
           "name": "activeDocument",
@@ -20610,17 +20657,17 @@
         {
           "name": "dissolveChapterBoundary",
           "kind": "function",
-          "line": 354
+          "line": 355
         },
         {
           "name": "deleteFocusedChapterSelection",
           "kind": "function",
-          "line": 368
+          "line": 369
         },
         {
           "name": "scrollBookChapter",
           "kind": "function",
-          "line": 379
+          "line": 380
         }
       ]
     },
@@ -23238,7 +23285,7 @@
     },
     {
       "file": "static/js/features/projects/lifecycle.js",
-      "lines": 237,
+      "lines": 245,
       "symbols": [
         {
           "name": "openExperimentalFeatures",
@@ -23311,64 +23358,69 @@
           "line": 128
         },
         {
-          "name": "dangerCodeDialog",
+          "name": "typedConfirmationCode",
           "kind": "function",
           "line": 132
         },
         {
+          "name": "dangerCodeDialog",
+          "kind": "function",
+          "line": 136
+        },
+        {
           "name": "sync",
           "kind": "function",
-          "line": 139
+          "line": 143
         },
         {
           "name": "stopDeleteAllProgress",
           "kind": "function",
-          "line": 146
+          "line": 150
         },
         {
           "name": "setDeleteAllProgress",
           "kind": "function",
-          "line": 147
+          "line": 151
         },
         {
           "name": "beginDeleteAllProgress",
           "kind": "function",
-          "line": 152
+          "line": 156
         },
         {
           "name": "completeDeleteAllProgress",
           "kind": "function",
-          "line": 159
+          "line": 163
         },
         {
           "name": "failDeleteAllProgress",
           "kind": "function",
-          "line": 163
+          "line": 167
         },
         {
           "name": "trashHostedProject",
           "kind": "function",
-          "line": 169
+          "line": 173
         },
         {
           "name": "runDangerDelete",
           "kind": "function",
-          "line": 184
+          "line": 188
         },
         {
           "name": "openAllProjects",
           "kind": "function",
-          "line": 223
+          "line": 231
         },
         {
           "name": "render",
           "kind": "function",
-          "line": 227
+          "line": 235
         },
         {
           "name": "openProjectTrash",
           "kind": "function",
-          "line": 235
+          "line": 243
         }
       ]
     },
@@ -28553,357 +28605,357 @@
       "method": "POST",
       "function": "hosted_import_manuscript",
       "file": "src/hosted/http_compat.py",
-      "line": 1237,
+      "line": 1244,
       "path": "/api/import"
     },
     {
       "method": "POST",
       "function": "hosted_import_new_project",
       "file": "src/hosted/http_compat.py",
-      "line": 1249,
+      "line": 1256,
       "path": "/api/import/new-project"
     },
     {
       "method": "GET",
       "function": "hosted_document_import_status",
       "file": "src/hosted/http_compat.py",
-      "line": 1270,
+      "line": 1277,
       "path": "/api/import/jobs/{job_id}"
     },
     {
       "method": "POST",
       "function": "hosted_document_import_step",
       "file": "src/hosted/http_compat.py",
-      "line": 1277,
+      "line": 1284,
       "path": "/api/import/jobs/{job_id}/step"
     },
     {
       "method": "POST",
       "function": "hosted_document_import_finish",
       "file": "src/hosted/http_compat.py",
-      "line": 1284,
+      "line": 1291,
       "path": "/api/import/jobs/{job_id}/finish"
     },
     {
       "method": "POST",
       "function": "hosted_import_document_tabs",
       "file": "src/hosted/http_compat.py",
-      "line": 1291,
+      "line": 1298,
       "path": "/api/documents/import"
     },
     {
       "method": "GET",
       "function": "hosted_export_docx",
       "file": "src/hosted/http_compat.py",
-      "line": 1301,
+      "line": 1310,
       "path": "/api/export/docx"
     },
     {
       "method": "POST",
       "function": "hosted_export_pdf",
       "file": "src/hosted/http_compat.py",
-      "line": 1308,
+      "line": 1317,
       "path": "/api/export/pdf"
     },
     {
       "method": "POST",
       "function": "hosted_project_json_preview",
       "file": "src/hosted/http_compat.py",
-      "line": 1327,
+      "line": 1336,
       "path": "/api/projects/import-json/preview"
     },
     {
       "method": "POST",
       "function": "hosted_project_json_import",
       "file": "src/hosted/http_compat.py",
-      "line": 1336,
+      "line": 1345,
       "path": "/api/projects/import-json"
     },
     {
       "method": "POST",
       "function": "hosted_any_json_preview",
       "file": "src/hosted/http_compat.py",
-      "line": 1345,
+      "line": 1354,
       "path": "/api/json-import/preview"
     },
     {
       "method": "POST",
       "function": "hosted_any_json_import",
       "file": "src/hosted/http_compat.py",
-      "line": 1353,
+      "line": 1362,
       "path": "/api/json-import"
     },
     {
       "method": "GET",
       "function": "hosted_project_json_export",
       "file": "src/hosted/http_compat.py",
-      "line": 1361,
+      "line": 1370,
       "path": "/api/projects/{project_id}/export-json"
     },
     {
       "method": "GET",
       "function": "hosted_portable_review_status",
       "file": "src/hosted/http_compat.py",
-      "line": 1372,
+      "line": 1381,
       "path": "/api/portable-review/status"
     },
     {
       "method": "DELETE",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/portable-review/bookmark"
     },
     {
       "method": "GET",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/portable-review/package"
     },
     {
       "method": "GET",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/portable-review/reader"
     },
     {
       "method": "GET",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/portable-review/assets/{asset_name}"
     },
     {
       "method": "GET",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/reviews/{rid}/participants/{participant_id}/breadreview"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/portable-review/open-temporary"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/portable-review/unlock"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/portable-review/close-temporary"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/portable-review/import-current"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/portable-review/begin"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/portable-review/complete"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/portable-review/highlights"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/portable-review/comments"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/portable-review/suggestions"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/reviews/{rid}/participants/{participant_id}/breadreview"
     },
     {
       "method": "POST",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/reviews/import-breadreview"
     },
     {
       "method": "PUT",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/portable-review/bookmark"
     },
     {
       "method": "PUT",
       "function": "hosted_portable_review_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1395,
+      "line": 1404,
       "path": "/api/portable-review/feedback"
     },
     {
       "method": "DELETE",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup-destinations/{destination_id}"
     },
     {
       "method": "GET",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup-destinations"
     },
     {
       "method": "GET",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup-destinations/google-drive/config"
     },
     {
       "method": "GET",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup-destinations/google-drive/oauth/callback"
     },
     {
       "method": "GET",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup-destinations/google-drive/oauth/status/{state}"
     },
     {
       "method": "GET",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup-destinations/{destination_id}/backups"
     },
     {
       "method": "GET",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup-destinations/{destination_id}/discover"
     },
     {
       "method": "GET",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backups"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup-destinations/pick-folder"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup-destinations"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup-destinations/google-drive/oauth/start"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup-destinations/webdav"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup-destinations/{destination_id}/now"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup-destinations/catch-up"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup-destinations/{destination_id}/backups/{filename}/restore-as-project"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup"
     },
     {
       "method": "POST",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backups/{filename}/restore-as-project"
     },
     {
       "method": "PUT",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup-destinations/{destination_id}/webdav"
     },
     {
       "method": "PUT",
       "function": "hosted_backup_recovery_unavailable",
       "file": "src/hosted/http_compat.py",
-      "line": 1418,
+      "line": 1427,
       "path": "/api/backup-destinations/{destination_id}"
     },
     {

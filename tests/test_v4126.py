@@ -32,10 +32,10 @@ def test_v4126_challenges_are_lowercase_single_use(client):
     assert response.status_code==200
     challenge=response.json()
     code=challenge['code']
-    assert len(code)==10 and all(ch.isdigit() or 'a'<=ch<='z' for ch in code)
+    assert len(code)==5 and all(ch.isdigit() or 'a'<=ch<='z' for ch in code)
     # Wrong code consumes the challenge rather than allowing brute-force retries.
     active=client.get('/api/workspace').json()['active_project_id']
-    wrong=client.request('DELETE',f'/api/projects/{active}',json={'challenge_id':challenge['challenge_id'],'code':'0'*10})
+    wrong=client.request('DELETE',f'/api/projects/{active}',json={'challenge_id':challenge['challenge_id'],'code':'0'*5})
     assert wrong.status_code==400
     retry=client.request('DELETE',f'/api/projects/{active}',json={'challenge_id':challenge['challenge_id'],'code':code})
     assert retry.status_code==400

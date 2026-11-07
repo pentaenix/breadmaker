@@ -806,6 +806,7 @@
     "dynamic.html.text.p.b3ce6986": "Ajoutez ce fragment au projet actuel en une seule action annulable. La prose et les objets existants ne sont pas remplacés.",
     "dynamic.html.text.p.b46014e2": "Aucune sauvegarde complète du projet pour l’instant.",
     "dynamic.html.text.p.b7a06247": "Par défaut suit le thème Breadmaker actuel. Les couleurs personnalisées restent exactes.",
+    "import.replace_hosted_warning": "Remplacer le manuscrit principal par « {file} » ? Son texte et ses scènes actuels seront supprimés. Les autres onglets restent inchangés. Vous pouvez annuler après l’importation.",
     "import.append_warning": "Ajoutez ce document dans des onglets supplémentaires. Votre manuscrit actuel reste inchangé et vous pouvez annuler l’importation.",
     "import.existing_hosted_limit": "Remplacez ou ajoutez ici un document court contenant uniquement du texte. Les documents plus longs ou avec des images nécessitent un nouveau projet pour permettre la récupération.",
     "danger.type_code": "Saisissez exactement le code de {count} caractères suivant pour continuer.",
