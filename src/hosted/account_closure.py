@@ -15,9 +15,10 @@ import hashlib
 import json
 
 from auth.identity_platform import IdentityPlatformAdmissionStore
-from hosted.firestore.contracts import DocumentConflict, ProjectUnavailable
+from hosted.firestore.contracts import DocumentConflict, HostedValidationError, ProjectUnavailable
 from hosted.firestore.ids import identity_binding_id, require_opaque_id, require_project_id, require_user_id
 from hosted.storage.contracts import ObjectAlreadyExists, ObjectGenerationConflict
+from hosted.manuscript_lifecycle import read_project_lifecycle_status
 
 MAX_PROJECTS = 128
 PURGE_BLOCKERS = ('verified_independent_restorable_archive', 'provider_upload_quiescence',
@@ -34,6 +35,14 @@ def _hash(value):
 
 def _entry(row):
     return dict(row.data) if row is not None else {}
+
+
+def _project_status(row):
+    # Decode only the root state. Keep raw roots/children in the operator store.
+    try:
+        return read_project_lifecycle_status(row, default='active')
+    except HostedValidationError:
+        raise DocumentConflict('ACCOUNT_ERASURE_PROJECT_CHANGED') from None
 
 
 @dataclass(frozen=True)
@@ -144,8 +153,12 @@ class StagedAccountClosure:
         owned = self._owned(user)
         for pid in owned:
             def check(tx):
-                if tx.get(('projects', pid)) is None:
+                root = tx.get(('projects', pid))
+                if root is None:
                     raise ProjectUnavailable('PROJECT_NOT_FOUND')
+                if (_project_status(root) not in {'active', 'deleted'}
+                        or root.data.get('_bm_erasure_operation')):
+                    raise DocumentConflict('ACCOUNT_ERASURE_PROJECT_CHANGED')
                 self._sole_owner(tx, pid, user)
             self.documents.run_transaction(check)
         # The human approves this exact account and ALL its owned projects, not
@@ -229,14 +242,16 @@ class StagedAccountClosure:
                 def freeze_project(tx):
                     self._assert_request(tx, path, data)
                     root_path = ('projects', pid)
-                    root = _entry(tx.get(root_path))
+                    row = tx.get(root_path)
+                    root = _entry(row)
                     self._sole_owner(tx, pid, uid)
                     if not root:
                         raise ProjectUnavailable('PROJECT_NOT_FOUND')
+                    status = _project_status(row)
                     previous = root.get('_bm_erasure_operation')
-                    if previous == rid:
+                    if previous == rid and status == 'erasure_pending':
                         return
-                    if previous or root.get('status', 'active') not in {'active', 'deleted'}:
+                    if previous or status not in {'active', 'deleted'}:
                         raise DocumentConflict('ACCOUNT_ERASURE_PROJECT_CHANGED')
                     root.update(status='erasure_pending', _bm_erasure_operation=rid,
                                 generation=int(root.get('generation', 0))+1,
@@ -249,7 +264,9 @@ class StagedAccountClosure:
             def projects_done(tx):
                 self._assert_request(tx, path, data)
                 for pid in owned:
-                    if _entry(tx.get(('projects', pid))).get('_bm_erasure_operation') != rid:
+                    row = tx.get(('projects', pid))
+                    if (_entry(row).get('_bm_erasure_operation') != rid
+                            or _project_status(row) != 'erasure_pending'):
                         raise DocumentConflict('ACCOUNT_ERASURE_PROJECT_CHANGED')
                 updated = {**data, 'state': 'projects_fenced', 'owned_project_ids': list(owned)}
                 tx.set(path, updated)

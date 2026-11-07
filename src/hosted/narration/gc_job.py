@@ -6,6 +6,7 @@ import time
 
 from hosted.firestore.contracts import DocumentConflict, HostedValidationError
 from hosted.firestore.ids import require_project_id, require_user_id
+from hosted.manuscript_lifecycle import read_project_lifecycle_status
 from hosted.narration.gc import NarrationGC, _OBJECT, is_fence
 from hosted.narration.maintenance import NarrationMaintenanceStore
 from hosted.narration.recordings import ATTEMPTS, QUEUE, _intent
@@ -31,14 +32,19 @@ def retention_allows(tx, pid, owner, *, now):
             or root.data.get('narration_hold')):
         return False
     lock = tx.get(('account_erasure_locks', owner))
-    status = root.data.get('status')
-    if lock is not None or user.data.get('status', 'active') != 'active' or status == 'erasure_pending':
+    try:
+        status = read_project_lifecycle_status(root)
+    except HostedValidationError:
+        return False  # Unknown/malformed roots are held, never purge permission.
+    if (lock is not None or user.data.get('status', 'active') != 'active'
+            or status == 'erasure_pending' or root.data.get('_bm_erasure_operation')):
         # Do not reinterpret an ordinary account fence as purge authorization.
         rid = lock.data.get('request_id') if lock else None
         if not isinstance(rid, str) or not rid or '/' in rid:
             return False
         closure = tx.get(('account_erasures', rid))
-        return bool(closure is not None and closure.data.get('user_id') == owner
+        return bool(status == 'erasure_pending'
+                    and closure is not None and closure.data.get('user_id') == owner
                     and root.data.get('_bm_erasure_operation') == rid
                     and closure.data.get('state') == 'closed_retention_pending'
                     and pid in closure.data.get('owned_project_ids', [])
