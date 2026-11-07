@@ -11,6 +11,7 @@ from .contracts import (
     Transaction,
     require_collection_path,
     require_document_path,
+    require_string_membership_query,
 )
 
 _T = TypeVar("_T")
@@ -44,6 +45,14 @@ class _MemoryTransaction(Transaction):
     def count_collection(self, collection_path: tuple[str, ...]) -> int:
         prefix = require_collection_path(collection_path)
         return sum(len(path) == len(prefix)+1 and path[:-1] == prefix for path in self._owner._documents)
+
+    def query_collection_in(
+        self, collection_path: tuple[str, ...], *, field: str, values: list[str] | tuple[str, ...]
+    ) -> list[StoredDocument]:
+        prefix = require_collection_path(collection_path)
+        members = require_string_membership_query(field, values)
+        return [self._owner._get_locked(path) for path in sorted(self._owner._documents)
+            if path[:-1] == prefix and self._owner._documents[path][0].get(field) in members]
 
     def create(self, path: tuple[str, ...], data: Mapping[str, Any]) -> None:
         key = require_document_path(path)

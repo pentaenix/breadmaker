@@ -9,6 +9,7 @@ from .contracts import (
     Transaction,
     require_collection_path,
     require_document_path,
+    require_string_membership_query,
 )
 
 _T = TypeVar("_T")
@@ -52,6 +53,19 @@ class _GoogleTransaction(Transaction):
             tuple(doc.reference.path.split('/')),doc.to_dict() or {},_snapshot_revision(doc))
             for doc in snapshots if doc.exists}
         return [found.get(path) for path in keys]
+
+    def query_collection_in(
+        self, collection_path: tuple[str, ...], *, field: str, values: list[str] | tuple[str, ...]
+    ) -> list[StoredDocument]:
+        key = require_collection_path(collection_path)
+        members = require_string_membership_query(field, values)
+        try:
+            from google.cloud.firestore_v1.base_query import FieldFilter
+        except ImportError as exc:  # pragma: no cover
+            raise RuntimeError("HOSTED_FIRESTORE_SDK_REQUIRED") from exc
+        query = self._client.collection('/'.join(key)).where(filter=FieldFilter(field, 'in', list(members)))
+        return [StoredDocument(tuple(doc.reference.path.split('/')), doc.to_dict() or {},
+            _snapshot_revision(doc)) for doc in query.stream(transaction=self._transaction)]
 
     def count_collection(self, collection_path: tuple[str, ...]) -> int:
         key = require_collection_path(collection_path)

@@ -12,7 +12,8 @@ from copy import deepcopy
 
 from hosted.firestore.ids import require_opaque_id
 from hosted.firestore.contracts import (DocumentAlreadyExists, DocumentNotFound,
-    DocumentConflict, HostedValidationError, StoredDocument, require_document_path)
+    DocumentConflict, HostedValidationError, StoredDocument, require_document_path,
+    MAX_MEMBERSHIP_QUERY_VALUES)
 
 FORMAT_FIELD = '_bm_manuscript_format'
 REVISION_FIELD = '_bm_manuscript_revision'
@@ -32,7 +33,7 @@ def decode_project_root(row):
         return row
     data = deepcopy(dict(row.data))
     version = data.get(FORMAT_FIELD)
-    if version is not None:
+    if FORMAT_FIELD in data:
         if type(version) is not int or version != FORMAT_VERSION:
             raise HostedValidationError('HOSTED_MANUSCRIPT_FORMAT_UNSUPPORTED')
         status = data.get('status')
@@ -154,10 +155,17 @@ class _RevisionTransaction:
             return bool(tab is not None and _revision(data, REVISION_FIELD) == _revision(tab.data, HEAD_FIELD))
         if family == 'annotations':
             # Packed highlights have their own payload-level source checks.
+            # A physically missing legacy source remains a stale annotation.
+            # A present but hidden revision/tombstone is not an orphan grant.
             if data.get('block_id'):
-                return self._visible(self._physical(('projects', pid, 'blocks', data['block_id'])))
+                source = self._physical(('projects', pid, 'blocks', data['block_id']))
+                return source is None or self._visible(source)
             if data.get('chapter_id'):
-                return self._chapter(pid, data['chapter_id']) is not None
+                cid = data['chapter_id']
+                if not isinstance(cid, str):
+                    return False
+                source = self._physical(('projects', pid, 'chapters', cid))
+                return source is None or self._visible(source)
             return True
         refs = data.get(ASSET_REVISIONS_FIELD)
         if refs is None:
@@ -205,7 +213,11 @@ class _RevisionTransaction:
         prefix = tuple(path)
         # Lifecycle status is encoded only at physical project roots.
         status_query = prefix == ('projects',) and field == 'status'
-        rows = self.tx.query_collection(prefix, field=None if status_query else field, value=value)
+        if (not self.include_retained and len(prefix) == 3 and prefix[0] == 'projects'
+                and prefix[2] in {'chapters', 'blocks'} and self._enabled(prefix[1])):
+            rows = self._live_manuscript_rows(prefix, field=field, value=value)
+        else:
+            rows = self.tx.query_collection(prefix, field=None if status_query else field, value=value)
         found = {}
         for row in rows:
             self.original.setdefault(row.path, row)
@@ -219,6 +231,46 @@ class _RevisionTransaction:
             if row is not None and (field is None or row.data.get(field) == value):
                 result.append(row)
         return result
+
+    def _live_chapters(self, pid):
+        """Select current revision metadata without scanning retired novels.
+
+        Missing legacy tags are not indexed by Firestore. Legacy heads therefore
+        use their tab_id index until a tagged head is published. Activation must
+        preflight legacy orphans; this is not a physical inventory or GC view.
+        """
+        prefix = ('projects', pid, 'chapters')
+        rows, selectors = {}, set()
+        for tab in self.query_collection(('projects', pid, 'tabs')):
+            head = _revision(tab.data, HEAD_FIELD)
+            selector = ('tab_id', tab.path[-1]) if head is None else (REVISION_FIELD, head)
+            if selector in selectors:
+                continue
+            selectors.add(selector)
+            for row in self.tx.query_collection(prefix, field=selector[0], value=selector[1]):
+                self.original.setdefault(row.path, row)
+                rows[row.path] = row
+        for path in self.pending:
+            if path[:-1] == prefix:
+                rows[path] = self._physical(path)
+        return [row for path in sorted(rows) if (row := self.get(path)) is not None]
+
+    def _live_manuscript_rows(self, prefix, *, field, value):
+        pid, family = prefix[1:]
+        if family == 'chapters':
+            return self._live_chapters(pid)
+        # A chapter-scoped read needs only its parent, not all tab heads.
+        if field == 'chapter_id':
+            chapter = self._chapter(pid, value)
+            chapters = [] if chapter is None else [chapter]
+        else:
+            chapters = self._live_chapters(pid)
+        ids = [chapter.path[-1] for chapter in chapters]
+        rows = []
+        for offset in range(0, len(ids), MAX_MEMBERSHIP_QUERY_VALUES):
+            rows.extend(self.tx.query_collection_in(prefix, field='chapter_id',
+                values=ids[offset:offset + MAX_MEMBERSHIP_QUERY_VALUES]))
+        return rows
 
     def count_collection(self, path):
         prefix = tuple(path)

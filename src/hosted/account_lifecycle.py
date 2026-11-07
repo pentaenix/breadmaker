@@ -11,7 +11,7 @@ from copy import deepcopy
 import re
 
 from hosted.firestore.contracts import (DocumentAlreadyExists, DocumentConflict,
-    ProjectUnavailable, StoredDocument, require_document_path)
+    ProjectUnavailable, StoredDocument, require_document_path, require_string_membership_query)
 from hosted.storage.keys import require_object_name
 from hosted.import_staging import permits_unpublished_import, import_authority_paths
 
@@ -76,6 +76,22 @@ class _LifecycleTransaction:
                 before = self._original(key)
                 count += int(data is not None) - int(before is not None)
         return count
+
+    def query_collection_in(self, path, *, field, values):
+        prefix = tuple(path)
+        members = require_string_membership_query(field, values)
+        rows = self.tx.query_collection_in(prefix, field=field, values=members)
+        by_path = {}
+        for row in rows:
+            self.original.setdefault(row.path, row)
+            by_path[row.path] = row
+        for key, data in self.pending.items():
+            if key[:-1] == prefix:
+                if data is None:
+                    by_path.pop(key, None)
+                else:
+                    by_path[key] = self.get(key)
+        return [self._copy(row) for _, row in sorted(by_path.items()) if row.data.get(field) in members]
 
     def create(self, path, data):
         key = require_document_path(path)

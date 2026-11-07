@@ -54,6 +54,9 @@ class Transaction(Protocol):
     def query_collection(
         self, collection_path: tuple[str, ...], *, field: str | None = None, value: Any = None
     ) -> list[StoredDocument]: ...
+    def query_collection_in(
+        self, collection_path: tuple[str, ...], *, field: str, values: list[str] | tuple[str, ...]
+    ) -> list[StoredDocument]: ...
     def create(self, path: tuple[str, ...], data: Mapping[str, Any]) -> None: ...
     def set(self, path: tuple[str, ...], data: Mapping[str, Any]) -> None: ...
     def delete(self, path: tuple[str, ...]) -> None: ...
@@ -90,6 +93,23 @@ class DocumentStore(Protocol):
 
 class Clock(Protocol):
     def now_iso(self) -> str: ...
+
+
+MAX_MEMBERSHIP_QUERY_VALUES = 30
+
+
+def require_string_membership_query(field, values) -> tuple[str, ...]:
+    """One bounded Firestore IN predicate, limited to nonempty string values.
+
+    Keep this separate from equality queries: callers must explicitly opt into
+    the provider's disjunction bound rather than silently fetching everything.
+    """
+    if (not isinstance(field, str) or not field
+            or not isinstance(values, (list, tuple))
+            or not 1 <= len(values) <= MAX_MEMBERSHIP_QUERY_VALUES
+            or any(not isinstance(value, str) or not value for value in values)):
+        raise HostedValidationError("HOSTED_MEMBERSHIP_QUERY_INVALID")
+    return tuple(dict.fromkeys(values))
 
 
 def require_document_path(path: Iterable[str]) -> tuple[str, ...]:
