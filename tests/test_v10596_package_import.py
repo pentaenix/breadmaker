@@ -428,3 +428,44 @@ def test_account_closure_freezes_and_retains_import_prefix_across_retry():
     assert world.docs.get(path) is not None and world.docs.get(('projects', pid)) is None
     assert world.live.stat(name) is not None
     assert close(world, confirmation) == result
+
+
+def test_expiry_commits_terminal_fence_before_restart_safe_error(setup):
+    one, _, docs, _ = setup
+    service, progress = start(one, b'small');job = progress['job_id']
+    finish_steps(service, progress)
+    later = PackageImport(one.projects, clock=lambda: 10**12)
+    with pytest.raises(DocumentConflict, match='^HOSTED_IMPORT_EXPIRED$'): later.status(OWNER, job)
+    assert docs.get(service._path(OWNER, job)).data['phase'] == 'expired'
+    # Even a replica whose wall clock lags before the deadline cannot publish.
+    for replica in (service, later, PackageImport(one.projects, clock=lambda: 0)):
+        with pytest.raises(DocumentConflict, match='^HOSTED_IMPORT_EXPIRED$'): replica.finish(OWNER, job)
+    assert docs.get(('projects', stable_project_id('op_native_package'))) is None
+
+
+def test_pre_expiry_finish_retries_against_committed_expiry(setup, monkeypatch):
+    from hosted.firestore.memory import MemoryDocumentStore
+    from copy import deepcopy
+    one, _, docs, _ = setup
+    service, progress = start(one, b'small');job = progress['job_id']
+    finish_steps(service, progress)
+    original = docs.run_transaction
+    interrupted = False
+    def optimistic_attempt(fn, **kwargs):
+        nonlocal interrupted
+        if fn.__name__ == 'publish' and not interrupted:
+            interrupted = True
+            # Execute one pre-expiry provider attempt against an isolated view.
+            # Expiry then commits to the actual provider, invalidating that
+            # attempt's read set. The provider retry MUST read terminal expired.
+            shadow = MemoryDocumentStore()
+            shadow._documents = deepcopy(docs._documents)
+            shadow._next_revision = docs._next_revision
+            assert shadow.run_transaction(fn)['phase'] == 'completed'
+            with pytest.raises(DocumentConflict, match='^HOSTED_IMPORT_EXPIRED$'):
+                PackageImport(one.projects, clock=lambda: 10**12).status(OWNER, job)
+        return original(fn, **kwargs)
+    monkeypatch.setattr(docs, 'run_transaction', optimistic_attempt)
+    with pytest.raises(DocumentConflict, match='^HOSTED_IMPORT_EXPIRED$'): service.finish(OWNER, job)
+    assert interrupted and docs.get(service._path(OWNER, job)).data['phase'] == 'expired'
+    assert docs.get(('projects', stable_project_id('op_native_package'))) is None

@@ -23,7 +23,7 @@ no persistent in-process background job owns progress.
 The response carries `job_id`, `phase`, `next_batch`, `total_batches`,
 `completed_records`, `total_records`, `completed_images`, `total_images`,
 `source_sha256` and `ready`. Phases are `preparing`, `staging`, `ready`, `completed`
-and `cancelled`. Completed status and finish include the original `project` and
+and terminal `cancelled`/`expired`. Completed status and finish include the original `project` and
 `reload: true`, including after a lost response or replica change.
 
 Preparation validates the complete archive before content staging. A source hash,
@@ -38,7 +38,9 @@ Each batch verifies its exact path, generation, hash, decoded size and schema.
 Fresh job/reservation/account/erasure checks fence object reads and writes. The
 canonical metadata and chained cumulative receipt advance atomically; finish
 requires the complete expected receipt. Cancellation and expiry cannot race a
-late canonical write or project publication. Active jobs expire after 24 hours;
+late canonical write or project publication. Active jobs expire after 24 hours; expiry commits a terminal job fence before
+returning the restart-safe `HOSTED_IMPORT_EXPIRED` error. A concurrent finish must
+conflict with that fence or win and return its completed project.
 completed receipts remain replayable rather than expiring into a duplicate.
 
 Canonical per-record objects and complete nested parent paths remain readable by

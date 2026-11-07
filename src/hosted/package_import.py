@@ -106,7 +106,7 @@ class PackageImport:
             raise DocumentConflict('HOSTED_ACCOUNT_ERASURE_PENDING')
         return dict(user.data)
 
-    def _load_tx(self, tx, uid, job, *, active=False, expected=None):
+    def _load_tx(self, tx, uid, job, *, active=False, expected=None, check_expiry=True):
         paths = [self._path(uid, job), ('users', uid), ('account_erasure_locks', uid)]
         if expected is not None:
             paths += [('hosted_import_operations', expected['operation']), ('projects', expected['project_id']),
@@ -143,12 +143,26 @@ class PackageImport:
             raise DocumentConflict('HOSTED_IMPORT_PROJECT_ALREADY_PUBLISHED')
         if active and data['phase'] in {'completed', 'cancelled'}:
             raise DocumentConflict('HOSTED_IMPORT_ALREADY_PUBLISHED' if data['phase'] == 'completed' else 'HOSTED_IMPORT_CANCELLED')
-        if data['phase'] not in {'completed', 'cancelled'} and self.clock() > data['expires_at']:
+        if check_expiry and data['phase'] == 'expired':
             raise DocumentConflict('HOSTED_IMPORT_EXPIRED')
+        if check_expiry and data['phase'] not in {'completed', 'cancelled'} and self.clock() > data['expires_at']:
+            # This callback must not write then raise (the write would roll
+            # back). Only _load may emit restart-safe EXPIRED after committing
+            # the terminal job fence. Callers can retry/status to settle it.
+            raise DocumentConflict('HOSTED_IMPORT_EXPIRY_RECHECK_REQUIRED')
         return data
 
     def _load(self, uid, job, *, active=False):
-        return self.documents.run_transaction(lambda tx: self._load_tx(tx, uid, job, active=active))
+        def read(tx):
+            data = self._load_tx(tx, uid, job, active=active, check_expiry=False)
+            if data['phase'] not in {'completed', 'cancelled', 'expired'} and self.clock() > data['expires_at']:
+                data['phase'] = 'expired'
+                tx.set(self._path(uid, job), data)
+            return data
+        data = self.documents.run_transaction(read)
+        if data['phase'] == 'expired':
+            raise DocumentConflict('HOSTED_IMPORT_EXPIRED')
+        return data
 
     def _objects(self, uid, job, data):
         # Expected identity only selects fresh BatchGet paths; it is not cached
@@ -276,13 +290,15 @@ class PackageImport:
             old = tx.get(path)
             if old is None:
                 return None
-            data = self._load_tx(tx, uid, job)
+            data = self._load_tx(tx, uid, job, check_expiry=False)
             if data['source_sha256'] != source_hash or data['name_override'] != name:
                 raise DocumentConflict('HOSTED_IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_PACKAGE')
             return data
         old = self.documents.run_transaction(previous)
-        if old is not None and old['phase'] != 'preparing':
-            return self._public(old)
+        if old is not None:
+            old = self._load(uid, job)
+            if old['phase'] != 'preparing':
+                return self._public(old)
         from hosted.native_package import prepare_project_package
         plan = prepare_project_package(raw, pid, name_override=name_override)
         stamp = self.projects.domain.clock.now_iso()
@@ -309,6 +325,7 @@ class PackageImport:
             tx.create(path, data)
             return data
         data = self.documents.run_transaction(reserve)
+        data = self._load(uid, job)
         if data['phase'] != 'preparing':
             return self._public(data)
         batches = self._batches(plan, data)
@@ -591,7 +608,15 @@ class PackageImport:
         # The ordinary account lifecycle fence independently rechecks reservation.
         data = self._load(uid, job)
         with package_import_staging(data['operation'], uid):
-            return self._public(self.documents.run_transaction(publish))
+            try:
+                return self._public(self.documents.run_transaction(publish))
+            except DocumentConflict as exc:
+                if str(exc) != 'HOSTED_IMPORT_EXPIRY_RECHECK_REQUIRED':
+                    raise
+                # A finish that lost the clock boundary settles expiry in a
+                # separate committed transaction; if publication won meanwhile,
+                # return that original project instead of permitting a restart.
+                return self._public(self._load(uid, job))
 
     def cancel(self, uid, job):
         uid = require_user_id(uid)

@@ -29,7 +29,7 @@ def import_job_scope(path, data, lookup):
                 or data.get('project_id') != pid or not isinstance(data.get('source_sha256'), str)
                 or _SHA.fullmatch(data['source_sha256']) is None
                 or not isinstance(data.get('name_override'), str)
-                or data.get('phase') not in {'preparing', 'staging', 'ready', 'completed', 'cancelled'}):
+                or data.get('phase') not in {'preparing', 'staging', 'ready', 'completed', 'cancelled', 'expired'}):
             raise ValueError()
         reservation = _data(lookup(('hosted_import_operations', op)))
         if (not reservation or reservation.get('user_id') != uid
