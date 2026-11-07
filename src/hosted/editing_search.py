@@ -71,12 +71,17 @@ class HostedEditingSearch:
         generation,physical,labels=self.capture(pid,uid,tab)
         rows=[row for row in physical if FIELD not in row and str(row.get('body') or '').startswith('editing-search/v1:')]
         blocks={row['id'] for row in self.document_blocks(pid,uid,tab)[0]} if rows else set()
+        # Head counts describe the complete immutable body, including retained
+        # revision sources. Verify that body before counting its live projection.
+        packed=[item for head in physical if FIELD in head and head.get('tab_id')==tab
+            for item in self.packs.rows(pid,head)]
+        packed=self.packs._project_rows(pid,uid,generation,packed,strict=True) if packed else []
         result={}
         for kind in PASSES:
             marker=self.marker(labels,physical,kind)
             result[kind]=dict(marker=marker,matches=sum(row.get('block_id') in blocks and row.get('label_id')==(marker or {}).get('id')
-                and row.get('body')=='editing-search/v1:'+kind for row in rows)+sum(row[FIELD]['count'] for row in physical
-                    if FIELD in row and row.get('scan')==kind and row.get('tab_id')==tab and row.get('label_id')==(marker or {}).get('id')))
+                and row.get('body')=='editing-search/v1:'+kind for row in rows)+sum(row.get('body')=='editing-search/v1:'+kind
+                    and row.get('label_id')==(marker or {}).get('id') for row in packed))
         self.packs.fence(pid,uid,generation,strict=True)
         return {'searches':result}
 
@@ -115,6 +120,7 @@ class HostedEditingSearch:
             return self.remove_marker(pid,uid,generation,physical,marker,receipt_factory=receipt)
         if action=='clear':
             matches=[];blocks=None
+            raw,_=self.document_blocks(pid,uid,tab)
         else:
             raw,chapters=self.document_blocks(pid,uid,tab)
             chapter_ids={row.get('chapter_id') for row in raw}
@@ -143,9 +149,14 @@ class HostedEditingSearch:
                 marker['description']=DESCRIPTIONS[kind]
         marker['editing_search_categories']=sorted(set(marker.get('editing_search_categories',[]))|{kind})
         changes.append((('projects',pid,'markup_labels',marker['id']),before_marker,marker))
-        target_ids={row['id'] for row in raw} if action!='clear' else {
-            row['id'] for row in self.physical('manuscript_block',{'project_id':pid},user_id=uid,field='tab_id',value=tab)}
+        target_ids={row['id'] for row in raw}
         old_pack=self.packs.rows(pid,head) if head else []
+        live_pack=self.packs._project_rows(pid,uid,generation,old_pack,strict=True) if old_pack else []
+        live_ids={row['id'] for row in live_pack}
+        # Rechecking/clearing the active manuscript is not permission to erase
+        # retained revisions. Carry their exact validated entries into the next
+        # body; physical count/size caps and erasure inventory still include them.
+        hidden=[row for row in old_pack if row['id'] not in live_ids]
         old_regular=[row for row in physical if FIELD not in row and row.get('label_id')==marker['id']
             and row.get('block_id') in target_ids and row.get('annotation_type')=='highlight']
         regular_ids={row['id'] for row in old_regular}
@@ -153,7 +164,7 @@ class HostedEditingSearch:
         manual={key(row) for row in old_regular if row.get('body')!=stamp and not row.get('stale')}
         wanted={item[:4] for item in matches}
         removed=0;retained=[]
-        for row in [*old_pack,*old_regular]:
+        for row in [*live_pack,*old_regular]:
             if row.get('body')!=stamp:continue
             remove=action in {'clear','recheck'} or key(row) not in wanted or row.get('stale') or key(row) in manual
             if remove:
@@ -166,7 +177,7 @@ class HostedEditingSearch:
             new_head=dict(id=hid,annotation_id=hid,project_id=pid,tab_id=tab,scan=kind,
                 annotation_type='editing-pack/v1',label_id=marker['id'],generation=1,created_at=now,updated_at=now)
         else:new_head={**head,'generation':head['generation']+1,'updated_at':now}
-        packed=[row for row in retained if row['id'] not in regular_ids]
+        packed=hidden+[row for row in retained if row['id'] not in regular_ids]
         added=0
         for block,start,end,selected,prefix,suffix in matches:
             if (block,start,end,selected) in manual:continue
