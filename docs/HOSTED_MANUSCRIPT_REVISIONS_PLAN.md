@@ -1,6 +1,6 @@
 # Large manuscript revisions: implementation and activation plan
 
-Status: **inactive reader experiment, not a production feature**. The 10.5.95
+Status: **inactive reader/publication experiments, not a production feature**. The 10.5.95
 limits in `HOSTED_IMPORT_RECOVERY_LIMITS.md` still apply. No application/runtime
 constructs the experimental reader, no project is upgraded, and no import or Undo
 limit has been increased. A passing reader test is not evidence of a complete
@@ -51,8 +51,28 @@ History Restore or Checkpoint Apply; both currently fail closed independently.
   on subsequent root writes. It never masks `erasure_pending` or an erasure
   operation. The marker is not an authorization grant.
 
-The initial synthetic suite covers these contracts. It does not prove a runtime
-integration, old-build compatibility across every operator, or performance.
+The synthetic suites now also cover an inactive text-only resumable publisher
+(`revision_staging.py`), including a 100,000-word manuscript, one-pointer
+replacement/Undo, append, one-record large chapter deletion/Undo, cancellation,
+interruption, missing actor contexts, private-root rejection, malicious valid-hash
+plans, cross-project object pointers, and account/owner locks. A committed result
+retains its original Undo token; current availability is reported separately.
+Empty structural rollback closes only its action without mutating the project.
+
+Packed annotations now use the same source visibility policy. Existing missing
+sources remain stale/orphaned; physically present retired or tombstoned sources
+are hidden. A future GC must preserve that distinction rather than resurrect old
+annotations by removing their last source marker.
+
+Current chapter/block reads have an indexed, bounded membership-query prototype:
+61 live chapters require six logical provider reads, unchanged with 40,000
+retired/tombstoned blocks. This is synthetic query-count evidence, not production
+latency. Root-only compatibility is implemented for account closure and narration
+GC. Image helpers are separate and still require caller integration; see
+`HOSTED_REVISION_IMAGES_EXPERIMENT.md`.
+
+These tests do not prove runtime integration, every operator's rollback behavior,
+or production performance. No runtime constructs these services.
 
 ## Integration gates before enabling any writer
 
@@ -65,9 +85,9 @@ integration, old-build compatibility across every operator, or performance.
    services must share it, including raw chapter saves, annotation packs,
    narration sources, read-bundle cache attachment, assets, exports, Reviews,
    package generation, and browser navigation. Exercise legacy projects without
-   rewriting them. Packed annotation payloads currently return hidden-source rows
-   marked stale; they need explicit per-source visibility filtering. Never silently
-   filter a physical inventory through this view.
+   rewriting them. Packed annotation visibility is implemented, but editing-search
+   status/count and other direct consumer paths still require integration review.
+   Never silently filter a physical inventory through this view.
 
 2. **Root-only operator codec.** Account closure (`account_closure.py`), backup and
    recovery (`recovery_coverage.py`, recovery writer/planner), project trash,
@@ -112,34 +132,49 @@ integration, old-build compatibility across every operator, or performance.
    the minimum reader version and avoid reporting an unavailable upgraded project
    as a healthy rollback.
 
-## Capacity is presently an activation blocker
+## Capacity and deployment scope must remain explicit
 
-Visibility does not reduce physical storage. A current 10,000-record novel and one
-retained 10,000-record replacement already exceed the 12,000-row recovery catalog
-budget. Three such imports can exceed the 25,000-entry physical census budget.
-The census also budgets RPC calls and elapsed time. It already consumes provider
-pages at one consistent read time; merely adding another page token or raising a
-constant is not a complete resumable census protocol.
+Visibility does not reduce physical storage. A current 10,000-record novel and
+one retained replacement exceed the 12,000-row **experimental encrypted recovery**
+catalog budget. That scanner is not the normal hosted-v3 archive path, and the
+revision service rejects private/encrypted projects. The 25,000-entry physical
+census/manifests are operator preparation infrastructure, not the current HTTP
+project-delete implementation. Their production purge gate has no allow branch.
 
-Affected boundaries include `recovery_coverage.py`, provider
-`project_document_inventory`, `purge_planning.py`, and `erasure_census.py`. Normal
-navigation/bundle gates must count live rows; deletion/recovery proofs must count
-all physical rows. These are different questions and must never share a filtered
-answer. Repeated collection scans over all retired rows would also make navigation
-slower as history grows, contradicting the latency goal.
+Current project deletion is recoverable root tombstoning. Production account
+closure scans roots/members, closes identity, and explicitly leaves physical purge
+pending. Its critical format-compatibility requirement is root-state decoding,
+which must never mask erasure. Ordinary hosted-v3 archives have their own 64 MiB
+limit; the supplied staging archive CLI also caps physical collection reads at
+20,000 rows. Current production archive composition has not been verified here,
+so those CLI limits must not be described as live production behavior.
 
-Before activation, implement indexed/paged live reads plus retention-aware
-reclamation, and a bounded resumable physical inventory with durable cursor and
-snapshot authority (or another reviewed storage representation that avoids this
-unbounded accumulation). A valid cursor must preserve exact database/project,
-read time, root freeze, traversal stack, path set/digest, unknown-descendant
-coverage, and completion proof across crashes. An expired snapshot must restart;
-a partial scan must never authorize purge. Concurrent writers, membership changes,
-actor erasure, duplicate pages, token cycles, and provider failures require tests.
+Repeated retained revisions still create genuine storage growth and future
+physical recovery/deletion work. The new live block/chapter reader excludes old
+rows by indexed current-head/chapter queries, but physical inventories must remain
+complete. Do not feed filtered live counts into a deletion proof. Existing
+`erasure_census.py` already consumes provider pages at one consistent read time;
+adding another page token or raising a constant is not a complete resumable proof.
 
-A deliberately stated retained-storage quota could be a product choice after
-review, but a hidden small cap is not full novel support. Until this is resolved,
-the existing fail-closed bounded operations remain the safe production behavior.
+Before destructive revision GC, establish project-scoped pins for active heads,
+all restorable action before/after/current references (including departed actors'
+journals), staged upload attempts, History/Review/Checkpoint dependencies, trash,
+and holds. Claim collection durably before deletion and prevent new references.
+A delayed create-only upload can recreate an orphan after generation-CAS deletion;
+use an explicit attempt/quiescence or same-key fence protocol rather than assuming
+that two inventories prove uploads have stopped. No such GC is enabled here.
+
+A future read-only resumable physical inventory must bind exact database, scope,
+root freeze, read time, protocol and expiry. Persist authenticated immutable page
+shards before CAS-advancing a trusted checkpoint; resume by job ID, not arbitrary
+caller cursors. Validate ordering, uniqueness, unknown descendants and missing
+parents before declaring completion. Streaming manifest consumers must replace
+current all-entry materialization. GCS version/soft-delete inventory and upload
+quiescence are separate proofs. Inventory completion never authorizes purge.
+
+Keep both present product limits and future recovery limitations explicit. Do not
+claim unrestricted full-size support or physical deletion on the strength of an
+inactive reader or synthetic pointer-publication test.
 
 ## Required end-to-end evidence
 

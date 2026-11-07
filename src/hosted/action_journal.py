@@ -259,6 +259,17 @@ class ActionJournal:
             raise HostedValidationError('HOSTED_ACTION_DIRECTION_INVALID')
         def restore(tx):
             root, action = _load(tx, pid, uid, token)
+            if direction == 'rollback' and not action['records']:
+                # Staged imports have no visible mutations until publication.
+                # Closing an empty action must not invalidate their durable job
+                # or overwrite a different action's current structural head.
+                if action['state'] not in {'open', 'rolled_back'}:
+                    raise DocumentConflict('HOSTED_ACTION_STATE_CONFLICT')
+                if action['state'] == 'open':
+                    action['state'] = 'rolled_back'
+                    action['generation'] = int(root['generation'])
+                    tx.set(_path(uid, token), action)
+                return {'ok': True, 'changed': False}
             _same_generation(root, action)
             target_state = {'undo':'undone', 'redo':'finished', 'rollback':'rolled_back'}[direction]
             if action['state'] == target_state:

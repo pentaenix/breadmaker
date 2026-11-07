@@ -182,14 +182,15 @@ def test_legacy_missing_sources_stay_stale_and_editable(packed, wrapped):
             read(packed, 'get', iid=packed.rows[2]['id'])
 
 
-def test_revision_missing_source_is_hidden_but_visible_source_generation_change_is_stale(packed):
+def test_revision_missing_source_preserves_orphan_staleness(packed):
     packed.domain.update('manuscript_block', {'project_id': PID, 'block_id': packed.blocks[0]['id']},
         {'text_content': 'A new sentence.'}, user_id=UID)
     assert read(packed, 'get')['stale']
     packed.raw.run_transaction(lambda tx: tx.delete(ROOT + ('blocks', packed.blocks[0]['id'])))
-    assert read(packed, 'list') == []
-    with pytest.raises(DocumentNotFound):
-        read(packed, 'get')
+    orphan = read(packed, 'get')
+    assert orphan['stale']
+    assert orphan['id'] in {row['id'] for row in read(packed, 'list')}
+    assert orphan['id'] in {row['id'] for row in read(packed, 'view')}
 
 
 @pytest.mark.parametrize('reader', ['list', 'get', 'view'])

@@ -7812,32 +7812,37 @@
     },
     {
       "file": "src/hosted/account_closure.py",
-      "lines": 377,
+      "lines": 394,
       "symbols": [
         {
           "name": "_packed",
           "kind": "function",
-          "line": 27
+          "line": 28
         },
         {
           "name": "_hash",
           "kind": "function",
-          "line": 31
+          "line": 32
         },
         {
           "name": "_entry",
           "kind": "function",
-          "line": 35
+          "line": 36
+        },
+        {
+          "name": "_project_status",
+          "kind": "function",
+          "line": 40
         },
         {
           "name": "ClosurePlan",
           "kind": "class",
-          "line": 40
+          "line": 49
         },
         {
           "name": "StagedAccountClosure",
           "kind": "class",
-          "line": 56
+          "line": 65
         }
       ]
     },
@@ -7910,7 +7915,7 @@
     },
     {
       "file": "src/hosted/account_lifecycle.py",
-      "lines": 217,
+      "lines": 233,
       "symbols": [
         {
           "name": "_LifecycleTransaction",
@@ -7920,12 +7925,12 @@
         {
           "name": "AccountLifecycleDocumentStore",
           "kind": "class",
-          "line": 152
+          "line": 168
         },
         {
           "name": "AccountLifecycleObjectStore",
           "kind": "class",
-          "line": 169
+          "line": 185
         }
       ]
     },
@@ -7952,7 +7957,7 @@
     },
     {
       "file": "src/hosted/action_journal.py",
-      "lines": 320,
+      "lines": 331,
       "symbols": [
         {
           "name": "bind_action",
@@ -8228,7 +8233,7 @@
     },
     {
       "file": "src/hosted/editing_packs.py",
-      "lines": 275,
+      "lines": 294,
       "symbols": [
         {
           "name": "child",
@@ -8243,7 +8248,7 @@
         {
           "name": "PackedAnnotations",
           "kind": "class",
-          "line": 75
+          "line": 77
         }
       ]
     },
@@ -8389,7 +8394,7 @@
     },
     {
       "file": "src/hosted/firestore/contracts.py",
-      "lines": 112,
+      "lines": 132,
       "symbols": [
         {
           "name": "HostedStoreError",
@@ -8444,43 +8449,48 @@
         {
           "name": "DocumentStore",
           "kind": "class",
-          "line": 65
+          "line": 68
         },
         {
           "name": "Clock",
           "kind": "class",
-          "line": 91
+          "line": 94
+        },
+        {
+          "name": "require_string_membership_query",
+          "kind": "function",
+          "line": 101
         },
         {
           "name": "require_document_path",
           "kind": "function",
-          "line": 95
+          "line": 115
         },
         {
           "name": "require_collection_path",
           "kind": "function",
-          "line": 105
+          "line": 125
         }
       ]
     },
     {
       "file": "src/hosted/firestore/google_driver.py",
-      "lines": 201,
+      "lines": 215,
       "symbols": [
         {
           "name": "_GoogleTransaction",
           "kind": "class",
-          "line": 17
+          "line": 18
         },
         {
           "name": "_snapshot_revision",
           "kind": "function",
-          "line": 71
+          "line": 85
         },
         {
           "name": "GoogleFirestoreDocumentStore",
           "kind": "class",
-          "line": 79
+          "line": 93
         }
       ]
     },
@@ -8522,17 +8532,17 @@
     },
     {
       "file": "src/hosted/firestore/memory.py",
-      "lines": 183,
+      "lines": 192,
       "symbols": [
         {
           "name": "_MemoryTransaction",
           "kind": "class",
-          "line": 19
+          "line": 20
         },
         {
           "name": "MemoryDocumentStore",
           "kind": "class",
-          "line": 62
+          "line": 71
         }
       ]
     },
@@ -11467,6 +11477,17 @@
       ]
     },
     {
+      "file": "src/hosted/manuscript_lifecycle.py",
+      "lines": 24,
+      "symbols": [
+        {
+          "name": "read_project_lifecycle_status",
+          "kind": "function",
+          "line": 11
+        }
+      ]
+    },
+    {
       "file": "src/hosted/manuscript_read_cache.py",
       "lines": 159,
       "symbols": [
@@ -11509,37 +11530,37 @@
     },
     {
       "file": "src/hosted/manuscript_visibility.py",
-      "lines": 348,
+      "lines": 400,
       "symbols": [
         {
           "name": "decode_project_root",
           "kind": "function",
-          "line": 29
+          "line": 30
         },
         {
           "name": "encode_project_root",
           "kind": "function",
-          "line": 50
+          "line": 51
         },
         {
           "name": "_revision",
           "kind": "function",
-          "line": 64
+          "line": 65
         },
         {
           "name": "_copy",
           "kind": "function",
-          "line": 73
+          "line": 74
         },
         {
           "name": "_RevisionTransaction",
           "kind": "class",
-          "line": 77
+          "line": 78
         },
         {
           "name": "ManuscriptDocumentStore",
           "kind": "class",
-          "line": 315
+          "line": 367
         }
       ]
     },
@@ -11665,37 +11686,37 @@
     },
     {
       "file": "src/hosted/narration/gc_job.py",
-      "lines": 176,
+      "lines": 182,
       "symbols": [
         {
           "name": "_date",
           "kind": "function",
-          "line": 15
+          "line": 16
         },
         {
           "name": "retention_allows",
           "kind": "function",
-          "line": 24
+          "line": 25
         },
         {
           "name": "GoogleGCQueue",
           "kind": "class",
-          "line": 54
+          "line": 60
         },
         {
           "name": "inspect_object",
           "kind": "function",
-          "line": 85
+          "line": 91
         },
         {
           "name": "run_batch",
           "kind": "function",
-          "line": 118
+          "line": 124
         },
         {
           "name": "main",
           "kind": "function",
-          "line": 170
+          "line": 176
         }
       ]
     },
@@ -12830,6 +12851,78 @@
           "name": "main",
           "kind": "function",
           "line": 206
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/revision_images.py",
+      "lines": 328,
+      "symbols": [
+        {
+          "name": "_invalid",
+          "kind": "function",
+          "line": 33
+        },
+        {
+          "name": "prepare_revision_images",
+          "kind": "function",
+          "line": 37
+        },
+        {
+          "name": "VerifiedRevisionImages",
+          "kind": "class",
+          "line": 86
+        },
+        {
+          "name": "RevisionImageStager",
+          "kind": "class",
+          "line": 94
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/revision_staging.py",
+      "lines": 505,
+      "symbols": [
+        {
+          "name": "_json",
+          "kind": "function",
+          "line": 33
+        },
+        {
+          "name": "_view",
+          "kind": "function",
+          "line": 37
+        },
+        {
+          "name": "_require_actor",
+          "kind": "function",
+          "line": 44
+        },
+        {
+          "name": "_require_live_accounts",
+          "kind": "function",
+          "line": 52
+        },
+        {
+          "name": "_require_action",
+          "kind": "function",
+          "line": 66
+        },
+        {
+          "name": "enable_revision_format",
+          "kind": "function",
+          "line": 72
+        },
+        {
+          "name": "ManuscriptRevisionImport",
+          "kind": "class",
+          "line": 119
+        },
+        {
+          "name": "delete_chapter_revision",
+          "kind": "function",
+          "line": 483
         }
       ]
     },
