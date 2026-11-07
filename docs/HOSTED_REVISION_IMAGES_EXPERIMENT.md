@@ -22,22 +22,42 @@ All activation gates in `HOSTED_MANUSCRIPT_REVISIONS_PLAN.md` remain required.
    state. The helper independently requires the authenticated lifecycle actor,
    normal revision-aware domain, matching durable job, membership and generation.
    Neither a raw provider nor an unauthenticated background fallback is accepted.
-3. `stage(project_id, user_id, job, payloads)` revalidates all supplied bytes against
-   the durable manifest before writing any objects. Immutable objects are published
-   and verified through the established publisher. A second authorized transaction
-   merges only hidden asset references and stores `asset_receipts` in the job.
-   Content paths, full digests, dimensions, extensions, size and generation are
-   checked. Staging does not advance the project's semantic generation.
-4. Immediately before final publication, call `verify_for_publication` to re-read
-   the exact pinned object generations and verify their hashes and structure. Pass
-   its proof to `publication_changes(tx, project_id, user_id, job, proof)` inside
+3. Before legacy adoption, call `publish_sources(project_id, user_id, job,
+   payloads)`. It revalidates the whole payload set, publishes canonical immutable
+   image bytes, and stores complete pinned `asset_source_receipts` in a freshly
+   authorized transaction. It creates **no asset metadata**, so even an unaware
+   committed-asset reader cannot resolve new source URLs. Release the request's
+   payload map once this succeeds; adoption can now take multiple HTTP requests.
+   Publication uses at most eight worker threads, each with its own copied request
+   context. The object store must be an `AccountLifecycleObjectStore` bound to the
+   exact same lifecycle document fence as the revision reader.
+4. After adoption, repeatedly call `stage_sources(project_id, user_id, job, index)`
+   with the image offset returned as `asset_next_index`. Each call checks the
+   transaction-local format marker, validates **every** source receipt against the
+   project-scoped manifest before reading any source, and reads/inspects at most
+   eight images using their exact pinned generations. A fresh authorized
+   transaction atomically stages their hidden metadata, appends the matching
+   `asset_receipts` prefix and advances `asset_next_index`. The initial cursor is
+   zero with an empty receipt prefix. Omit `asset_source_receipts` until source
+   publication succeeds; a present partial list is invalid. Steps return `asset_next_index`, `asset_total`
+   and `assets_ready`; completed offsets replay read-only, while future or invalid
+   offsets reject. The parent owns the images phase inside preparing/staging and
+   must not advance manuscript-content batches until images are ready. Staging
+   never advances the project's semantic generation. The original `stage` API is
+   retained for inactive callers needing one atomic all-images metadata batch;
+   it now shares validation, bounded parallel publication and complete receipts.
+5. Immediately before final publication, call `verify_for_publication` to re-read
+   the exact pinned object generations and verify their hashes and structure.
+   Final verification requires the complete source and metadata receipt lists and
+   the finished image cursor. Pass its proof to
+   `publication_changes(tx, project_id, user_id, job, proof)` inside
    the caller's final retained-view structural journal transaction, before any
    transaction writes. That helper rechecks the durable job and receipts and
    returns `(path, after_image, False)` mutations. Apply these in the **same**
    transaction as tab pointers, ordering, generation advance and the import receipt.
    The proof is an internal binding, not a browser token or an authorization grant.
    The existing final content-ready and idempotency checks remain the caller's job.
-5. New image metadata becomes globally available only by removing pending revision
+6. New image metadata becomes globally available only by removing pending revision
    markers in that final transaction. Its exact before/after images belong in the
    journal. Undo restores the pending markers, while Redo removes them again.
    Previously global/legacy assets never gain markers or change metadata, preserving

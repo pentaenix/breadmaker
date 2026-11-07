@@ -7,12 +7,14 @@ Immutable bytes are never deleted, including on cancellation or failed commits.
 """
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+from contextvars import copy_context
 from copy import deepcopy
 from dataclasses import dataclass
 import hashlib
 import time
 
-from hosted.account_lifecycle import AccountLifecycleDocumentStore
+from hosted.account_lifecycle import AccountLifecycleDocumentStore, AccountLifecycleObjectStore
 from hosted.action_journal import ActionDocumentStore, _ACTION
 from hosted.firestore.contracts import DocumentConflict, DocumentNotFound, HostedValidationError
 from hosted.firestore.ids import require_opaque_id, require_project_id, require_user_id
@@ -23,6 +25,7 @@ from hosted.storage.publication import ImmutableObjectPublisher
 from security.image_security import HOSTED_DEFAULT_IMAGE_BYTES, UnsafeImage, inspect_hosted_image_bytes
 
 MAX_IMAGES = 64
+IMAGE_BATCH_SIZE = 8
 MAX_IMAGE_BYTES = 32 * 1024 * 1024
 _MANIFEST_FIELDS = frozenset({'asset_id', 'name', 'api_path', 'sha256', 'extension',
     'media_type', 'object_name', 'object_size', 'tab_ids'})
@@ -106,6 +109,9 @@ class RevisionImageStager:
         if (not isinstance(view, ManuscriptDocumentStore) or view.include_retained
                 or not isinstance(view.store, AccountLifecycleDocumentStore) or not callable(authorize)):
             raise HostedValidationError('HOSTED_MANUSCRIPT_REVISION_READER_REQUIRED')
+        if (not isinstance(domain.objects, AccountLifecycleObjectStore)
+                or domain.objects.documents is not view.store):
+            raise HostedValidationError('HOSTED_IMPORT_OBJECT_ERASURE_FENCE_REQUIRED')
         self.domain, self.view, self.authorize = domain, view, authorize
         self.retained = view.retained_view()
         self.publisher = ImmutableObjectPublisher(domain.objects)
@@ -205,10 +211,15 @@ class RevisionImageStager:
         if row.get('id') != aid or row.get('asset_id') != aid or type(row.get('generation')) is not int or row['generation'] < 1:
             raise DocumentConflict('HOSTED_REVISION_IMAGE_COLLISION')
 
-    def stage(self, pid, uid, job, payloads):
-        """Verify bounded bytes, then atomically store hidden metadata/receipts."""
-        _, before = self.retained.run_transaction(lambda tx: self._scope(tx, pid, uid, job))
-        manifest = before['asset_manifest']
+    @staticmethod
+    def _parallel(fn, entries):
+        # Every upload retains the request actor. Each task owns a fresh Context;
+        # sharing a single entered Context across threads would fail or leak it.
+        with ThreadPoolExecutor(max_workers=IMAGE_BATCH_SIZE) as pool:
+            futures = [pool.submit(copy_context().run, fn, entry) for entry in entries]
+            return [future.result() for future in futures]
+
+    def _publish_payloads(self, pid, manifest, payloads):
         if not isinstance(payloads, dict) or set(payloads) != {entry['asset_id'] for entry in manifest}:
             _invalid()
         # Validate the whole input set before writing the first immutable object.
@@ -217,74 +228,61 @@ class RevisionImageStager:
             for entry in manifest])
         if checked != manifest:
             _invalid()
-        receipts = []
-        for entry in manifest:
+        def publish(entry):
             obj = self.publisher.publish_bytes(entry['object_name'], payloads[entry['asset_id']],
                 max_bytes=HOSTED_DEFAULT_IMAGE_BYTES, content_type=entry['media_type'],
                 metadata={'breadmaker-entity': 'project_asset'}).object
             if obj.name != entry['object_name']:
                 raise DocumentConflict('HOSTED_REVISION_IMAGE_COLLISION')
-            receipts.append({**entry, 'object_generation': obj.generation, 'object_sha256': obj.sha256})
-        def commit(tx):
-            path, current = self._scope(tx, pid, uid, job)
-            if current['generation'] != before['generation'] or current['asset_manifest'] != manifest:
-                raise DocumentConflict('HOSTED_IMPORT_REQUEST_CHANGED')
-            if 'asset_receipts' in current and current['asset_receipts'] != receipts:
-                raise DocumentConflict('HOSTED_REVISION_IMAGE_RECEIPT_CHANGED')
-            changes = []
-            for receipt in receipts:
-                target = ('projects', pid, 'assets', receipt['asset_id'])
-                row = tx.get(target)
-                # A 96-bit URL prefix collision or a legacy duplicate must not
-                # make committed URL lookup ambiguous, even if IDs differ.
-                matches = tx.query_collection(target[:-1], field='name', value=receipt['name'])
-                if any(match.path != target for match in matches):
-                    raise DocumentConflict('HOSTED_REVISION_IMAGE_COLLISION')
-                refs = [{'tab_id': tid, 'revision': job} for tid in receipt['tab_ids']]
-                if row is not None:
-                    self._matches(row.data, receipt)
-                    previous = self._refs(tx, pid, row.data)
-                    if previous is None:
-                        continue  # Global/legacy availability is never narrowed.
-                    refs = [*previous, *(ref for ref in refs if ref not in previous)]
-                    if len(refs) > MAX_IMAGES:
-                        raise HostedValidationError('HOSTED_REVISION_IMAGE_REFERENCE_LIMIT')
-                    value = {**row.data, ASSET_REVISIONS_FIELD: refs}
-                else:
-                    public = {key: receipt[key] for key in _IDENTITY_FIELDS}
-                    aid = receipt['asset_id']; stamp = self.domain.clock.now_iso()
-                    public.update(id=aid, asset_id=aid)
-                    value = {**public, 'generation': 1, 'created_at': stamp, 'updated_at': stamp,
-                        '_bm_create_operation': current['operation'], '_bm_create_fingerprint': _fingerprint(public),
-                        ASSET_REVISIONS_FIELD: refs}
-                if row is None or value != row.data:
-                    changes.append((target, value, row is None))
-            # Every collision/reference read above precedes all writes.
-            for target, value, create in changes:
-                (tx.create if create else tx.set)(target, value)
-            if current.get('asset_receipts') != receipts:
-                tx.set(path, {**current, 'asset_receipts': receipts})
-            return deepcopy(receipts)
-        return self.retained.run_transaction(commit)
+            return {**entry, 'object_generation': obj.generation, 'object_sha256': obj.sha256}
+        return self._parallel(publish, manifest)
 
-    def verify_for_publication(self, pid, uid, job):
-        """Reverify pinned immutable bytes immediately before final transaction."""
-        _, data = self.retained.run_transaction(lambda tx: self._scope(tx, pid, uid, job))
-        receipts = self._receipts(data)
+    def _metadata_changes(self, tx, pid, job, current, receipts):
+        changes = []
         for receipt in receipts:
-            body = b''.join(self.domain.objects.read_chunks(receipt['object_name'],
-                max_bytes=HOSTED_DEFAULT_IMAGE_BYTES, if_generation_match=receipt['object_generation']))
-            if len(body) != receipt['object_size'] or hashlib.sha256(body).hexdigest() != receipt['sha256']:
-                raise HostedValidationError('HOSTED_REVISION_IMAGE_INTEGRITY_FAILED')
-            try:
-                inspect_hosted_image_bytes(body, receipt['extension'], byte_limit=HOSTED_DEFAULT_IMAGE_BYTES)
-            except UnsafeImage as exc:
-                raise HostedValidationError('HOSTED_REVISION_IMAGE_UNSAFE') from exc
-        return VerifiedRevisionImages(pid, uid, job, data['generation'], tuple(deepcopy(receipts)))
+            target = ('projects', pid, 'assets', receipt['asset_id'])
+            row = tx.get(target)
+            # A 96-bit URL prefix collision or a legacy duplicate must not
+            # make committed URL lookup ambiguous, even if IDs differ.
+            matches = tx.query_collection(target[:-1], field='name', value=receipt['name'])
+            if any(match.path != target for match in matches):
+                raise DocumentConflict('HOSTED_REVISION_IMAGE_COLLISION')
+            refs = [{'tab_id': tid, 'revision': job} for tid in receipt['tab_ids']]
+            if row is not None:
+                self._matches(row.data, receipt)
+                previous = self._refs(tx, pid, row.data)
+                if previous is None:
+                    continue  # Global/legacy availability is never narrowed.
+                refs = [*previous, *(ref for ref in refs if ref not in previous)]
+                if len(refs) > MAX_IMAGES:
+                    raise HostedValidationError('HOSTED_REVISION_IMAGE_REFERENCE_LIMIT')
+                value = {**row.data, ASSET_REVISIONS_FIELD: refs}
+            else:
+                public = {key: receipt[key] for key in _IDENTITY_FIELDS}
+                aid = receipt['asset_id']; stamp = self.domain.clock.now_iso()
+                public.update(id=aid, asset_id=aid)
+                value = {**public, 'generation': 1, 'created_at': stamp, 'updated_at': stamp,
+                    '_bm_create_operation': current['operation'], '_bm_create_fingerprint': _fingerprint(public),
+                    ASSET_REVISIONS_FIELD: refs}
+            if row is None or value != row.data:
+                changes.append((target, value, row is None))
+        return changes
 
     @staticmethod
-    def _receipts(data):
-        receipts = data.get('asset_receipts')
+    def _apply_metadata(tx, changes):
+        # Every collision/reference read must precede this write-only pass.
+        for target, value, create in changes:
+            (tx.create if create else tx.set)(target, value)
+
+    @staticmethod
+    def _same_source(before, current):
+        if (current['generation'] != before['generation']
+                or current['asset_manifest'] != before['asset_manifest']):
+            raise DocumentConflict('HOSTED_IMPORT_REQUEST_CHANGED')
+
+    @staticmethod
+    def _validated_receipts(data, field):
+        receipts = data.get(field)
         if not isinstance(receipts, list) or len(receipts) != len(data['asset_manifest']):
             raise DocumentConflict('HOSTED_REVISION_IMAGES_NOT_STAGED')
         for receipt, entry in zip(receipts, data['asset_manifest'], strict=True):
@@ -293,6 +291,141 @@ class RevisionImageStager:
                     or receipt['object_sha256'] != entry['sha256']
                     or type(receipt['object_generation']) is not int or receipt['object_generation'] < 1):
                 raise HostedValidationError('HOSTED_REVISION_IMAGE_RECEIPT_INVALID')
+        return receipts
+
+    @classmethod
+    def _source_progress(cls, data):
+        sources = cls._validated_receipts(data, 'asset_source_receipts')
+        cursor, receipts = data.get('asset_next_index', 0), data.get('asset_receipts', [])
+        if (type(cursor) is not int or not 0 <= cursor <= len(sources)
+                or cursor != len(sources) and cursor % IMAGE_BATCH_SIZE
+                or not isinstance(receipts, list) or receipts != sources[:cursor]):
+            raise HostedValidationError('HOSTED_REVISION_IMAGE_CURSOR_INVALID')
+        return sources, cursor
+
+    @staticmethod
+    def _progress(total, cursor):
+        return {'asset_next_index': cursor, 'asset_total': total, 'assets_ready': cursor == total}
+
+    @staticmethod
+    def _require_adopted(tx, pid):
+        # This is the retained revision transaction's read-only codec capability.
+        # It checks the root in the same snapshot, without unwrapping a provider.
+        enabled = getattr(tx, '_enabled', None)
+        if not callable(enabled) or not enabled(pid):
+            raise HostedValidationError('HOSTED_REVISION_IMAGE_FORMAT_REQUIRED')
+
+    def publish_sources(self, pid, uid, job, payloads):
+        """Persist only canonical immutable bytes and pinned source receipts.
+
+        Safe before legacy adoption: this method never creates asset metadata.
+        The payload map may be released after the receipt transaction succeeds.
+        """
+        _, before = self.retained.run_transaction(lambda tx: self._scope(tx, pid, uid, job))
+        receipts = self._publish_payloads(pid, before['asset_manifest'], payloads)
+        def commit(tx):
+            path, current = self._scope(tx, pid, uid, job)
+            self._same_source(before, current)
+            if 'asset_source_receipts' in current:
+                sources, _ = self._source_progress(current)
+                if sources != receipts:
+                    raise DocumentConflict('HOSTED_REVISION_IMAGE_RECEIPT_CHANGED')
+            else:
+                if current.get('asset_receipts', []) != [] or current.get('asset_next_index', 0) != 0:
+                    raise HostedValidationError('HOSTED_REVISION_IMAGE_CURSOR_INVALID')
+                tx.set(path, {**current, 'asset_source_receipts': receipts,
+                    'asset_receipts': [], 'asset_next_index': 0})
+            return deepcopy(receipts)
+        return self.retained.run_transaction(commit)
+
+    def _read_source(self, receipt):
+        # All source schemas/project keys are validated before reaching reads.
+        body = b''.join(self.domain.objects.read_chunks(receipt['object_name'],
+            max_bytes=receipt['object_size'], if_generation_match=receipt['object_generation']))
+        if len(body) != receipt['object_size'] or hashlib.sha256(body).hexdigest() != receipt['sha256']:
+            raise HostedValidationError('HOSTED_REVISION_IMAGE_INTEGRITY_FAILED')
+        try:
+            inspect_hosted_image_bytes(body, receipt['extension'], byte_limit=HOSTED_DEFAULT_IMAGE_BYTES)
+        except UnsafeImage as exc:
+            raise HostedValidationError('HOSTED_REVISION_IMAGE_UNSAFE') from exc
+        # Callers only need verification, not another retained in-memory copy.
+        return receipt
+
+    def stage_sources(self, pid, uid, job, index):
+        """Stage <=8 pinned sources per request, with ordered cursor CAS/replay."""
+        def load(tx):
+            _, data = self._scope(tx, pid, uid, job)
+            self._require_adopted(tx, pid)
+            return data
+        before = self.retained.run_transaction(load)
+        sources, cursor = self._source_progress(before)
+        if (type(index) is not int or not 0 <= index <= len(sources)
+                or index != len(sources) and index % IMAGE_BATCH_SIZE):
+            raise HostedValidationError('HOSTED_REVISION_IMAGE_BATCH_INVALID')
+        if index > cursor:
+            raise DocumentConflict('HOSTED_REVISION_IMAGE_BATCH_OUT_OF_ORDER')
+        if index < cursor or index == len(sources):
+            return self._progress(len(sources), cursor)
+        batch = sources[index:index + IMAGE_BATCH_SIZE]
+        self._parallel(self._read_source, batch)
+        def commit(tx):
+            path, current = self._scope(tx, pid, uid, job)
+            self._require_adopted(tx, pid)
+            self._same_source(before, current)
+            current_sources, current_cursor = self._source_progress(current)
+            if current_sources != sources:
+                raise DocumentConflict('HOSTED_REVISION_IMAGE_RECEIPT_CHANGED')
+            if current_cursor > index:
+                return self._progress(len(sources), current_cursor)
+            if current_cursor != index:
+                raise DocumentConflict('HOSTED_REVISION_IMAGE_BATCH_OUT_OF_ORDER')
+            changes = self._metadata_changes(tx, pid, job, current, batch)
+            next_index = index + len(batch)
+            self._apply_metadata(tx, changes)
+            tx.set(path, {**current, 'asset_next_index': next_index, 'asset_receipts': deepcopy(sources[:next_index])})
+            return self._progress(len(sources), next_index)
+        return self.retained.run_transaction(commit)
+
+    def stage(self, pid, uid, job, payloads):
+        """Compatibility helper: verify all bytes and stage one metadata batch.
+
+        New multi-request imports use publish_sources/stage_sources instead. This
+        existing inactive API keeps its atomic all-images metadata behavior.
+        """
+        _, before = self.retained.run_transaction(lambda tx: self._scope(tx, pid, uid, job))
+        receipts = self._publish_payloads(pid, before['asset_manifest'], payloads)
+        def commit(tx):
+            path, current = self._scope(tx, pid, uid, job)
+            self._require_adopted(tx, pid)
+            self._same_source(before, current)
+            if 'asset_source_receipts' in current:
+                sources, _ = self._source_progress(current)
+                if sources != receipts:
+                    raise DocumentConflict('HOSTED_REVISION_IMAGE_RECEIPT_CHANGED')
+            elif 'asset_receipts' in current and current['asset_receipts'] != receipts:
+                raise DocumentConflict('HOSTED_REVISION_IMAGE_RECEIPT_CHANGED')
+            changes = self._metadata_changes(tx, pid, job, current, receipts)
+            self._apply_metadata(tx, changes)
+            if (current.get('asset_receipts') != receipts or current.get('asset_source_receipts') != receipts
+                    or current.get('asset_next_index') != len(receipts)):
+                tx.set(path, {**current, 'asset_source_receipts': deepcopy(receipts),
+                    'asset_receipts': deepcopy(receipts), 'asset_next_index': len(receipts)})
+            return deepcopy(receipts)
+        return self.retained.run_transaction(commit)
+
+    def verify_for_publication(self, pid, uid, job):
+        """Reverify pinned immutable bytes immediately before final transaction."""
+        _, data = self.retained.run_transaction(lambda tx: self._scope(tx, pid, uid, job))
+        receipts = self._receipts(data)
+        self._parallel(self._read_source, receipts)
+        return VerifiedRevisionImages(pid, uid, job, data['generation'], tuple(deepcopy(receipts)))
+
+    @classmethod
+    def _receipts(cls, data):
+        receipts = cls._validated_receipts(data, 'asset_receipts')
+        sources, cursor = cls._source_progress(data)
+        if cursor != len(sources) or sources != receipts:
+            raise DocumentConflict('HOSTED_REVISION_IMAGES_NOT_STAGED')
         return receipts
 
     def publication_changes(self, tx, pid, uid, job, verified):

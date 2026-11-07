@@ -13,7 +13,7 @@ from hosted.firestore.repositories import HostedProjectRepository
 from hosted.manuscript_visibility import ASSET_REVISIONS_FIELD, FORMAT_FIELD, HEAD_FIELD, ManuscriptDocumentStore
 from hosted.revision_images import RevisionImageStager, prepare_revision_images
 from hosted.runtime_services import HostedCommittedAssetStore
-from hosted.storage.contracts import ObjectIntegrityError, ObjectGenerationConflict
+from hosted.storage.contracts import ObjectIntegrityError
 from tests.test_v10594 import actor, fenced_replicas
 from tests.test_v10353 import OWNER
 
@@ -288,9 +288,9 @@ def test_receipt_tampering_publication_actor_and_bound_scope_are_rejected():
             value['asset_receipts'][0]['object_generation'] += 1
             tx.set(path, value)
         raw.run_transaction(tamper)
-        with bind_action('synthetic', pid, OWNER), pytest.raises(DocumentConflict, match='VERIFICATION_CHANGED'):
+        with bind_action('synthetic', pid, OWNER), pytest.raises(HostedValidationError, match='CURSOR_INVALID'):
             make().retained.run_transaction(lambda tx: make().publication_changes(tx, pid, OWNER, job, proof))
-        with pytest.raises(ObjectGenerationConflict):
+        with pytest.raises(HostedValidationError, match='CURSOR_INVALID'):
             make().verify_for_publication(pid, OWNER, job)
 
 
