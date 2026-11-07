@@ -181,7 +181,7 @@ class HostedSandboxAccountClosure:
         if previous is not None:
             return self._progress(self._load(uid, receipt_id))
         preview = self.planner.preview(uid)
-        if (preview.owned_projects or preview.missing_project_roots
+        if (preview.owned_projects or preview.missing_project_roots or preview.staged_import_projects
                 or 'HOSTED_ACCOUNT_UNCLASSIFIED_USER_REFERENCES' in preview.blockers):
             raise DocumentConflict('HOSTED_ACCOUNT_SANDBOX_PROJECTS_OR_UNKNOWN_REFERENCES')
         with self.documents._lock:

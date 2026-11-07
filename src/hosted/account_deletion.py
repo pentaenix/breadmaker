@@ -36,6 +36,9 @@ class AccountDeletionPreview:
     exhaustive_for_memory: bool = True
     physical_deletion_authorized: bool = False
     retained_purge_audit_paths: tuple[tuple[str, ...], ...] = ()
+    staged_import_projects: tuple[str, ...] = ()
+    staged_import_document_paths: tuple[tuple[str, ...], ...] = ()
+    staged_import_object_names: tuple[str, ...] = ()
 
     def public(self) -> dict:
         """Suppress account/provider identifiers and object paths in UI summaries."""
@@ -50,6 +53,9 @@ class AccountDeletionPreview:
             'fingerprint': self.fingerprint,
             'physical_deletion_authorized': False,
             'retained_purge_audit_count': len(self.retained_purge_audit_paths),
+            'staged_import_project_count': len(self.staged_import_projects),
+            'staged_import_document_count': len(self.staged_import_document_paths),
+            'staged_import_object_count': len(self.staged_import_object_names),
         }
 
 
@@ -86,13 +92,24 @@ class HostedAccountDeletionPlanner:
             raise DocumentConflict('HOSTED_ACCOUNT_PROFILE_MISSING')
         owned, collaborating, missing = set(), set(), set()
         bindings, account_docs, unknown, audit_docs = set(), set(), set(), set()
+        from hosted.package_import_ownership import import_job_scope, import_child_owned
+        jobs = {}
+        for path, data, _ in before:
+            if len(path) == 4 and path[:3] == ('users', uid, 'package_imports'):
+                try:
+                    pid = import_job_scope(path, data, lambda target: by_path.get(target, (None,))[0])
+                    jobs[path] = (data, pid)
+                except (DocumentConflict, ValueError):
+                    unknown.add(path)
         for path, data, _ in before:
             if path[:2] == ('users', uid):
                 account_docs.add(path)
                 if len(path) > 2:
-                    # A future user subcollection needs an explicit owner and
-                    # retention policy before it can be erased.
-                    unknown.add(path)
+                    job = jobs.get(path[:4])
+                    known = job is not None and (path == path[:4] or import_child_owned(path, data, path[:4], job[0]))
+                    # Unknown descendants remain a hard completeness blocker.
+                    if not known:
+                        unknown.add(path)
             elif len(path) == 4 and path[:1] == ('projects',) and path[2:] == ('members', uid):
                 pid = require_project_id(path[1])
                 role = data.get('role')
@@ -141,13 +158,21 @@ class HostedAccountDeletionPlanner:
                 account_docs.add(path)
         if owned & collaborating:
             raise DocumentConflict('HOSTED_ACCOUNT_MEMBERSHIP_INCONSISTENT')
+        staged = {pid for _, pid in jobs.values() if ('projects', pid) not in by_path}
+        staged_docs = {path for path, _, _ in before if len(path) >= 2 and path[0] == 'projects' and path[1] in staged}
+        def staged_objects():
+            return tuple(sorted((o.name, o.generation, o.sha256) for pid in staged
+                                for o in self.content.list_prefix(f'projects/{pid}/')))
+        staged_names = staged_objects()
+        # Even empty prefixes retain their binding until separately reviewed;
+        # never erase the reservation and strand an in-flight provider upload.
         names = tuple(sorted((o.name, o.generation, o.sha256)
                              for o in self.content.list_prefix(f'users/{uid}/')))
         recoveries = []
         for pid in sorted(owned):
             recoveries.extend((o.name, o.generation, o.sha256) for o in
                               self.recovery.list_prefix(f'recovery/v1/projects/{pid}/'))
-        if len(before) + len(names) + len(recoveries) > MAX_ACCOUNT_ITEMS:
+        if len(before) + len(names) + len(staged_names) + len(recoveries) > MAX_ACCOUNT_ITEMS:
             raise ValueError('HOSTED_ACCOUNT_INVENTORY_TOO_LARGE')
         # All Firestore data and account-owned objects must remain stable while
         # inventorying; the preview is never considered an execution authority.
@@ -155,6 +180,8 @@ class HostedAccountDeletionPlanner:
             raise DocumentConflict('HOSTED_ACCOUNT_CONCURRENT_MUTATION')
         if tuple(sorted((o.name, o.generation, o.sha256) for o in
                         self.content.list_prefix(f'users/{uid}/'))) != names:
+            raise DocumentConflict('HOSTED_ACCOUNT_CONCURRENT_MUTATION')
+        if staged_objects() != staged_names:
             raise DocumentConflict('HOSTED_ACCOUNT_CONCURRENT_MUTATION')
         renewed_archives = []
         for pid in sorted(owned):
@@ -166,6 +193,8 @@ class HostedAccountDeletionPlanner:
                     'HOSTED_ACCOUNT_PROVIDER_IDENTITY_REVOCATION_REQUIRED']
         if owned:
             blockers.append('HOSTED_ACCOUNT_OWNED_PROJECT_RETENTION_AND_PURGE_REQUIRED')
+        if staged:
+            blockers.append('HOSTED_ACCOUNT_STAGED_IMPORT_RETENTION_AND_PURGE_REQUIRED')
         if collaborating:
             blockers.append('HOSTED_ACCOUNT_COLLABORATION_DETACH_REQUIRED')
         if missing:
@@ -174,13 +203,14 @@ class HostedAccountDeletionPlanner:
             blockers.append('HOSTED_ACCOUNT_UNCLASSIFIED_USER_REFERENCES')
         # Include all observed revisions, not just paths. No PII leaves the
         # operator boundary; callers see a hash and aggregate counts.
-        relevant_paths = account_docs | audit_docs | {('projects', pid) for pid in owned | collaborating
+        relevant_paths = account_docs | audit_docs | staged_docs | {('projects', pid) for pid in owned | collaborating
                                           if ('projects', pid) in by_path}
         canonical = {
             'uid': uid,
             'docs': [[list(path), by_path[path][1]] for path in sorted(relevant_paths)],
             'owned': sorted(owned), 'collaborations': sorted(collaborating),
             'account_objects': names, 'recovery': sorted(recoveries),
+            'staged_import_projects': sorted(staged), 'staged_import_objects': staged_names,
             'retained_audits': [list(p) for p in sorted(audit_docs)],
         }
         fingerprint = hashlib.sha256(json.dumps(canonical,sort_keys=True,
@@ -190,4 +220,6 @@ class HostedAccountDeletionPlanner:
             tuple(sorted(missing)), tuple(sorted(bindings)), tuple(sorted(account_docs)),
             tuple(name for name, _, _ in names), len(recoveries),
             tuple(sorted(blockers)), fingerprint, retained_purge_audit_paths=tuple(sorted(audit_docs)),
+            staged_import_projects=tuple(sorted(staged)), staged_import_document_paths=tuple(sorted(staged_docs)),
+            staged_import_object_names=tuple(name for name, _, _ in staged_names),
         )

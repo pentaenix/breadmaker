@@ -22,7 +22,7 @@ from urllib.parse import quote, urlparse
 from fastapi import APIRouter, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from starlette.concurrency import run_in_threadpool
-from anyio import CapacityLimiter
+from anyio import CapacityLimiter, to_thread
 
 from auth.identity import AuthorizationError
 from auth.sessions import AuthenticationError
@@ -40,6 +40,7 @@ platform_router=APIRouter()
 product_router=APIRouter()
 _read_cache_capacity=CapacityLimiter(1)
 _bundled_book_capacity=BoundedSemaphore(2)
+_package_import_capacity=CapacityLimiter(2)
 
 _PROJECT_PATH_RE=re.compile(r'^/api/projects/([0-9a-f]{32})(?:/|$)')
 _SHELL_PROJECT_RE=re.compile(r'^/p/[0-9a-f]{32}(?:/(?:canvas|maps|tasks|reviews))?/?$')
@@ -133,6 +134,7 @@ async def hosted_request_boundary(request: Request, call_next):
             'mode':runtime.mode,'capabilities':runtime.capabilities.public(),'metadata':runtime.capabilities.metadata(),
             'auth':runtime.sessions.metadata(),'project_header':'X-Breadmaker-Project','actor_header':None if runtime.sessions.requires_authentication else 'X-Breadmaker-User',
         },headers={'Cache-Control':'no-store'})
+    package_import_path=(path=='/api/projects/import' or path.startswith('/api/projects/import/jobs/'))
     mutating=path.startswith('/api/') and request.method.upper() not in {'GET','HEAD','OPTIONS'}
     if mutating:
         origin=str(request.headers.get('origin') or '').strip()
@@ -152,7 +154,7 @@ async def hosted_request_boundary(request: Request, call_next):
             project_id=''
             match=_PROJECT_PATH_RE.match(path)
             if match:project_id=match.group(1)
-            if not project_id and path.startswith('/api/') and path not in _PUBLIC_API and path not in {'/api/workspace','/api/profile','/api/profiles','/api/projects','/api/projects/import','/api/data/export','/api/identity/current'}:
+            if not project_id and not package_import_path and path.startswith('/api/') and path not in _PUBLIC_API and path not in {'/api/workspace','/api/profile','/api/profiles','/api/projects','/api/projects/import','/api/data/export','/api/identity/current'}:
                 project_id=str(request.headers.get('x-breadmaker-project') or request.query_params.get('project_id') or '')
                 if not project_id:
                     try:project_id=str(await run_in_threadpool(lambda:runtime.projects.profile_project_target(runtime.identity.active_profile_id())) or '')
@@ -178,6 +180,8 @@ async def hosted_request_boundary(request: Request, call_next):
                     return JSONResponse({'detail':'HOSTED_IDEMPOTENCY_KEY_INVALID'},status_code=400)
             cm=_provider_binding(runtime.context,project_id,user_id=user_id or None) if project_id else nullcontext(None)
             action_headers=request.headers.getlist('x-breadmaker-action')
+            if package_import_path and action_headers:
+                return JSONResponse({'detail':'HOSTED_IMPORT_ACTION_CONTEXT_FORBIDDEN'},status_code=400)
             if len(action_headers)>1:
                 return JSONResponse({'detail':'HOSTED_ACTION_HEADER_INVALID'},status_code=400)
             action_token=action_headers[0] if action_headers and mutating and not path.startswith('/api/undo/') else None
@@ -395,16 +399,58 @@ def hosted_project_export(project_id:str):
     except Exception as exc:raise _error(exc)
     return Response(payload,media_type='application/zip',headers={'Content-Disposition':'attachment; filename=project.breadmaker','Cache-Control':'private, no-store'})
 
+async def _package_import_call(function, *args, **kwargs):
+    # AnyIO copies request identity/context and bounds simultaneous expensive
+    # package requests. Threads complete only this request's finite work.
+    context=copy_context()
+    return await to_thread.run_sync(lambda:context.run(function,*args,**kwargs),limiter=_package_import_capacity)
+
+
 @platform_router.post('/api/projects/import')
-async def hosted_project_import(file:UploadFile=File(...),name:str=''):
+async def hosted_project_import(file:UploadFile=File(...),name:str='',resumable:bool=False):
     try:
-        # Inline package decoding has a bounded memory budget. Larger durable
-        # transfers require the M9/M10 direct-job/object-store protocol.
         budget=min(64*1024*1024,_HOSTED_LIMITS.project_package_bytes if _HOSTED_LIMITS else 64*1024*1024)
         payload=await _bounded_upload(file,max_bytes=budget)
-        project=HostedProjectPackageService(runtime.projects).import_bytes(payload,_uid(),name_override=name or None,operation=operation_for('project_import'))
+        uid=_uid();operation=operation_for('project_import')
+        if resumable:
+            if operation is None:raise HostedValidationError('HOSTED_IMPORT_IDEMPOTENCY_KEY_REQUIRED')
+            from hosted.package_import import PackageImport
+            return await _package_import_call(PackageImport(runtime.projects).begin,payload,uid,
+                                               name_override=name or None,operation=operation)
+        project=await _package_import_call(HostedProjectPackageService(runtime.projects).import_bytes,
+                    payload,uid,name_override=name or None,operation=operation)
+        return {'project':project,'reload':True}
+    except HTTPException:raise
     except Exception as exc:raise _error(exc)
-    return {'project':project,'reload':True}
+
+
+@platform_router.get('/api/projects/import/jobs/{job_id}')
+async def hosted_package_import_status(job_id:str):
+    from hosted.package_import import PackageImport
+    try:return await _package_import_call(PackageImport(runtime.projects).status,_uid(),job_id)
+    except Exception as exc:raise _error(exc)
+
+
+@platform_router.post('/api/projects/import/jobs/{job_id}/step')
+async def hosted_package_import_step(job_id:str,batch:int):
+    from hosted.package_import import PackageImport
+    try:return await _package_import_call(PackageImport(runtime.projects).step,_uid(),job_id,batch)
+    except Exception as exc:raise _error(exc)
+
+
+@platform_router.post('/api/projects/import/jobs/{job_id}/finish')
+async def hosted_package_import_finish(job_id:str):
+    from hosted.package_import import PackageImport
+    try:return await _package_import_call(PackageImport(runtime.projects).finish,_uid(),job_id)
+    except Exception as exc:raise _error(exc)
+
+
+@platform_router.post('/api/projects/import/jobs/{job_id}/cancel')
+async def hosted_package_import_cancel(job_id:str):
+    from hosted.package_import import PackageImport
+    try:return await _package_import_call(PackageImport(runtime.projects).cancel,_uid(),job_id)
+    except Exception as exc:raise _error(exc)
+
 
 @platform_router.get('/api/data/export')
 def hosted_data_export():
@@ -875,12 +921,15 @@ def hosted_reviews(request:Request):
 def _reviews_with_participants(pid,reviews):
     # Match the writer-side local shape in both bootstrap and list reads, using
     # the same authorization as the existing per-Review participant endpoint.
-    return [{**review,'participants':_list('review_participant',{'project_id':pid,'review_id':review['id']})} for review in reviews]
+    rows=[{**review,'participants':_list('review_participant',{'project_id':pid,'review_id':review['id']})} for review in reviews]
+    from hosted.review_history_ui import enrich_review_summaries
+    return enrich_review_summaries(pid,rows,_list)
 @product_router.post('/api/reviews')
 async def hosted_review_create(request:Request):return _create('review',{'project_id':_pid(request)},await _body(request))
 @product_router.get('/api/reviews/{rid}')
 def hosted_review_get(rid:str,request:Request):
-    pid=_pid(request);return {'review':_get('review',{'project_id':pid,'review_id':rid}),'participants':_list('review_participant',{'project_id':pid,'review_id':rid})}
+    pid=_pid(request);review=_reviews_with_participants(pid,[_get('review',{'project_id':pid,'review_id':rid})])[0]
+    return {'review':review,'participants':review['participants']}
 @product_router.patch('/api/reviews/{rid}')
 async def hosted_review_update(rid:str,request:Request):return _update('review',{'project_id':_pid(request),'review_id':rid},await _body(request))
 @product_router.delete('/api/reviews/{rid}')
