@@ -110,12 +110,15 @@ def test_exact_asset_journal_hook_round_trips_and_preserves_global_shared_assets
         with bind_action(token, pid, OWNER):
             def publish(tx):
                 changes = service.publication_changes(tx, pid, OWNER, job, proof)
-                assert len(changes) == 1
+                receipts = service.publication_receipts(tx, pid, OWNER, job, proof)
+                assert len(changes) == len(receipts) == 1
                 root = tx.get(('projects', pid)); previous = tx.get(('projects', pid, 'tabs', tab))
                 tx.set(root.path, {**root.data, 'generation': root.data['generation'] + 1})
                 tx.set(previous.path, {**previous.data, HEAD_FIELD: job, 'generation': previous.data['generation'] + 1})
                 for path, value, _ in changes:
                     tx.set(path, value)
+                for path, value in receipts:
+                    tx.create_asset_publication(path, value)
             ActionDocumentStore(service.retained).run_transaction(publish)
         assert journal.finish(pid, OWNER, token)['changed']
         assert len(raw.get(('hosted_actions', OWNER, 'tokens', token)).data['records']) == 2
@@ -124,7 +127,7 @@ def test_exact_asset_journal_hook_round_trips_and_preserves_global_shared_assets
         assert journal.restore(pid, OWNER, token, 'undo')['changed']
         assert assets(make, pid).read_blob(shared.api_path) == png('red')
         blue = next(entry for entry in manifest if entry['sha256'] != shared.digest)
-        assert not assets(make, pid).exists(blue['api_path'])
+        assert assets(make, pid).read_blob(blue['api_path']) == png('blue')
         assert len(objects.list_prefix(f'projects/{pid}/assets/')) == 2
         assert journal.restore(pid, OWNER, token, 'redo')['changed']
         assert assets(make, pid).read_blob(blue['api_path']) == png('blue')

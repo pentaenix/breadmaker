@@ -19,7 +19,8 @@ from hosted.action_journal import ActionDocumentStore, _ACTION
 from hosted.firestore.contracts import DocumentConflict, DocumentNotFound, HostedValidationError
 from hosted.firestore.ids import require_opaque_id, require_project_id, require_user_id
 from hosted.firestore.repositories import HostedProjectRepository, _fingerprint
-from hosted.manuscript_visibility import ASSET_REVISIONS_FIELD, HEAD_FIELD, ManuscriptDocumentStore
+from hosted.manuscript_visibility import (ASSET_REVISIONS_FIELD, HEAD_FIELD, ManuscriptDocumentStore,
+    ASSET_PUBLICATIONS_COLLECTION, asset_publication_data, asset_publication_matches)
 from hosted.storage.keys import project_asset_key
 from hosted.storage.publication import ImmutableObjectPublisher
 from security.image_security import HOSTED_DEFAULT_IMAGE_BYTES, UnsafeImage, inspect_hosted_image_bytes
@@ -459,3 +460,22 @@ class RevisionImageStager:
             after.update(generation=row.data['generation'] + 1, updated_at=self.domain.clock.now_iso())
             changes.append((path, after, False))
         return changes
+
+    def publication_receipts(self, tx, pid, uid, job, verified):
+        """Return <=64 append-only (path, data) plans for the same head commit.
+
+        Call before any writes, then apply ONLY through the bound journal's
+        create_asset_publication capability. These writes are not Undo records,
+        but their count and encoded bytes belong in the caller's Firestore budget.
+        Existing exact receipts are read-only replays; conflicts fail closed.
+        """
+        plans = []
+        for asset_path, after, _ in self.publication_changes(tx, pid, uid, job, verified):
+            path = ('projects', pid, ASSET_PUBLICATIONS_COLLECTION, asset_path[-1])
+            expected = asset_publication_data(pid, after)
+            before = tx.get(path)
+            if before is None:
+                plans.append((path, expected))
+            elif not asset_publication_matches(path, dict(before.data), asset_path, after):
+                raise DocumentConflict('HOSTED_ASSET_PUBLICATION_CONFLICT')
+        return plans

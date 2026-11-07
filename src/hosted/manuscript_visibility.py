@@ -8,6 +8,8 @@ entity reads. It does not unwrap or bypass the account-erasure write fence.
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
+from contextvars import ContextVar
 from copy import deepcopy
 
 from hosted.firestore.ids import require_opaque_id
@@ -20,11 +22,65 @@ REVISION_FIELD = '_bm_manuscript_revision'
 HEAD_FIELD = '_bm_manuscript_head'
 DELETED_FIELD = '_bm_manuscript_deleted'
 ASSET_REVISIONS_FIELD = '_bm_manuscript_asset_revisions'
+ASSET_PUBLICATIONS_COLLECTION = 'asset_publications'
+_ASSET_PUBLICATION_WRITES = ContextVar('manuscript_asset_publication_writes', default=None)
+_ASSET_IDENTITY_FIELDS = ('id', 'asset_id', 'name', 'api_path', 'sha256',
+    'object_name', 'object_generation', 'object_sha256', 'object_size')
 FORMAT_VERSION = 1
 _STATUS = {'active': 'active_manuscript_v1', 'deleted': 'deleted_manuscript_v1'}
 _DECODE_STATUS = {value: key for key, value in _STATUS.items()}
 _MANAGED = frozenset({FORMAT_FIELD, REVISION_FIELD, HEAD_FIELD, DELETED_FIELD, ASSET_REVISIONS_FIELD})
 _GATED = frozenset({'chapters', 'blocks', 'scenes', 'assets', 'annotations'})
+
+
+def asset_publication_data(pid, asset):
+    """Exact immutable identity; mutable asset generations remain ABA-fenced."""
+    from hosted.firestore.ids import require_project_id
+    from hosted.storage.keys import project_asset_key
+    from security.image_security import HOSTED_DEFAULT_IMAGE_BYTES
+    require_project_id(pid)
+    fail = lambda: HostedValidationError('HOSTED_ASSET_PUBLICATION_INVALID')
+    if not isinstance(asset, dict):
+        raise fail()
+    sha, name = asset.get('sha256'), asset.get('name')
+    if (not isinstance(sha, str) or len(sha) != 64 or any(ch not in '0123456789abcdef' for ch in sha)
+            or not isinstance(name, str) or '.' not in name):
+        raise fail()
+    aid, ext = 'asset_' + sha, '.' + name.rsplit('.', 1)[-1]
+    if (asset.get('id') != aid or asset.get('asset_id') != aid
+            or type(asset.get('generation')) is not int or asset['generation'] < 1
+            or ext not in {'.png', '.jpg', '.webp'} or name != 'img_' + sha[:24] + ext
+            or asset.get('api_path') != '/api/assets/' + name
+            or asset.get('object_name') != project_asset_key(pid, sha, ext)
+            or asset.get('object_sha256') != sha
+            or type(asset.get('object_generation')) is not int or asset['object_generation'] < 1
+            or type(asset.get('object_size')) is not int or not 0 < asset['object_size'] <= HOSTED_DEFAULT_IMAGE_BYTES):
+        raise fail()
+    return {'format': 1, 'project_id': pid, **{key: asset[key] for key in _ASSET_IDENTITY_FIELDS}}
+
+
+def asset_publication_matches(path, receipt, asset_path, asset):
+    """A receipt is authority only for the exact existing project asset pointer."""
+    if (len(asset_path) != 4 or asset_path[0] != 'projects' or asset_path[2] != 'assets'
+            or path != ('projects', asset_path[1], ASSET_PUBLICATIONS_COLLECTION, asset_path[3])
+            or not isinstance(receipt, dict) or type(receipt.get('format')) is not int
+            or type(receipt.get('object_generation')) is not int or type(receipt.get('object_size')) is not int):
+        return False
+    try:
+        expected = asset_publication_data(asset_path[1], asset)
+    except (ValueError, TypeError):
+        return False
+    return asset_path[3] == expected['asset_id'] and receipt == expected
+
+
+@contextmanager
+def _permit_asset_publication_writes(grants):
+    """Internal journal-only capability after complete-overlay validation."""
+    token = _ASSET_PUBLICATION_WRITES.set(deepcopy(grants))
+    try:
+        yield
+    finally:
+        _ASSET_PUBLICATION_WRITES.reset(token)
 
 
 def decode_project_root(row):
@@ -172,6 +228,7 @@ class _RevisionTransaction:
             return True  # Pre-existing shared assets remain available to History.
         if not isinstance(refs, list) or not refs or len(refs) > 64:
             raise HostedValidationError('HOSTED_MANUSCRIPT_ASSET_REVISION_INVALID')
+        active = False
         for ref in refs:
             if (not isinstance(ref, dict) or set(ref) != {'tab_id', 'revision'}
                     or not isinstance(ref['tab_id'], str) or not isinstance(ref['revision'], str)):
@@ -179,8 +236,15 @@ class _RevisionTransaction:
             revision = require_opaque_id(ref['revision'], label='manuscript_revision')
             tab = self._tab(pid, ref['tab_id'])
             if tab is not None and _revision(tab.data, HEAD_FIELD) == revision:
-                return True
-        return False
+                active = True
+        # Publication is monotonic even when Undo selects old prose. History and
+        # Review may have captured this URL without advancing project generation.
+        # A pending job/ref alone is never evidence of prior publication.
+        publication_path = ('projects', pid, ASSET_PUBLICATIONS_COLLECTION, path[-1])
+        publication = self._physical(publication_path)
+        if publication is not None:
+            return asset_publication_matches(publication_path, dict(publication.data), path, dict(data))
+        return active
 
     def annotation_source_visible(self, pid, anchor):
         """Project a decoded pack row through the normal annotation policy.
@@ -283,6 +347,11 @@ class _RevisionTransaction:
     def _write(self, path, data, *, create=False):
         key = require_document_path(path)
         before = self._physical(key)
+        if ASSET_PUBLICATIONS_COLLECTION in key[2::2]:
+            grants = _ASSET_PUBLICATION_WRITES.get()
+            if (not self.include_retained or grants is None or key not in grants
+                    or before is not None or data is None or dict(data) != grants[key]):
+                raise HostedValidationError('HOSTED_ASSET_PUBLICATION_WRITE_FORBIDDEN')
         if create and before is not None:
             raise DocumentAlreadyExists('HOSTED_DOCUMENT_ALREADY_EXISTS')
         source = self._original(key)

@@ -27,7 +27,7 @@ _PRODUCT_COLLECTIONS = frozenset({'annotations', 'canvases', 'chapters', 'cuts',
     'tabs', 'blocks', 'story_maps', 'milestones', 'references', 'reviews', 'scenes', 'tasks',
     'checkpoints', 'comment_threads', 'icon_markers', 'markup_labels', 'questionnaires'})
 _DENIED_COLLECTIONS = frozenset({'members', 'participants', 'sessions', 'invitations',
-    'mutation_receipts', 'backup_destinations'})
+    'mutation_receipts', 'backup_destinations', 'asset_publications'})
 
 
 @contextmanager
@@ -107,6 +107,7 @@ class _BufferedTransaction:
     """Delay provider writes until journal checks/reads finish (Firestore rule)."""
     def __init__(self, tx):
         self.tx, self.pending, self.before = tx, {}, {}
+        self.asset_publications = {}
 
     def get(self, path):
         path = tuple(path)
@@ -145,9 +146,59 @@ class _BufferedTransaction:
             raise DocumentAlreadyExists('HOSTED_DOCUMENT_ALREADY_EXISTS')
         self.pending[path] = deepcopy(dict(data)) if data is not None else None
 
+    def create_asset_publication(self, path, data):
+        """Request-only capability, checked against the final overlay at commit."""
+        path = tuple(path)
+        self.create(path, data)
+        self.asset_publications[path] = deepcopy(dict(data))
+
     def set(self, path, data): self._stage(path, data)
     def create(self, path, data): self._stage(path, data, create=True)
     def delete(self, path): self._stage(path, None)
+
+
+def _asset_publication_grants(buffered, pid):
+    from .manuscript_visibility import (ASSET_PUBLICATIONS_COLLECTION, ASSET_REVISIONS_FIELD,
+        HEAD_FIELD, asset_publication_matches)
+    grants = buffered.asset_publications
+    if len(grants) > 64:
+        raise HostedValidationError('HOSTED_ASSET_PUBLICATION_LIMIT')
+    if grants and (not getattr(buffered.tx, 'include_retained', False)
+            or not callable(getattr(buffered.tx, '_enabled', None)) or not buffered.tx._enabled(pid)):
+        raise HostedValidationError('HOSTED_ASSET_PUBLICATION_READER_REQUIRED')
+    for path, value in grants.items():
+        aid = path[-1] if path else ''
+        asset_path = ('projects', pid, 'assets', aid)
+        before = buffered.before.get(asset_path)
+        after = buffered.pending.get(asset_path)
+        if (path != ('projects', pid, ASSET_PUBLICATIONS_COLLECTION, aid)
+                or buffered.before.get(path) is not None or buffered.pending.get(path) != value
+                or not asset_publication_matches(path, value, asset_path, before)
+                or not asset_publication_matches(path, value, asset_path, after)
+                or ASSET_REVISIONS_FIELD not in before or ASSET_REVISIONS_FIELD in after
+                or type(before.get('generation')) is not int or type(after.get('generation')) is not int
+                or after['generation'] != before['generation'] + 1):
+            raise HostedValidationError('HOSTED_ASSET_PUBLICATION_INVALID')
+        unchanged = lambda data: {key: item for key, item in data.items()
+            if key not in {ASSET_REVISIONS_FIELD, 'generation', 'updated_at'}}
+        refs = before[ASSET_REVISIONS_FIELD]
+        if unchanged(before) != unchanged(after) or not isinstance(refs, list) or not 1 <= len(refs) <= 64:
+            raise HostedValidationError('HOSTED_ASSET_PUBLICATION_INVALID')
+        published = False
+        for ref in refs:
+            if (not isinstance(ref, dict) or set(ref) != {'tab_id', 'revision'}
+                    or not isinstance(ref['tab_id'], str) or not isinstance(ref['revision'], str)):
+                raise HostedValidationError('HOSTED_ASSET_PUBLICATION_INVALID')
+            tid = require_opaque_id(ref['tab_id'], label='tab_id')
+            revision = require_opaque_id(ref['revision'], label='manuscript_revision')
+            tab_path = ('projects', pid, 'tabs', tid)
+            tab_before, tab_after = buffered.before.get(tab_path), buffered.pending.get(tab_path)
+            if (tab_after is not None and tab_after.get(HEAD_FIELD) == revision
+                    and (tab_before is None or tab_before.get(HEAD_FIELD) != revision)):
+                published = True
+        if not published:
+            raise HostedValidationError('HOSTED_ASSET_PUBLICATION_HEAD_REQUIRED')
+    return grants
 
 
 class ActionDocumentStore:
@@ -166,11 +217,21 @@ class ActionDocumentStore:
             result = fn(buffered)
             if not buffered.pending:
                 return result
+            from .manuscript_visibility import _permit_asset_publication_writes
+            if buffered.asset_publications:
+                from .account_lifecycle import AccountLifecycleDocumentStore
+                from .manuscript_visibility import ManuscriptDocumentStore
+                if (not isinstance(self.store, ManuscriptDocumentStore) or not self.store.include_retained
+                        or not isinstance(self.store.store, AccountLifecycleDocumentStore)
+                        or self.store.store.actor() != uid):
+                    raise HostedValidationError('HOSTED_IMPORT_AUTHENTICATED_ACTOR_REQUIRED')
+            grants = _asset_publication_grants(buffered, pid)
             # A revision-aware view derives server-managed tags before their
             # exact after-images enter Undo. Ordinary stores have no normalizer.
             prepare = getattr(tx, 'prepare_mutations', None)
             if prepare is not None:
-                buffered.pending = prepare(buffered.pending)
+                with _permit_asset_publication_writes(grants):
+                    buffered.pending = prepare(buffered.pending)
             root, action = _load(tx, pid, uid, token)
             if action['state'] != 'open':
                 raise DocumentConflict('HOSTED_ACTION_ALREADY_FINISHED')
@@ -190,6 +251,8 @@ class ActionDocumentStore:
                 # replay checks project generation before accepting such receipts.
                 if path[:3] == root_path + ('mutation_receipts',) and before is None and after is not None:
                     continue
+                if path in grants:
+                    continue  # Append-only publication evidence is never restored.
                 _require_product_path(path, pid, uid)
                 if path in records and _without_read_cache(records[path]['after']) != _without_read_cache(before):
                     raise DocumentConflict('HOSTED_ACTION_RECORD_CHANGED')
@@ -207,11 +270,12 @@ class ActionDocumentStore:
                 raise DocumentConflict('HOSTED_ACTION_GENERATION_NOT_ADVANCED')
             if len(records) > MAX_RECORDS or len(json.dumps(action, default=str).encode()) > MAX_BYTES:
                 raise HostedValidationError('HOSTED_ACTION_TOO_LARGE')
-            for path, data in buffered.pending.items():
-                if data is None: tx.delete(path)
-                elif buffered.before.get(path) is None and path != root_path: tx.create(path, data)
-                else: tx.set(path, data)
-            tx.set(_path(uid, token), action)
+            with _permit_asset_publication_writes(grants):
+                for path, data in buffered.pending.items():
+                    if data is None: tx.delete(path)
+                    elif buffered.before.get(path) is None and path != root_path: tx.create(path, data)
+                    else: tx.set(path, data)
+                tx.set(_path(uid, token), action)
             return result
         return self.store.run_transaction(execute, max_attempts=max_attempts)
 
