@@ -655,13 +655,18 @@ def hosted_chapter_get(cid:str,request:Request):
         # The generation check above authorizes the CURRENT actor. A 304 proves
         # identical project revision, never rebases cached text after an edit.
         return Response(status_code=304,headers={'Cache-Control':'private, no-store','ETag':tag})
-    chapter=_get('chapter',{'project_id':pid,'chapter_id':cid})
     cache_refresh=set()
     page_info={}
-    blocks=_list('manuscript_block',{'project_id':pid},field='chapter_id',value=cid,
-        cache_refresh_chapters=cache_refresh,page_info=page_info,**page)
     from hosted.editing_packs import annotation_view
-    annotations=annotation_view(_domain(),pid,_uid(),chapter=cid)
+    # Independent authorized reads need not serialize their provider latency.
+    # Each worker receives its own request context; both generation fences and
+    # the existing bounded block hydration stay intact. No stale UI publication.
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        chapter_read=pool.submit(copy_context().run,_get,'chapter',{'project_id':pid,'chapter_id':cid})
+        block_read=pool.submit(copy_context().run,_list,'manuscript_block',{'project_id':pid},
+            field='chapter_id',value=cid,cache_refresh_chapters=cache_refresh,page_info=page_info,**page)
+        annotation_read=pool.submit(copy_context().run,annotation_view,_domain(),pid,_uid(),chapter=cid)
+        chapter,blocks,annotations=chapter_read.result(),block_read.result(),annotation_read.result()
     if _domain().project_generation(pid,_uid())!=generation:
         raise HTTPException(409,detail='HOSTED_SNAPSHOT_GENERATION_CHANGED')
     revision=str(generation)

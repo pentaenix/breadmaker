@@ -87,11 +87,18 @@ class ImmutableObjectPublisher:
             raise ObjectIntegrityError("HOSTED_OBJECT_SIZE_MISMATCH")
         digest = hashlib.sha256()
         total = 0
-        for chunk in self.store.read_chunks(
-            metadata.name,
-            max_bytes=max_bytes,
-            if_generation_match=metadata.generation,
-        ):
+        verified_read = getattr(self.store, "read_verified_bytes", None)
+        if callable(verified_read) and 0 < expected_size <= min(max_bytes, 2 * 1024 * 1024):
+            # Small immutable objects already have a pinned generation, size and
+            # SHA-256. The provider's bounded media GET verifies all three without
+            # another metadata request. Still hash locally; never trust a shortcut
+            # adapter's assertion or fall back after an integrity failure.
+            chunks = (verified_read(metadata.name, if_generation_match=metadata.generation,
+                expected_size=expected_size, expected_sha256=expected_sha256),)
+        else:
+            chunks = self.store.read_chunks(metadata.name, max_bytes=max_bytes,
+                if_generation_match=metadata.generation)
+        for chunk in chunks:
             total += len(chunk)
             digest.update(chunk)
         if total != int(expected_size) or digest.hexdigest() != require_sha256(expected_sha256):
