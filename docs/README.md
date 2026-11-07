@@ -12,6 +12,7 @@ New to Breadmaker? Start with the [README](../README.md), then [Using Breadmaker
 | Project files and exports | [Project package format](BREADMAKER_PROJECT_JSON.md) |
 | Reviews and portable feedback | [Review implementation plan](BREADMAKER_REVIEW_IMPLEMENTATION_PLAN.md) |
 | Optional Google Drive backups | [Google Drive backups](GOOGLE_DRIVE_BACKUPS.md) |
+| Large manuscript revision work | [Inactive reader and activation plan](HOSTED_MANUSCRIPT_REVISIONS_PLAN.md) |
 | Hosted security and limits | [Hosted trust boundaries](HOSTED_DATA_TRUST_BOUNDARIES_M12.md) and [M12 source closure](security/M12_SOURCE_CLOSURE.md) |
 
 ## License and reuse

@@ -7952,7 +7952,7 @@
     },
     {
       "file": "src/hosted/action_journal.py",
-      "lines": 296,
+      "lines": 306,
       "symbols": [
         {
           "name": "bind_action",
@@ -8012,7 +8012,7 @@
         {
           "name": "ActionJournal",
           "kind": "class",
-          "line": 190
+          "line": 195
         }
       ]
     },
@@ -11504,6 +11504,42 @@
           "name": "refresh_chapter_read_cache",
           "kind": "function",
           "line": 127
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/manuscript_visibility.py",
+      "lines": 335,
+      "symbols": [
+        {
+          "name": "decode_project_root",
+          "kind": "function",
+          "line": 29
+        },
+        {
+          "name": "encode_project_root",
+          "kind": "function",
+          "line": 50
+        },
+        {
+          "name": "_revision",
+          "kind": "function",
+          "line": 64
+        },
+        {
+          "name": "_copy",
+          "kind": "function",
+          "line": 73
+        },
+        {
+          "name": "_RevisionTransaction",
+          "kind": "class",
+          "line": 77
+        },
+        {
+          "name": "ManuscriptDocumentStore",
+          "kind": "class",
+          "line": 302
         }
       ]
     },

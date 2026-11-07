@@ -142,6 +142,11 @@ class ActionDocumentStore:
             result = fn(buffered)
             if not buffered.pending:
                 return result
+            # A revision-aware view derives server-managed tags before their
+            # exact after-images enter Undo. Ordinary stores have no normalizer.
+            prepare = getattr(tx, 'prepare_mutations', None)
+            if prepare is not None:
+                buffered.pending = prepare(buffered.pending)
             root, action = _load(tx, pid, uid, token)
             if action['state'] != 'open':
                 raise DocumentConflict('HOSTED_ACTION_ALREADY_FINISHED')
@@ -190,6 +195,11 @@ class ActionDocumentStore:
 class ActionJournal:
     def __init__(self, documents):
         self.documents = documents.store if isinstance(documents, ActionDocumentStore) else documents
+        # Recovery checks retained rows as well as the active revision, while
+        # retaining the same lifecycle fence and all journal authority checks.
+        from .manuscript_visibility import ManuscriptDocumentStore
+        if isinstance(self.documents, ManuscriptDocumentStore):
+            self.documents = self.documents.retained_view()
 
     def begin(self, pid, uid, label='', scope='full', scope_id=None):
         pid, uid = require_project_id(pid), require_user_id(uid)
