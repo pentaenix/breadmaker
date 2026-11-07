@@ -7952,7 +7952,7 @@
     },
     {
       "file": "src/hosted/action_journal.py",
-      "lines": 306,
+      "lines": 312,
       "symbols": [
         {
           "name": "bind_action",
@@ -8007,12 +8007,12 @@
         {
           "name": "ActionDocumentStore",
           "kind": "class",
-          "line": 129
+          "line": 135
         },
         {
           "name": "ActionJournal",
           "kind": "class",
-          "line": 195
+          "line": 201
         }
       ]
     },
@@ -11509,7 +11509,7 @@
     },
     {
       "file": "src/hosted/manuscript_visibility.py",
-      "lines": 335,
+      "lines": 348,
       "symbols": [
         {
           "name": "decode_project_root",
@@ -11539,7 +11539,7 @@
         {
           "name": "ManuscriptDocumentStore",
           "kind": "class",
-          "line": 302
+          "line": 315
         }
       ]
     },

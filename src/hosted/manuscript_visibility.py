@@ -174,6 +174,19 @@ class _RevisionTransaction:
                 return True
         return False
 
+    def annotation_source_visible(self, pid, anchor):
+        """Project a decoded pack row through the normal annotation policy.
+
+        This read-only capability does not grant authorization. The pack service
+        must establish membership and generation fences in this transaction.
+        """
+        from hosted.firestore.ids import require_project_id
+        pid = require_project_id(pid)
+        if self.include_retained:
+            return True
+        row = StoredDocument(('projects', pid, 'annotations', 'pack_projection'), dict(anchor), 0)
+        return self._visible(row)
+
     def get(self, path):
         row = self._physical(path)
         if self.include_retained or self._visible(row):

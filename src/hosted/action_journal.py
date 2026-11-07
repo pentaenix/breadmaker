@@ -105,6 +105,12 @@ class _BufferedTransaction:
             return None if value is None else StoredDocument(path, deepcopy(value), 0)
         return self.tx.get(path)
 
+    def annotation_source_visible(self, pid, anchor):
+        # Read-only and exact: never forward arbitrary provider methods around
+        # the journal buffer. Legacy stores preserve their orphan semantics.
+        visible = getattr(self.tx, 'annotation_source_visible', None)
+        return True if visible is None else visible(pid, anchor)
+
     def query_collection(self, path, **kwargs):
         # Current product callbacks query before modifying a collection. Refuse
         # unsupported read-after-write rather than silently changing query results.
