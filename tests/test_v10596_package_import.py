@@ -469,3 +469,13 @@ def test_pre_expiry_finish_retries_against_committed_expiry(setup, monkeypatch):
     with pytest.raises(DocumentConflict, match='^HOSTED_IMPORT_EXPIRED$'): service.finish(OWNER, job)
     assert interrupted and docs.get(service._path(OWNER, job)).data['phase'] == 'expired'
     assert docs.get(('projects', stable_project_id('op_native_package'))) is None
+
+
+def test_private_runtime_cannot_finish_plaintext_job(setup, monkeypatch):
+    one, _, docs, _ = setup
+    service, progress = start(one, b'small')
+    finish_steps(service, progress)
+    monkeypatch.setattr(one.projects.domain, 'encrypted_fields', object())
+    with pytest.raises(HostedValidationError, match='ENCRYPTED_PACKAGE_IMPORT_NOT_READY'):
+        PackageImport(one.projects)
+    assert docs.get(('projects', stable_project_id('op_native_package'))) is None

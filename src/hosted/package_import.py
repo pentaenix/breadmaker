@@ -80,6 +80,8 @@ class _GuardedObjects:
 
 class PackageImport:
     def __init__(self, projects, *, clock=time.time):
+        if projects.domain.encrypted_objects is not None or projects.domain.encrypted_fields is not None:
+            raise HostedValidationError('HOSTED_ENCRYPTED_PACKAGE_IMPORT_NOT_READY')
         self.projects = projects
         self.documents = projects.documents
         self.clock = clock
@@ -569,6 +571,7 @@ class PackageImport:
     def finish(self, uid, job):
         uid = require_user_id(uid)
         # No objects or slow work inside this visibility transaction.
+        publication_stamp = self.projects.domain.clock.now_iso()
         def publish(tx):
             data = self._load_tx(tx, uid, job)
             if data['phase'] == 'completed':
@@ -589,7 +592,7 @@ class PackageImport:
                 raise DocumentConflict('HOSTED_IMPORT_RECEIPT_INVALID')
             if member is not None:
                 raise DocumentConflict('HOSTED_IMPORT_PROJECT_ALREADY_PUBLISHED')
-            stamp = data['stamp']
+            stamp = publication_stamp
             op = 'package_import_' + pid[:24]
             project = {'project_id': pid, 'title': data['title'], 'status': 'active', 'generation': 1,
                        'created_at': stamp, 'updated_at': stamp, '_bm_create_operation': op,
