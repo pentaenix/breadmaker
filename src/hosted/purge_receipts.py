@@ -16,6 +16,8 @@ from typing import Any
 from hosted.firestore.contracts import DocumentConflict, ProjectUnavailable
 from hosted.firestore.ids import require_project_id, require_user_id
 from hosted.purge_planning import HostedPurgePlanner
+from hosted.manuscript_lifecycle import read_project_lifecycle_status
+from hosted.manuscript_visibility import FORMAT_FIELD
 from hosted.recovery_archives import HostedRecoveryArchiveService
 
 _KEY = re.compile(r'^[A-Za-z0-9_-]{1,160}$')
@@ -93,6 +95,11 @@ class HostedPurgePreparationService:
             raise DocumentConflict('HOSTED_PURGE_RETENTION_NOT_ELAPSED')
         if not plan.document_inventory_exhaustive:
             raise DocumentConflict('HOSTED_PURGE_DISCOVERY_INCOMPLETE')
+        root = self.documents.get(('projects', pid))
+        if root is not None and FORMAT_FIELD in root.data:
+            # Hosted-v3 archives normalize active product state. They do not
+            # preserve retired/staged revisions or prove their recoverability.
+            raise DocumentConflict('HOSTED_PURGE_RETAINED_REVISION_BACKUP_REQUIRED')
         backup = self._verified_backup(pid, uid, plan.project_generation - 1)
         operation_hash = hashlib.sha256(f'{pid}\0{uid}\0{operation_key}'.encode('utf-8')).hexdigest()
         path = ('purge_preparations', pid)
@@ -115,7 +122,9 @@ class HostedPurgePreparationService:
             owner = tx.get(('projects', pid, 'members', uid))
             if project is None or owner is None or owner.data.get('role') != 'owner':
                 raise ProjectUnavailable('PROJECT_NOT_FOUND')
-            if (project.data.get('status') != 'deleted'
+            if (read_project_lifecycle_status(project) != 'deleted'
+                    or project.data.get('_bm_erasure_operation')
+                    or FORMAT_FIELD in project.data
                     or project.data.get('deleted_at') != plan.deleted_at
                     or int(project.data.get('generation') or 0) != plan.project_generation):
                 raise DocumentConflict('HOSTED_PURGE_CONCURRENT_MUTATION')

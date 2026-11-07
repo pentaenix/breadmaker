@@ -17,13 +17,14 @@ from datetime import datetime, timezone
 from typing import Any, Mapping
 
 from hosted.backup_job_cli import (_PROJECT_RE, _BoundedGoogleScheduleReadStore)
-from hosted.firestore.contracts import DocumentConflict, StoredDocument, require_document_path, require_collection_path
+from hosted.firestore.contracts import DocumentConflict, StoredDocument, require_document_path, require_collection_path, require_string_membership_query
 from hosted.storage.contracts import ObjectAlreadyExists, ObjectLimitExceeded, ObjectIntegrityError, ObjectGenerationConflict
 from hosted.firestore.ids import require_project_id
 from hosted.firestore.google_driver import GoogleFirestoreDocumentStore, _snapshot_revision
 from hosted.firestore.repositories import HostedProjectRepository, HostedStructuredRepository, HostedUserRepository
 from hosted.runtime_services import HostedCloudProjectRepository
 from hosted.operator_recovery_plan import HostedRecoveryJobPlanner
+from hosted.manuscript_visibility import ManuscriptDocumentStore
 from hosted.recovery_archives import HostedRecoveryArchiveService
 from hosted.recovery_writer import HostedRecoveryArchiveWriter
 from hosted.storage.google_driver import GoogleCloudObjectStore
@@ -66,6 +67,9 @@ class _ReadTransaction:
             return None
         return StoredDocument(key, snapshot.to_dict() or {}, _snapshot_revision(snapshot))
 
+    def get_many(self, paths):
+        return [self.get(path) for path in paths]
+
     def query_collection(self, path: tuple[str, ...], *, field: str | None = None, value: Any = None):
         key = require_collection_path(path)
         self._scope(key)
@@ -73,6 +77,17 @@ class _ReadTransaction:
         if field is not None:
             from google.cloud.firestore_v1.base_query import FieldFilter
             query = query.where(filter=FieldFilter(str(field), '==', value))
+        return self._query_rows(query)
+
+    def query_collection_in(self, path, *, field, values):
+        key = require_collection_path(path)
+        self._scope(key)
+        members = require_string_membership_query(field, values)
+        from google.cloud.firestore_v1.base_query import FieldFilter
+        query = self._client.collection('/'.join(key)).where(filter=FieldFilter(field, 'in', list(members)))
+        return self._query_rows(query)
+
+    def _query_rows(self, query):
         snapshots = list(self._tx.get(query.limit(self._max + 1)))
         if len(snapshots) > self._max:
             raise DocumentConflict('HOSTED_RECOVERY_WRITER_COLLECTION_BUDGET_EXCEEDED')
@@ -192,7 +207,10 @@ def run_once(*, project: str, content_bucket: str, recovery_bucket: str,
         content = _LiveObjectReader(GoogleCloudObjectStore(bucket=content_bucket, project=project))
         recovery = _ImmutableRecoveryWriter(GoogleCloudObjectStore(bucket=recovery_bucket, project=project))
         def archive_factory(item):
-            docs = _ProjectReadStore(shared_documents, item.project_id)
+            # Hosted-v3 is an active product-state snapshot, not a physical
+            # archive of retained revisions. Keep the read-only scope beneath
+            # the normal reader so staged/retired prose never becomes portable.
+            docs = ManuscriptDocumentStore(_ProjectReadStore(shared_documents, item.project_id))
             authority = HostedProjectRepository(docs)
             users = HostedUserRepository(HostedStructuredRepository(docs))
             projects = HostedCloudProjectRepository(docs, content, authority, users,

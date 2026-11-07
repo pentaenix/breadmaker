@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from hosted.firestore.contracts import DocumentConflict
+from hosted.manuscript_lifecycle import read_project_lifecycle_status
 from hosted.firestore.ids import require_project_id, require_user_id
 
 MAX_SCHEDULE_SCAN = 500
@@ -97,7 +98,8 @@ class HostedRecoveryJobPlanner:
                 raise DocumentConflict('HOSTED_OPERATOR_SCHEDULE_DUE_INVALID')
             project = self.documents.get(('projects', pid))
             membership = self.documents.get(('projects', pid, 'members', uid))
-            if (project is None or project.data.get('status') != 'active'
+            if (project is None or read_project_lifecycle_status(project) != 'active'
+                    or project.data.get('_bm_erasure_operation')
                     or membership is None or membership.data.get('role') != 'owner'):
                 raise DocumentConflict('HOSTED_OPERATOR_OWNER_OR_PROJECT_CHANGED')
             generation = project.data.get('generation')

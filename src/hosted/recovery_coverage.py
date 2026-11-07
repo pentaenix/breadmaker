@@ -96,7 +96,8 @@ def _scan_registered_project_documents(documents, project_id: str) -> dict[str, 
     return catalog
 
 
-def physical_project_fingerprint(documents, project_id: str) -> tuple[tuple[tuple[str, ...], int], ...]:
+def physical_project_fingerprint(documents, project_id: str, *,
+                                 require_legacy_recovery: bool = False) -> tuple[tuple[tuple[str, ...], int], ...]:
     """Fail closed unless provider exposes independent physical subtree scans.
 
     Used to fence a package's plaintext read phase against noncanonical writes
@@ -119,6 +120,15 @@ def physical_project_fingerprint(documents, project_id: str) -> tuple[tuple[tupl
         if (path[:2] != root or len(path) % 2 != 0 or
                 path in observed or type(row.revision) is not int or row.revision < 1):
             raise RecoveryCoverageError('HOSTED_RECOVERY_PHYSICAL_INVENTORY_INVALID')
+        if path == root and require_legacy_recovery:
+            from hosted.manuscript_lifecycle import read_project_lifecycle_status
+            from hosted.manuscript_visibility import FORMAT_FIELD
+            try:
+                read_project_lifecycle_status(row)
+            except HostedValidationError:
+                raise RecoveryCoverageError('HOSTED_RECOVERY_MANUSCRIPT_FORMAT_INVALID') from None
+            if FORMAT_FIELD in row.data:
+                raise RecoveryCoverageError('HOSTED_RECOVERY_MANUSCRIPT_REVISIONS_NOT_READY')
         observed[path] = row.revision
     if root not in observed:
         raise RecoveryCoverageError('HOSTED_RECOVERY_PHYSICAL_PROJECT_MISSING')
@@ -274,7 +284,7 @@ def require_complete_private_recovery(projects, project_id: str, exported: Mappi
     # A second, independent physical walk sees unfamiliar collections, even
     # beneath a deleted parent in the deterministic memory implementation.
     # Only registered paths have explicitly reviewed portability semantics.
-    fingerprint = physical_project_fingerprint(projects.documents, pid)
+    fingerprint = physical_project_fingerprint(projects.documents, pid, require_legacy_recovery=True)
     require_registered_physical_paths(pid, fingerprint, catalog)
     for logical, paths in catalog.items():
         if not paths:

@@ -16,6 +16,7 @@ from hosted.firestore.ids import require_project_id, require_user_id
 from hosted.firestore.model_registry import MODELS
 from hosted.storage.contracts import ObjectStore
 from hosted.purge_discovery import ProjectTreeDiscovery
+from hosted.manuscript_lifecycle import read_project_lifecycle_status
 
 MIN_TRASH_DAYS = 30
 MAX_INVENTORY_ENTRIES = 25_000
@@ -82,17 +83,30 @@ class HostedPurgePlanner:
                  retention_days: int = MIN_TRASH_DAYS,
                  now: Callable[[], datetime] | None = None,
                  max_entries: int = MAX_INVENTORY_ENTRIES,
-                 discovery: ProjectTreeDiscovery | None = None) -> None:
+                 discovery: ProjectTreeDiscovery | None = None,
+                 physical_documents: DocumentStore | None = None) -> None:
         # Retain the canonical hosted project service: preparation receipts
         # delegate independently verified pre-delete backup reads through it.
         # Its Firestore/GCS stores are still the sole runtime authority.
         self.projects = projects
-        # Operator inventory/rehearsal must inspect the physical provider, not
-        # the HTTP action-journal facade. Unwrap only this exact known wrapper;
-        # the executor still requires exact MemoryDocumentStore/ObjectStore types.
+        # This operator-only inventory must inspect the physical provider, not
+        # journal images or the active-only manuscript projection. There is no
+        # HTTP/request switch for this capability. Exact wrappers only; never
+        # unwrap the lifecycle fence or weaken the sandbox's exact-driver guard.
         from hosted.action_journal import ActionDocumentStore
-        provider = projects.documents
-        self.documents: DocumentStore = provider.store if type(provider) is ActionDocumentStore else provider
+        from hosted.account_lifecycle import AccountLifecycleDocumentStore
+        from hosted.manuscript_visibility import ManuscriptDocumentStore
+        provider = projects.documents if physical_documents is None else physical_documents
+        while type(provider) in {ActionDocumentStore, ManuscriptDocumentStore}:
+            provider = provider.store
+        # A noncanonical view beneath a lifecycle fence cannot be removed
+        # without removing that fence. Require a separately supplied provider.
+        probe = provider
+        while type(probe) in {ActionDocumentStore, AccountLifecycleDocumentStore}:
+            probe = probe.store
+        if isinstance(probe, ManuscriptDocumentStore):
+            raise ValueError('HOSTED_PURGE_PHYSICAL_STORE_REQUIRED')
+        self.documents: DocumentStore = provider
         self.content_objects: ObjectStore = projects.objects
         self.recovery_objects = recovery_objects
         self.discovery = discovery
@@ -157,7 +171,8 @@ class HostedPurgePlanner:
         if before is None or owner is None or owner.data.get('role') != 'owner':
             raise ProjectUnavailable('PROJECT_NOT_FOUND')
         data = before.data
-        if data.get('status') != 'deleted' or not data.get('deleted_at'):
+        if (read_project_lifecycle_status(before) != 'deleted'
+                or data.get('_bm_erasure_operation') or not data.get('deleted_at')):
             raise ValueError('HOSTED_PURGE_TOMBSTONE_REQUIRED')
         deletion_time = _utc(str(data['deleted_at']))
         clock = self.now()

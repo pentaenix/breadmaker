@@ -187,7 +187,7 @@ class HostedProjectPackageService:
         # during the author-controlled extraction even if they never advance
         # canonical project_generation. No plaintext content digests persist.
         from hosted.recovery_coverage import physical_project_fingerprint, physical_project_gcs_fingerprint, RecoveryCoverageError
-        baseline = physical_project_fingerprint(self.documents, pid)
+        baseline = physical_project_fingerprint(self.documents, pid, require_legacy_recovery=True)
         gcs_baseline = physical_project_gcs_fingerprint(self.objects, pid)
         records = self._collect_authorized_records(pid, uid)
         # M12K: the ordinary portable exporter may omit deliberately nonportable

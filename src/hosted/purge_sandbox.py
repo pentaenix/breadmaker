@@ -21,6 +21,8 @@ from hosted.firestore.memory import MemoryDocumentStore
 from hosted.purge_discovery import MemoryProjectTreeDiscovery
 from hosted.purge_receipts import HostedPurgePreparationService
 from hosted.purge_planning import _utc
+from hosted.manuscript_lifecycle import read_project_lifecycle_status
+from hosted.manuscript_visibility import FORMAT_FIELD
 from hosted.storage.memory import MemoryObjectStore
 
 # An entire sandbox manifest is stored in ONE memory Firestore document. Real
@@ -111,7 +113,9 @@ class HostedSandboxPurgeExecutor:
         owner = store.get(('projects', pid, 'members', uid))
         if root is None or owner is None or owner.data.get('role') != 'owner':
             raise ProjectUnavailable('PROJECT_NOT_FOUND')
-        if (root.data.get('status') != 'deleted'
+        if (read_project_lifecycle_status(root) != 'deleted'
+                or root.data.get('_bm_erasure_operation')
+                or FORMAT_FIELD in root.data
                 or root.data.get('deleted_at') != data['deleted_at']
                 or int(root.data.get('generation') or 0) != data['project_generation']):
             raise DocumentConflict('HOSTED_PURGE_SANDBOX_TOMBSTONE_CHANGED')
