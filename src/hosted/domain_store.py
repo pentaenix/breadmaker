@@ -118,6 +118,21 @@ _ENCRYPTED_BLOCK_METADATA = frozenset({
 })
 
 
+def _merge_manuscript_patch(current: Mapping[str, Any], patch: Mapping[str, Any]) -> dict[str, Any]:
+    """Keep omitted prose HTML consistent with an actual plain-text edit.
+
+    Unchanged-text retries keep prior rich formatting. Explicit HTML, metadata
+    patches and image blocks retain their existing contracts and byte values.
+    """
+    merged = {**current, **patch}
+    if ('text_content' in patch and 'content_html' not in patch
+            and patch['text_content'] != current.get('text_content')
+            and merged.get('block_type', 'paragraph') in {'paragraph', 'text'}):
+        from security.content_security import html_from_text
+        merged['content_html'] = html_from_text(patch['text_content'])
+    return merged
+
+
 def _check_encrypted_block_metadata(payload: Mapping[str, Any]) -> None:
     data = dict(payload)
     if any(str(key) not in _ENCRYPTED_BLOCK_METADATA and not str(key).startswith("_bm_") for key in data):
@@ -973,7 +988,9 @@ class HostedDomainStore:
                     return old_public
                 raise DocumentConflict("HOSTED_PRIVATE_FIRESTORE_OPERATION_CONFLICT")
 
-        merged_for_object = {**self._hydrate(logical_entity, current, ids=ids, user_id=uid), **dict(patch)}
+        hydrated_current = self._hydrate(logical_entity, current, ids=ids, user_id=uid)
+        merged_for_object = (_merge_manuscript_patch(hydrated_current, patch) if logical_entity == 'manuscript_block'
+                             else {**hydrated_current, **dict(patch)})
         hybrid = self._hybrid_payload(logical_entity, merged_for_object)
         clean_patch = _canonical_payload(
             {
