@@ -47,6 +47,29 @@ async def _run_document_import(fn,*args,**kwargs):
     return await to_thread.run_sync(partial(fn,*args,**kwargs),limiter=_document_import_capacity)
 
 
+def _require_manuscript_revisions():
+    if not runtime.capabilities.supports('hosted_manuscript_revisions'):
+        raise HTTPException(409,detail='HOSTED_MANUSCRIPT_REVISIONS_DISABLED')
+
+
+def _revision_import():
+    _require_manuscript_revisions()
+    from hosted.revision_staging import ManuscriptRevisionImport
+    return ManuscriptRevisionImport(_domain())
+
+
+def _manuscript_adoption():
+    _require_manuscript_revisions()
+    from hosted.manuscript_adoption import LegacyManuscriptAdoption
+    from hosted.revision_staging import _view
+    domain=_domain()
+    if domain.encrypted_fields is not None or domain.encrypted_objects is not None:
+        # Adoption must not turn a sealed root into a plaintext reader path.
+        from hosted.firestore.contracts import HostedValidationError
+        raise HostedValidationError('HOSTED_PRIVATE_BATCH_NOT_READY')
+    return LegacyManuscriptAdoption(_view(domain.documents))
+
+
 # A deliberately conservative bound: no tenant-wide collection-group query.
 # A wider project requires a separately reviewed indexed lookup, not a silent
 # fallback to scanning other authors' records.
@@ -360,7 +383,11 @@ def hosted_chapter_dissolve(cid:str,request:Request):
 @router.delete('/api/chapters/{cid}/permanent')
 def hosted_chapter_permanent(cid:str,request:Request):
     from hosted.chapter_deletion import delete_chapter_atomic
-    try:return delete_chapter_atomic(_domain(),_pid(request),cid,_uid())
+    try:
+        if runtime.capabilities.supports('hosted_manuscript_revisions'):
+            from hosted.revision_staging import delete_chapter_revision
+            return delete_chapter_revision(_domain(),_pid(request),cid,_uid())
+        return delete_chapter_atomic(_domain(),_pid(request),cid,_uid())
     except Exception as exc:raise _error(exc)
 @router.post('/api/chapters/{cid}/split')
 async def hosted_chapter_split(cid:str,request:Request):
@@ -1241,10 +1268,15 @@ def _parse_existing_import(raw, filename, heading):
 
 
 @router.post('/api/import')
-async def hosted_import_manuscript(request:Request,file:UploadFile=File(...),chapter_heading:str='heading1',confirmed:bool=False):
+async def hosted_import_manuscript(request:Request,file:UploadFile=File(...),chapter_heading:str='heading1',confirmed:bool=False,resumable:bool=False):
     from hosted.document_mutations import install_existing_document
+    if resumable:_require_manuscript_revisions()
     raw=await _upload_bytes(file)
     try:
+        if resumable:
+            return await _run_document_import(_revision_import().begin_document,_pid(request),_uid(),raw,
+                file.filename or 'book.docx',chapter_heading,operation=operation_for('document_replace'),
+                replace_main=True,confirmed=confirmed)
         tabs,warnings=await _run_document_import(_parse_existing_import,raw,file.filename or 'book.docx',chapter_heading)
         result=await _run_document_import(install_existing_document,_domain(),_pid(request),_uid(),tabs,
             operation=operation_for('document_replace'),replace_main=True,confirmed=confirmed)
@@ -1295,14 +1327,81 @@ async def hosted_document_import_finish(job_id:str):
 
 
 @router.post('/api/documents/import')
-async def hosted_import_document_tabs(request:Request,file:UploadFile=File(...),after_document_id:str='',chapter_heading:str='heading1'):
+async def hosted_import_document_tabs(request:Request,file:UploadFile=File(...),after_document_id:str='',chapter_heading:str='heading1',resumable:bool=False):
     from hosted.document_mutations import install_existing_document
+    if resumable:_require_manuscript_revisions()
     raw=await _upload_bytes(file)
     try:
+        if resumable:
+            return await _run_document_import(_revision_import().begin_document,_pid(request),_uid(),raw,
+                file.filename or 'document.docx',chapter_heading,operation=operation_for('document_append'),
+                replace_main=False,after_document_id=after_document_id)
         tabs,warnings=await _run_document_import(_parse_existing_import,raw,file.filename or 'document.docx',chapter_heading)
         result=await _run_document_import(install_existing_document,_domain(),_pid(request),_uid(),tabs,
             operation=operation_for('document_append'),after_document_id=after_document_id)
         return {**result,'warnings':warnings}
+    except Exception as exc:raise _error(exc)
+
+
+# Every operation derives its authority from the current request. Job IDs and
+# supplied generation/batch values are preconditions, never permission grants.
+@router.get('/api/import/revisions/{job_id}')
+async def hosted_revision_import_status(request:Request,job_id:str):
+    _require_manuscript_revisions()
+    try:return await _run_document_import(_revision_import().status,_pid(request),_uid(),job_id)
+    except Exception as exc:raise _error(exc)
+
+
+@router.post('/api/import/revisions/{job_id}/step')
+async def hosted_revision_import_step(request:Request,job_id:str,batch:int):
+    _require_manuscript_revisions()
+    try:return await _run_document_import(_revision_import().step,_pid(request),_uid(),job_id,batch)
+    except Exception as exc:raise _error(exc)
+
+
+@router.post('/api/import/revisions/{job_id}/finish')
+async def hosted_revision_import_finish(request:Request,job_id:str):
+    _require_manuscript_revisions()
+    # AnyIO copies the middleware's bound structural action into this worker;
+    # the service checks its actor/project and publishes the pointer with Undo.
+    try:return await _run_document_import(_revision_import().finish,_pid(request),_uid(),job_id)
+    except Exception as exc:raise _error(exc)
+
+
+@router.post('/api/import/revisions/{job_id}/cancel')
+async def hosted_revision_import_cancel(request:Request,job_id:str):
+    _require_manuscript_revisions()
+    try:return await _run_document_import(_revision_import().cancel,_pid(request),_uid(),job_id)
+    except Exception as exc:raise _error(exc)
+
+
+@router.post('/api/manuscript/adoptions')
+async def hosted_manuscript_adoption_begin(request:Request):
+    _require_manuscript_revisions()
+    body=await _body(request)
+    try:return await _run_document_import(_manuscript_adoption().begin,_pid(request),_uid(),
+        generation=body.get('generation'),operation=operation_for('manuscript_adoption'))
+    except Exception as exc:raise _error(exc)
+
+
+@router.get('/api/manuscript/adoptions/{job_id}')
+async def hosted_manuscript_adoption_status(request:Request,job_id:str):
+    _require_manuscript_revisions()
+    try:return await _run_document_import(_manuscript_adoption().status,_pid(request),_uid(),job_id)
+    except Exception as exc:raise _error(exc)
+
+
+@router.post('/api/manuscript/adoptions/{job_id}/step')
+async def hosted_manuscript_adoption_step(request:Request,job_id:str,batch:int):
+    _require_manuscript_revisions()
+    try:return await _run_document_import(_manuscript_adoption().step,_pid(request),_uid(),job_id,batch)
+    except Exception as exc:raise _error(exc)
+
+
+@router.post('/api/manuscript/adoptions/{job_id}/finish')
+async def hosted_manuscript_adoption_finish(request:Request,job_id:str):
+    _require_manuscript_revisions()
+    try:return await _run_document_import(_manuscript_adoption().finish,_pid(request),_uid(),job_id)
     except Exception as exc:raise _error(exc)
 
 

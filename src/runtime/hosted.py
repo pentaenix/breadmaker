@@ -32,6 +32,7 @@ from hosted.runtime_services import (
 from hosted.storage import MemoryObjectStore
 from hosted.storage.google_driver import GoogleCloudObjectStore
 from hosted.action_journal import ActionDocumentStore
+from hosted.manuscript_visibility import ManuscriptDocumentStore
 from hosted.account_lifecycle import AccountLifecycleDocumentStore, AccountLifecycleObjectStore
 from runtime.contracts import RuntimeServices
 
@@ -74,6 +75,7 @@ _HOSTED_CAPABILITIES={
     'account_authentication':False,
     'hosted_collaboration':False,
     'realtime_collaboration':False,
+    'hosted_manuscript_revisions':False,
 }
 
 
@@ -110,6 +112,9 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
     environment=str(os.environ.get('BREADMAKER_ENV') or ('development' if runtime_mode=='hosted_dev' else '')).strip().lower()
     _validate_mode(runtime_mode,auth_mode,environment)
     _validate_worker_configuration()
+    revision_flag=os.environ.get('BREADMAKER_HOSTED_MANUSCRIPT_REVISIONS_ENABLED','')
+    if revision_flag not in {'','false','0','true'}:
+        raise RuntimeError('HOSTED_MANUSCRIPT_REVISIONS_CONFIGURATION_INVALID')
 
     documents,objects=_stores(runtime_mode, documents, objects)
     lifecycle = None
@@ -120,9 +125,13 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
         # Explicit deterministic integration injection; ordinary local runtime
         # and the historical memory-only purge rehearsals stay unchanged.
         lifecycle = documents
+    if revision_flag=='true' and lifecycle is None:
+        raise RuntimeError('HOSTED_MANUSCRIPT_REVISIONS_LIFECYCLE_REQUIRED')
     if lifecycle is not None:
         objects = AccountLifecycleObjectStore(objects, lifecycle)
-    documents=ActionDocumentStore(documents)
+    # Readers ship before writers and remain present when the writer flag is
+    # rolled back. Never unwrap the lifecycle fence for manuscript reads.
+    documents=ActionDocumentStore(ManuscriptDocumentStore(documents))
     project_authority=FirestoreProjectRepository(documents)
     users=HostedUserRepository(HostedStructuredRepository(documents))
 
@@ -187,6 +196,7 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
     editing_flag=os.environ.get('BREADMAKER_EDITOR_HIGHLIGHTS_ENABLED','')
     if editing_flag not in {'','false','0','true'}:raise RuntimeError('HOSTED_EDITOR_HIGHLIGHTS_CONFIGURATION_INVALID')
     capabilities['editor_highlights']=editing_flag=='true'
+    capabilities['hosted_manuscript_revisions']=revision_flag=='true' and lifecycle is not None
     capabilities['account_erasure_fence'] = lifecycle is not None
     capabilities['developer_identity']=auth_mode=='developer'
     capabilities['account_sessions']=auth_mode in {'test','session','identity_platform'}
