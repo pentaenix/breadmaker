@@ -467,3 +467,136 @@ def test_v3_asset_alias_maps_cannot_change_blob_identity_or_escape_paths(case):
         entries['manifest.json'] = json.dumps(manifest).encode()
     with pytest.raises(ValueError, match='ASSET_ALIAS_MAP_INVALID'):
         prepare_project_package(rewrite(source, edit), TARGET)
+
+
+HOSTILE_HISTORY_ID = 'x"><style>body{display:none}</style><img src=x onerror=alert(1)><!--'
+
+
+def frozen_v3_package(logical, snapshot):
+    ids = {'project_id': PID, ('snapshot_id' if logical == 'review_snapshot' else 'checkpoint_id'): 'frozen_one'}
+    if logical == 'review_snapshot':
+        ids['review_id'] = 'review_one'
+    entities = {logical: [{'ids': ids, 'data': {'snapshot': snapshot}}]}
+    if logical == 'review_snapshot':
+        entities['review'] = [{'ids': {'project_id': PID, 'review_id': 'review_one'}, 'data': {'name': 'Frozen Review'}}]
+    result = io.BytesIO()
+    with zipfile.ZipFile(result, 'w') as archive:
+        archive.writestr('manifest.json', json.dumps({'format': 'breadmaker-hosted-project', 'format_version': 3}))
+        archive.writestr('project.json', json.dumps({'entities': entities}))
+    return result.getvalue()
+
+
+@pytest.mark.parametrize('logical', ['review_snapshot', 'checkpoint'])
+@pytest.mark.parametrize('field', ['source_chapter_id', 'source_scene_id', 'source_block_id', 'id', 'image_row_id'])
+def test_v3_frozen_rendering_identities_reject_markup_before_any_staging(logical, field):
+    from hosted.native_package import prepare_project_package
+    snapshot = {'chapters': [{'id': 1, 'source_chapter_id': 'chapter_old', 'title': 'Frozen'}],
+                'blocks': [{'id': 1, 'source_chapter_id': 'chapter_old', 'source_block_id': 'b_old',
+                            'text_content': 'Safe prose', 'content_html': 'Safe prose'}]}
+    snapshot['blocks'][0][field] = HOSTILE_HISTORY_ID
+    if field == 'source_chapter_id':
+        snapshot['chapters'][0][field] = HOSTILE_HISTORY_ID
+    raw = frozen_v3_package(logical, snapshot)
+    with pytest.raises(ValueError, match='HISTORY_IDENTITY_INVALID'):
+        prepare_project_package(raw, TARGET)
+    service, docs, objects = fenced_service()
+    with pytest.raises(ValueError, match='HISTORY_IDENTITY_INVALID'):
+        service.import_bytes(raw, OWNER)
+    assert not list(objects.list_prefix('projects/'))
+    assert not [key for key in docs._documents if key[0] == 'projects']
+
+
+@pytest.mark.parametrize('snapshot', [
+    {'chapters': ['chapter_old']}, {'blocks': {'id': 'b_old'}}, {'chapter': ['chapter_old']},
+    {'blocks': [{'id': True}]}, {'blocks': [{'source_block_id': {'id': 'b_old'}}]},
+    {'blocks': [{'source_chapter_id': ['chapter_old']}]}, {'checkpoint_ids': [HOSTILE_HISTORY_ID]},
+])
+def test_v3_frozen_history_requires_typed_rows_and_scalar_identities(snapshot):
+    from hosted.native_package import prepare_project_package
+    with pytest.raises(ValueError, match='HOSTED_PACKAGE_HISTORY_'):
+        prepare_project_package(frozen_v3_package('review_snapshot', snapshot), TARGET)
+
+
+@pytest.mark.parametrize('logical', ['review_snapshot', 'checkpoint'])
+def test_v3_frozen_native_join_ids_and_deleted_opaque_sources_remain_unchanged(logical):
+    from hosted.native_package import prepare_project_package
+    snapshot = {'chapters': [{'id': 1, 'source_chapter_id': 'chapter_deleted', 'title': 'Frozen "title"'}],
+                'blocks': [{'id': 2, 'source_chapter_id': 'chapter_deleted', 'source_block_id': 'b_deleted',
+                            'source_scene_id': None, 'image_row_id': '', 'text_content': 'Saved prose'}],
+                'questions': [{'id': 'snapshotquestion_deleted', 'prompt': 'Still preserved?'}],
+                'checkpoint_ids': ['checkpoint_deleted'],
+                'native_source': {'original_id': 'Untouched inert evidence: <original>', 'blob_b64': 'e30='}}
+    plan = prepare_project_package(frozen_v3_package(logical, snapshot), TARGET)
+    restored = next(row for row in plan['records'] if row['entity'] == logical)
+    assert restored['data']['snapshot'] == snapshot
+
+
+def test_real_native_history_projection_remains_valid_for_public_v3_preflight():
+    from hosted.native_history import prepare_native_history
+    from hosted.native_package import prepare_project_package
+    from tests.test_v10596_native_history_import import _fixture
+    con, ids, _ = _fixture()
+    try:
+        history = prepare_native_history(con, TARGET, ids)
+        for (logical, _), data in history.payloads.items():
+            if logical in {'review_snapshot', 'checkpoint'}:
+                snapshot = data['snapshot']
+                plan = prepare_project_package(frozen_v3_package(logical, snapshot), TARGET)
+                assert next(row for row in plan['records'] if row['entity'] == logical)['data']['snapshot'] == snapshot
+    finally:
+        con.close()
+
+
+@pytest.mark.parametrize('logical', ['review_snapshot', 'checkpoint'])
+@pytest.mark.parametrize('field', ['color', 'marker_color'])
+@pytest.mark.parametrize('color', ['#123456;position:fixed;inset:0', 'url(https://example.invalid/image)', '#fff', {'value': '#123456'}])
+def test_v3_review_css_colors_reject_property_and_url_syntax(logical, field, color):
+    from hosted.native_package import prepare_project_package
+    snapshot = {'markers': [{'id': 1, field: color}]}
+    with pytest.raises(ValueError, match='REVIEW_COLOR_INVALID'):
+        prepare_project_package(frozen_v3_package(logical, snapshot), TARGET)
+
+
+@pytest.mark.parametrize('color', ['', None, '#aBc123'])
+def test_v3_review_hex_colors_preserve_frozen_values_and_evidence(color):
+    from hosted.native_package import prepare_project_package
+    snapshot = {'markers': [{'id': 1, 'color': color}],
+                'native_source': {'color': 'Original inert evidence: not a CSS value'}}
+    plan = prepare_project_package(frozen_v3_package('review_snapshot', snapshot), TARGET)
+    assert next(row for row in plan['records'] if row['entity'] == 'review_snapshot')['data']['snapshot'] == snapshot
+
+
+@pytest.mark.parametrize('logical,field,id_field', [
+    ('review_marker_label', 'color', 'marker_label_id'),
+    ('review_highlight', 'marker_color', 'highlight_id'),
+])
+def test_v3_live_review_marker_and_feedback_colors_are_checked_before_staging(logical, field, id_field):
+    from hosted.native_package import prepare_project_package
+    raw = frozen_v3_package('review_snapshot', {'markers': []})
+    def edit(entries):
+        doc = json.loads(entries['project.json'])
+        ids = {'project_id': PID, id_field: 'item_one'}
+        if logical == 'review_highlight':
+            ids['review_id'] = 'review_one'
+        doc['entities'][logical] = [{'ids': ids, 'data': {field: '#123456;position:fixed'}}]
+        entries['project.json'] = json.dumps(doc).encode()
+    with pytest.raises(ValueError, match='REVIEW_COLOR_INVALID'):
+        prepare_project_package(rewrite(raw, edit), TARGET)
+
+
+def test_native_frozen_marker_css_is_checked_after_original_hash_validation(tmp_path):
+    from storage.values import review_snapshot_content_hash
+    con, path = database(tmp_path)
+    try:
+        insert(con, 'reviews', id='review_one', project_id=1, name='Frozen Review')
+        marker = {'source_marker_id': 1, 'position': 0, 'name': 'Marker', 'description': '',
+                  'color': '#123456;position:fixed'}
+        permissions = {'permission_read': 1, 'permission_comment': 1, 'permission_suggest': 1, 'permission_feedback': 1}
+        digest = review_snapshot_content_hash('review_one', 1, 'manuscript', permissions, [], [], [], [], [marker])
+        insert(con, 'review_snapshots', id='snapshot_one', review_id='review_one', round_number=1,
+               status='closed', source_generation=1, scope_type='manuscript', content_hash=digest, **permissions)
+        insert(con, 'review_snapshot_markers', id=1, snapshot_id='snapshot_one', **marker)
+        with pytest.raises(ValueError, match='REVIEW_COLOR_INVALID'):
+            prepare_native_package(package(con, path), TARGET)
+    finally:
+        con.close()

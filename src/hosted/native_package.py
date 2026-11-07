@@ -482,6 +482,9 @@ def prepare_native_archive(archive, manifest, pid, *, name_override=None, exclud
         if find_unsafe_project_html(con) is not None:
             raise ValueError('HOSTED_PACKAGE_UNSAFE_HTML')
         planned, historical_assets = _plan_native_records(con, pid, excluded=excluded)
+        for entry in planned:
+            _validate_frozen_history(entry['entity'], entry['data'])
+            _validate_review_colors(entry['entity'], entry['data'])
         by_path = {asset['path']: asset for asset in assets}
         for path, raw in historical_assets:
             asset = _validated_asset(path, raw)
@@ -540,7 +543,87 @@ def prepare_project_package(payload, pid, *, name_override=None, native_only=Fal
         raise ValueError('HOSTED_PACKAGE_INVALID') from exc
 
 
+def _validate_review_colors(logical, data):
+    if not logical.startswith('review') and logical != 'checkpoint':
+        return
+    stack = [data]
+    while stack:
+        value = stack.pop()
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if key == 'native_source':
+                    continue
+                if key in {'color', 'marker_color'}:
+                    # Match normalize_color's six-digit hex/empty contract but
+                    # never rewrite immutable snapshots or their source hashes.
+                    if child is not None and (not isinstance(child, str) or
+                            child.strip() and not re.fullmatch(r'#[0-9a-fA-F]{6}', child.strip())):
+                        raise ValueError('HOSTED_PACKAGE_REVIEW_COLOR_INVALID')
+                else:
+                    stack.append(child)
+        elif isinstance(value, list):
+            stack.extend(value)
+
+
+def _validate_frozen_history(logical, data):
+    """Validate rendering identities without rewriting frozen source evidence.
+
+    Native round joins retain integer PKs; mapped source IDs and hosted captures
+    use opaque strings. Neither is HTML. Deleted source records remain valid
+    history, so this checks shape/identity syntax, not current live membership.
+    """
+    if logical not in {'review_snapshot', 'checkpoint'}:
+        return
+    snapshot = data.get('snapshot')
+    if not isinstance(snapshot, dict):
+        raise ValueError('HOSTED_PACKAGE_HISTORY_SHAPE_INVALID')
+    row_groups = {'tabs', 'documents', 'chapters', 'scenes', 'blocks', 'markers',
+                  'questions', 'checkpoints', 'annotations', 'comment_threads',
+                  'comment_messages', 'reviews', 'canvases', 'maps', 'labels',
+                  'icon_markers', 'scene_gaps', 'chapter_outlines'}
+    for key in row_groups & snapshot.keys():
+        rows = snapshot[key]
+        if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+            raise ValueError('HOSTED_PACKAGE_HISTORY_SHAPE_INVALID')
+    for key in {'tab', 'chapter', 'project'} & snapshot.keys():
+        if snapshot[key] is not None and not isinstance(snapshot[key], dict):
+            raise ValueError('HOSTED_PACKAGE_HISTORY_SHAPE_INVALID')
+
+    def identity(value, *, optional=False):
+        if optional and (value is None or value == ''):
+            return
+        if type(value) is int and value > 0:
+            return
+        if isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9_-]{1,160}', value):
+            return
+        raise ValueError('HOSTED_PACKAGE_HISTORY_IDENTITY_INVALID')
+
+    # Apply the frozen schema's identity convention to all nested product rows,
+    # including checkpoint notes and captured UI state. Do not coerce values:
+    # booleans, arrays and objects are not identities even if str() looks safe.
+    stack = [data]
+    while stack:
+        value = stack.pop()
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if key == 'native_source':
+                    continue  # Inert export/audit evidence, never rendered.
+                if key == 'id' or key.endswith('_id'):
+                    identity(child, optional=key != 'id')
+                elif key.endswith('_ids'):
+                    if not isinstance(child, list):
+                        raise ValueError('HOSTED_PACKAGE_HISTORY_SHAPE_INVALID')
+                    for ident in child:
+                        identity(ident)
+                else:
+                    stack.append(child)
+        elif isinstance(value, list):
+            stack.extend(value)
+
+
 def _validate_rendered_payload(logical, data):
+    _validate_frozen_history(logical, data)
+    _validate_review_colors(logical, data)
     from security.content_security import is_safe_inline_html, is_safe_cut_html, is_safe_project_asset_path
     stack = [data]
     while stack:

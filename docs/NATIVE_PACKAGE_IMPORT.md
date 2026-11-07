@@ -75,3 +75,15 @@ Canonical v3 archives need no alias map and remain compatible with prior importe
 An archive containing noncanonical aliases requires the updated importer: older
 versions ignore the optional mapping. Published hosted asset records remain in the
 existing storage format and remain readable by the previous runtime.
+
+Frozen Review/Checkpoint rendering projections also validate their row-container
+shapes and nested identity fields before staging. Positive native integer join
+IDs and existing opaque source IDs are preserved without rewriting; markup,
+container-valued IDs and malformed row arrays are rejected. Historical references
+need not still exist in the live manuscript. The separate inert `native_source`
+evidence remains byte-for-byte portable. Renderer escaping remains defense in depth.
+
+Imported live Review markers, feedback colors and frozen Review/Checkpoint color
+fields accept only empty values or six-digit hex colors, matching the local color
+contract. CSS declarations and URLs fail preflight; valid frozen values and hashes
+are not normalized or rewritten.
