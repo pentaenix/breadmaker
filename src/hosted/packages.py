@@ -16,6 +16,7 @@ import json
 import sqlite3
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
+from contextvars import copy_context
 from string import Formatter
 from typing import Any, Mapping
 
@@ -541,7 +542,11 @@ class HostedProjectPackageService:
             return self._prepare_import_entity(entry['entity'],{'project_id':pid},
                 entry['data'],entity_id=entry['id'],read_bundle=pointers.get(entry['id']))
         with ThreadPoolExecutor(max_workers=8) as pool:
-            prepared=list(pool.map(prepare,entries))
+            # Preserve both authenticated session and unpublished import scope.
+            # A fresh Context per item avoids sharing an entered Context between
+            # workers, and never leaks authority into a reused worker thread.
+            futures=[pool.submit(copy_context().run,prepare,entry) for entry in entries]
+            prepared=[future.result() for future in futures]
         if len({path for path,_ in prepared})!=len(prepared):
             raise ValueError('HOSTED_IMPORT_DUPLICATE_ENTITY')
         def stage(tx):

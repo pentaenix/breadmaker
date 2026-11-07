@@ -7,6 +7,7 @@ new project only after every batch has committed. Existing projects are untouche
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from contextvars import copy_context
 import gzip
 import hashlib
 import json
@@ -17,6 +18,7 @@ from hosted.document_io import parse_document_bytes
 from hosted.firestore.contracts import DocumentConflict, DocumentNotFound, HostedValidationError
 from hosted.firestore.ids import require_opaque_id, require_user_id
 from hosted.idempotency import stable_entity_id, stable_project_id
+from hosted.import_staging import package_import_staging
 from security.image_security import HOSTED_DEFAULT_IMAGE_BYTES, inspect_hosted_image_bytes
 from hosted.packages import HostedProjectPackageService
 
@@ -43,6 +45,8 @@ class DocumentImport:
         data=dict(row.data)
         if data['actor']!=uid:raise DocumentNotFound('HOSTED_IMPORT_NOT_FOUND')
         if time.time()>data['expires_at']:raise DocumentConflict('HOSTED_IMPORT_EXPIRED')
+        if not data.get('operation') or stable_project_id(data['operation'])!=data['project_id']:
+            raise DocumentConflict('HOSTED_IMPORT_RESTART_REQUIRED')
         return data
 
     @staticmethod
@@ -105,15 +109,22 @@ class DocumentImport:
         # Assets are validated/published/verified under the NEW unpublished
         # project before any referencing block can become visible. Binaries
         # never inflate the JSON plans or enter Firestore documents.
-        with ThreadPoolExecutor(max_workers=8) as pool:
-            list(pool.map(lambda asset:self.packages._stage_asset(pid,uid,*asset),assets.values()))
+        # Use the same durable, actor-bound unpublished-prefix authority as
+        # portable imports. The production erasure fence must remain enabled.
+        self.packages._reserve_import(operation=op,user_id=uid,digest=fingerprint,name_override=name)
         def publish(item):
             index,part=item
             return self.domain._publish_hybrid('manuscript_block',
                 {'project_id':pid,'block_id':f'b_plan_{index}'},gzip.compress(part,mtime=0))
-        with ThreadPoolExecutor(max_workers=8) as pool:
-            plans=list(pool.map(publish,enumerate(encoded)))
-        data={'actor':uid,'project_id':pid,'title':name,'fingerprint':fingerprint,
+        with package_import_staging(op,uid):
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                futures=[pool.submit(copy_context().run,self.packages._stage_asset,pid,uid,*asset)
+                    for asset in assets.values()]
+                for future in futures:future.result()
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                futures=[pool.submit(copy_context().run,publish,item) for item in enumerate(encoded)]
+                plans=[future.result() for future in futures]
+        data={'actor':uid,'project_id':pid,'operation':op,'title':name,'fingerprint':fingerprint,
             'plans':plans,'next_batch':0,'chapters':chapters,'images':sum(entry['entity']=='manuscript_block' and entry['data'].get('block_type')=='image' for entry in entries),'warnings':warnings,
             'expires_at':time.time()+LIFETIME}
         def reserve(tx):
@@ -142,7 +153,8 @@ class DocumentImport:
                 hashlib.sha256(encoded).hexdigest()!=pointer['object_sha256']):
             raise HostedValidationError('HOSTED_IMPORT_PLAN_INTEGRITY_FAILED')
         entries=json.loads(gzip.decompress(encoded))
-        self.packages.stage_import_batch(data['project_id'],entries,bundle_blocks=True)
+        with package_import_staging(data['operation'],uid):
+            self.packages.stage_import_batch(data['project_id'],entries,bundle_blocks=True)
         def advance(tx):
             current=tx.get(self._path(uid,job))
             updated=dict(current.data)
@@ -158,6 +170,7 @@ class DocumentImport:
         data=self._load(uid,job)
         if data['next_batch']!=len(data['plans']):
             raise DocumentConflict('HOSTED_IMPORT_NOT_FINISHED')
-        project=self.packages._finish_import(data['project_id'],data['title'],uid)
+        with package_import_staging(data['operation'],uid):
+            project=self.packages._finish_import(data['project_id'],data['title'],uid)
         return {'ok':True,'reload':True,'project':project,'chapters':data['chapters'],
             'images':int(data.get('images') or 0),'warnings':data['warnings']}
