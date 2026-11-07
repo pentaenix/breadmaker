@@ -203,6 +203,79 @@ def test_native_evidence_cannot_silently_replace_a_different_rendered_projection
         prepare_native_export(records, mapping, assets)
 
 
+@pytest.mark.parametrize('location,key,value', [
+    ('projection', 'id', 'forged_other_identity'),
+    ('projection', 'review_id', 'forged_other_identity'),
+    ('row', 'source_generation', 999),
+    ('row', 'content_hash', '0' * 64),
+    ('row', 'scope_type', 'manuscript'),
+    ('row', 'round_number', 2),
+    ('row', 'permission_comment', 0),
+    ('parents', 'review_id', 'forged_other_identity'),
+    ('parents', 'snapshot_id', 'forged_other_identity'),
+])
+def test_native_review_identity_and_immutable_outer_metadata_must_agree(location, key, value):
+    records, mapping, assets, _ = _source()
+    item = records['review_snapshot'][0]
+    target = {'projection': item['data']['snapshot'], 'row': item['data'], 'parents': item['ids']}[location]
+    target[key] = value
+    with pytest.raises(ValueError, match='PROJECTION_DIVERGED'):
+        prepare_native_export(records, mapping, assets)
+
+
+def test_a_forged_identity_cannot_match_a_null_frozen_reference():
+    records, mapping, assets, _ = _source()
+    records['review_snapshot'][0]['data']['snapshot']['blocks'][0]['source_scene_id'] = 'forged'
+    with pytest.raises(ValueError, match='PROJECTION_DIVERGED'):
+        prepare_native_export(records, mapping, assets)
+
+
+@pytest.mark.parametrize('key,value', [
+    ('id', 'checkpoint_legacy_999'), ('scope', 'book'),
+    ('source_tab_id', 'tab_legacy_999'), ('source_chapter_id', 'chapter_legacy_999'),
+    ('source_chapter_title', 'Different source title'),
+    ('source_chapter_created_at', '2026-01-01'), ('include_markup', False),
+])
+def test_native_checkpoint_immutable_outer_metadata_must_agree(key, value):
+    records, mapping, assets, _ = _source()
+    records['checkpoint'][0]['data'][key] = value
+    with pytest.raises(ValueError, match='PROJECTION_DIVERGED'):
+        prepare_native_export(records, mapping, assets)
+
+
+@pytest.mark.parametrize('status,closed,expected', [
+    ('closed', True, 'closed'), ('active', False, 'open'), ('paused', False, 'paused'),
+])
+def test_later_review_lifecycle_and_hosted_timestamps_do_not_change_frozen_hashes(status, closed, expected):
+    records, mapping, assets, source = _source()
+    row = records['review_snapshot'][0]['data']; sid = row['id']
+    row.update(created_at='2026-11-07', generation=42, status='paused', paused_at='2026-11-06')
+    review = records['review'][0]['data']
+    review.update(status=status, active_snapshot_id='' if closed else sid,
+                  closed_snapshot_ids=[sid] if closed else [])
+    if closed:
+        row['closed_at'] = '2026-11-07'
+    result = prepare_native_export(records, mapping, assets).records['review_snapshot'][0]['data']
+    assert result['status'] == expected
+    assert result['paused_at'] == '2026-11-06'
+    if closed:
+        assert result['closed_at'] == '2026-11-07'
+    assert result['created_at'] == source['review_snapshots'][0]['created_at']
+    assert result['content_hash'] == source['review_snapshots'][0]['content_hash']
+
+
+def test_checkpoint_editable_metadata_and_current_lineage_survive_unchanged():
+    records, mapping, assets, _ = _source()
+    row = records['checkpoint'][0]['data']
+    row.update(name='Renamed', description='Edited description', current_source_chapter_id='chapter_legacy_12',
+               current_source_chapter_created_at='2026-11-07', created_at='2026-11-07', updated_at='2026-11-08')
+    result = prepare_native_export(records, mapping, assets).records['checkpoint'][0]['data']
+    assert result['name'] == 'Renamed' and result['description'] == 'Edited description'
+    assert result['current_source_chapter_id'] == 12
+    assert result['current_source_chapter_created_at'] == '2026-11-07'
+    assert result['created_at'] == '2026-11-07' and result['updated_at'] == '2026-11-08'
+
+
 def test_self_signed_native_checkpoint_evidence_cannot_reintroduce_script_html():
     records, mapping, assets, _ = _source()
     row = records['checkpoint'][0]['data']

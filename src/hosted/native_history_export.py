@@ -185,8 +185,10 @@ def prepare_native_export(records, mapping, assets):
     def compare(actual, original, kind=None):
         if actual == original:
             return
-        if kind and str(native_id(kind, actual)) == str(original):
-            return
+        if kind:
+            restored = native_id(kind, actual)
+            if restored is not None and str(restored) == str(original):
+                return
         _fail('PROJECTION_DIVERGED')
 
     for item in records.get('review_snapshot', []):
@@ -218,11 +220,26 @@ def prepare_native_export(records, mapping, assets):
             _fail('HASH_MISMATCH')
         sid = str(row['id']); rid = str(row.get('review_id') or item['ids'].get('review_id'))
         compare(sid, original['id'], 'review_snapshot'); compare(rid, original['review_id'], 'review')
+        # The rendering and canonical row must describe this exact round, not
+        # merely carry evidence whose original IDs happen to resolve to it.
+        compare(projected.get('id'), sid)
+        compare(projected.get('review_id'), rid)
+        for key, value in (('snapshot_id', sid), ('review_id', rid)):
+            if key in item['ids']:
+                compare(item['ids'][key], value)
         for key in original:
             if key not in {'id', 'review_id', 'status', 'paused_at', 'closed_at'}:
                 compare(projected.get(key), original[key])
+                # Created-at is a new hosted record timestamp. Round lifecycle
+                # is mutable and projected from the owning Review below; all
+                # other original metadata remains part of the frozen capture.
+                if key != 'created_at':
+                    compare(row.get(key), original[key])
         restored = deepcopy(original)
         restored.update(id=sid, review_id=rid)
+        for key in ('status', 'paused_at', 'closed_at'):
+            if key in row:
+                restored[key] = row[key]
         review = reviews.get(rid, {})
         if sid in review.get('closed_snapshot_ids', []) or review.get('status') in {'closed', 'archived'}:
             restored['status'] = 'closed'
@@ -281,6 +298,24 @@ def prepare_native_export(records, mapping, assets):
         expanded += len(raw)
         if expanded > 192 * 1024 * 1024:
             _fail('EVIDENCE_INVALID')
+        compare(row.get('id'), evidence.get('id'), 'checkpoint')
+        if 'checkpoint_id' in item['ids']:
+            compare(item['ids']['checkpoint_id'], row.get('id'))
+        compare(row.get('scope'), source.get('scope'))
+        # These source locators describe the immutable capture. In contrast,
+        # current_source_* may legitimately be rebound after restoring a copy,
+        # and name/description are independently editable user metadata.
+        for group, kind in (('tab', 'document_tab'), ('chapter', 'chapter')):
+            captured = source.get(group)
+            if not isinstance(captured, dict):
+                continue
+            for column in ('id', 'title', 'created_at', 'position'):
+                outer = 'source_' + group + '_' + column
+                if outer in row and column in captured:
+                    compare(row[outer], captured[column], kind if column == 'id' else None)
+        for key in ('include_scenes', 'include_markup', 'include_notes'):
+            if key in row and key in source:
+                compare(row[key], source[key])
         _validate_blocks(source['blocks'])
         if set(projected) != set(source) | {'native_source'}:
             _fail('PROJECTION_DIVERGED')
