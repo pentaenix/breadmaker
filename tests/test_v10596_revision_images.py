@@ -94,17 +94,15 @@ def test_new_images_hidden_from_every_metadata_and_committed_asset_read_until_fi
         assert all(ASSET_REVISIONS_FIELD not in value and not create for _, value, create in changes)
 
 
-def test_proposed_asset_journal_hook_round_trips_and_preserves_global_shared_assets(monkeypatch):
-    # The parent owns the narrow production journal hook. This isolated synthetic
-    # rehearsal supplies it only in memory; no source allowlist is broadened.
-    import hosted.action_journal as journal_module
-    monkeypatch.setattr(journal_module, '_PRODUCT_COLLECTIONS', journal_module._PRODUCT_COLLECTIONS | {'assets'})
+def test_exact_asset_journal_hook_round_trips_and_preserves_global_shared_assets():
+    # Exercise real journal eligibility and recovery, not an expanded allowlist.
     make, raw, objects, pid, tab = setup()
     with actor():
         shared = assets(make, pid).put_blob(png('red'), '.png')
         existing = deepcopy(raw.query_collection(('projects', pid, 'assets'))[0])
         job, manifest, payloads = reserve(make, pid, tab, colors=('red', 'blue'))
-        make().stage(pid, OWNER, job, payloads)
+        make().publish_sources(pid, OWNER, job, payloads)
+        assert make().stage_sources(pid, OWNER, job, 0)['assets_ready']
         assert raw.get(existing.path) == existing
         service = make(); journal = ActionJournal(service.domain.documents)
         token = journal.begin(pid, OWNER)['token']

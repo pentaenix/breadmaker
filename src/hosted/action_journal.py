@@ -87,6 +87,16 @@ def _require_product_path(path, pid, uid):
     # exception exact: no other member, sibling state, ACL or descendant path.
     if path == ('projects', pid, 'members', uid, 'state', 'bookmark'):
         return
+    # Revision image promotion journals only canonical top-level content IDs.
+    # Keep assets OUT of the broad collection allowlist: nested assets and asset
+    # descendants must never become an alternate path to authority or arbitrary
+    # metadata. Existing membership and generation checks remain unchanged.
+    if 'assets' in path[2::2]:
+        if (len(path) == 4 and path[:3] == ('projects', pid, 'assets')
+                and isinstance(path[3], str) and path[3].startswith('asset_')
+                and len(path[3]) == 70 and all(ch in '0123456789abcdef' for ch in path[3][6:])):
+            return
+        raise HostedValidationError('HOSTED_ACTION_ENTITY_UNSUPPORTED')
     if (path[:2] != ('projects', pid) or len(path) < 4
             or path[2] not in _PRODUCT_COLLECTIONS
             or any(p in _DENIED_COLLECTIONS for p in path[2::2])):
