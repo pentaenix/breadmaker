@@ -294,7 +294,7 @@ def prepare_native_history(con, pid, id_maps):
             _fail('ASSET_INVALID')
         blob, digest, path = asset['payload'], str(ref['asset_hash']), str(ref['asset_path'])
         if (len(blob) != asset['byte_size'] or hashlib.sha256(blob).hexdigest() != digest
-                or not re.fullmatch(r'/api/assets/img_[A-Za-z0-9_-]+\.(?:png|jpg|webp)', path)):
+                or not re.fullmatch(r'/api/assets/[A-Za-z0-9_-]{1,160}\.(?:png|jpg|webp)', path)):
             _fail('ASSET_INVALID')
         if path in paths and paths[path] != blob:
             _fail('ASSET_CONFLICT')

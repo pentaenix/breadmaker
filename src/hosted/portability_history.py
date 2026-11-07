@@ -38,7 +38,7 @@ def _record(table: str, snapshot_id: str, source: Mapping[str, Any], values: dic
             'data': {'id': old, 'snapshot_id': snapshot_id, **values}}
 
 
-def prepare_review_rounds(records: Mapping[str, Any]) -> tuple[dict[str, list], set[str]]:
+def prepare_review_rounds(records: Mapping[str, Any], *, native_snapshot_ids=frozenset()) -> tuple[dict[str, list], set[str]]:
     """Project only the known read-only manuscript Review shape.
 
     A hosted snapshot includes product UI state but does *not* freeze selected
@@ -55,6 +55,8 @@ def prepare_review_rounds(records: Mapping[str, Any]) -> tuple[dict[str, list], 
     for item in snapshots:
         row = item['data']
         sid = str(row.get('id') or '')
+        if sid in native_snapshot_ids:
+            continue  # Verified native evidence already restored its six sections.
         rid = str(row.get('review_id') or item['ids'].get('review_id') or '')
         review = reviews.get(rid)
         body = row.get('snapshot')
