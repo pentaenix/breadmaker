@@ -21,8 +21,9 @@ Record preparation is bounded at 16 workers. Plan uploads remain bounded at eigh
 and preserve their durable eight-plan preparation checkpoints. Batch size,
 receipt chains, cancellation/expiry/account checks, object integrity checks,
 HTTP admission limits, and atomic final visibility are unchanged. Peak provider
-concurrency per preparation request can double; total RPC count and provider cost
-do not fall. Production quota/latency observation is required before claiming
+concurrency per preparation request can double; the logical adapter-operation count does not fall. Physical RPC counts and
+provider cost are unmeasured: provider writes can reload metadata, and Firestore
+transactions can involve additional calls and retries. Production quota/latency observation is required before claiming
 an end-to-end gain. No production import was repeated for this work.
 
 ## Reproduce the synthetic benchmark
@@ -42,12 +43,13 @@ One Mac run produced:
 - Previous fixed eight: 3.4495 seconds.
 - Refilled eight: 2.0739 seconds.
 - Refilled sixteen: 1.1598 seconds.
-- Every variant: 6,980 authority checks, 1,745 writes, 1,745 verified reads, with
+- Every variant: 6,980 authority guard calls, 1,745 object-write adapter calls, 1,745
+  verified-read adapter calls, with
   identical returned hashes.
 
 For a uniform-latency control (no injected stragglers), run the same command with
 `--straggler-every 0`. That run produced fixed eight 1.9326 seconds, refilled eight
-1.8636 seconds, and refilled sixteen 1.0186 seconds, with the same RPC counts and
+1.8636 seconds, and refilled sixteen 1.0186 seconds, with the same logical-operation counts and
 hashes. Refilling alone helped only about 4% in that distribution; the larger
 uniform-case gain came from doubled bounded concurrency. The straggler interval
 and multiplier are independently configurable via `--straggler-every` and
@@ -67,6 +69,14 @@ and durable-import tests remain unchanged. A full release gate is still required
 before release; focused tests do not establish release readiness.
 
 Focused checks on this checkpoint: 37 scheduler/fast-read/durable-import tests
-passed, followed by 96 native import and browser-contract tests passed. The full
-release verifier and private Cloud verification have not been run for this
-checkpoint. No version bump, push, deployment, or live re-import was performed.
+passed, followed by 96 native import and browser-contract tests passed. These focused checks used an existing development environment. A subsequent
+unchanged full verifier required a fresh exactly pinned environment. Its
+preflight/audits, 434 unit items, and 92 durable E2E items passed; Core/API had
+293/345 execution jobs pass and 52 fail. The browser stage reached 79/373 jobs
+(38 passed, 41 failed) before the doomed run was stopped under severe Mac load.
+One inspected failure was a hard 10-second fixture-setup timeout while importing
+app/workspace code, before the test assertion or this import scheduler ran.
+Resource pressure is a hypothesis, not proof that every failure is environmental.
+The aggregate gate is FAILED/INCOMPLETE, not green. Public exact-commit CI must
+pass before release. No timeout or verifier was modified. Private Cloud
+verification, deployment, and live re-import have not been performed.

@@ -2,7 +2,7 @@
 """Synthetic publication benchmark, NOT a production upload-speed prediction.
 
 Each object retains four fresh authority checks, one conditional write and one
-verified read. Injected latency models RPC wait; fixed-wave scheduling is the
+verified read. Injected latency models logical adapter-operation wait; fixed-wave scheduling is the
 previous implementation. No provider credentials or real project are used.
 """
 from concurrent.futures import ThreadPoolExecutor
@@ -31,20 +31,20 @@ def waves(fn, items):
 
 
 def measure(scheduler, count, latency, straggler_every, straggler_factor):
-    counts = {'authority_checks': 0, 'writes': 0, 'verified_reads': 0}
+    counts = {'authority_guard_calls': 0, 'object_write_calls': 0, 'object_verified_read_calls': 0}
     lock = Lock()
     def record(kind):
         with lock: counts[kind] += 1
         time.sleep(latency)
     class Store(MemoryObjectStore):
         def write_chunks(self, *args, **kwargs):
-            record('writes')
+            record('object_write_calls')
             return super().write_chunks(*args, **kwargs)
         def read_verified_bytes(self, name, *, if_generation_match, expected_size, expected_sha256):
-            record('verified_reads')
+            record('object_verified_read_calls')
             return b''.join(super().read_chunks(name, max_bytes=expected_size,
                                                if_generation_match=if_generation_match))
-    publisher = ImmutableObjectPublisher(_GuardedObjects(Store(), lambda: record('authority_checks')))
+    publisher = ImmutableObjectPublisher(_GuardedObjects(Store(), lambda: record('authority_guard_calls')))
     def publish(index):
         # A bounded straggler illustrates why fixed waves leave slots idle.
         if straggler_every and index % straggler_every == 0:
@@ -77,8 +77,8 @@ def main():
                               args.straggler_every, args.straggler_factor)
         if reference is None: reference = values
         assert values == reference
-        assert row['authority_checks'] == 4 * args.objects
-        assert row['writes'] == row['verified_reads'] == args.objects
+        assert row['authority_guard_calls'] == 4 * args.objects
+        assert row['object_write_calls'] == row['object_verified_read_calls'] == args.objects
         outputs[name] = row
     print(json.dumps({'kind': 'synthetic_injected_latency_not_production', 'objects': args.objects,
                       'latency_ms': args.latency_ms, 'straggler_every': args.straggler_every,
