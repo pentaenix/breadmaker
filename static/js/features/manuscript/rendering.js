@@ -231,8 +231,24 @@ async function selectScene(id,save=true,refreshSearch=true){
   cancelFullTextPreview();
   const request=state.manuscriptSelectionRequest=(state.manuscriptSelectionRequest||0)+1;
   if(save)await flushSave();if(request!==state.manuscriptSelectionRequest)return;
-  const data=await api(`/api/scenes/${id}/manuscript`);if(request!==state.manuscriptSelectionRequest)return;for(const [cid,rev] of Object.entries(data.chapter_revisions||{}))state.chapterRevisions.set(entityId(cid),rev);state.viewMode='scene';state.scene=data.scene;state.sceneData=data;state.sceneGap=null;state.chapter=null;state.chapterData=null;state.bookData=null;
+  const data=await loadSceneData(id);if(request!==state.manuscriptSelectionRequest)return;for(const [cid,rev] of Object.entries(data.chapter_revisions||{}))state.chapterRevisions.set(entityId(cid),rev);state.viewMode='scene';state.scene=data.scene;state.sceneData=data;state.sceneGap=null;state.chapter=null;state.chapterData=null;state.bookData=null;
   const meta=sceneById(id);if(meta?.tab_id||meta?.first_tab_id)state.activeDocumentId=entityId(meta.tab_id||meta.first_tab_id);normalizeManuscriptNavMode();syncManuscriptViewControls();resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();renderSceneEditor();$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
+}
+// Reuse only a complete Full Text snapshot whose exact revision has just been
+// authorized by the server. Never paint cached prose while validation is pending.
+async function loadSceneData(id){
+  if(runtimeSupports('hosted_persistence')){
+    const cached=[...state.bookCache.entries()].find(([,book])=>book.scenes?.some(scene=>String(scene.id)===String(id))&&book.blocks?.some(block=>String(block.scene_id)===String(id)));
+    if(cached){
+      const book=await loadBookData(cached[0]);
+      const scene=book.scenes?.find(row=>String(row.id)===String(id));
+      if(scene&&(!scene.tab_id||String(scene.tab_id)===String(cached[0]))&&book.blocks?.some(block=>String(block.scene_id)===String(id))){
+        const blocks=orderedBookBlocks(book).filter(block=>String(block.scene_id)===String(id)),blockIds=new Set(blocks.map(block=>String(block.id))),chapterIds=new Set(blocks.map(block=>String(block.chapter_id)));
+        return {scene,blocks,annotations:(book.annotations||[]).filter(row=>row.block_id?blockIds.has(String(row.block_id)):chapterIds.has(String(row.chapter_id))),chapter_revisions:Object.fromEntries([...chapterIds].map(cid=>[cid,String(book.project.generation)]))};
+      }
+    }
+  }
+  return api(`/api/scenes/${id}/manuscript`);
 }
 async function loadBookData(tabId,{preview=null,force=false,validated=false}={}){
   const id=entityId(tabId),project=runtimeSupports('hosted_persistence')?currentProjectIdentity():'',editGeneration=state.editGeneration,readEpoch=state.manuscriptReadEpoch||0,actor=typeof currentUserIdentity==='function'?currentUserIdentity():'';
@@ -246,7 +262,9 @@ async function loadBookData(tabId,{preview=null,force=false,validated=false}={})
     if(!state.hostedChapterFirst)return remember(updated);
   }
   if(!state.hostedChapterFirst){const data=await api(`/api/book?tab_id=${id}`);if(runtimeSupports('hosted_persistence'))active();for(const cid of data.cache_refresh_chapters||[])queueHostedReadCache(cid,data.project?.generation);return remember(data)}
-  const bundled=(state.chapters||[]).filter(ch=>String(ch.tab_id)===String(id)).length>4;
+  // Small imported tabs also have verified bundles. The server retains all
+  // capacity, byte and integrity limits and falls back to paged reads.
+  const bundled=true;
   if(bundled&&preview){
     // Existing text can be shown immediately, but is NEVER an editable result
     // of this read. Current authority/revision fences still gate publication.
@@ -257,6 +275,11 @@ async function loadBookData(tabId,{preview=null,force=false,validated=false}={})
   const data=await api(`/api/book?tab_id=${encodeURIComponent(id)}&manifest=true${bundled?'&bundled=true':''}`);
   active();
   if(data.bundled){
+    if(preview){
+      preview.initialize(data.chapters);const byChapter=new Map();
+      for(const block of data.blocks||[]){const cid=String(block.chapter_id);if(!byChapter.has(cid))byChapter.set(cid,[]);byChapter.get(cid).push(block)}
+      data.chapters.forEach((chapter,index)=>preview.chapter(index,byChapter.get(String(chapter.id))||[],index+1));
+    }
     const changed=await api(`/api/book?tab_id=${encodeURIComponent(id)}&manifest=true`,{headers:{'If-None-Match':data.read_tag},acceptNotModified:true});
     active();if(changed!==null)throw new Error('The manuscript changed while loading. Please reopen Full Text.');
     return remember(data);
