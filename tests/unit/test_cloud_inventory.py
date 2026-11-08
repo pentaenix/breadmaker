@@ -242,3 +242,15 @@ def test_disabled_and_missing_client_are_unavailable_not_zero(monkeypatch):
     assert client.calls == []
     missing = inventory.GoogleFirestoreInventoryProducer(enabled=True, utc_now=lambda: START)
     assert set(_payload(missing.collect())["metrics"].values()) == {None}
+
+
+def test_pinned_sdk_count_zero_representation_is_exported_as_integer(monkeypatch):
+    producer, _ = _producer(monkeypatch, {"users": [_row(0.0)], "projects": [_row(0.0)]})
+    payload = _payload(producer.collect())
+    assert payload["coverage"]["completeness"] == "complete"
+    assert all(type(value) is int and value == 0 for value in payload["metrics"].values())
+
+
+def test_snapshot_contract_still_rejects_float_zero_outside_sdk_boundary():
+    with pytest.raises(inventory.InventoryValidationError, match="COUNT_INVALID"):
+        inventory.InventorySnapshot(START, END, "complete", 0.0, 0)

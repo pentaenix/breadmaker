@@ -113,6 +113,9 @@ integer-or-null values. Counts must be genuine nonnegative integers at most
 9,007,199,254,740,991; no IDs, emails, titles, provider exception messages, or
 manuscript fields enter the payload. Each SDK COUNT stream is consumed at most
 two result rows, must contain exactly one `total` aggregate, and is closed.
+The pinned Firestore 2.34.0 SDK decodes COUNT zero as `0.0`; only that exact
+SDK representation is normalized to integer zero at the fixed COUNT boundary.
+All other floats and all non-integer snapshot/wire counts remain invalid.
 Queries have a 20-second RPC timeout and no retry. An overall 60-second budget
 and 900-second export freshness ceiling fail closed. Provider read times must
 fall inside the UTC observation window; clock reversal fails structurally.

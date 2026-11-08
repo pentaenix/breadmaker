@@ -13279,7 +13279,7 @@
     },
     {
       "file": "src/hosted/security/inventory.py",
-      "lines": 206,
+      "lines": 211,
       "symbols": [
         {
           "name": "InventoryValidationError",
@@ -13324,7 +13324,7 @@
         {
           "name": "GoogleFirestoreInventoryProducer",
           "kind": "class",
-          "line": 154
+          "line": 159
         }
       ]
     },

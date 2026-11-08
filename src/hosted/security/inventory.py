@@ -142,7 +142,12 @@ def _active_root_count(client: Any, collection: str) -> tuple[int, datetime]:
         result = row[0]
         if getattr(result, "alias", None) != "total":
             raise InventoryValidationError("HOSTED_INVENTORY_RESPONSE_INVALID")
-        value = _count(getattr(result, "value", None))
+        raw_value = getattr(result, "value", None)
+        # google-cloud-firestore 2.34.0 decodes integer_value OR double_value.
+        # Its COUNT zero therefore becomes 0.0. Normalize only that known
+        # representation at this fixed COUNT boundary; never coerce other
+        # floats, strings or bools. Snapshot/wire counts remain strict ints.
+        value = _count(0 if type(raw_value) is float and raw_value == 0.0 else raw_value)
         read_time = _utc(getattr(result, "read_time", None))
         if next(iterator, missing) is not missing:
             raise InventoryValidationError("HOSTED_INVENTORY_RESPONSE_INVALID")
