@@ -89,3 +89,46 @@ Editor 10.5.11 eliminated all seven `encoded` NameError regressions, but the own
 ## 2026-10-14 — Security firewall retention / 10.5.14 corrective
 
 Editor 10.5.13 user verification: 1,608 passed / 3 failed / 1 skipped, all three failures only from fixed SHA-256 expectations for the authorized 10.5.12 two-module verifier prewarm. The 10.5.14 corrective leaves `scripts/verify_release.py`, `tests/conftest.py`, all runtime, storage, IAM, and Cloud files unchanged, updating exactly three old expected hashes after comparing to 10.5.11/10.5.12 sources. The firewall continues to compare exact SHA-256 digests for all protected files. This is **not** proof of fully encrypted hosted storage, successful attack simulation, live tenant isolation or compliance. Full Editor user verification is pending.
+
+## Source-only operational inventory preparation (2026-11-08)
+
+`hosted.security.inventory` is a separate, default-disabled producer candidate.
+It is not wired into local or hosted runtime, has no endpoint, scheduler, client
+creation, environment switch, persistence, or Admin transport. No live provider
+query, IAM change, deployment, or collection activation accompanies this source.
+The existing user-scoped `DailyUsageMetrics` validation-only module is unchanged.
+
+The versioned `cloud_operational_inventory_v1` definition permits exactly two
+provider COUNT aggregates: top-level `users` where `status == active`, and
+top-level `projects` with the same filter. These are persisted application
+accounts and current published project roots. They are not distinct people,
+online/concurrent users, lifetime creations, or project counts joined against
+owner eligibility. Missing status is excluded, even where legacy runtime paths
+treat it as active. Staged, deleted and erasure-pending roots do not match. A
+successful zero is zero; unavailable, incomplete, stale, or failed data is null.
+
+The compact JSON contract contains only schema/source constants, UTC seconds,
+fixed coverage enums, and `active_cloud_accounts` / `current_cloud_projects`
+integer-or-null values. Counts must be genuine nonnegative integers at most
+9,007,199,254,740,991; no IDs, emails, titles, provider exception messages, or
+manuscript fields enter the payload. Each SDK COUNT stream is consumed at most
+two result rows, must contain exactly one `total` aggregate, and is closed.
+Queries have a 20-second RPC timeout and no retry. An overall 60-second budget
+and 900-second export freshness ceiling fail closed. Provider read times must
+fall inside the UTC observation window; clock reversal fails structurally.
+
+The two aggregate queries run sequentially, not in a transaction. Coverage is
+explicitly `non_atomic`; `complete` means both narrow queries completed, not
+that they describe one instant or all product usage. Any one-query failure
+suppresses both counts. No document download, collection-group query, content
+crawl, mutation, or fallback to cached counts is supported.
+
+Activation remains blocked pending approved privacy notices/terms, permission
+review, provider/index verification, minimum required IAM, an authenticated
+aggregate-only publication/read boundary, and operator validation. An injected
+client with `enabled=True` is only a mechanical gate, not approval to collect.
+Concurrency requires separately approved account-linked activity semantics;
+canvases require active-parent eligibility; words and characters require trusted
+save-time counters rather than manuscript traversal. Those metrics remain
+unavailable. Synthetic focused tests are added for owner/CI execution; no agent
+suite or live integration check was run for this source preparation.

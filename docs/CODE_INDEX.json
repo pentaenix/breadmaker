@@ -13278,6 +13278,57 @@
       ]
     },
     {
+      "file": "src/hosted/security/inventory.py",
+      "lines": 206,
+      "symbols": [
+        {
+          "name": "InventoryValidationError",
+          "kind": "class",
+          "line": 39
+        },
+        {
+          "name": "_utc_now",
+          "kind": "function",
+          "line": 43
+        },
+        {
+          "name": "_utc",
+          "kind": "function",
+          "line": 47
+        },
+        {
+          "name": "_count",
+          "kind": "function",
+          "line": 54
+        },
+        {
+          "name": "_stamp",
+          "kind": "function",
+          "line": 60
+        },
+        {
+          "name": "InventorySnapshot",
+          "kind": "class",
+          "line": 65
+        },
+        {
+          "name": "_active_status_filter",
+          "kind": "function",
+          "line": 121
+        },
+        {
+          "name": "_active_root_count",
+          "kind": "function",
+          "line": 127
+        },
+        {
+          "name": "GoogleFirestoreInventoryProducer",
+          "kind": "class",
+          "line": 154
+        }
+      ]
+    },
+    {
       "file": "src/hosted/security/metrics.py",
       "lines": 51,
       "symbols": [
