@@ -50,13 +50,183 @@ async function commitWorkspaceProjectRename(active,name){
   });
 }
 
+let projectPackageImportIntent=null;
+function ownsProjectPackageImport(intent){
+  return projectPackageImportIntent===intent&&!intent.dismissed&&intent.actor===currentUserIdentity()&&intent.project===currentProjectIdentity()&&intent.navigation===workspaceNavigation&&intent.view===currentView()&&intent.path===location.pathname&&intent.revision===modalRevision&&intent.node?.isConnected&&$('#modalBody').contains(intent.node)&&!$('#modal').classList.contains('hidden');
+}
+function packageImportText(key,params={}){return i18nText(`package_import.${key}`,params)}
+function packageImportSave(intent,{start=false}={}){
+  // Metadata only. In particular, never persist the archive or decoded content.
+  if(intent.pending&&intent.storageKey){
+    let current=null;try{current=JSON.parse(sessionStorage.getItem(intent.storageKey)||'null')}catch{}
+    // A late response from a dismissed attempt cannot replace a newer attempt
+    // deliberately begun after confirmed cancellation.
+    if(!start&&current?.key&&current.key!==intent.pending.key)return;
+    sessionStorage.setItem(intent.storageKey,JSON.stringify(intent.pending));
+  }
+}
+function packageImportRecord(intent,job){
+  if(!job?.job_id)throw new Error(packageImportText('invalid_response'));
+  if(intent.pending.job&&intent.pending.job!==job.job_id)throw new Error(packageImportText('invalid_response'));
+  if(job.source_sha256&&job.source_sha256!==intent.pending.sha256)throw new Error(packageImportText('invalid_response'));
+  intent.job=job;intent.pending.job=job.job_id;intent.pending.phase=job.phase;
+  if(job.phase==='completed'){
+    if(!/^[0-9a-f]{32}$/.test(String(job.project?.id||'')))throw new Error(packageImportText('invalid_response'));
+    intent.pending.project=job.project.id;intent.pending.publishing=false;
+  }
+  if(job.phase==='cancelled')intent.pending.publishing=false;
+  packageImportSave(intent);
+  return job;
+}
+function packageImportRender(intent,label,detail=''){
+  if(!ownsProjectPackageImport(intent))return;
+  const job=intent.job,completed=job?.phase==='completed',cancelled=job?.phase==='cancelled';
+  $('#projectPackageImportStatus').textContent=label;
+  $('#projectPackageImportError').textContent=detail;
+  $('#projectPackageImportError').hidden=!detail;
+  intent.node.classList.toggle('failed',!!detail);
+  intent.node.setAttribute('aria-busy',String(intent.busy));
+  const track=$('#projectPackageImportTrack'),bar=$('#projectPackageImportBar');
+  const total=Number(job?.total_records||0)+Number(job?.total_images||0),done=Number(job?.completed_records||0)+Number(job?.completed_images||0);
+  track.setAttribute('aria-valuetext',label);
+  if(job&&total>0){track.setAttribute('aria-valuemax',String(total));track.setAttribute('aria-valuenow',String(Math.min(total,done)));bar.style.width=`${Math.min(100,100*done/total)}%`}
+  else{track.removeAttribute('aria-valuenow');track.removeAttribute('aria-valuemax');bar.style.width=completed?'100%':'0%'}
+  const counts=$('#projectPackageImportCounts');
+  counts.textContent=job?packageImportText('counts',{records:i18nNumber(job.completed_records||0),totalRecords:i18nNumber(job.total_records||0),images:i18nNumber(job.completed_images||0),totalImages:i18nNumber(job.total_images||0)}):'';
+  const cancel=$('#cancelProjectPackageImport');
+  cancel.disabled=!job||completed||cancelled||intent.cancelRequested||intent.pending?.publishing;
+  cancel.textContent=packageImportText(intent.cancelRequested&&!completed&&!cancelled?'cancelling':'cancel');
+  const resume=$('#resumeProjectPackageImport');
+  resume.hidden=intent.busy||cancelled;
+  resume.disabled=intent.busy;
+  resume.textContent=packageImportText(completed?'open':intent.errorCode==='HOSTED_IMPORT_EXPIRED'?'restart':intent.pending?.publishing?'check':'resume');
+}
+function packageImportStatus(intent){
+  const job=intent.job;
+  return packageImportText(job?.phase==='completed'?'completed':job?.phase==='cancelled'?'cancelled':intent.cancelRequested?'cancelling':intent.pending?.publishing?'publishing':job?.ready?'ready':'staging');
+}
+async function packageImportReadStatus(intent){
+  return packageImportRecord(intent,await api(`/api/projects/import/jobs/${encodeURIComponent(intent.pending.job)}`));
+}
+async function packageImportCancel(intent){
+  try{return packageImportRecord(intent,await api(`/api/projects/import/jobs/${encodeURIComponent(intent.pending.job)}/cancel`,{method:'POST'}))}
+  catch(error){
+    // A timed-out cancellation can race publication. Only server status can
+    // establish cancellation; neither a request nor a 409 proves it succeeded.
+    if(intent.actor!==currentUserIdentity())throw error;
+    try{const job=await packageImportReadStatus(intent);if(['completed','cancelled'].includes(job.phase))return job}catch{}
+    throw error;
+  }
+}
+async function runProjectPackageImport(intent,{checkOnly=false}={}){
+  if(intent.busy||!ownsProjectPackageImport(intent))return;
+  intent.busy=true;
+  packageImportRender(intent,packageImportText(intent.pending?'checking':'hashing'));
+  try{
+    await flushSave();if(!ownsProjectPackageImport(intent))return;
+    if(!intent.pending){
+      if(intent.file.size>64*1024*1024)throw new Error(packageImportText('size_limit'));
+      const sha256=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await intent.file.arrayBuffer())),byte=>byte.toString(16).padStart(2,'0')).join('');
+      if(!ownsProjectPackageImport(intent))return;
+      const signature=JSON.stringify([intent.actor,sha256,intent.file.name]);
+      intent.storageKey=`breadmaker-pending-package-import:${encodeURIComponent(intent.actor)}:${sha256}:${encodeURIComponent(intent.file.name)}`;
+      let pending=null;try{pending=JSON.parse(sessionStorage.getItem(intent.storageKey)||'null')}catch{}
+      intent.pending=pending?.signature===signature?pending:{actor:intent.actor,signature,sha256,key:uid(),created:Date.now()};
+      // A confirmed cancellation may be imported again on a new file selection.
+      // Missing/expired routes and unknown publication never discard this key.
+      if(intent.pending.phase==='cancelled')intent.pending={actor:intent.actor,signature,sha256,key:uid(),created:Date.now()};
+      packageImportSave(intent,{start:true});
+    }
+    if(!ownsProjectPackageImport(intent))return;
+    if(intent.pending.job)await packageImportReadStatus(intent);
+    if(!intent.pending.job||(intent.job?.phase==='preparing'&&!intent.pending.publishing&&!intent.cancelRequested)){
+      if(!ownsProjectPackageImport(intent))return;
+      packageImportRender(intent,packageImportText('uploading'));
+      const fd=new FormData();fd.append('file',intent.file);
+      packageImportRecord(intent,await api('/api/projects/import?resumable=true',{method:'POST',body:fd,idempotencyKey:intent.pending.key}));
+    }
+    if(!ownsProjectPackageImport(intent))return;
+    if(checkOnly&&intent.job.phase!=='completed'&&intent.job.phase!=='cancelled'){
+      // Do not mistake a still-running finish for a failed publication. The
+      // next explicit Resume may finish this same job; never upload again.
+      intent.pending.publishing=false;packageImportSave(intent);return;
+    }
+    while(!['completed','cancelled'].includes(intent.job.phase)){
+      if(!ownsProjectPackageImport(intent))return;
+      packageImportRender(intent,packageImportStatus(intent));
+      if(intent.cancelRequested){await packageImportCancel(intent);break}
+      if(intent.job.ready){
+        intent.pending.publishing=true;packageImportSave(intent);packageImportRender(intent,packageImportText('publishing'));
+        try{packageImportRecord(intent,await api(`/api/projects/import/jobs/${encodeURIComponent(intent.pending.job)}/finish`,{method:'POST'}))}
+        catch(error){
+          if(intent.actor!==currentUserIdentity())throw error;
+          try{await packageImportReadStatus(intent)}catch{throw error}
+          if(!['completed','cancelled'].includes(intent.job.phase))throw error;
+        }
+        break;
+      }
+      const next=intent.job.next_batch;
+      packageImportRecord(intent,await api(`/api/projects/import/jobs/${encodeURIComponent(intent.pending.job)}/step?batch=${encodeURIComponent(next)}`,{method:'POST'}));
+      // Yield to paint and cancellation between bounded, durable batches.
+      await new Promise(resolve=>requestAnimationFrame(resolve));
+    }
+    if(!ownsProjectPackageImport(intent))return;
+    if(intent.job.phase==='completed'&&!intent.cancelRequested){
+      const projectId=intent.job.project.id;intent.dismissed=true;currentModalDismiss=null;closeModal(false);openWorkspaceProject(projectId);
+    }
+  }catch(error){
+    if(ownsProjectPackageImport(intent)){
+      intent.error=error?.message||String(error);
+      // Hosted compatibility routes use an exact string detail; newer routes
+      // may expose the same authority code as a structured error instead.
+      intent.errorCode=error?.code||(error?.message==='HOSTED_IMPORT_EXPIRED'?'HOSTED_IMPORT_EXPIRED':'');
+      // An uncertain failure keeps all recovery metadata, including a published
+      // job pointer. Generic 404s on mixed deployments are not a restart signal.
+    }
+  }finally{
+    intent.busy=false;
+    if(ownsProjectPackageImport(intent))packageImportRender(intent,intent.error?packageImportText('paused'):packageImportStatus(intent),intent.error||'');
+  }
+}
 async function importProjectPackage(event) {
-  const input=event.target,returnToProjects=input.dataset.returnToProjects==='1';delete input.dataset.returnToProjects;
-  const file = input.files[0]; if (!file) { if(returnToProjects)openProjectCenter(); return; }
-  const fd = new FormData(); fd.append('file', file);
-  try { const result=await api('/api/projects/import', {method:'POST', body:fd}); openWorkspaceProject(result?.project?.id||state.workspace?.active_project_id||''); }
-  catch(error){ if(returnToProjects)await openProjectCenter(); throw error; }
-  finally { input.value=''; }
+  const input=event.target,file=input.files?.[0];
+  // File inputs can emit the same selection twice. Lock synchronously before
+  // hashing, upload, or rendering; stale async completions never own new UI.
+  if(projectPackageImportIntent?.busy&&ownsProjectPackageImport(projectPackageImportIntent)){input.value='';return}
+  const returnToProjects=input.dataset.returnToProjects==='1';delete input.dataset.returnToProjects;input.value='';
+  if(!file){if(returnToProjects)openProjectCenter();return}
+  const intent={file,returnToProjects,actor:currentUserIdentity(),project:currentProjectIdentity(),navigation:workspaceNavigation,view:currentView(),path:location.pathname,busy:false,dismissed:false,cancelRequested:false,pending:null,job:null};
+  projectPackageImportIntent=intent;
+  showModal(packageImportText('title'),`<div id="projectPackageImportProgress" class="manuscript-import-progress"><p class="manuscript-import-file"><b>${escapeHtml(file.name)}</b></p><p id="projectPackageImportStatus" class="small-muted" role="status" aria-live="polite"></p><div id="projectPackageImportTrack" class="manuscript-import-progress-track" role="progressbar" aria-label="${escapeHtml(packageImportText('title'))}" aria-valuemin="0"><span id="projectPackageImportBar"></span></div><p id="projectPackageImportCounts" class="small-muted"></p><p id="projectPackageImportError" class="manuscript-import-error" hidden></p></div>`,`<button id="backProjectPackageImport" type="button">${escapeHtml(packageImportText('back'))}</button><button id="cancelProjectPackageImport" type="button" disabled>${escapeHtml(packageImportText('cancel'))}</button><button id="resumeProjectPackageImport" type="button" hidden>${escapeHtml(packageImportText('resume'))}</button>`,()=>{intent.dismissed=true});
+  intent.node=$('#projectPackageImportProgress');intent.revision=modalRevision;
+  $('#backProjectPackageImport').onclick=()=>{if(!ownsProjectPackageImport(intent))return;intent.dismissed=true;currentModalDismiss=null;closeModal(false);if(returnToProjects)openProjectCenter()};
+  $('#cancelProjectPackageImport').onclick=()=>{
+    if(!ownsProjectPackageImport(intent)||$('#cancelProjectPackageImport').disabled)return;
+    intent.cancelRequested=true;intent.error='';packageImportRender(intent,packageImportText('cancelling'));
+    if(!intent.busy)void runProjectPackageImport(intent);
+  };
+  $('#resumeProjectPackageImport').onclick=()=>{
+    if(!ownsProjectPackageImport(intent)||intent.busy)return;
+    if(intent.job?.phase==='completed'){const pid=intent.job.project.id;intent.dismissed=true;currentModalDismiss=null;closeModal(false);openWorkspaceProject(pid);return}
+    if(intent.errorCode==='HOSTED_IMPORT_EXPIRED'){
+      // This exact server code guarantees nonpublication. Starting another
+      // attempt is an explicit action, never a fallback for generic 404/5xx.
+      const {actor,signature,sha256}=intent.pending;
+      intent.pending={actor,signature,sha256,key:uid(),created:Date.now()};intent.job=null;
+      try{packageImportSave(intent,{start:true})}catch(error){packageImportRender(intent,packageImportText('paused'),error.message);return}
+    }
+    const checkOnly=!!intent.pending?.publishing;intent.cancelRequested=false;intent.error='';intent.errorCode='';void runProjectPackageImport(intent,{checkOnly});
+  };
+  if(runtimeSupports('hosted_persistence')&&runtimeSupports('project_package_import_resumable'))return runProjectPackageImport(intent);
+  // Local SQLite and older hosted servers retain the one-shot package route.
+  // Its upload is indeterminate, not a fabricated percentage or cancellation.
+  intent.busy=true;packageImportRender(intent,packageImportText('uploading'));
+  try{
+    await flushSave();if(!ownsProjectPackageImport(intent))return;
+    const fd=new FormData();fd.append('file',file);const result=await api('/api/projects/import',{method:'POST',body:fd});
+    if(ownsProjectPackageImport(intent)){const pid=result?.project?.id;if(!pid)throw new Error(packageImportText('invalid_response'));intent.dismissed=true;currentModalDismiss=null;closeModal(false);openWorkspaceProject(pid)}
+  }catch(error){if(ownsProjectPackageImport(intent)){intent.busy=false;packageImportRender(intent,packageImportText('paused'),error?.message||String(error));$('#resumeProjectPackageImport').hidden=true}}
+  finally{intent.busy=false}
 }
 
 function currentJsonImportContext(extra={}){

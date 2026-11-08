@@ -162,9 +162,11 @@ def test_v10353_project_package_round_trip_allocates_fresh_identity_without_memb
 
 def test_v10353_legacy_breadmaker_decoder_is_transient_memory_only():
     source = (ROOT / "src/hosted/packages.py").read_text(encoding="utf-8")
-    assert "sqlite3.connect(':memory:')" in source
-    assert ".deserialize(database)" in source
-    assert "PRAGMA integrity_check" in source and "PRAGMA foreign_key_check" in source
+    decoder = (ROOT / "src/hosted/native_package.py").read_text(encoding="utf-8")
+    assert "sqlite3.connect(':memory:')" in decoder
+    assert ".deserialize(database)" in decoder
+    assert "PRAGMA integrity_check" in decoder and "PRAGMA foreign_key_check" in decoder
+    assert "tempfile" not in decoder.lower() and "mkstemp" not in decoder.lower()
     assert "tempfile" not in source.lower()
     assert "mkstemp" not in source.lower()
     assert "source_project_id" in source and "_new_import_project_id" in source and "_finish_import" in source

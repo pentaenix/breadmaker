@@ -4,6 +4,7 @@ const targetsModel=window.BreadmakerTargetsModel;
 const targets={context:'',pid:'',user:'',doc:targetsModel.defaults(),pending:[],ready:false,loading:null,saving:null,lastTick:Date.now(),lastActivity:0,active:false,signature:'',audio:null,revision:0};
 const targetsJournal=window.BreadmakerTargetsJournal;
 let targetsDeparting=false;
+const targetsRequests=new Set();
 const targetText=(key,vars={})=>i18nText(`targets.${key}`,vars);
 const targetHtml=(key,vars={})=>escapeHtml(targetText(key,vars));
 function targetsContext(){return currentProjectIdentity()&&!state.reviewerSession?`${currentProjectIdentity()}:${currentUserIdentity()}`:''}
@@ -14,12 +15,15 @@ function targetsMergePending(records,doc=targets.doc){
 }
 function targetsPreviewPending(){for(const op of targets.pending){const {stream,sequence,...preview}=op;targetsModel.apply(targets.doc,preview)}}
 async function targetsRequest(options={}){
-  const hosted=runtimeSupports('hosted_persistence');
-  try{return await api(`/api/ui-state/${hosted?'targets-v1':`targets-v1-${targets.user}`}`,{...options,headers:{'X-Breadmaker-Project':targets.pid,...(hosted?{'X-Breadmaker-Targets-Account':targets.user}:{'X-Breadmaker-User':targets.user})}})}
+  if(targetsDeparting)throw new DOMException('Targets navigation in progress','AbortError');
+  const hosted=runtimeSupports('hosted_persistence'),controller=new AbortController();targetsRequests.add(controller);
+  try{return await api(`/api/ui-state/${hosted?'targets-v1':`targets-v1-${targets.user}`}`,{...options,signal:controller.signal,headers:{'X-Breadmaker-Project':targets.pid,...(hosted?{'X-Breadmaker-Targets-Account':targets.user}:{'X-Breadmaker-User':targets.user})}})}
   catch(error){if([401,403].includes(error?.status)||String(error?.message||'').includes('TARGETS_ACCOUNT_CONTEXT_CHANGED')){targets.ready=false;targetsStopSound();renderTargets()}throw error}
+  finally{targetsRequests.delete(controller)}
 }
 function targetsHideTips(){for(const id of ['targetsTopTip','targetsFooterTip','targetsFocusTip'])$(`#${id}`)?.classList.add('hidden')}
 async function loadTargets(){
+  if(targetsDeparting)return false;
   const context=targetsContext();if(!context){targets.context='';targets.ready=false;targets.revision++;targetsStopSound();renderTargets();return false}
   if(targets.context===context&&targets.ready)return true;
   if(targets.context===context&&targets.loading)return targets.loading;
@@ -296,16 +300,33 @@ for(const [button,tip] of [['targetsTop','targetsTopTip'],['targetsFooter','targ
   $(`#${button}`).onclick=()=>{targetsHideTips();openTargets()};attachManuscriptToolTooltip(button,tip,{delay:300});
 }
 window.addEventListener('blur',()=>{targetsClock();targets.lastActivity=0;targetsStopSound();targetsHideTips()});
-window.addEventListener('focus',()=>{targets.lastTick=Date.now();renderTargets();if(targets.ready)flushTargets().catch(()=>{})});
+window.addEventListener('focus',()=>{targets.lastTick=Date.now();renderTargets();if(!resumeTargetsAfterNavigation()&&targets.ready)flushTargets().catch(()=>{})});
 document.addEventListener('visibilitychange',()=>{targetsClock();targets.lastActivity=0;targets.lastTick=Date.now();if(document.hidden){targetsStopSound();targetsHideTips()}else if(targets.ready)flushTargets().catch(()=>{})});
-// Keep the synchronous pre-journal on navigation; a fresh revision read cannot
-// reliably start in an unloading document. Replay safely on reopen/BFCache return.
-window.addEventListener('pagehide',()=>{targetsDeparting=true;targetsClock();targetsStopSound();targetsHideTips()});
-window.addEventListener('pageshow',()=>{targetsDeparting=false;targets.lastTick=Date.now();if(targets.ready)flushTargets().catch(()=>{})});
+// WebKit still runs the outgoing document during provisional navigation, before
+// pagehide. Stop reads at beforeunload and retain every unacknowledged operation
+// in the journal, even when an aborted PUT may already have reached the server.
+function suspendTargetsForNavigation(){
+  targetsDeparting=true;targetsClock();targetsStopSound();targetsHideTips();
+  targets.revision++;targets.loading=null;targets.saving=null;
+  for(const controller of targetsRequests)controller.abort();
+}
+function resumeTargetsAfterNavigation(){
+  if(!targetsDeparting||document.hidden)return false;
+  targetsDeparting=false;targets.lastTick=Date.now();
+  if(targets.ready)flushTargets().catch(()=>{});else loadTargets();
+  return true;
+}
+window.addEventListener('beforeunload',suspendTargetsForNavigation);
+window.addEventListener('pagehide',suspendTargetsForNavigation);
+window.addEventListener('pageshow',()=>{if(!resumeTargetsAfterNavigation()){targets.lastTick=Date.now();if(targets.ready)flushTargets().catch(()=>{})}});
+// Cancelling a leave-page prompt may not emit pageshow. Real interaction resumes
+// normal revision/receipt checks rather than acknowledging an interrupted save.
+window.addEventListener('pointerdown',resumeTargetsAfterNavigation,true);
+window.addEventListener('keydown',resumeTargetsAfterNavigation,true);
 window.addEventListener('online',()=>{if(!targets.ready)loadTargets();else flushTargets().catch(()=>{})});
 let targetsHeartbeat=0;
 setInterval(()=>{
-  if(document.documentElement.dataset.breadmakerBootReady!=='true')return;
+  if(targetsDeparting||document.documentElement.dataset.breadmakerBootReady!=='true')return;
   if(targets.context!==targetsContext()){targetsHideTips();loadTargets();return}
   if(!targets.ready)return;
   targetsClock();renderTargets();

@@ -19,3 +19,11 @@ that journal. Successful hosted changes discard stale structural receipts while
 preserving manuscript edit history; local Participant Undo remains unchanged.
 Bootstrap and Review-list responses include the same authorized participant
 projection so refresh/reopen does not hide successfully saved participants.
+
+Frozen/imported identities must remain data when rendered: escape dynamic HTML
+attribute values even when the current codec validates opaque IDs. Review marker
+colors use `reviewerHighlightCssColor` at every render sink (picker, feedback,
+hover, and margin annotations); HTML escaping alone does not make a CSS
+declaration safe. Snapshot prose still uses the existing server-sanitized HTML
+contract. Quoted identity and CSS-declaration regressions live in
+`test_v10596_native_review_rendering_browser.py`.

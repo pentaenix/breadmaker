@@ -60,6 +60,7 @@ _HOSTED_CAPABILITIES={
     'local_profiles':False,
     'native_filesystem':False,
     'portable_project_export':True,
+    'project_package_import_resumable':True,
     'removable_backups':False,
     'direct_remote_backups':False,
     'request_scoped_projects':True,

@@ -10,3 +10,7 @@
 .project-explorer-card>small,.project-explorer-card-path{font-size:10.5px;color:var(--muted);line-height:1.35}.project-explorer-card-path{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.project-explorer-card>button{margin-top:auto;width:100%}
 .fragment-targets{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}.fragment-target-row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px}.fragment-target-row span{color:var(--muted)}.fragment-target-row b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fragment-target-choice{margin:0}
 
+/* Native packages use the same compact progress surface as Manuscript imports. */
+#projectPackageImportProgress .manuscript-import-file{overflow-wrap:anywhere}
+#projectPackageImportStatus{margin:0 0 9px}
+

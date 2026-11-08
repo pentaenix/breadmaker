@@ -23,6 +23,7 @@ from hosted.portability_history import (HistoryShapeError, prepare_review_rounds
     checkpoint_v1, finalize_review_round_hashes)
 from hosted.portability_editing import project_row, REGISTRY as EDITING_REGISTRY
 from hosted.portability_reviews import ReviewScopeShapeError, prepare_review_scopes
+from hosted.native_history_export import prepare_native_export
 
 _MAX_INPUT = 64 * 1024 * 1024
 _MAX_EXPANDED = 192 * 1024 * 1024
@@ -116,7 +117,14 @@ def _archive_members(source: bytes) -> tuple[Mapping[str, Any], Mapping[str, Any
             raise LocalPortabilityError('HOSTED_PORTABLE_SOURCE_INVALID')
         if manifest.get('format') != 'breadmaker-hosted-project' or manifest.get('format_version') != 3:
             raise LocalPortabilityError('HOSTED_PORTABLE_SOURCE_UNSUPPORTED')
+        asset_paths = manifest.get('asset_paths', {})
+        archive_assets = {name for name in names if name.startswith('assets/')}
+        if (not isinstance(asset_paths, dict) or ('asset_paths' in manifest and set(asset_paths) != archive_assets)
+                or any(not re.fullmatch(r'assets/[a-f0-9]{64}\.(?:png|jpg|webp)', str(name)) for name in asset_paths)):
+            raise LocalPortabilityError('HOSTED_PORTABLE_ASSET_PATHS_INVALID')
         assets: dict[str, bytes] = {}
+        asset_bytes = 0
+        seen_aliases = set()
         for entry in entries:
             if not entry.filename.startswith('assets/'):
                 continue
@@ -128,6 +136,26 @@ def _archive_members(source: bytes) -> tuple[Mapping[str, Any], Mapping[str, Any
             if local_name in assets:
                 raise LocalPortabilityError('HOSTED_PORTABLE_ASSET_COLLISION')
             assets[local_name] = data
+            asset_bytes += len(data)
+            aliases = asset_paths.get(entry.filename, [])
+            if not isinstance(aliases, list) or len(aliases) > 25000 or ('asset_paths' in manifest and not aliases):
+                raise LocalPortabilityError('HOSTED_PORTABLE_ASSET_PATHS_INVALID')
+            for alias in aliases:
+                if not isinstance(alias, str) or not re.fullmatch(r'/api/assets/[A-Za-z0-9_-]{1,160}\.(?:png|jpg|webp)', alias):
+                    raise LocalPortabilityError('HOSTED_PORTABLE_ASSET_PATHS_INVALID')
+                if alias in seen_aliases or alias.rsplit('.', 1)[-1] != entry.filename.rsplit('.', 1)[-1]:
+                    raise LocalPortabilityError('HOSTED_PORTABLE_ASSET_PATHS_INVALID')
+                seen_aliases.add(alias)
+                if len(seen_aliases) > 25000:
+                    raise LocalPortabilityError('HOSTED_PORTABLE_SOURCE_TOO_LARGE')
+                target = 'assets/' + alias.removeprefix('/api/assets/')
+                if target in assets and assets[target] != data:
+                    raise LocalPortabilityError('HOSTED_PORTABLE_ASSET_COLLISION')
+                if target not in assets:
+                    asset_bytes += len(data)
+                assets[target] = data
+            if len(assets) > 50000 or asset_bytes > _MAX_EXPANDED:
+                raise LocalPortabilityError('HOSTED_PORTABLE_SOURCE_TOO_LARGE')
         return manifest, document, assets
 
 
@@ -154,6 +182,12 @@ _TYPED_REFERENCES = {
     'map': 'story_maps', 'task': 'tasks',
     'manuscript_block': 'manuscript_blocks', 'block': 'manuscript_blocks',
     'markup_label': 'markup_labels',
+    'label': 'markup_labels', 'document': 'document_tabs', 'tab': 'document_tabs',
+    'node': 'canvas_nodes', 'canvas_node': 'canvas_nodes',
+    'edge': 'canvas_edges', 'canvas_edge': 'canvas_edges',
+    'map_item': 'map_items', 'map_line': 'map_lines', 'line': 'map_lines',
+    'review': 'reviews', 'review_comment': 'review_comments',
+    'review_highlight': 'review_highlights', 'review_suggestion': 'review_suggestions',
 }
 
 
@@ -243,9 +277,10 @@ def to_local_package(source: bytes, *, project_generation: int, created_at: str 
     created = str(created_at or when)
     mapping = _mapping()
     try:
-        scoped_records = prepare_review_scopes(document['entities'], pid)
-        records, review_round_ids = prepare_review_rounds(scoped_records)
-    except (HistoryShapeError, ReviewScopeShapeError) as exc:
+        native = prepare_native_export(document['entities'], mapping, assets)
+        scoped_records = prepare_review_scopes(native.records, pid)
+        records, review_round_ids = prepare_review_rounds(scoped_records, native_snapshot_ids=native.snapshots)
+    except (HistoryShapeError, ReviewScopeShapeError, ValueError) as exc:
         raise LocalPortabilityError(str(exc)) from exc
     # Preflight incompatible frozen Canvas history before the relational build.
     # Parent Canvas rows may be incomplete for the local Schema 42 layout; an
@@ -266,6 +301,7 @@ def to_local_package(source: bytes, *, project_generation: int, created_at: str 
         ids: dict[tuple[str, str], int | str] = {}
         planned: list[tuple[str, dict, dict, dict]] = []
         next_id: dict[str, int] = {}
+        assigned_ids: dict[str, set] = {}
         for logical, items in records.items():
             if logical in _EXCLUDED:
                 # Sensitive per-user/provider metadata is not portable. It is
@@ -292,8 +328,15 @@ def to_local_package(source: bytes, *, project_generation: int, created_at: str 
                     raise LocalPortabilityError(f'HOSTED_PORTABLE_ENTITY_ID_INVALID:{logical}')
                 if (table, old) in ids:
                     raise LocalPortabilityError(f'HOSTED_PORTABLE_DUPLICATE_ID:{logical}')
-                if cols['id'][0] == 'INTEGER':
+                preferred = native.preferred.get((table, old))
+                if preferred is not None:
+                    assigned = preferred
+                    if cols['id'][0] == 'INTEGER' and (type(assigned) is not int or assigned < 1):
+                        raise LocalPortabilityError('HOSTED_PORTABLE_NATIVE_HISTORY_ID_INVALID')
+                elif cols['id'][0] == 'INTEGER':
                     next_id[table] = next_id.get(table, 0) + 1
+                    while next_id[table] in native.reserved.get(table, set()):
+                        next_id[table] += 1
                     assigned: int | str = next_id[table]
                 else:
                     prefix = _LOCAL_TEXT_IDENTITIES.get(table)
@@ -304,6 +347,9 @@ def to_local_package(source: bytes, *, project_generation: int, created_at: str 
                         assigned = prefix + hashlib.sha256(f'{table}:{old}'.encode()).hexdigest()[:32]
                     else:
                         assigned = old
+                if assigned in assigned_ids.setdefault(table, set()):
+                    raise LocalPortabilityError('HOSTED_PORTABLE_NATIVE_HISTORY_ID_COLLISION')
+                assigned_ids[table].add(assigned)
                 ids[table, old] = assigned
                 planned.append((table, identity, row, {'logical': logical, 'old': old, 'id': assigned}))
         if len(planned) > 100_000:
@@ -314,6 +360,7 @@ def to_local_package(source: bytes, *, project_generation: int, created_at: str 
         for table, identity, row, meta in planned:
             cols = _columns(con, table)
             foreign = _foreign(con, table)
+            raw_columns = native.raw_columns.get((table, meta['old']), set())
             allowed = set(cols)
             values: dict[str, Any] = {'id': meta['id']}
             # Reject incompatible *shapes* before the generic unknown-field
@@ -388,6 +435,8 @@ def to_local_package(source: bytes, *, project_generation: int, created_at: str 
             if 'updated_at' in cols and 'updated_at' not in values:
                 values['updated_at'] = when
             for col, target in foreign.items():
+                if col in raw_columns:
+                    continue
                 if col not in values or values[col] is None:
                     continue
                 if target == 'projects':
@@ -400,6 +449,8 @@ def to_local_package(source: bytes, *, project_generation: int, created_at: str 
                 values[col] = translated
             # Source-location IDs on snapshots/checkpoints are *not* SQL FKs.
             for col, target in _PLAIN_REFERENCES.items():
+                if col in raw_columns:
+                    continue
                 if col not in values or values[col] in (None, '') or col in foreign:
                     continue
                 if cols.get(col, ('', 0))[0] != 'INTEGER':
@@ -408,7 +459,8 @@ def to_local_package(source: bytes, *, project_generation: int, created_at: str 
                 if (target, raw) not in ids:
                     raise LocalPortabilityError(f'HOSTED_PORTABLE_SOURCE_REFERENCE_INVALID:{table}.{col}')
                 values[col] = ids[target, raw]
-            _rebase_non_fk_semantics(table, values, ids)
+            if not (table == 'canvas_version_items' and 'entity_id' in raw_columns):
+                _rebase_non_fk_semantics(table, values, ids)
             # SQLite's loose affinity would otherwise accept an opaque hosted
             # identifier inside an INTEGER reference not declared as a foreign
             # key. Such an export *opens* but cannot represent the same links.

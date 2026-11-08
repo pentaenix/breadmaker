@@ -159,6 +159,7 @@ class StagedAccountClosure:
                 'account_closed': data['state'] == 'closed_retention_pending',
                 'data_erasure_complete': False, 'physical_purge_authorized': False,
                 'retained_project_count': len(data.get('owned_project_ids', [])),
+                'retained_import_prefix_count': len(data.get('retained_import_project_ids', [])),
                 'retain_until': data['retain_until'], 'purge_blockers': list(PURGE_BLOCKERS)}
 
     def close(self, email, *, operation, confirmation):
@@ -248,10 +249,18 @@ class StagedAccountClosure:
                 raise DocumentConflict('ACCOUNT_ERASURE_MEMBERSHIP_DRIFT')
             def projects_done(tx):
                 self._assert_request(tx, path, data)
+                # Account freeze prevents new job/source writes. Record each
+                # actor-bound import prefix even when no project root exists.
+                # This is retained scope for later orphan-aware census, never
+                # permission to delete or to invent project membership.
+                from hosted.package_import_ownership import import_job_scope
+                imports = self._bounded(tx.query_collection(('users', uid, 'package_imports')))
+                retained_imports = sorted({import_job_scope(row.path, dict(row.data), tx.get) for row in imports})
                 for pid in owned:
                     if _entry(tx.get(('projects', pid))).get('_bm_erasure_operation') != rid:
                         raise DocumentConflict('ACCOUNT_ERASURE_PROJECT_CHANGED')
-                updated = {**data, 'state': 'projects_fenced', 'owned_project_ids': list(owned)}
+                updated = {**data, 'state': 'projects_fenced', 'owned_project_ids': list(owned),
+                           'retained_import_project_ids': retained_imports}
                 tx.set(path, updated)
                 return updated
             data = self.documents.run_transaction(projects_done)

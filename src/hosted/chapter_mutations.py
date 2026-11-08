@@ -11,7 +11,7 @@ import hashlib
 import json
 from typing import Any, Mapping
 
-from hosted.domain_store import _ID_FIELDS, _MANAGED_MUTATION_FIELDS, _check_encrypted_block_metadata, _public, new_entity_id, operation_id
+from hosted.domain_store import _ID_FIELDS, _MANAGED_MUTATION_FIELDS, _check_encrypted_block_metadata, _merge_manuscript_patch, _public, new_entity_id, operation_id
 from hosted.firestore.contracts import DocumentConflict, DocumentNotFound, HostedValidationError
 from hosted.firestore.ids import require_opaque_id, require_project_id, require_user_id
 from hosted.firestore.repositories import _canonical_payload, _fingerprint, _operation_id, render_model_path
@@ -120,7 +120,7 @@ def replace_chapter_blocks(domain, *, project_id: str, chapter_id: str, user_id:
                 # before reading/updating any block.
                 if operation is None:
                     raise DocumentConflict('HOSTED_GENERATION_CONFLICT')
-            merged = {**old,**public}
+            merged = _merge_manuscript_patch(old, public)
         else:
             merged = public
         resolved[eid]=merged

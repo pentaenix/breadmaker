@@ -47,12 +47,13 @@ class HostedCheckpointUI:
             selected={str(cid)} if cid else set()
             live=self.live('chapter','chapter_id',cid)
             captured=row.get('source_chapter_created_at') or chapter.get('created_at')
-            exists=bool(chapter and live and (not captured or captured==live.get('created_at')))
+            exists=bool(chapter and live and (not captured or captured in
+                {live.get('created_at'), live.get('native_created_at')}))
             meta.update(source_chapter_id=cid,source_chapter_title=row.get('source_chapter_title') or chapter.get('title',''),
                 source_chapter_created_at=captured,source_chapter_position=chapter.get('position'),
                 current_chapter_id=cid if exists else None,source_exists=exists,
                 current_source_chapter_id=cid if exists else None,
-                current_source_chapter_created_at=live.get('created_at') if exists else None)
+                current_source_chapter_created_at=(live.get('native_created_at') or live.get('created_at')) if exists else None)
         else:
             tab=(raw.get('tab') or next((item for item in tabs if item.get('id')=='tab_manuscript'),None)
                 or next((item for item in tabs if item.get('is_manuscript')),tabs[0] if tabs else {}))

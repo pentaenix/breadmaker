@@ -21,15 +21,21 @@ ROOT=Path(__file__).resolve().parents[1]
 
 
 @contextmanager
-def hosted_browser(home):
+def hosted_browser(home, *, setup_code=None):
     with socket.socket() as sock:
         sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
     base=f'http://127.0.0.1:{port}'
     env=dict(os.environ,BREADMAKER_HOME=str(home),PYTHONPATH=str(ROOT/'src'),
              BREADMAKER_RUNTIME='hosted_dev',BREADMAKER_ENV='test',
              BREADMAKER_AUTH_MODE='developer',BREADMAKER_HOSTED_DEV_ALLOW_UNAUTHENTICATED='1')
-    proc=subprocess.Popen([sys.executable,'-m','uvicorn','app:app','--host','127.0.0.1',
-                           '--port',str(port),'--log-level','warning'],cwd=ROOT,env=env,
+    command=[sys.executable,'-m','uvicorn','app:app','--host','127.0.0.1',
+             '--port',str(port),'--log-level','warning']
+    if setup_code is not None:
+        # Synthetic test-only seed in this isolated process. Production has no
+        # seeding endpoint or environment hook; ordinary fixtures are unchanged.
+        command=[sys.executable,'-c',"from app import app\n"+setup_code+
+                 f"\nimport uvicorn\nuvicorn.run(app,host='127.0.0.1',port={port},log_level='warning')\n"]
+    proc=subprocess.Popen(command,cwd=ROOT,env=env,
                           stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
     driver=browser=None
     try:
