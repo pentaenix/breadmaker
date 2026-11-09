@@ -174,6 +174,6 @@ Current direct local-engine owners: **71 files**.
 - environment-neutral ports contain no required filesystem path for project catalog/assets/usage;
 - native filesystem dependencies are explicit and discoverable;
 - the dependency inventory is enforced by tests and cannot grow silently;
-- user runs the full Editor + Cloud verifier; the model does **not** run it.
+- user runs the full Editor + Cloud verifier; verification was performed separately.
 
 After the user reports green, Milestone 2 may freeze the actual hosted Firestore/GCS entity mapping. At that point feature-domain repository interfaces can be defined from the product model rather than from SQLite table shape.

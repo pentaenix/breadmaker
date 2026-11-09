@@ -265,10 +265,8 @@ def test_v771_asset_change_during_capture_fails_closed(fresh_project,tmp_path,mo
 
 
 def test_v771_release_metadata_and_documented_snapshot_contract():
+    # Frozen snapshot isolation is exercised by test_v771_packager_never_returns_to_live_project_after_freeze.
     root=Path(__file__).resolve().parents[1]
     version=(root/'VERSION').read_text(encoding='utf-8').strip()
     assert tuple(map(int,version.split('.'))) >= (7,7,1)
     index=(root/'static/index.html').read_text(encoding='utf-8')
-    architecture=(root/'ARCHITECTURE.md').read_text(encoding='utf-8')
-    assert '## 7.7.1 Frozen canonical snapshot boundary' in architecture
-    assert 'Package construction never reads live Current' in architecture

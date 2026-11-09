@@ -18,7 +18,7 @@ Include the affected version, what happened, and steps to reproduce it with inve
 
 **Dependencies.** Release verification includes dependency vulnerability checks. Findings still need review and fixes; a passing scan cannot guarantee the absence of vulnerabilities.
 
-Developers should start with [Architecture](ARCHITECTURE.md) and [hosted trust boundaries](docs/HOSTED_DATA_TRUST_BOUNDARIES_M12.md). For the scope and limits of the experimental private recovery implementation, see [M12 source closure](docs/security/M12_SOURCE_CLOSURE.md).
+Developers should start with the [development guide](docs/DEVELOPMENT.md) and [hosted trust boundaries](docs/HOSTED_DATA_TRUST_BOUNDARIES_M12.md). For the scope and limits of the experimental private recovery implementation, see [M12 source closure](docs/security/M12_SOURCE_CLOSURE.md).
 
 ## Historical security notes
 

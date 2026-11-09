@@ -88,12 +88,13 @@ def _content_hash_without_project_uid(database: Path, assets: Path, snapshot_roo
 def test_v778_release_contract_and_no_format_rewrite():
     root = Path(__file__).resolve().parents[1]
     assert tuple(map(int, root.joinpath('VERSION').read_text().strip().split('.'))) >= (7, 7, 8, 1)
-    architecture = root.joinpath('ARCHITECTURE.md').read_text(encoding='utf-8')
-    assert '## 7.7.8 Soak, Disaster Recovery & Release Hardening' in architecture
-    assert 'does not change Revision Store format' in architecture
-    assert '10-second core/API' in architecture
-    assert '15-second browser/E2E' in architecture
-    assert 'Deterministic' in architecture
+    from revision_store.local_store import STORE_VERSION, SNAPSHOT_VERSION, REVISION_VERSION, CHECKPOINT_VERSION
+    from conftest import CORE_API_TEST_TIMEOUT_SECONDS, BROWSER_TEST_TIMEOUT_SECONDS
+
+    assert STORE_VERSION == SNAPSHOT_VERSION == REVISION_VERSION == CHECKPOINT_VERSION == 1
+    assert CORE_API_TEST_TIMEOUT_SECONDS == 10.0
+    assert BROWSER_TEST_TIMEOUT_SECONDS == 15.0
+    # The deterministic controller is exercised by the race/fault tests below.
 
 
 def test_v778_deterministic_controller_replaces_timing_sleeps_for_reverse_history_completion(fresh_project):

@@ -5,7 +5,7 @@ Thanks for helping with Breadmaker. You can work on most features locally withou
 ## Get started
 
 1. Read the [README](README.md), then use `./run` to start the local editor.
-2. Follow the source ownership map in [Architecture](ARCHITECTURE.md). API routes are indexed in [`src/api/CODEMAP.md`](src/api/CODEMAP.md); frontend features are described in [`static/js/README.md`](static/js/README.md).
+2. Follow the source ownership map in the [development guide](docs/DEVELOPMENT.md). API routes are indexed in [`src/api/CODEMAP.md`](src/api/CODEMAP.md); frontend features are described in [`static/js/README.md`](static/js/README.md).
 3. Reproduce the change or bug with a **synthetic project**. Never share an unpublished manuscript or real login credentials in an issue or test fixture.
 4. Make a focused change with tests that exercise behavior, not just filenames or implementation details.
 5. Run the relevant test locally, then the full release gate before opening a release-ready pull request:

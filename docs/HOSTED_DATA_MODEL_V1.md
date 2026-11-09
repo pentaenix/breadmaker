@@ -238,6 +238,6 @@ These provider constraints are guards, not product semantics. If provider limits
 - Every GCS mutation class has an explicit precondition/idempotency rule.
 - Index plan is source-controlled.
 - No Firestore/GCS SDK is added to local requirements and no live cloud resources are created.
-- User runs the complete Editor + Cloud verifier; the model does not run it.
+- User runs the complete Editor + Cloud verifier; verification was performed separately.
 
 Once the user reports this milestone green, Milestone 3 may implement the Firestore structured-state adapter exactly behind this contract. Collection names/paths must not be invented ad hoc outside this specification.

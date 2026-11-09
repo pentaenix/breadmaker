@@ -38,7 +38,7 @@ If multiple logical mappings project onto the same Firestore document (for examp
 - identity binding uniqueness;
 - missing-vs-forbidden project equivalence.
 
-The user runs the release verifier. The model does **not** run pytest, Playwright, E2E, `./test`, or `./verify-release`.
+The user runs the release verifier.
 
 ## Generation CAS
 

@@ -94,15 +94,14 @@ def test_v41812_selection_scene_action_is_contextual():
 
 
 def test_v41812_release_and_hidden_chapter_source_contract():
+    # Scene ranges and hidden chapter behavior are exercised by the API/source tests in this module.
     assert tuple(map(int,(ROOT/'VERSION').read_text(encoding='utf-8').strip().split('.'))) >= (5, 0, 2)
     html=(ROOT/'static/index.html').read_text(encoding='utf-8')
     app=backend_source(ROOT)
     readme=(ROOT/'README.md').read_text(encoding='utf-8')
-    architecture=(ROOT/'ARCHITECTURE.md').read_text(encoding='utf-8')
     assert 'styles.css?v=5.0.2' in html and 'app.js?v=5.0.2' in html
     assert 'AND c.is_implicit=0' in app
     assert '### 4.18.12 Scene range editing and chapterless writing' in readme
-    assert '### 4.18.12 Scene-range and chapterless-manuscript contract' in architecture
 
 
 def test_v41812_implicit_chapter_is_not_counted_or_exported_as_structure(client,fresh_project):

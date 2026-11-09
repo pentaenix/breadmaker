@@ -6,7 +6,7 @@ New to Breadmaker? Start with the [README](../README.md), then [Using Breadmaker
 
 | Topic | Guide |
 | --- | --- |
-| How the runtimes fit together | [Architecture](../ARCHITECTURE.md) |
+| How the runtimes fit together | [Development](DEVELOPMENT.md) |
 | How to run the tests | [Testing](TESTING.md) |
 | Source entry points | [API map](../src/api/CODEMAP.md) and [code index](CODE_INDEX.json) |
 | Project files and exports | [Project package format](BREADMAKER_PROJECT_JSON.md) |

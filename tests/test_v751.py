@@ -9,13 +9,12 @@ from workspace import filesystem as workspace_fs
 
 
 def test_v751_release_version_and_docs_are_clean():
+    # Recovery destination boundaries and fail-closed preflight are exercised below.
     root=Path(__file__).resolve().parents[1]
     version=(root/'VERSION').read_text(encoding='utf-8').strip();assert tuple(map(int,version.split('.'))) >= (7,5,1)
     index=(root/'static/index.html').read_text(encoding='utf-8')
     readme=(root/'README.md').read_text(encoding='utf-8')
-    architecture=(root/'ARCHITECTURE.md').read_text(encoding='utf-8')
     assert readme.count('## 7.4.1 Stage 1 completion — recovery, portability, and provider boundaries')==1
-    assert architecture.count('## 7.4.1 recovery/portability boundary')==1
 
 
 def test_v751_rejects_backup_destination_inside_breadmaker_home_before_creation(tmp_path):

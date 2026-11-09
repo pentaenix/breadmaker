@@ -51,7 +51,7 @@ Added hosted-only `HostedPrivateFirestoreFields` backed by existing AES-256-GCM/
 
 # CURRENT STATUS — 2026-10-13 — M12D VERIFICATION CORRECTIVE (10.5.12)
 
-Candidate **Editor 10.5.12 / Cloud 10.4.11** (Editor owner-verification PENDING). Last all-green Editor **10.5.9**, Cloud **10.4.11**. Editor 10.5.11 removed the 7-way `NameError` but owner verification found two cold-setup 10s timeouts and one `draft_2` milestone focus race. Editor 10.5.12 uses established module-scoped prewarm for `test_v10326.py`/`test_v700.py` while retaining per-item watchdogs, and guards delayed Tasks milestone auto-focus from stealing a second input. Full human Editor verifier required; Cloud 133/133 already green, byte-identical; contributor must NEVER run suites. Local Breadmaker remains no-account/offline/no-GCP/KMS/telemetry; hosted encryption/metrics still inactive and incomplete. This is NOT a deployment release. Read `READ_THIS_FIRST.md` first.
+Candidate **Editor 10.5.12 / Cloud 10.4.11** (Editor owner-verification PENDING). Last all-green Editor **10.5.9**, Cloud **10.4.11**. Editor 10.5.11 removed the 7-way `NameError` but owner verification found two cold-setup 10s timeouts and one `draft_2` milestone focus race. Editor 10.5.12 uses established module-scoped prewarm for `test_v10326.py`/`test_v700.py` while retaining per-item watchdogs, and guards delayed Tasks milestone auto-focus from stealing a second input. Full human Editor verifier required; Cloud 133/133 already green, byte-identical; verification was pending at this checkpoint. Local Breadmaker remains no-account/offline/no-GCP/KMS/telemetry; hosted encryption/metrics still inactive and incomplete. This is NOT a deployment release. Read `READ_THIS_FIRST.md` first.
 
 ---
 
@@ -103,7 +103,7 @@ M10 production root now has a protected, optional data-plane composition with `e
 
 ## 2026-10-12 — M10B read-only recovery-plan operator, Editor 10.5.1 / Cloud 10.4.1
 
-**AWAITING USER VERIFICATION.** M10A user result: Editor 1,529 passed / 0 failed / 1 skipped, including 92 durable E2E and 94 current-browser; Cloud OpenTofu 6/6, identity 19/19, policy 65 passed / 2 failed. Both policy failures were literal Terraform spacing / “milestone 10” text assertions; M10B corrects those without skipping protections. Adds non-root read-only Firestore recovery-schedule job and separate service account, bounded 500-item owner/retention audit, staging-only preflight, optional disabled-by-default Cloud Scheduler with job-scoped invoker, digest-pin gate and conformance cases. The plan job NEVER writes archives; the backup writer stays hard disabled. No contributor test execution, no real GCP apply, no Hosting activation, no production purge.
+**AWAITING USER VERIFICATION.** M10A user result: Editor 1,529 passed / 0 failed / 1 skipped, including 92 durable E2E and 94 current-browser; Cloud OpenTofu 6/6, identity 19/19, policy 65 passed / 2 failed. Both policy failures were literal Terraform spacing / “milestone 10” text assertions; M10B corrects those without skipping protections. Adds non-root read-only Firestore recovery-schedule job and separate service account, bounded 500-item owner/retention audit, staging-only preflight, optional disabled-by-default Cloud Scheduler with job-scoped invoker, digest-pin gate and conformance cases. The plan job NEVER writes archives; the backup writer stays hard disabled. No test execution, no real GCP apply, no Hosting activation, no production purge.
 
 **Next safe action:** user runs combined Editor+Cloud full verifier on 10.5.1 / 10.4.1. Then prepare audited archive-writing worker, protected staging deployment, identity/IAM proof, and live restore drill. See the private infrastructure repository.
 
@@ -230,7 +230,7 @@ Architecture/why/how: `SERVERLESS_HOSTED_REWRITE_PLAN.md`.
 
 ## 2026-10-10 — M9B2A Editor 10.3.69 / Cloud 10.4.38 (verification pending)
 
-Per user request continued from 10.3.68 without a new corrective gate; **10.3.68 itself has no user green report**, so 10.3.69's next user-run full gate covers both M9B1 corrective and M9B2A. M9B2 split again to avoid large stalled chat changes: A is lossless native Canvas/Map graph + non-FK typed links (rebase Map anchor IDs, generated source keys, cross-feature reference IDs; reject unsupported snapshot/version shape explicitly); B will implement actual Review/checkpoint and advanced Canvas-version codecs/equivalence. New tests in `tests/test_v10369.py` are authored but NOT executed at this checkpoint. No live cloud, no bucket, no user data. Cloud 10.4.38, local Schema42, verifier/watchdogs and frozen M3/M4 drivers remain protected.
+Per user request continued from 10.3.68 without a new corrective gate; **10.3.68 itself has no user green report**, so 10.3.69's next user-run full gate covers both M9B1 corrective and M9B2A. M9B2 was split into two implementation steps: A is lossless native Canvas/Map graph + non-FK typed links (rebase Map anchor IDs, generated source keys, cross-feature reference IDs; reject unsupported snapshot/version shape explicitly); B will implement actual Review/checkpoint and advanced Canvas-version codecs/equivalence. New tests in `tests/test_v10369.py` are authored but NOT executed at this checkpoint. No live cloud, no bucket, no user data. Cloud 10.4.38, local Schema42, verifier/watchdogs and frozen M3/M4 drivers remain protected.
 
 ## 2026-10-10 — M9B1 corrective Editor 10.3.68 / Cloud 10.4.38 (pending user verification)
 
@@ -570,7 +570,7 @@ Use newest entry first. Update after **every atomic implementation block**.
 
 **Corrective:** Editor `10.3.52` keeps Milestone-4 storage/product code unchanged. `test_v8173.py` remains in the one-worker no-contention lane, and the verifier now preloads the application once at pytest session start for this API-heavy module so one-time import/bootstrap cost is outside the unchanged 10-second per-item setup/call/teardown budget. Captured/non-TTY single-job progress now emits one 0/1 bar at start and one 1/1 bar at completion instead of repeating heartbeat bars every 10 seconds.
 
-**Next safe action:** user runs the full verifier on Editor `10.3.52` / Cloud `10.4.32`. Green closes Milestone 3 and verifies Milestone 4. Red stays on this gate. The model does not run the verifier/test suite.
+**Next safe action:** user runs the full verifier on Editor `10.3.52` / Cloud `10.4.32`. Green closes Milestone 3 and verifies Milestone 4. Red stays on this gate.
 
 ## 2026-10-05 — Milestone 3 verifier round red; 10.3.47 corrective prepared
 

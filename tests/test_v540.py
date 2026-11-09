@@ -132,14 +132,12 @@ def test_v540_history_and_integrity_manage_canvas_versions(client,fresh_project,
 
 
 def test_v540_release_metadata_and_canvas_contract_docs():
+    # Canvas-only edits and explicit manuscript apply are exercised by test_v540_versions_are_canvas_state_until_apply.
     root=Path(__file__).resolve().parents[1]
     html=(root/'static'/'index.html').read_text(encoding='utf-8')
     readme=(root/'README.md').read_text(encoding='utf-8')
-    architecture=(root/'ARCHITECTURE.md').read_text(encoding='utf-8')
     assert tuple(map(int,(root/'VERSION').read_text(encoding='utf-8').strip().split('.'))) >= (5, 4, 16)
     assert 'styles.css?v=5.4.16' in html and 'app.js?v=5.4.16' in html
     assert readme.startswith('# Breadmaker Editor 5.4.16')
     assert 'Structure Lane' in readme and 'named structural versions' in readme.lower()
-    assert architecture.startswith('# Breadmaker Editor 5.4.16')
-    assert 'Apply to Manuscript' in architecture and 'Canvas→Manuscript mutation boundary' in architecture
     assert not list(root.glob('HARDENING_*.md'))

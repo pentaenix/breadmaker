@@ -1,4 +1,4 @@
-> **Historical architecture journal.** This document includes older milestone states and implementation notes. For the current architecture, start with [Architecture](../../ARCHITECTURE.md) and [M12 source closure](../security/M12_SOURCE_CLOSURE.md). Do not use this file to deploy the hosted service.
+> **Historical architecture journal.** This document includes older milestone states and implementation notes. For the current architecture, start with [development guide](../DEVELOPMENT.md) and [M12 source closure](../security/M12_SOURCE_CLOSURE.md). Do not use this file to deploy the hosted service.
 
 
 # Architectural rewrite plan — historical design contract
@@ -14,7 +14,7 @@ Added hosted-only `HostedPrivateFirestoreFields` backed by existing AES-256-GCM/
 
 # CURRENT STATUS — 2026-10-13 — M12D VERIFICATION CORRECTIVE (10.5.12)
 
-Candidate **Editor 10.5.12 / Cloud 10.4.11** (Editor owner-verification PENDING). Last all-green Editor **10.5.9**, Cloud **10.4.11**. Editor 10.5.11 removed the 7-way `NameError` but owner verification found two cold-setup 10s timeouts and one `draft_2` milestone focus race. Editor 10.5.12 uses established module-scoped prewarm for `test_v10326.py`/`test_v700.py` while retaining per-item watchdogs, and guards delayed Tasks milestone auto-focus from stealing a second input. Full human Editor verifier required; Cloud 133/133 already green, byte-identical; contributor must NEVER run suites. Local Breadmaker remains no-account/offline/no-GCP/KMS/telemetry; hosted encryption/metrics still inactive and incomplete. This is NOT a deployment release. Read `READ_THIS_FIRST.md` first.
+Candidate **Editor 10.5.12 / Cloud 10.4.11** (Editor owner-verification PENDING). Last all-green Editor **10.5.9**, Cloud **10.4.11**. Editor 10.5.11 removed the 7-way `NameError` but owner verification found two cold-setup 10s timeouts and one `draft_2` milestone focus race. Editor 10.5.12 uses established module-scoped prewarm for `test_v10326.py`/`test_v700.py` while retaining per-item watchdogs, and guards delayed Tasks milestone auto-focus from stealing a second input. Full human Editor verifier required; Cloud 133/133 already green, byte-identical; verification was pending at this checkpoint. Local Breadmaker remains no-account/offline/no-GCP/KMS/telemetry; hosted encryption/metrics still inactive and incomplete. This is NOT a deployment release. Read `READ_THIS_FIRST.md` first.
 
 ---
 
@@ -360,7 +360,7 @@ Do not merge them during this rewrite unless a milestone explicitly concludes th
 Read these before broad searching:
 
 - `breadmaker/CONTRIBUTING.md`
-- `breadmaker/ARCHITECTURE.md`
+- `breadmaker/docs/DEVELOPMENT.md`
 - `breadmaker/src/api/CODEMAP.md`
 - `breadmaker/src/api/route_manifest.json`
 - `breadmaker/docs/CODE_INDEX.json`
@@ -1144,7 +1144,7 @@ Add contracts proving:
 
 ### User verification gate
 
-The user runs the full Editor + Cloud verifier. The model does **not** execute the verifier or test suite.
+The user runs the full Editor + Cloud verifier.
 
 Expected exit: all existing stages green plus branch-protection/workflow/IaC contracts green. A repository settings/API inspection should also show the enforced PR + required-check rule before the live deployment milestone.
 
@@ -1331,7 +1331,7 @@ Hosted tests prove:
 
 Not part of ordinary offline verifier. Used only after infrastructure exists to prove actual provider wiring.
 
-The model does not run Layer C unless the user explicitly asks and supplies/authorizes the environment operation.
+Layer C requires an explicitly authorized test environment.
 
 ---
 

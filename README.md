@@ -77,7 +77,7 @@ Run the full Editor verification gate with:
 
 It checks unit, API, browser, and end-to-end behavior and may install test dependencies, launch Chromium, and access security-advisory services. You do **not** need the test suite to run the local editor. See [Testing](docs/TESTING.md) and [Contributing](CONTRIBUTING.md) for development details.
 
-For source ownership, start with [Architecture](ARCHITECTURE.md), the [API map](src/api/CODEMAP.md), and the [documentation index](docs/README.md). For a security issue, follow [SECURITY.md](SECURITY.md).
+For source ownership, start with the [development guide](docs/DEVELOPMENT.md), the [API map](src/api/CODEMAP.md), and the [documentation index](docs/README.md). For a security issue, follow [SECURITY.md](SECURITY.md).
 
 ## Older release notes
 
@@ -99,8 +99,7 @@ Adding a previously unseen test MUST cause release verification to fail until
 it is incorporated into a real test lane (or consciously reviewed as historical).
 Three protected verifier SHA assertions updated after review; per-item watchdogs,
 local offline/accountless behavior, hosted storage and Cloud remain unchanged.
-Release verification was owner-run at this milestone. Current handoff: `../READ_THIS_FIRST.md` and
-`../SERVERLESS_HOSTED_REWRITE_TRACKER.md`. No new milestone-specific root docs.
+Release verification was pending at this milestone.
 
 ## 10.5.19 — M12J regression-verifier audit
 
@@ -109,9 +108,7 @@ untracked test modules and includes current privacy/encryption tests in quick
 smoke mode. Pure regression-accounting tests were added; the strict watchdogs
 and browser lifecycle are untouched. The experimental encrypted object store
 now rejects implicit denied authorizations before GCS/KMS. This change does not
-deploy encryption or alter the first-class offline local editor. Only the human
-owner runs release verification. Current status and next tasks are in the
-canonical ZIP-root `SERVERLESS_HOSTED_REWRITE_TRACKER.md`.
+deploy encryption or alter the first-class offline local editor. See [Testing](docs/TESTING.md) for current verification instructions.
 
 ## 10.5.18 — M12I experimental encrypted-source recovery integration
 
@@ -126,8 +123,7 @@ unchanged for opted-in encrypted projects. This is NOT live activation, full
 source privacy coverage, or a production encrypted reimport implementation.
 
 Local Breadmaker works without accounts/GCP/KMS/network/telemetry, as before.
-The model NEVER runs the full verification suite; human owner runs it. Read the
-archive root `SERVERLESS_HOSTED_REWRITE_TRACKER.md` for canonical handoff state.
+See [Testing](docs/TESTING.md) for current verification instructions.
 
 ## Editor 10.5.17 — M12H opt-in encrypted recovery pilot
 
@@ -140,14 +136,11 @@ Google objectCreator-only IAM compatibility and full encrypted export/import
 remain pending; do not claim production backup encryption. Local `./run`,
 SQLite, local backups and all accountless offline operations remain unchanged.
 
-**The owner runs all release suites.** Consult the ZIP's
-`SERVERLESS_HOSTED_REWRITE_TRACKER.md` for the single current status and next
-steps. The Editor verifier performs both core and hosted dependency security
-audits before tests.
+The Editor verifier performs both core and hosted dependency security audits before tests.
 
 ## 10.5.16 — M12G opt-in encrypted structured content and streamlined handoff
 
-Adds twelve additional hosted Firestore-only private-data families to the **inactive**, explicitly injected AES-256-GCM/KMS-backed codec. This does not activate hosted encryption in production or finish archive/export coverage. Local Breadmaker remains completely offline/accountless. Root handoff is now only `../READ_THIS_FIRST.md` and `../SERVERLESS_HOSTED_REWRITE_TRACKER.md`; the tracker is the sole current status source, with old notes moved under `docs/archive/` and current security register under `docs/security/`. The release operator runs `./verify-release`. Cloud 10.4.11 is unchanged and already green.
+Adds twelve additional hosted Firestore-only private-data families to the **inactive**, explicitly injected AES-256-GCM/KMS-backed codec. This does not activate hosted encryption in production or finish archive/export coverage. Local Breadmaker remains completely offline/accountless. The release operator runs `./verify-release`. Cloud 10.4.11 is unchanged and already green.
 
 ## 10.5.15 — M12F encrypted private-field pilot expansion
 
@@ -170,7 +163,7 @@ The normal local Editor remains offline and accountless; the normal hosted runti
 
 ## 10.5.12 — Milestone focus race and isolated cold setup prewarming
 
-Editor 10.5.11 passed the earlier encrypted chapter-replacement tests but its owner-run verification still found two first-API-fixture 10s setup timeouts and one durable Tasks milestone race. The release orchestrator now prewarms the full app before test items in `test_v10326.py` and `test_v700.py` using its existing session-start mechanism (preserves 10-second per-item watchdog; not a blanket timeout increase). Tasks auto-focus after adding a milestone is conditional on the input still being focused and empty, so typing the next milestone cannot lose Enter to a delayed focus callback. Normal product/storage encryption behavior and local/no-account/no-cloud operation are unchanged. Tests remain owner-only. See `../READ_THIS_FIRST.md`.
+Editor 10.5.11 passed the earlier encrypted chapter-replacement tests but its owner-run verification still found two first-API-fixture 10s setup timeouts and one durable Tasks milestone race. The release orchestrator now prewarms the full app before test items in `test_v10326.py` and `test_v700.py` using its existing session-start mechanism (preserves 10-second per-item watchdog; not a blanket timeout increase). Tasks auto-focus after adding a milestone is conditional on the input still being focused and empty, so typing the next milestone cannot lose Enter to a delayed focus callback. Normal product/storage encryption behavior and local/no-account/no-cloud operation are unchanged. See [Testing](docs/TESTING.md) for current verification instructions.
 
 ## 10.5.11 — M12D chapter-replacement corrective
 
@@ -178,7 +171,7 @@ The owner ran M12D Editor 10.5.10: 1,593 passed, 7 failed, 1 skipped. All seven 
 
 ## 10.5.10 — M12D hosted encrypted manuscript-block pilot (not enabled by default)
 
-The hosted domain now accepts an explicitly injected AES-256-GCM/KMS-backed encrypted object writer for GCS-backed manuscript block bodies, including normal CRUD and atomic chapter replacement. The production hosted runtime does **not** inject it: Firestore metadata, other private families and backup/package paths are not encrypted yet. When experimental encryption is selected, package import/export refuse to produce plaintext or bypass key authorization. No local editor changes, GCP credentials or account required. Human user alone runs verification; `./verify-release` continues to audit core+hosted dependencies first. See `docs/archive/m12_prior_handoffs/M12D_HOSTED_BLOCK_INTEGRATION.md`.
+The hosted domain now accepts an explicitly injected AES-256-GCM/KMS-backed encrypted object writer for GCS-backed manuscript block bodies, including normal CRUD and atomic chapter replacement. The production hosted runtime does **not** inject it: Firestore metadata, other private families and backup/package paths are not encrypted yet. When experimental encryption is selected, package import/export refuse to produce plaintext or bypass key authorization. No local editor changes, GCP credentials or account required. `./verify-release` continues to audit core+hosted dependencies first. See `docs/archive/m12_prior_handoffs/M12D_HOSTED_BLOCK_INTEGRATION.md`.
 
 ## 10.5.9 — M12C hosted encrypted private-object pilot
 

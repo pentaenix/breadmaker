@@ -66,3 +66,7 @@ CLAUDE.md
 .agents/
 .claude/
 docs/skills/
+
+# Private architecture notes, retained on developer machines.
+/ARCHITECTURE.md
+/docs/archive/pre_m7c_current_docs/ARCHITECTURE.md.md

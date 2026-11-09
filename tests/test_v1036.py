@@ -86,9 +86,8 @@ def test_v1036_historical_css_contracts_follow_runtime_boundary():
 
 
 def test_v1036_css_ownership_is_documented():
+    # The stylesheet order and ownership boundary are checked against loaded CSS above.
     docs=(STATIC/'css'/'README.md').read_text(encoding='utf-8')
-    architecture=(ROOT/'ARCHITECTURE.md').read_text(encoding='utf-8')
     assert 'Stylesheet order is runtime behavior' in docs
     assert '`static/styles.css` remains the global foundation owner' in docs
     assert 'frontend_styles_source()' in docs
-    assert 'ordered CSS ownership' in architecture

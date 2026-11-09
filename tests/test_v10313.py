@@ -27,14 +27,13 @@ def _client(issuer: FakeOidcIssuer):
 
 
 def test_v10313_checkpoint_three_release_contract_is_documented():
+    # The runtime boundary is exercised by test_v10313_oidc_engine_does_not_change_local_runtime_or_enable_hosted_login.
     version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
     readme = (ROOT / 'README.md').read_text(encoding='utf-8')
-    architecture = (ROOT / 'ARCHITECTURE.md').read_text(encoding='utf-8')
     oidc = (ROOT / 'src/auth/oidc.py').read_text(encoding='utf-8')
     routes = (ROOT / 'src/backend/runtime_routes.py').read_text(encoding='utf-8')
     assert tuple(map(int,version.split('.'))) >= (10,3,13)
     assert '10.3.13' in readme and 'generic OIDC' in readme
-    assert 'hosted login remains disabled' in architecture
     requirements = (ROOT / 'requirements.txt').read_text(encoding='utf-8')
     assert 'class OidcClient' in oidc and "'code_challenge_method': 'S256'" in oidc
     # Library ownership belongs here; patched exact pins are checked by v10314
@@ -43,10 +42,6 @@ def test_v10313_checkpoint_three_release_contract_is_documented():
     assert 'from authlib.oidc.core import CodeIDToken' in oidc
     assert 'from joserfc import jwt' in oidc
     assert 'cryptography.hazmat' not in oidc
-    # Checkpoint 3/4 documented hosted login as disabled at that time. Later
-    # identity checkpoints legitimately add development-only routes, so preserve the
-    # historical architecture statement rather than forbidding future implementation.
-    assert 'hosted login remains disabled' in architecture
 
 
 def test_v10313_oidc_authorization_request_uses_state_nonce_and_pkce_s256():
