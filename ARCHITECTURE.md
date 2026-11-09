@@ -27,7 +27,7 @@ The storage layer is under `src/storage/`; project creation, packages, profiles,
 
 The hosted runtime uses Firestore for project records, Cloud Storage for objects, and Identity Platform for sign-in. Breadmaker checks identity and project permissions on the server; a project or user ID sent by a browser is never, by itself, permission to access that data.
 
-Hosting configuration, infrastructure, credentials, and deployment automation are maintained in the **private `pentaenix/breadmaker-cloud` repository**, using OpenTofu. The public Editor repository includes application source and deployment-facing contracts, not a production deployment or its secrets.
+Hosting configuration, infrastructure, credentials, and deployment automation are maintained in a **separate private infrastructure repository**, using OpenTofu. The public Editor repository includes application source and deployment-facing contracts, not a production deployment or its secrets.
 
 The normal hosted runtime uses server-readable manuscript data with Google-managed encryption at rest. Experimental application-layer encryption and sealed recovery code are available for specifically supported record families but are **not activated in the standard hosted runtime**. Their presence in the tree must not be interpreted as a live security guarantee.
 
@@ -377,7 +377,7 @@ The initial 10.1 extraction revealed that mature Breadmaker domains have a small
 
 ## Repository boundary (10.0.0)
 
-10.0.0 separates the product source tree from the managed-service operations tree. `breadmaker` owns application behavior and its local/hosted runtime contracts. `breadmaker-cloud` owns the concrete `breadmaker.studio` infrastructure and deployment automation. The split is an operational/access boundary, not a secrecy dependency. No 9.6.15 runtime/security behavior is intentionally changed by this release.
+10.0.0 separates the product source tree from the managed-service operations tree. `breadmaker` owns application behavior and its local/hosted runtime contracts. The private infrastructure repository owns the concrete `breadmaker.studio` infrastructure and deployment automation. The split is an operational/access boundary, not a secrecy dependency. No 9.6.15 runtime/security behavior is intentionally changed by this release.
 
 ## Verification isolation cleanup (9.6.15)
 

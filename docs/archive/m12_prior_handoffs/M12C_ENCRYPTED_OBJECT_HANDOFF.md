@@ -4,7 +4,7 @@
 
 ## Scope and threat boundary
 
-This is an **opt-in, not-wired** hosted-only GCS object publication boundary, not activation of hosted at-rest application encryption. Local `./run`, SQLite Schema42, offline backup/restore, no-account workflows and no network dependency stay first-class. The cloud project is not deployed; no live IAM, KMS or bucket permissions were changed. `breadmaker-cloud/` is **byte-identical to the user-verified 10.4.11**.
+This is an **opt-in, not-wired** hosted-only GCS object publication boundary, not activation of hosted at-rest application encryption. Local `./run`, SQLite Schema42, offline backup/restore, no-account workflows and no network dependency stay first-class. The cloud project is not deployed; no live IAM, KMS or bucket permissions were changed. The private infrastructure repository is **byte-identical to the user-verified 10.4.11**.
 
 `breadmaker/src/hosted/storage/encrypted_objects.py` introduces `HostedEncryptedObjectStore`, requiring an explicit canonical project membership authorizer and reusing the M12B `HostedEnvelopeCodec` (AES-256-GCM with random DEK/nonce and KMS-wrapped key). It publishes authentic ciphertext to an existing `ObjectStore` through `if_generation_match=0`, then verifies exact stored ciphertext bytes, sha256 and generation before treating publication as successful. Replays with the same operation/name return the original generation only when the authenticated old plaintext equals new plaintext; mismatched payloads raise an error. It exposes no delete method.
 
@@ -38,7 +38,6 @@ From extracted ZIP:
 
 ```
 cd breadmaker && ./verify-release
-cd ../breadmaker-cloud && ./verify-release
 ```
 
 Send **only compact failure digests**. No separate hosted dependency command is needed after a green Editor `verify-release`; it already scans core and hosted transitive dependencies. No GCP project, account, deployment, KMS key or network required for local app; verifier alone requires internet for advisories.

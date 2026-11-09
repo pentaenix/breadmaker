@@ -1,6 +1,6 @@
 # Contributing to Breadmaker
 
-Breadmaker has a local editor and a separately operated hosted service. Most contributions can be developed and tested without any cloud account.
+Thanks for helping with Breadmaker. You can work on most features locally without a cloud account. For a larger change, please open an issue first so we can discuss it before you spend time on it.
 
 ## Get started
 
@@ -47,8 +47,7 @@ unless you clearly state otherwise and the maintainers agree. Submit only
 material you have the right to contribute. Record attribution and any
 third-party licenses in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-The deployment repository, `pentaenix/breadmaker-cloud`, is private and
-proprietary; Editor contributions do not grant deployment access.
+Contributing to the Editor does not grant access to hosted deployments.
 
 ## Architecture and component rules
 

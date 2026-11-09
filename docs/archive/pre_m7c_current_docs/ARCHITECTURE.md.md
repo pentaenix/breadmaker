@@ -307,7 +307,7 @@ The initial 10.1 extraction revealed that mature Breadmaker domains have a small
 
 ## Repository boundary (10.0.0)
 
-10.0.0 separates the product source tree from the managed-service operations tree. `breadmaker` owns application behavior and its local/hosted runtime contracts. `breadmaker-cloud` owns the concrete `breadmaker.studio` infrastructure and deployment automation. The split is an operational/access boundary, not a secrecy dependency. No 9.6.15 runtime/security behavior is intentionally changed by this release.
+10.0.0 separates the product source tree from the managed-service operations tree. `breadmaker` owns application behavior and its local/hosted runtime contracts. The private infrastructure repository owns the concrete `breadmaker.studio` infrastructure and deployment automation. The split is an operational/access boundary, not a secrecy dependency. No 9.6.15 runtime/security behavior is intentionally changed by this release.
 
 ## Verification isolation cleanup (9.6.15)
 

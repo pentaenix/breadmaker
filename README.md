@@ -1,12 +1,12 @@
 # Breadmaker
 
-A writing workspace for long-form projects.
+A place to write, organize, and revise long-form projects.
 
 [Website](https://breadmaker.studio) · [Hosted editor](https://app.breadmaker.studio) · [User guide](docs/USING_BREADMAKER.md)
 
 Open-source Editor: **[pentaenix/breadmaker](https://github.com/pentaenix/breadmaker)** (Apache-2.0).
 
-Breadmaker is a writing workspace for books and other long-form projects. Draft chapters, keep notes and story maps nearby, track revisions, and collect feedback without moving between separate tools.
+Draft chapters, keep notes and story maps nearby, track revisions, and collect feedback in one workspace.
 
 You can run Breadmaker **on your own computer** or use a separately deployed **hosted edition**. The local editor does not need an account or a Breadmaker server.
 
@@ -174,7 +174,7 @@ Editor 10.5.11 passed the earlier encrypted chapter-replacement tests but its ow
 
 ## 10.5.11 — M12D chapter-replacement corrective
 
-The owner ran M12D Editor 10.5.10: 1,593 passed, 7 failed, 1 skipped. All seven failures shared `NameError: encoded is not defined`, affecting six inherited M8B chapter-replacement cases and one new encrypted replacement case. Cloud 10.4.11 is owner-confirmed fully green (133/133), and its files remain unchanged. The original `chapter_mutations.py` M12D edit accidentally omitted `structured, encoded = hybrid` in the `hybrid is not None` branch; 10.5.11 restores that tuple unpacking before immutable publication, preserving both the plain and opt-in encrypted paths. One focused AST guard `tests/test_v10511_chapter_hybrid_contract.py` is added; the existing runtime tests remain unchanged. No suite has been run by the contributor; the human must run only Editor `./verify-release` and report the digest. Local runtime/accountless SQLite/backup files and Cloud remain unchanged; hosted encryption remains opt-in, incomplete, and disabled in normal runtime. No GCP deployment, KMS key, hosted telemetry or destructive deletion has been activated. See the top-level successor-contributor handoff for verification instructions.
+The owner ran M12D Editor 10.5.10: 1,593 passed, 7 failed, 1 skipped. All seven failures shared `NameError: encoded is not defined`, affecting six inherited M8B chapter-replacement cases and one new encrypted replacement case. Cloud 10.4.11 is owner-confirmed fully green (133/133), and its files remain unchanged. The original `chapter_mutations.py` M12D edit accidentally omitted `structured, encoded = hybrid` in the `hybrid is not None` branch; 10.5.11 restores that tuple unpacking before immutable publication, preserving both the plain and opt-in encrypted paths. One focused AST guard `tests/test_v10511_chapter_hybrid_contract.py` is added; the existing runtime tests remain unchanged. Editor verification was pending at this checkpoint. Local runtime/accountless SQLite/backup files and Cloud remain unchanged; hosted encryption remains opt-in, incomplete, and disabled in normal runtime. No GCP deployment, KMS key, hosted telemetry or destructive deletion has been activated. See [Testing](docs/TESTING.md) for current verification instructions.
 
 ## 10.5.10 — M12D hosted encrypted manuscript-block pilot (not enabled by default)
 
@@ -182,7 +182,7 @@ The hosted domain now accepts an explicitly injected AES-256-GCM/KMS-backed encr
 
 ## 10.5.9 — M12C hosted encrypted private-object pilot
 
-New optional `hosted.storage.encrypted_objects.HostedEncryptedObjectStore` implements create-only, integrity-verified AES-256-GCM encrypted GCS object publishing with KMS-wrapped per-payload keys, project/path authentication and opaque operation-based names. This is **not yet wired** to regular hosted manuscript/Review/Cuts/asset/backup paths and is not an enabled privacy guarantee. All real hosted private storage remains marked NOT_INTEGRATED pending audited rollout. Local Breadmaker remains fully offline/accountless and unaffected. See `docs/archive/m12_prior_handoffs/M12C_ENCRYPTED_OBJECT_HANDOFF.md` for implementation boundaries and next steps. contributor does not run test suites; user runs the verifiers.
+New optional `hosted.storage.encrypted_objects.HostedEncryptedObjectStore` implements create-only, integrity-verified AES-256-GCM encrypted GCS object publishing with KMS-wrapped per-payload keys, project/path authentication and opaque operation-based names. This is **not yet wired** to regular hosted manuscript/Review/Cuts/asset/backup paths and is not an enabled privacy guarantee. All real hosted private storage remains marked NOT_INTEGRATED pending audited rollout. Local Breadmaker remains fully offline/accountless and unaffected. See `docs/archive/m12_prior_handoffs/M12C_ENCRYPTED_OBJECT_HANDOFF.md` for implementation boundaries and next steps. Verification was pending at this checkpoint.
 
 ## 10.5.8 — Release verification audits hosted dependencies locally
 
@@ -259,7 +259,7 @@ Hosted project downloads now request a current Schema 42 / package-v2 artifact, 
 
 ## 10.3.66 — M9A independent recovery archive foundation
 
-M9A adds `src/hosted/recovery_archives.py`, an owner-only generation-fenced immutable hosted recovery service requiring a distinct recovery object store, exact-generation checksum verification, restart-safe operation keys, and a 64 MiB synchronous resource cap. Hosted package exports now fail closed on Firestore entity read errors instead of silently dropping collections. The credential-free conformance tests are authored in `tests/test_v10366.py`, **not executed by the model**. There is no new hosted HTTP route, cloud bucket, scheduler, deletion path, or local import-format translation yet. M9B/C/D and M10 own those. Cloud 10.4.38, local runtime, M3/M4 adapters, verifier/watchdogs and Schema 42 remain unchanged. The user has not yet confirmed the inherited M8B 10.3.65 corrective green; the full combined release verification gate covers both.
+M9A adds `src/hosted/recovery_archives.py`, an owner-only generation-fenced immutable hosted recovery service requiring a distinct recovery object store, exact-generation checksum verification, restart-safe operation keys, and a 64 MiB synchronous resource cap. Hosted package exports now fail closed on Firestore entity read errors instead of silently dropping collections. The credential-free conformance tests are authored in `tests/test_v10366.py`, **not executed at this checkpoint**. There is no new hosted HTTP route, cloud bucket, scheduler, deletion path, or local import-format translation yet. M9B/C/D and M10 own those. Cloud 10.4.38, local runtime, M3/M4 adapters, verifier/watchdogs and Schema 42 remain unchanged. The user has not yet confirmed the inherited M8B 10.3.65 corrective green; the full combined release verification gate covers both.
 
 ## 10.3.65 — M8B lifecycle documentation contract corrective
 
@@ -330,7 +330,7 @@ The hosted image is separate from local dependencies (`requirements-hosted.txt`)
 ## 10.3.37 — Checkpoint 11 pre-deployment security gate
 Verification-only corrective: 10.3.37 keeps the prior runtime/security behavior and narrows the toolbar race contract to reject executable `requestAnimationFrame(` calls rather than matching prose comments.
 
-Checkpoint 11 removes the temporary auth UI preview completely and freezes the real Auth0 path for adversarial testing. Schema 42 remains current-only; direct project routes authorize membership, redirect handling rejects browser-normalization tricks, account linking compensates provider-side partial commits, and TOTP replacement prepares enrollment before deleting the working factor. The final consultant pass also bounds locale restart state, retires superseded OIDC/browser-binding transactions, rate-limits locale restarts, rejects ambiguous Host fields, pins Auth0 discovery endpoints to the issuer origin, and prevents wrong-session callbacks from consuming link/step-up state. Local Breadmaker remains accountless.
+Checkpoint 11 removes the temporary auth UI preview completely and freezes the real Auth0 path for adversarial testing. Schema 42 remains current-only; direct project routes authorize membership, redirect handling rejects browser-normalization tricks, account linking compensates provider-side partial commits, and TOTP replacement prepares enrollment before deleting the working factor. The final security review also bounds locale restart state, retires superseded OIDC/browser-binding transactions, rate-limits locale restarts, rejects ambiguous Host fields, pins Auth0 discovery endpoints to the issuer origin, and prevents wrong-session callbacks from consuming link/step-up state. Local Breadmaker remains accountless.
 Authenticated link/step-up transaction stores also enforce per-user transaction ceilings, and failed wrapper binds retire their underlying OIDC state instead of consuming shared capacity until TTL expiry.
 The final corrective pass also positions the floating manuscript selection toolbar before it becomes interactive, removing the delayed-bookmark-tooltip hover race without shortening the 300 ms UX delay.
 

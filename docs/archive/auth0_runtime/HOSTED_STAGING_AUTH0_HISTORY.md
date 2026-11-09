@@ -29,7 +29,7 @@ application resolves the selected versions at runtime.
 
 ## Deployment
 
-The paired `breadmaker-cloud` repository owns the GCP staging service, persistence, load
+The separate infrastructure repository owns the GCP staging service, persistence, load
 balancer, non-secret configuration, and operator runbook. Do not expose this image directly
 on the Internet and do not add replicas: the current session/OIDC/security authorities are
 process-local and the runtime enforces the one-worker constraint.
