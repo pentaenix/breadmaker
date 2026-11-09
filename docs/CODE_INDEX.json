@@ -6065,7 +6065,7 @@
     },
     {
       "file": "src/auth/identity.py",
-      "lines": 97,
+      "lines": 96,
       "symbols": [
         {
           "name": "AuthorizationError",
@@ -6075,27 +6075,27 @@
         {
           "name": "Actor",
           "kind": "class",
-          "line": 27
+          "line": 26
         },
         {
           "name": "permissions_for_role",
           "kind": "function",
-          "line": 58
+          "line": 57
         },
         {
           "name": "current_actor",
           "kind": "function",
-          "line": 62
+          "line": 61
         },
         {
           "name": "can",
           "kind": "function",
-          "line": 83
+          "line": 82
         },
         {
           "name": "require",
           "kind": "function",
-          "line": 93
+          "line": 92
         }
       ]
     },
@@ -6335,37 +6335,37 @@
     },
     {
       "file": "src/backend/client_leases.py",
-      "lines": 83,
+      "lines": 81,
       "symbols": [
         {
           "name": "_prune_client_leases",
           "kind": "function",
-          "line": 23
+          "line": 22
         },
         {
           "name": "_claim_client_lease",
           "kind": "function",
-          "line": 29
+          "line": 28
         },
         {
           "name": "_active_foreign_client",
           "kind": "function",
-          "line": 57
+          "line": 55
         },
         {
           "name": "_release_client_lease",
           "kind": "function",
-          "line": 66
+          "line": 64
         },
         {
           "name": "clear_project",
           "kind": "function",
-          "line": 74
+          "line": 72
         },
         {
           "name": "clear_all",
           "kind": "function",
-          "line": 80
+          "line": 78
         }
       ]
     },
@@ -6632,7 +6632,7 @@
     },
     {
       "file": "src/backend/local_history.py",
-      "lines": 144,
+      "lines": 143,
       "symbols": [
         {
           "name": "_canonical_commit_history_observer",
@@ -6652,27 +6652,27 @@
         {
           "name": "_local_history_worker_loop",
           "kind": "function",
-          "line": 81
+          "line": 80
         },
         {
           "name": "_start_local_history_worker",
           "kind": "function",
-          "line": 118
+          "line": 117
         },
         {
           "name": "request_stop",
           "kind": "function",
-          "line": 125
+          "line": 124
         },
         {
           "name": "stop_worker",
           "kind": "function",
-          "line": 130
+          "line": 129
         },
         {
           "name": "activity_barrier",
           "kind": "function",
-          "line": 142
+          "line": 141
         }
       ]
     },
@@ -6857,7 +6857,7 @@
     },
     {
       "file": "src/backend/request_pipeline.py",
-      "lines": 323,
+      "lines": 321,
       "symbols": [
         {
           "name": "_rate_limit_client_identity",
@@ -6892,12 +6892,12 @@
         {
           "name": "startup",
           "kind": "function",
-          "line": 290
+          "line": 288
         },
         {
           "name": "install",
           "kind": "function",
-          "line": 322
+          "line": 320
         }
       ]
     },
@@ -8101,7 +8101,7 @@
     },
     {
       "file": "src/hosted/chapter_mutations.py",
-      "lines": 245,
+      "lines": 244,
       "symbols": [
         {
           "name": "replace_chapter_blocks",
@@ -16134,7 +16134,7 @@
     },
     {
       "file": "static/js/core/runtime.js",
-      "lines": 102,
+      "lines": 100,
       "symbols": [
         {
           "name": "$",
@@ -16179,27 +16179,27 @@
         {
           "name": "localizedApiErrorMessage",
           "kind": "function",
-          "line": 45
+          "line": 43
         },
         {
           "name": "breadmakerErrorFromPayload",
           "kind": "function",
-          "line": 51
+          "line": 49
         },
         {
           "name": "localizedDiagnostic",
           "kind": "function",
-          "line": 58
+          "line": 56
         },
         {
           "name": "api",
           "kind": "function",
-          "line": 59
+          "line": 57
         },
         {
           "name": "apiList",
           "kind": "function",
-          "line": 97
+          "line": 95
         }
       ]
     },
@@ -18499,7 +18499,7 @@
     },
     {
       "file": "static/js/features/durability/history.js",
-      "lines": 131,
+      "lines": 130,
       "symbols": [
         {
           "name": "historyId",
@@ -18634,112 +18634,112 @@
         {
           "name": "cutHumanTime",
           "kind": "function",
-          "line": 68
+          "line": 67
         },
         {
           "name": "cutInformationTime",
           "kind": "function",
-          "line": 69
+          "line": 68
         },
         {
           "name": "cutProvenance",
           "kind": "function",
-          "line": 73
+          "line": 72
         },
         {
           "name": "ensureCutsWorkspace",
           "kind": "function",
-          "line": 77
+          "line": 76
         },
         {
           "name": "filteredCuts",
           "kind": "function",
-          "line": 78
+          "line": 77
         },
         {
           "name": "savedCutSelectionItems",
           "kind": "function",
-          "line": 79
+          "line": 78
         },
         {
           "name": "cutCaretAnchor",
           "kind": "function",
-          "line": 80
+          "line": 79
         },
         {
           "name": "selectedCut",
           "kind": "function",
-          "line": 81
+          "line": 80
         },
         {
           "name": "syncCutsPanelContext",
           "kind": "function",
-          "line": 82
+          "line": 81
         },
         {
           "name": "renderCutsList",
           "kind": "function",
-          "line": 87
+          "line": 86
         },
         {
           "name": "selectCut",
           "kind": "function",
-          "line": 94
+          "line": 93
         },
         {
           "name": "reloadCutsWorkspace",
           "kind": "function",
-          "line": 95
+          "line": 94
         },
         {
           "name": "updateCutNote",
           "kind": "function",
-          "line": 100
+          "line": 99
         },
         {
           "name": "openCutDetails",
           "kind": "function",
-          "line": 101
+          "line": 100
         },
         {
           "name": "removeCutFromWorkspace",
           "kind": "function",
-          "line": 108
+          "line": 107
         },
         {
           "name": "permanentlyDeleteCut",
           "kind": "function",
-          "line": 109
+          "line": 108
         },
         {
           "name": "cutMenuItems",
           "kind": "function",
-          "line": 110
+          "line": 109
         },
         {
           "name": "openCutMenu",
           "kind": "function",
-          "line": 115
+          "line": 114
         },
         {
           "name": "cutSelectionFromPanel",
           "kind": "function",
-          "line": 120
+          "line": 119
         },
         {
           "name": "insertCutAtCursor",
           "kind": "function",
-          "line": 121
+          "line": 120
         },
         {
           "name": "closeCutsPanel",
           "kind": "function",
-          "line": 122
+          "line": 121
         },
         {
           "name": "openCutsPanel",
           "kind": "function",
-          "line": 123
+          "line": 122
         }
       ]
     },
