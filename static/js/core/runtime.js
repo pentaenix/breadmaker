@@ -25,10 +25,8 @@ const CLIENT_ID = (() => {
 const LINK_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="link-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/><path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/></svg>`;
 
 
-// Editor's Eye is intentionally a presentation-only manuscript lens. Presets are
-// curated to be visibly different from one another while remaining comfortable for
-// book-length editing. They use local/system font stacks only: no font payloads are
-// bundled, and no value is ever written to project data.
+// Editor's Eye changes only the display, never project data.
+// Presets use local/system fonts; no font files are bundled.
 const EDITORS_EYE_PRESETS = [
   {font:"Georgia, 'Times New Roman', serif",size:15.1,lineHeight:1.8,width:808,pad:76,gap:.62,tracking:.006,light:{bg:'#dceeff',text:'#17212b'},dusk:{bg:'#c8cfce',text:'#26302f'},dark:{bg:'#102a43',text:'#f1f7fa'}},
   {font:"'Avenir Next', Avenir, 'Segoe UI', sans-serif",size:14.6,lineHeight:1.76,width:910,pad:62,gap:.52,tracking:.012,light:{bg:'#fff0b8',text:'#2b2513'},dusk:{bg:'#d2cbb5',text:'#312d21'},dark:{bg:'#352b10',text:'#fff5d6'}},

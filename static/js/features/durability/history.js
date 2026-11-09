@@ -57,9 +57,8 @@ $('#historySplitSelect')?.addEventListener('change',async e=>{const id=String(e.
 
 let cutsWorkspace={items:[],selectedId:null,dirty:true};
 async function notifyCutsChanged(preferId=null,{removeId=null}={}){
-  // Permanent deletion already knows exactly which row changed. Keep all Cut mutations
-  // on one synchronization boundary, but avoid re-downloading/reparsing the entire
-  // library when a precise local update is sufficient.
+  // A deletion identifies the affected row, so update it locally instead of
+  // downloading the whole Cut library again.
   if(removeId!=null){removeCutFromWorkspace(removeId);return}
   cutsWorkspace.dirty=true;
   const panel=$('#cutsPanel');

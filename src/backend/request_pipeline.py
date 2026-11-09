@@ -149,15 +149,13 @@ def _runtime_bootstrap_payload() -> dict:
 
 async def local_origin_guard(request: Request, call_next):
     path=canonical_request_path(request)
-    # Runtime discovery is the first browser bootstrap request and is deliberately
-    # independent of Current, local profiles, membership sidecars, Recovery, and leases.
-    # Return it before request identity/project binding so damaged or stale installation
-    # state can never turn this global capability endpoint into a project-context 404.
+    # Serve runtime discovery before binding identity or project state. Startup
+    # needs these capabilities even if Current, profiles, or membership data is damaged.
     if request.method.upper() in {"GET","HEAD"} and path=='/api/runtime':
         return JSONResponse(_runtime_bootstrap_payload(),headers={'Cache-Control':'no-store, max-age=0'})
 
-    # Breadmaker is intentionally localhost-only. A hostile webpage can still submit
-    # a plain HTML form to localhost, so protect mutating API routes from CSRF.
+    # A hostile webpage can submit an HTML form to localhost too.
+    # Protect mutating API routes from CSRF even in local mode.
     is_api=path.startswith('/api/')
     mutating=is_api and request.method.upper() not in {"GET","HEAD","OPTIONS"}
     real_auth = runtime.sessions.requires_authentication and runtime.sessions.metadata().get('auth_mode')=='identity_platform'

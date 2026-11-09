@@ -97,9 +97,8 @@ def replace_chapter_blocks(domain, *, project_id: str, chapter_id: str, user_id:
     canonical = json.dumps(logical,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode('utf-8')
     if len(canonical) > MAX_REPLACEMENT_JSON_BYTES:
         raise HostedValidationError('HOSTED_CHAPTER_REPLACE_TOO_LARGE')
-    # Keep the SAME bounded write budget. A large chapter with one edited
-    # paragraph is not a 2,000-record replacement. Never republish unchanged
-    # immutable bodies or rewrite their Firestore metadata.
+    # Count only changed or deleted blocks against the write limit. Leave unchanged
+    # bodies and Firestore metadata alone, even when replacing a large chapter.
     unchanged=({eid for eid,public,_ in normalized if eid in originals
         and all(originals[eid].get(key)==value for key,value in public.items())}
         if domain.encrypted_objects is None and domain.encrypted_fields is None else set())

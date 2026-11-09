@@ -217,8 +217,8 @@ def _build_plan_from_verified_rows(
     for row in rows:
         grouped.setdefault(str(row['checkpoint_id']), []).append(row)
     segments = [_segment_from_rows(cid, segment_rows) for cid, segment_rows in grouped.items()]
-    # v1 intentionally promotes any retained revision to its whole bounded checkpoint
-    # segment. This keeps lineage semantics boring and avoids introducing mutable stubs.
+    # Keep the whole checkpoint segment when any revision is retained, so its
+    # lineage stays intact without mutable placeholder revisions.
     retained_segment_ids = {
         segment.checkpoint_id
         for segment in segments
@@ -508,16 +508,16 @@ def run_local_history_gc(
             else:
                 candidates[key] = {'kind':'orphan-checkpoint','checkpoint_id':checkpoint_id,'first_seen_epoch':epoch,'last_seen_epoch':epoch,'first_seen_at':_iso(now_utc),'last_seen_at':_iso(now_utc),'scan_count':1,'plan_digest':plan.digest};result.tombstoned.append(key)
 
-        # A retention change or newly published revision can make an earlier candidate
-        # live again. Cancel it rather than carrying stale destructive intent forward.
+        # A retention change or new revision can make a deletion candidate live again.
+        # Remove those candidates before deleting anything.
         for key in list(candidates):
             if key not in live_keys:
                 candidates.pop(key, None)
                 result.cancelled_tombstones.append(key)
 
         quarantine_state = dict(state.get('quarantine') or {})
-        # Persist the recomputed plan/candidate set before any mutation. An interrupted
-        # process never resumes a stale delete list blindly; the next run replans.
+        # Save the updated plan before moving files. After an interruption,
+        # the next run recomputes the plan instead of reusing the delete list.
         state = {
             'gc_format': GC_FORMAT,
             'gc_version': GC_VERSION,
@@ -559,7 +559,7 @@ def run_local_history_gc(
             result.quarantined.append(key)
             if stage_hook:stage_hook('LOCAL_QUARANTINED',{'epoch':epoch,'candidate_key':key,'kind':kind})
 
-        # Physical removal is deliberately one more grace boundary after quarantine.
+        # Wait another grace period after quarantine before deleting files.
         for qid, qmeta in list(quarantine_state.items()):
             quarantined_at = _parse_created_at(qmeta.get('quarantined_at')) if isinstance(qmeta, dict) else None
             qepoch = int(qmeta.get('quarantined_epoch') or 0) if isinstance(qmeta, dict) else 0
