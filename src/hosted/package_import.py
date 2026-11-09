@@ -7,7 +7,7 @@ atomically. There is no process-local job, lease, or background publication.
 from __future__ import annotations
 
 import base64
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from contextvars import copy_context
 from copy import copy
 import gzip
@@ -30,6 +30,7 @@ from security.image_security import HOSTED_DEFAULT_IMAGE_BYTES, inspect_hosted_i
 
 BATCH_SIZE = 64
 UPLOAD_WORKERS = 8
+PREPARE_WORKERS = 16
 LIFETIME = 86400
 MAX_SOURCE_BYTES = 64 * 1024**2
 MAX_PLAN_BYTES = 256 * 1024**2  # the existing expanded archive boundary, not a row cap
@@ -45,13 +46,36 @@ def _hash(value):
     return hashlib.sha256(_json(value)).hexdigest()
 
 
-def _parallel(fn, items):
-    # Never create an unbounded queue of futures, or share an entered Context.
-    result = []
-    with ThreadPoolExecutor(max_workers=UPLOAD_WORKERS) as pool:
-        for start in range(0, len(items), UPLOAD_WORKERS):
-            pending = [pool.submit(copy_context().run, fn, item) for item in items[start:start + UPLOAD_WORKERS]]
-            result.extend(future.result() for future in pending)
+def _parallel(fn, items, *, workers=UPLOAD_WORKERS):
+    # Keep at most `workers` futures alive, refill completed slots rather than
+    # waiting for the slowest object in each fixed wave, and retain input order.
+    # A fresh Context per submission preserves request-scoped staging authority.
+    if not 1 <= workers <= PREPARE_WORKERS:
+        raise ValueError('HOSTED_IMPORT_WORKER_LIMIT')
+    result = [None] * len(items)
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        pending = {}
+        next_index = 0
+        def submit():
+            nonlocal next_index
+            future = pool.submit(copy_context().run, fn, items[next_index])
+            pending[future] = next_index
+            next_index += 1
+        while next_index < min(workers, len(items)):
+            submit()
+        try:
+            while pending:
+                done, _ = wait(pending, return_when=FIRST_COMPLETED)
+                # Check all completed outcomes before scheduling any new work.
+                completed = [(future, future.result()) for future in done]
+                for future, value in completed:
+                    result[pending.pop(future)] = value
+                while next_index < len(items) and len(pending) < workers:
+                    submit()
+        except BaseException:
+            for future in pending:
+                future.cancel()
+            raise
     return result
 
 
@@ -552,7 +576,8 @@ class PackageImport:
                 pointer = packages.domain._publish_hybrid('manuscript_block',
                     {'project_id': data['project_id'], 'block_id': bid}, encoded)
                 bundles = {eid: {**pointer, 'bundle_entry': eid} for eid in bodies}
-            prepared = _parallel(lambda item: self._prepare(packages, data, item, bundles), items)
+            prepared = _parallel(lambda item: self._prepare(packages, data, item, bundles), items,
+                                 workers=PREPARE_WORKERS)
             if len({path for path, _ in prepared}) != len(prepared):
                 raise HostedValidationError('HOSTED_IMPORT_DUPLICATE_ENTITY')
             def commit(tx):
