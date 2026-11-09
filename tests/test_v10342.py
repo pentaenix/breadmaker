@@ -94,4 +94,4 @@ def test_v10342_milestone_one_seam_document_records_deferred_domain_migration():
     doc=read('docs/HOSTED_LOCAL_PERSISTENCE_SEAMS.md')
     assert 'Milestone 1 does **not** invent fake Firestore-shaped CRUD interfaces' in doc
     assert 'future Cloud Run composition must leave them `None`' in doc
-    assert 'model does **not** run it' in doc
+    assert 'the dependency inventory is enforced by tests and cannot grow silently' in doc

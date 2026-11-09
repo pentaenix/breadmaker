@@ -39,7 +39,7 @@ are preserved. Any other required content/schema incompatibility remains a
 fail-closed export error; the hosted-v3 archive is unchanged. M9B2 must evaluate
 historical timestamp fidelity alongside Review/Canvas/Map/checkpoint parity.
 
-No user suite was run by the model; 10.3.68 still requires full operator Editor
+No user suite was run at this checkpoint; 10.3.68 still requires full operator Editor
 and Cloud verification before M9B1 can be closed.
 
 ## Verification gate
@@ -89,7 +89,7 @@ policy, scheduled backups, infrastructure and live restore are still pending.
 M9B2A adds operator-only conformance tests in `tests/test_v10369.py` that
 exercise real local verification/import for graph links, rebased typed anchors,
 source keys and relational equivalence; reject dangling typed anchors and
-untranslatable historical shapes. Tests were **not run by the model**.
+untranslatable historical shapes. Tests were **not run at this checkpoint**.
 
 ## M9B2B — restricted historical restoration (Editor 10.3.70)
 

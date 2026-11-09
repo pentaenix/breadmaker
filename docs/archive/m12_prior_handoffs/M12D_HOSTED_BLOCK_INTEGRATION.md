@@ -4,7 +4,7 @@
 
 ## 10.5.11 corrective, source failure analysis
 
-The owner ran M12D Editor 10.5.10: 1,593 passed, 7 failed, 1 skipped. All seven failures shared `NameError: encoded is not defined`, affecting six inherited M8B chapter-replacement cases and one new encrypted replacement case. Cloud 10.4.11 is owner-confirmed fully green (133/133), and its files remain unchanged. The original `chapter_mutations.py` M12D edit accidentally omitted `structured, encoded = hybrid` in the `hybrid is not None` branch; 10.5.11 restores that tuple unpacking before immutable publication, preserving both the plain and opt-in encrypted paths. One focused AST guard `tests/test_v10511_chapter_hybrid_contract.py` is added; the existing runtime tests remain unchanged. No suite has been run by the contributor; the human must run only Editor `./verify-release` and report the digest. Local runtime/accountless SQLite/backup files and Cloud remain unchanged; hosted encryption remains opt-in, incomplete, and disabled in normal runtime. No GCP deployment, KMS key, hosted telemetry or destructive deletion has been activated.
+The owner ran M12D Editor 10.5.10: 1,593 passed, 7 failed, 1 skipped. All seven failures shared `NameError: encoded is not defined`, affecting six inherited M8B chapter-replacement cases and one new encrypted replacement case. Cloud 10.4.11 is owner-confirmed fully green (133/133), and its files remain unchanged. The original `chapter_mutations.py` M12D edit accidentally omitted `structured, encoded = hybrid` in the `hybrid is not None` branch; 10.5.11 restores that tuple unpacking before immutable publication, preserving both the plain and opt-in encrypted paths. One focused AST guard `tests/test_v10511_chapter_hybrid_contract.py` is added; the existing runtime tests remain unchanged. Editor verification was pending at this checkpoint. Local runtime/accountless SQLite/backup files and Cloud remain unchanged; hosted encryption remains opt-in, incomplete, and disabled in normal runtime. No GCP deployment, KMS key, hosted telemetry or destructive deletion has been activated.
 
 The missing tuple assignment was present in the green 10.5.9 legacy branch; it was accidentally lost while adding encrypted publication parameters and metadata validation in 10.5.10. Restoring it lets `structured` reach the Firestore payload and `encoded` reach the immutable-object publisher. Inherited atomicity and replay contracts must remain intact. Do not change the verifier, tests' timeout, or weaken any security gates to make these cases pass.
 
@@ -31,7 +31,7 @@ Backups/export/import/restore have not been reconciled for ciphertext. Do NOT ac
 - `breadmaker/src/hosted/runtime_services.py`: optional injection in hosted project repository, **not configured in real runtime**.
 - `breadmaker/src/hosted/packages.py`: explicit fail-closed package export/import boundary for experimental encrypted mode.
 - `breadmaker/tests/test_v10510_private_block_domain.py`: new source and runtime contracts authored, **not run by contributor**.
-- Privacy inventory, `READ_THIS_FIRST.md`, plan, tracker, security report, release/version metadata and contributor instructions updated. `breadmaker-cloud/` and local SQLite Schema42 remain byte-identical to green baseline.
+- Privacy inventory, `READ_THIS_FIRST.md`, plan, tracker, security report, release/version metadata and contributor instructions updated. The private infrastructure repository and local SQLite Schema42 remain byte-identical to green baseline.
 
 ## Next engineering pass before M13
 

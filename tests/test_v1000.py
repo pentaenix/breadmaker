@@ -13,5 +13,6 @@ def test_v1000_public_repo_identity_and_split_contract():
     assert _version_tuple((ROOT / "VERSION").read_text(encoding="utf-8")) >= (10, 0, 0)
     split = (ROOT / "docs" / "REPOSITORY_SPLIT.md").read_text(encoding="utf-8")
     assert "breadmaker/" in split
-    assert "breadmaker-cloud/" in split
+    assert "separate private infrastructure repository" in split
+    assert "not included in public source releases" in split
     assert "Local Breadmaker remains fully usable without a Breadmaker account" in split

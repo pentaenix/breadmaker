@@ -39,7 +39,7 @@ Failures in this checkpoint are security findings to harden, not reasons to weak
 
 - The opaque Breadmaker session registry is bounded globally and per user; per-user pressure retires only that user's oldest sessions and global pressure fails issuance instead of evicting another user.
 
-## Final consultant pass
+## Final security review
 
 - Locale/signup restarts now retire the OIDC transaction and browser-binding state they supersede instead of leaving abandoned authorization state alive until TTL expiry; `/auth/language` is covered by the same per-IP authorization-start limiter.
 - The locale restart context store has an explicit hard capacity.

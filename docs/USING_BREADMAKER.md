@@ -51,5 +51,5 @@ The hosted edition is a different deployment. It needs login and internet access
 
 - [README](../README.md) — installation requirements and product overview
 - [Google Drive backups](GOOGLE_DRIVE_BACKUPS.md) — optional provider setup
-- [Architecture](../ARCHITECTURE.md) — how files, SQLite, and hosted services fit together
+- [Development](DEVELOPMENT.md) — how files, SQLite, and hosted services fit together
 - [Security](../SECURITY.md) — report a problem privately

@@ -1,22 +1,20 @@
-> **Historical architecture journal.** This document includes older milestone states and model/operator handoffs. For the current architecture, start with [Architecture](../../ARCHITECTURE.md) and [M12 source closure](../security/M12_SOURCE_CLOSURE.md). Do not use this file to deploy the hosted service.
+> **Historical architecture journal.** This document includes older milestone states and implementation notes. For the current architecture, start with [development guide](../DEVELOPMENT.md) and [M12 source closure](../security/M12_SOURCE_CLOSURE.md). Do not use this file to deploy the hosted service.
 
-> **ARCHITECTURE REFERENCE ONLY.** The current release status, contributor instructions and revised M12/M13 milestone decisions live exclusively in the ZIP-root `SERVERLESS_HOSTED_REWRITE_TRACKER.md`. Historical deployment-phase prose below is intentionally preserved but superseded when it conflicts with that tracker.
 
 # Architectural rewrite plan — historical design contract
 
-**Canonical current status, releases, open risks and contributor handoff:** see **`SERVERLESS_HOSTED_REWRITE_TRACKER.md`**. This plan retains architectural history; older release-specific status paragraphs below are superseded by that single tracker. Do not add more milestone-specific handoff Markdown files.
 
-Current source candidate at the time of this revision: **Editor 10.5.15 / Cloud 10.4.11**, Editor awaiting owner verification. M12 is offline security hardening; M13 is manual GCP/GitHub/live acceptance. Hosted encryption is experimental, inactive and incomplete. Local Breadmaker is fully independent and needs no account, network, KMS, GCP or telemetry. **contributors must never run the test suites**; only the owner runs release verifiers.
+Current source candidate at the time of this revision: **Editor 10.5.15 / Cloud 10.4.11**, Editor awaiting owner verification. M12 is offline security hardening; M13 is manual GCP/GitHub/live acceptance. Hosted encryption is experimental, inactive and incomplete. Local Breadmaker is fully independent and needs no account, network, KMS, GCP or telemetry. Verification was pending at this checkpoint.
 
 ---
 
 ## 2026-10-13 — M12E private Firestore Task/milestone encryption pilot (Editor 10.5.13 / Cloud 10.4.11)
 
-Added hosted-only `HostedPrivateFirestoreFields` backed by existing AES-256-GCM/KMS envelope, explicitly injectable through hosted DomainStore and CloudProjectRepository for `task` and `task_milestone`. The user-defined record fields become ciphertext, operational IDs/timestamps/generation remain visible, tenant AAD binds project+entity+record. Normal hosted runtime still DOES NOT ENABLE encryption. Generic protected batch and project-package paths fail closed; authorized bounded list filtering occurs only after decryption. Eight targeted conformance cases authored and NOT run. No local SQLite/runtime/backups/GCP/Cloud files changed. `M12E_ENCRYPTED_FIRESTORE_HANDOFF.md` and coverage JSON document exact boundaries, unknown risks and next steps. Do not claim whole hosted data is encrypted. Editor 10.5.12 verification remained pending when M12E work began; human must run Editor 10.5.13 verifier (which also runs both strict dependency audits). Model must NEVER execute test suite.
+Added hosted-only `HostedPrivateFirestoreFields` backed by existing AES-256-GCM/KMS envelope, explicitly injectable through hosted DomainStore and CloudProjectRepository for `task` and `task_milestone`. The user-defined record fields become ciphertext, operational IDs/timestamps/generation remain visible, tenant AAD binds project+entity+record. Normal hosted runtime still DOES NOT ENABLE encryption. Generic protected batch and project-package paths fail closed; authorized bounded list filtering occurs only after decryption. Eight targeted conformance cases authored and NOT run. No local SQLite/runtime/backups/GCP/Cloud files changed. `M12E_ENCRYPTED_FIRESTORE_HANDOFF.md` and coverage JSON document exact boundaries, unknown risks and next steps. Do not claim whole hosted data is encrypted. Editor 10.5.12 verification remained pending when M12E work began; Editor 10.5.13 verification, including both dependency audits, was still pending.
 
 # CURRENT STATUS — 2026-10-13 — M12D VERIFICATION CORRECTIVE (10.5.12)
 
-Candidate **Editor 10.5.12 / Cloud 10.4.11** (Editor owner-verification PENDING). Last all-green Editor **10.5.9**, Cloud **10.4.11**. Editor 10.5.11 removed the 7-way `NameError` but owner verification found two cold-setup 10s timeouts and one `draft_2` milestone focus race. Editor 10.5.12 uses established module-scoped prewarm for `test_v10326.py`/`test_v700.py` while retaining per-item watchdogs, and guards delayed Tasks milestone auto-focus from stealing a second input. Full human Editor verifier required; Cloud 133/133 already green, byte-identical; contributor must NEVER run suites. Local Breadmaker remains no-account/offline/no-GCP/KMS/telemetry; hosted encryption/metrics still inactive and incomplete. This is NOT a deployment release. Read `READ_THIS_FIRST.md` first.
+Candidate **Editor 10.5.12 / Cloud 10.4.11** (Editor owner-verification PENDING). Last all-green Editor **10.5.9**, Cloud **10.4.11**. Editor 10.5.11 removed the 7-way `NameError` but owner verification found two cold-setup 10s timeouts and one `draft_2` milestone focus race. Editor 10.5.12 uses established module-scoped prewarm for `test_v10326.py`/`test_v700.py` while retaining per-item watchdogs, and guards delayed Tasks milestone auto-focus from stealing a second input. Full human Editor verifier required; Cloud 133/133 already green, byte-identical; verification was pending at this checkpoint. Local Breadmaker remains no-account/offline/no-GCP/KMS/telemetry; hosted encryption/metrics still inactive and incomplete. This is NOT a deployment release. Read `READ_THIS_FIRST.md` first.
 
 ---
 
@@ -28,7 +26,7 @@ Editor **10.5.11** / Cloud **10.4.11** candidate awaiting human verifier. Previo
 
 ## 2026-10-13 — M12D Core/API release corrective
 
-The owner ran M12D Editor 10.5.10: 1,593 passed, 7 failed, 1 skipped. All seven failures shared `NameError: encoded is not defined`, affecting six inherited M8B chapter-replacement cases and one new encrypted replacement case. Cloud 10.4.11 is owner-confirmed fully green (133/133), and its files remain unchanged. The original `chapter_mutations.py` M12D edit accidentally omitted `structured, encoded = hybrid` in the `hybrid is not None` branch; 10.5.11 restores that tuple unpacking before immutable publication, preserving both the plain and opt-in encrypted paths. One focused AST guard `tests/test_v10511_chapter_hybrid_contract.py` is added; the existing runtime tests remain unchanged. No suite has been run by the contributor; the human must run only Editor `./verify-release` and report the digest. Local runtime/accountless SQLite/backup files and Cloud remain unchanged; hosted encryption remains opt-in, incomplete, and disabled in normal runtime. No GCP deployment, KMS key, hosted telemetry or destructive deletion has been activated.
+The owner ran M12D Editor 10.5.10: 1,593 passed, 7 failed, 1 skipped. All seven failures shared `NameError: encoded is not defined`, affecting six inherited M8B chapter-replacement cases and one new encrypted replacement case. Cloud 10.4.11 is owner-confirmed fully green (133/133), and its files remain unchanged. The original `chapter_mutations.py` M12D edit accidentally omitted `structured, encoded = hybrid` in the `hybrid is not None` branch; 10.5.11 restores that tuple unpacking before immutable publication, preserving both the plain and opt-in encrypted paths. One focused AST guard `tests/test_v10511_chapter_hybrid_contract.py` is added; the existing runtime tests remain unchanged. Editor verification was pending at this checkpoint. Local runtime/accountless SQLite/backup files and Cloud remain unchanged; hosted encryption remains opt-in, incomplete, and disabled in normal runtime. No GCP deployment, KMS key, hosted telemetry or destructive deletion has been activated.
 
 # CURRENT STATUS — 2026-10-13 — M12C ENCRYPTED OBJECT PILOT, NOT ACTIVATED
 
@@ -42,7 +40,7 @@ The owner reported **Editor 10.5.8 green**, including core + hosted `pip-audit -
 
 ## 2026-10-13 — M12B release preflight integration (Editor 10.5.8 / Cloud 10.4.10)
 
-Editor `./verify-release` now runs **two fail-closed, networked vulnerability scans** with the pinned `pip-audit`: the existing `requirements.txt` audit followed by a complete `requirements-hosted.txt` audit, which also resolves the core graph transitively. Both scans must pass before any test item starts. This is dependency resolution/advisory checking, not GCP deployment or installation of hosted SDKs. Core local runtime remains fully offline/accountless; verification has always needed network access for the original audit. Standalone `./audit-hosted-dependencies` remains optional. All cloud files stay byte-identical to 10.4.10. New source contracts in `breadmaker/tests/test_v1058_hosted_audit.py` require user verification; **contributor MUST NOT run test suites**. Do not activate plaintext-hosted encryption or telemetry just because the verifier passes.
+Editor `./verify-release` now runs **two fail-closed, networked vulnerability scans** with the pinned `pip-audit`: the existing `requirements.txt` audit followed by a complete `requirements-hosted.txt` audit, which also resolves the core graph transitively. Both scans must pass before any test item starts. This is dependency resolution/advisory checking, not GCP deployment or installation of hosted SDKs. Core local runtime remains fully offline/accountless; verification has always needed network access for the original audit. Standalone `./audit-hosted-dependencies` remains optional. All cloud files stay byte-identical to 10.4.10. New source contracts in `breadmaker/tests/test_v1058_hosted_audit.py` require user verification; verification was pending at this checkpoint. Do not activate plaintext-hosted encryption or telemetry just because the verifier passes.
 
 > **Latest scope decision (2026-10-12, M12):** User redefines **Milestone 12 as an offline security audit and hardening checkpoint**. GCP/GitHub/DNS/billing, real deployment and live acceptance are **Milestone 13**, explicitly operator-controlled. No private-alpha admission. This decision supersedes the historical M12/M13 text in sections 20–21 below. See `M12_SECURITY_AUDIT.md` for findings and release blockers. Editor 10.5.5 / Cloud 10.4.8 is the last operator-reported green baseline; 10.5.6 / 10.4.9 is awaiting verification.
 
@@ -65,61 +63,9 @@ Editor `./verify-release` now runs **two fail-closed, networked vulnerability sc
 
 ---
 
-## 0. Read this before touching code
+## 0. Reading this record
 
-### The model/operator split is mandatory
-
-**The model must NOT execute the Breadmaker verifier or test suites.**
-
-Unless the user explicitly changes this rule in a later conversation, the contributor must not run:
-
-- `./verify-release` in either repository;
-- `./test`;
-- `pytest`;
-- Playwright/browser tests;
-- Durable E2E;
-- any wrapper that invokes the above;
-- a live GCP deployment as a substitute for verification.
-
-The model **may** run narrow non-test static checks such as:
-
-- Python parsing/compilation checks;
-- JSON parsing;
-- JavaScript syntax checks;
-- shell `bash -n` checks;
-- searches/greps;
-- archive integrity checks;
-- generated-index refresh commands only when they do not execute the verifier/test harness;
-- OpenTofu formatting only when the milestone explicitly requires it and it is not routed through the release verifier. Prefer leaving validation to the user unless needed to diagnose syntax.
-
-### Verification workflow
-
-At each verification gate:
-
-1. The model updates `SERVERLESS_HOSTED_REWRITE_TRACKER.md` to `AWAITING_USER_VERIFICATION`.
-2. The model gives the user the exact package and asks the user to run the verifier.
-3. The **user** runs the verifier/test suite.
-4. The user returns the compact failure digest/accounting.
-5. The model diagnoses/fixes failures without running the suite itself.
-6. A milestone is not `VERIFIED` until the user reports the required gate green.
-
-A model must never write “verified,” “green,” or “passed” based only on static checks.
-
-### Tracker discipline
-
-`SERVERLESS_HOSTED_REWRITE_TRACKER.md` is not release notes. It is crash recovery state.
-
-Update it:
-
-- before beginning a milestone;
-- after every atomic implementation block that changes ownership or architecture;
-- before a large refactor;
-- after a large refactor;
-- before handing a ZIP to the user;
-- immediately after receiving verifier results;
-- whenever a blocker or decision changes the next action.
-
-**Do not wait until the end of a milestone to update it.** If a chat dies, the tracker should identify the last known-good sub-step, changed files, unresolved questions, and the next safe action.
+The milestone statuses below describe verification at the time, not the current release. Static checks alone do not establish a passing release. Follow [Testing](../TESTING.md) for the current test workflow.
 
 ---
 
@@ -404,7 +350,7 @@ The archive contains two repositories:
 
 ```text
 breadmaker/        application/local + hosted implementation
-breadmaker-cloud/  GCP infrastructure, policy, deployment controls
+(private)         infrastructure and deployment controls
 ```
 
 Do not merge them during this rewrite unless a milestone explicitly concludes that separation is harmful. Their release versions may advance independently.
@@ -414,7 +360,7 @@ Do not merge them during this rewrite unless a milestone explicitly concludes th
 Read these before broad searching:
 
 - `breadmaker/CONTRIBUTING.md`
-- `breadmaker/ARCHITECTURE.md`
+- `breadmaker/docs/DEVELOPMENT.md`
 - `breadmaker/src/api/CODEMAP.md`
 - `breadmaker/src/api/route_manifest.json`
 - `breadmaker/docs/CODE_INDEX.json`
@@ -424,17 +370,9 @@ Read these before broad searching:
 - `breadmaker/src/runtime/hosted.py`
 - `breadmaker/src/auth/README.md`
 
-### Current high-value cloud ownership map
+### Hosted operations
 
-- `breadmaker-cloud/CONTRIBUTING.md`
-- `breadmaker-cloud/ARCHITECTURE.md`
-- `breadmaker-cloud/SECURITY.md`
-- `breadmaker-cloud/TESTING.md`
-- `breadmaker-cloud/IDENTITY_ARCHITECTURE.md` (historical Auth0 policy; it will be superseded, not silently mutated)
-- `breadmaker-cloud/infra/`
-- `breadmaker-cloud/policy/`
-- `breadmaker-cloud/release-controls/`
-- `breadmaker-cloud/scripts/`
+Infrastructure policy, deployment controls, and operational runbooks are maintained privately. This application plan is not a deployment guide.
 
 ---
 
@@ -828,7 +766,7 @@ However, provider/client secrets may be represented in raw state for some resour
 
 ### Feasibility decision record
 
-At milestone end, write `breadmaker-cloud/IDENTITY_PLATFORM_ARCHITECTURE.md` and a machine-readable policy containing:
+At milestone end, document the identity architecture and a machine-readable policy containing:
 
 - accepted session model;
 - MFA policy;
@@ -1206,7 +1144,7 @@ Add contracts proving:
 
 ### User verification gate
 
-The user runs the full Editor + Cloud verifier. The model does **not** execute the verifier or test suite.
+The user runs the full Editor + Cloud verifier.
 
 Expected exit: all existing stages green plus branch-protection/workflow/IaC contracts green. A repository settings/API inspection should also show the enforced PR + required-check rule before the live deployment milestone.
 
@@ -1393,7 +1331,7 @@ Hosted tests prove:
 
 Not part of ordinary offline verifier. Used only after infrastructure exists to prove actual provider wiring.
 
-The model does not run Layer C unless the user explicitly asks and supplies/authorizes the environment operation.
+Layer C requires an explicitly authorized test environment.
 
 ---
 
@@ -1524,7 +1462,7 @@ Before responding with a milestone package:
 2. Record exact application/cloud versions.
 3. Record files/owners changed.
 4. Record static checks actually performed.
-5. Clearly say tests/verifier were not run by the model.
+5. Record which checks ran and which remain pending.
 6. Give the user the package and exact verifier command(s).
 7. Wait for user verification before marking milestone complete.
 
@@ -1535,11 +1473,11 @@ Bounded, restart-safe erase-intent and cursor mechanics are now modeled against 
 
 ### M10A source checkpoint (2026-10-12)
 
-Editor 10.5.0 / Cloud 10.4.0 initiates the user-requested new release line. The staging Terraform root now composes protected Firestore Native/GCS, separated web/backup IAM identities and a private Cloud Run v2 service instead of the undeployed VM/NAT/GFE infrastructure. Backups remain a hard-disabled job template until a real CLI, independently verified archive and Scheduler invocation exist. Firebase Hosting source routing is drafted only; no site/domain/DNS/Invoker granted. Full user verifier is pending. Production remains disabled, and normal IaC must never erase protected data. See `breadmaker-cloud/runbooks/M10A_STAGING_CLOUD_RUN.md`.
+Editor 10.5.0 / Cloud 10.4.0 initiates the user-requested new release line. The staging Terraform root now composes protected Firestore Native/GCS, separated web/backup IAM identities and a private Cloud Run v2 service instead of the undeployed VM/NAT/GFE infrastructure. Backups remain a hard-disabled job template until a real CLI, independently verified archive and Scheduler invocation exist. Firebase Hosting source routing is drafted only; no site/domain/DNS/Invoker granted. Full user verifier is pending. Production remains disabled, and normal IaC must never erase protected data. See the private infrastructure repository.
 
 
 ### M10D independent restore rehearsal (2026-10-12)
-Staging gets an optional, digest-pinned, manual Cloud Run Job bound to an independent recovery-bucket-only viewer. A pinned hosted-v3 archive can be replayed into isolated in-memory state without Firestore; default job activation and automatic scheduling remain off. User-run conformance is a source gate, **not** live IAM/coverage/deployment proof. See `breadmaker-cloud/runbooks/M10D_ISOLATED_STAGING_RESTORE.md`.
+Staging gets an optional, digest-pinned, manual Cloud Run Job bound to an independent recovery-bucket-only viewer. A pinned hosted-v3 archive can be replayed into isolated in-memory state without Firestore; default job activation and automatic scheduling remain off. User-run conformance is a source gate, **not** live IAM/coverage/deployment proof. See the private infrastructure repository.
 
 ### M10/M11 combined source checkpoint (Editor 10.5.5 / Cloud 10.4.6)
 

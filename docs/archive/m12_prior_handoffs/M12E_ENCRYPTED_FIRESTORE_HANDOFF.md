@@ -1,4 +1,4 @@
-> **CURRENT CANDIDATE 2026-10-14:** Editor **10.5.14**, Cloud **10.4.11** (unchanged). Owner-run Editor 10.5.13 found 3 stale protected SHA expectations, all for the verifier's reviewed 10.5.12 prewarm-only adjustment; 10.5.14 corrects only those expected hashes, metadata and handoff docs. The original 10.5.13 pilot details below are retained as historical implementation notes. The contributor does not run suites; only user verification can close this candidate. See `M12E_VERIFIER_HASH_REVIEW.md`.
+> **CURRENT CANDIDATE 2026-10-14:** Editor **10.5.14**, Cloud **10.4.11** (unchanged). Owner-run Editor 10.5.13 found 3 stale protected SHA expectations, all for the verifier's reviewed 10.5.12 prewarm-only adjustment; 10.5.14 corrects only those expected hashes, metadata and handoff docs. The original 10.5.13 pilot details below are retained as historical implementation notes. Verification was still pending for this historical candidate. See `M12E_VERIFIER_HASH_REVIEW.md`.
 
 # M12E — Opt-in encrypted Firestore Tasks / milestones (2026-10-13)
 

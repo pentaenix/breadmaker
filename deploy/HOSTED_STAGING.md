@@ -1,4 +1,4 @@
-> **Historical document — do not deploy from this page.** This document describes a retired staging-era composition. The active single-production OpenTofu workflow and Identity Platform operator instructions live in the separately maintained private `breadmaker-cloud` repository. See [Security](../SECURITY.md) for the current hosted security boundary.
+> **Historical document — do not deploy from this page.** This document describes a retired staging-era composition. The active single-production OpenTofu workflow and Identity Platform operator instructions live in separate private operating documentation. See [Security](../SECURITY.md) for the current hosted security boundary.
 
 # Hosted staging — Identity Platform
 

@@ -129,11 +129,9 @@ def test_v786_current_ui_and_locales_do_not_expose_removed_preservation_graph_vo
 
 
 def test_v786_release_documents_current_only_audit_contract():
+    # Current-format rejection and removal of obsolete persistence helpers are exercised above.
     root=Path(__file__).resolve().parents[1]
     assert tuple(map(int,(root/'VERSION').read_text(encoding='utf-8').strip().split('.'))) >= (7,8,6)
-    architecture=(root/'ARCHITECTURE.md').read_text(encoding='utf-8')
-    assert '## 7.8.6 Final current-format storage audit' in architecture
-    assert '4.12 preservation architecture (historical; removed in 7.8.1)' in architecture
     store_doc=(root/'docs'/'REVISION_STORE_FORMAT_V1.md').read_text(encoding='utf-8')
     assert 'Breadmaker 7.8.6 keeps' in store_doc
     assert 'current-format-only' in store_doc

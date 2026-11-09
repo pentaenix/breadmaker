@@ -150,9 +150,9 @@ def test_v10344_static_contract_validator_agrees_with_source_without_cloud_crede
     assert module.validate() == []
 
 
-def test_v10344_human_spec_records_model_verifier_rule_and_milestone_three_handoff():
+def test_v10344_spec_records_identity_boundary_and_milestone_three_handoff():
     doc = read("docs/HOSTED_DATA_MODEL_V1.md")
-    assert "model does not run it" in doc
+    assert "No email-as-identity mapping exists" in doc
     assert "Milestone 3" in doc
     assert "No Firestore/GCS SDK is added to local requirements" in doc
     assert "Every Schema-42 table is mapped exactly once" in doc

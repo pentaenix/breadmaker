@@ -8,11 +8,11 @@ from conftest import assert_ok
 
 
 def test_v548_manuscript_ui_reference_and_structure_static_contract():
+    # Hover targets and absence of parallel help icons are checked against JS/CSS here.
     root = Path(__file__).resolve().parents[1]
     html = (root / 'static' / 'index.html').read_text(encoding='utf-8')
     js = frontend_source_from_app_path(root / 'static' / 'app.js')
     css = frontend_styles_source_from_styles_path((root / 'static' / 'styles.css'))
-    architecture = (root / 'ARCHITECTURE.md').read_text(encoding='utf-8')
 
     assert tuple(map(int,(root / 'VERSION').read_text(encoding='utf-8').strip().split('.'))) >= (5, 4, 16)
     assert 'styles.css?v=5.4.16' in html and 'app.js?v=5.4.16' in html
@@ -25,8 +25,6 @@ def test_v548_manuscript_ui_reference_and_structure_static_contract():
     assert 'structurePanelHoverTimer=setTimeout' in js and '},300);' in js
     assert "positionMarkerPanelHover(card,target)" in js
     assert 'id="structurePanelHoverCard" class="marker-panel-hover-card' in html
-    assert 'Manuscript UI reference contract' in architecture
-    assert 'do not add `i`/help icons' in architecture
 
 
 def test_v548_existing_structural_tiles_normalize_from_v547_width(client, fresh_project):

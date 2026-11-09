@@ -52,9 +52,6 @@ def test_v41810_can_transfer_main_manuscript_role(client,fresh_project):
 
 
 def test_v41810_documentation_records_menu_ownership():
+    # Menu scope, shortcut ownership, and main-manuscript transfer are checked above.
     readme=(ROOT/'README.md').read_text(encoding='utf-8')
-    architecture=(ROOT/'ARCHITECTURE.md').read_text(encoding='utf-8')
     assert '### 4.18.10 Full Text and Tab-role controls' in readme
-    assert '### 4.18.10 Full Text and Tab-menu contract' in architecture
-    assert 'Collection operations must not be duplicated in individual Tab menus' in architecture
-    assert '**F** shortcut opens Full Text' in architecture

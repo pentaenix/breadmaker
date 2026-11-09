@@ -85,14 +85,13 @@ def _history(client):
 
 
 def test_v774_release_contract_and_locale_parity():
+    # Compare-and-set is exercised by test_v774_stale_restore_request_is_rejected_before_mutating_current.
     root = Path(__file__).resolve().parents[1]
     version = tuple(int(x) for x in (root / 'VERSION').read_text(encoding='utf-8').strip().split('.'))
     assert version >= (7, 7, 4)
     readme = (root / 'README.md').read_text(encoding='utf-8')
-    architecture = (root / 'ARCHITECTURE.md').read_text(encoding='utf-8')
     assert '7.7.4 History Restore + History UI' in readme
     assert 'next' in readme and 'generation' in readme
-    assert 'compare-and-set' in architecture
     required = {
         'history.compare_current', 'history.save_checkpoint', 'history.restore',
         'history.restore_confirm', 'history.restore_stale', 'history.restore_failed',

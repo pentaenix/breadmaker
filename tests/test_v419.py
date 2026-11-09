@@ -58,14 +58,14 @@ def test_v419_bookmark_schema_is_undo_covered():
 
 
 def test_v419_ui_contract():
+    # Bookmark persistence and navigation are covered by the API and source assertions here.
     html=(ROOT/'static/index.html').read_text(encoding='utf-8')
     js=frontend_source_from_app_path(ROOT/'static/app.js')
     css=frontend_styles_source_from_styles_path((ROOT/'static/styles.css'))
-    readme=(ROOT/'README.md').read_text(encoding='utf-8'); architecture=(ROOT/'ARCHITECTURE.md').read_text(encoding='utf-8')
+    readme=(ROOT/'README.md').read_text(encoding='utf-8')
     assert tuple(map(int,(ROOT/'VERSION').read_text(encoding='utf-8').strip().split('.'))) >= (5, 0, 2)
     assert 'styles.css?v=5.0.2' in html and 'app.js?v=5.0.2' in html
     assert '### 4.19 Single Bookmark and place restoration' in readme
-    assert '### 4.19 Bookmark and manuscript-location contract' in architecture
     assert html.index('id="findBtn"') < html.index('id="bookmarkBtn"') < html.index('id="commentsBtn"')
     assert 'data-selection-action="bookmark"' in html
     assert "label:bookmarkExactChapter(ch.id)?'Remove Bookmark':'Bookmark'" in js

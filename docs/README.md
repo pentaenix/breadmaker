@@ -6,7 +6,7 @@ New to Breadmaker? Start with the [README](../README.md), then [Using Breadmaker
 
 | Topic | Guide |
 | --- | --- |
-| How the runtimes fit together | [Architecture](../ARCHITECTURE.md) |
+| How the runtimes fit together | [Development](DEVELOPMENT.md) |
 | How to run the tests | [Testing](TESTING.md) |
 | Source entry points | [API map](../src/api/CODEMAP.md) and [code index](CODE_INDEX.json) |
 | Project files and exports | [Project package format](BREADMAKER_PROJECT_JSON.md) |
@@ -18,11 +18,10 @@ New to Breadmaker? Start with the [README](../README.md), then [Using Breadmaker
 
 The public Editor is [Apache-2.0 licensed](../LICENSE). See [NOTICE](../NOTICE)
 and [third-party notices](../THIRD_PARTY_NOTICES.md) for attribution.
-Deployment controls live in the separate proprietary `pentaenix/breadmaker-cloud`
-repository and are not covered by the Editor license.
+Deployment controls live in a separate private repository and are not covered by the Editor license.
 
 ## Older material
 
 The [archive](archive/), older milestone files, and the collapsed historical sections of the root guides explain how the design evolved. They are useful when investigating a regression; they are **not installation instructions**. Older references to Auth0, dedicated staging, or experimental deployments should not be followed as current operating procedure.
 
-The live infrastructure and OpenTofu runbook are maintained separately in the private `breadmaker-cloud` repository. This public repository cannot be deployed simply by following one of the historical milestone files.
+The live infrastructure and OpenTofu runbook are maintained separately in private operating documentation. This public repository cannot be deployed simply by following one of the historical milestone files.

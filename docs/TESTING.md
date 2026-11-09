@@ -54,7 +54,7 @@ The material below documents earlier authentication providers, harness changes, 
 
 # Breadmaker verification — 10.3.61 Milestone 7C corrective
 
-`./verify-release` remains the release-operator-owned gate. Automated engineering changes do not run it. Current verification still uses the four-layer model below and preserves its hard per-item watchdogs. M7C adds credential-free contracts for Identity Platform-only hosted authority, transient in-memory browser proof, Secure/HttpOnly server authority, same-UID fresh reauthentication, verified-email+TOTP password policy, Auth0 retirement, accountless local runtime, and the existing M3/M4/M5 persistence firewalls. Real provider credentials are not required for repository verification.
+`./verify-release` remains the release-operator-owned gate. Current verification still uses the four-layer model below and preserves its hard per-item watchdogs. M7C adds credential-free contracts for Identity Platform-only hosted authority, transient in-memory browser proof, Secure/HttpOnly server authority, same-UID fresh reauthentication, verified-email+TOTP password policy, Auth0 retirement, accountless local runtime, and the existing M3/M4/M5 persistence firewalls. Real provider credentials are not required for repository verification.
 
 # Breadmaker verification — Checkpoint 12
 The normal verifier remains credential-free and offline with respect to Auth0/Google/Apple/GCP secret payloads. It validates the staging composition, Secret Manager reference boundary, zero-secret local runtime, single-worker/HTTPS/Host-pin requirements, and the frozen Checkpoint 11 adversarial contracts. It does **not** deploy staging or run the live provider smoke.

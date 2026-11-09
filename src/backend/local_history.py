@@ -34,8 +34,8 @@ def _canonical_commit_history_observer(event:dict) -> None:
     try:work_queue.put_nowait(dict(event))
     except Exception:pass
 
-# Storage commits are authoritative; History observes them asynchronously. Registration
-# belongs beside the observer so extracting this module cannot silently sever the bridge.
+# Register here so importing the observer also connects it to storage commits.
+# History publication is asynchronous and cannot roll back a committed edit.
 storage_mutations.register_canonical_commit_listener(_canonical_commit_history_observer)
 
 def _publish_local_history_event(event:dict) -> None:
@@ -67,9 +67,8 @@ def _publish_local_history_event_locked(event:dict) -> None:
             summary={**storage_history.history_current_summary_for(root),'operation':operation},
             expected_generation=generation,
         )
-        # Remote redundancy is intentionally best-effort here. Startup reconciliation
-        # can publish this immutable local History later if shutdown has already stopped
-        # the remote worker.
+        # If the remote worker has stopped, startup reconciliation can publish
+        # this local History revision later.
         history_runtime.queue_remote_history(wid,str(revision.get('revision_id') or '') or None,reason='canonical_commit')
     except StaleRevisionPublication:
         # A newer canonical commit won while this capture was freezing. The newest

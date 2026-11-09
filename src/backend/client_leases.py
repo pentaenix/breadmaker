@@ -14,9 +14,8 @@ _CLIENT_LEASE_LOCK=threading.Lock()
 _CLIENT_LEASES: dict[str,dict[str,object]]={}
 _CLIENT_LEASE_WAITERS: dict[str,dict[str,float]]={}
 _CLIENT_LEASE_SECONDS=90.0
-# A healthy single editor may renew indefinitely. Once another editor is waiting, the
-# current holder gets a bounded continuous tenure so a forgotten/hostile tab cannot
-# monopolize a shared project forever. These are coordination limits, not auth TTLs.
+# An editor can renew until another editor is waiting. Then cap its hold time
+# so one tab cannot keep the project locked. This is not an authentication timeout.
 _CLIENT_LEASE_MAX_CONTINUOUS_SECONDS=300.0
 _CLIENT_LEASE_WAIT_GRACE_SECONDS=5.0
 
@@ -41,8 +40,7 @@ def _claim_client_lease(project_id:str,client_id:str,*,actor_id:str='',actor_rol
             foreign_waiting=any(waiter!=cid for waiter in waiters)
             held=now_mono-float(current.get('acquired',now_mono))
             if foreign_waiting and held>=_CLIENT_LEASE_MAX_CONTINUOUS_SECONDS:
-                # Stop extending the monopolized lease. The next waiting editor can
-                # acquire immediately; this request receives the normal 409/reload path.
+                # Release for the next editor; this request gets the usual 409/reload.
                 _CLIENT_LEASES.pop(pid,None);return False
             current['seen']=now_mono;return True
         waiters=_CLIENT_LEASE_WAITERS.setdefault(pid,{})

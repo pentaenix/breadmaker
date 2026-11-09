@@ -24,7 +24,7 @@ Inspected `scripts/verify_release.py` from bundled releases 10.5.11, 10.5.12, an
 
 **Corrective:** replace exactly that value in `tests/test_v10353.py`, `tests/test_v10354.py`, `tests/test_v10360.py`. Keep all other protected-file hashes, the tests, the verifier, the per-test 10s Core/15s browser watchdogs and test reporting untouched. Bump Editor patch version and synchronize only existing release metadata. Do not replace strict digests with broad assertions or disable the firewall.
 
-## Safety and successor-contributor instructions
+## Verification safeguards
 
 - **NEVER run** `./verify-release`, `./test`, pytest, Playwright or any test-suite wrapper as a contributor. User runs the full Editor verifier and reports failure digest. contributor may inspect sources, compare hashes, parse Python/JSON/JS/shell syntax, check release-metadata consistency, and verify ZIP CRC.
 - Editor 10.5.14 remains a *candidate*, not a verified release, until user returns green. Do not mark historic 10.5.12/10.5.13 candidates as green.

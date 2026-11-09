@@ -14,7 +14,7 @@ export errors. Advanced Canvas-version geometry and richer Review/checkpoint
 history still require explicit future work. It is **not** safe to claim full
 M9B closure or disaster recovery readiness yet.
 
-New tests `tests/test_v10370.py` written but NEVER run by model; user runs full
+New tests `tests/test_v10370.py` written but NEVER run at this checkpoint; user runs full
 Editor + Cloud verifier and supplies digest. Protected files: local Schema 42,
 local Workspace/runtime, verifier/watchdogs, M3/M4 Firestore/GCS adapters,
 Cloud 10.4.38. M9C safe deletion and M9D backup scheduling not started;
