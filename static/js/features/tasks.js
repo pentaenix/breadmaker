@@ -33,8 +33,23 @@ function queueTaskDescriptionHover(task,row){
 let taskListRenderEpoch=0;
 const pendingTaskStatuses=new Map();
 function taskStatusKey(id){return `${currentProjectIdentity()}|${id}`}
-function invalidateTaskCache(){state.taskCache=null}
-async function getTasks({force=false}={}){if(!force&&Array.isArray(state.taskCache))return state.taskCache;const projectId=currentProjectIdentity(),tasks=await apiList('/api/tasks','tasks');if(currentProjectIdentity()===projectId)state.taskCache=tasks;return tasks}
+let taskCacheEpoch=0,taskRead=null;
+function invalidateTaskCache(){state.taskCache=null;taskCacheEpoch++;taskRead=null}
+async function getTasks({force=false}={}){
+  if(force)invalidateTaskCache();
+  if(Array.isArray(state.taskCache))return state.taskCache;
+  const projectId=currentProjectIdentity(),epoch=taskCacheEpoch;
+  if(taskRead&&taskRead.projectId===projectId&&taskRead.epoch===epoch)return taskRead.promise;
+  // Workspace entry and structural Undo can request the same list together.
+  // Share only the current read; never let a pre-mutation response refill cache.
+  const pending={projectId,epoch,promise:null};
+  pending.promise=(async()=>{
+    const tasks=await apiList('/api/tasks','tasks');
+    if(currentProjectIdentity()===projectId&&taskCacheEpoch===epoch)state.taskCache=tasks;
+    return tasks;
+  })().finally(()=>{if(taskRead===pending)taskRead=null});
+  taskRead=pending;return pending.promise;
+}
 function milestoneQuickEntries(task){return String(task?.milestone_quick_data||'').split('\x1f').filter(Boolean).map(entry=>{const [idAndTitle='',description='']=entry.split('\x1e'),split=idAndTitle.indexOf('\x1d');return{id:entityId(idAndTitle.slice(0,split))||0,title:split>=0?idAndTitle.slice(split+1):idAndTitle,description}})}
 function taskMilestoneMatch(task,query){if(!query)return null;const q=query.toLocaleLowerCase(i18nLocale());return milestoneQuickEntries(task).find(m=>`${m.title} ${m.description}`.toLocaleLowerCase(i18nLocale()).includes(q))||null}
 function taskEmptyState(filter){
