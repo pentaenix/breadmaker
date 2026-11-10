@@ -1,4 +1,6 @@
 """Actual hosted scene rendering from a freshly authorized Full Text snapshot."""
+import pytest
+
 from playwright.sync_api import expect
 from tests.test_v10548_browser import hosted_browser
 from tests.test_v10557_browser import _book
@@ -88,3 +90,39 @@ def test_cached_full_text_to_scene_typing_persists_after_reload(tmp_path):
 
 def test_direct_scene_typing_persists_after_reload(tmp_path):
     _scene_typing_survives_reload(tmp_path, cached=False)
+
+
+@pytest.mark.parametrize('status,error', [
+    (409, 'HOSTED_ATOMIC_BULK_OPERATION_UNAVAILABLE'),
+    (400, 'HOSTED_SCENE_STRUCTURAL_SAVE_UNAVAILABLE'),
+])
+def test_unsupported_scene_save_keeps_editing_and_draft_without_lease_modal(tmp_path, status, error):
+    with hosted_browser(tmp_path, setup_code=SEED) as (base, page):
+        projects = page.request.get(base + '/api/workspace').json()['projects']
+        pid = next(project['id'] for project in projects if project['name'] == 'Synthetic cached scene test')
+        page.goto(base + '/p/' + pid, wait_until='domcontentloaded')
+        page.wait_for_function('()=>document.documentElement.dataset.breadmakerBootReady==="true"')
+        page.evaluate('async()=>await selectScene("scene_cached")')
+        page.route('**/api/scenes/scene_cached/blocks', lambda route: route.fulfill(status=status, json={'detail': error}))
+        # Observe scheduling without replacing the actual timers or waiting for
+        # an arbitrary delay to infer that automatic retries are absent.
+        page.evaluate('''()=>{
+            window.sceneRetryDelays=[];const native=window.setTimeout;
+            window.setTimeout=function(callback,delay,...args){
+                if(delay===1500&&String(callback).includes('flushSave'))window.sceneRetryDelays.push(delay);
+                return native.call(window,callback,delay,...args);
+            };
+        }''')
+        text = 'Synthetic unsaved scene draft stays editable'
+        with page.expect_response(lambda response: response.request.method == 'PUT'
+                and '/api/scenes/scene_cached/blocks' in response.url) as rejected:
+            page.locator('#editor .manuscript-block').first.fill(text)
+        assert rejected.value.status == status
+        page.wait_for_function('()=>state.dirty&&!state.saveInFlight&&document.querySelector("#saveState").textContent==="Save failed"')
+        expect(page.locator('#editor .manuscript-block').first).to_have_text(text)
+        expect(page.locator('#editor .manuscript-block').first).to_be_editable()
+        expect(page.locator('#modal')).not_to_be_visible()
+        assert page.evaluate('()=>!leaseLost&&state.dirtyChapters.has("chapter_1")&&window.sceneRetryDelays.length===0')
+        response = page.request.get(base + '/api/scenes/scene_cached/manuscript', headers={'X-Breadmaker-Project': pid})
+        assert response.ok
+        assert response.json()['blocks'][0]['text_content'] == 'Synthetic scene paragraph 0'
