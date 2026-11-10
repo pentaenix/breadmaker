@@ -132,7 +132,9 @@ class InventoryPublication:
 
     RPC limits require injected dependencies to respect deadlines. The elapsed
     guard prevents a late callback from starting a write; it cannot forcibly
-    cancel arbitrary Python callbacks. No background thread or retry is spawned.
+    cancel arbitrary Python callbacks or SDK credential refresh. Future injected
+    identity providers must honor their own deadlines. No background thread or
+    retry is spawned.
     """
     def __init__(self, producer=None, store=None, *, enabled=False, now=utc_now, monotonic=time.monotonic):
         if type(enabled) is not bool or not callable(now) or not callable(monotonic):

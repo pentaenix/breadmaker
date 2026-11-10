@@ -217,7 +217,9 @@ integrity, not an authentication mechanism or a manuscript-content identifier.
 Provider payloads and exception messages are never logged or surfaced. A write
 that may have succeeded before a transport failure returns uncertain, not a
 retry or a claim of success. Callback deadlines are cooperative; no background
-thread, polling loop or scheduler is installed.
+thread, polling loop or scheduler is installed. SDK credential refresh and
+injected identity callbacks are not forcibly cancelled by RPC timeouts; future
+keyless composition must separately bound these operations.
 
 There is no separate deletion, listing, historic-object or blanket cleanup API.
 However, GCS overwrite requires delete/overwrite permission semantics even when
@@ -239,3 +241,14 @@ with explicit `--admin-source` and `--expected-admin-head` arguments; the harnes
 rejects a dirty or mismatched Admin checkout. No real credentials, HTTP calls or
 provider mutations are involved. This is source-level contract evidence, not
 live SDK, IAM, retention, deployment or end-to-end production acceptance.
+
+Pinned SDK source was also inspected directly, not only exercised by mocks.
+The installed `google-cloud-storage==3.16.0` matches `requirements-hosted.txt`.
+In that package, `blob.py:4801` exposes writable `md5_hash` through the scalar
+property setter in `_helpers.py:605-609`; `blob.py:94-102,1870-1873` includes
+changed `md5Hash` in writable metadata. `upload_from_string` forwards known
+length and checksum unchanged at `blob.py:3368-3383`. The multipart threshold
+is 8,388,608 bytes (`blob.py:148,2651`), above the fixed 16KiB maximum.
+`_media/_helpers.py:264-265` returns no checksum object for `checksum=None`,
+so `_media/_upload.py:330-339` preserves the pre-set MD5 metadata when building
+the multipart body. These are implementation checks, not live GCS acceptance.

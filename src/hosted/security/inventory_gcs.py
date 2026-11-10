@@ -5,6 +5,8 @@ separate delete operation or automatic retries. GCS replacing an existing object
 requires overwrite/delete permission semantics even without a delete request.
 Bucket review, IAM, versioning, soft delete and retention are activation gates:
 using one live object name does NOT prove old provider versions are unretained.
+RPC timeouts and elapsed checks do not forcibly cancel credential refresh or
+other injected callbacks; future keyless identity composition must bound those.
 """
 from __future__ import annotations
 

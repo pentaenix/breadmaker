@@ -13411,33 +13411,33 @@
     },
     {
       "file": "src/hosted/security/inventory_gcs.py",
-      "lines": 114,
+      "lines": 116,
       "symbols": [
         {
           "name": "_Deadline",
           "kind": "class",
-          "line": 23
+          "line": 25
         },
         {
           "name": "_md5",
           "kind": "function",
-          "line": 36
+          "line": 38
         },
         {
           "name": "_is_conflict",
           "kind": "function",
-          "line": 41
+          "line": 43
         },
         {
           "name": "GoogleInventoryLatestStore",
           "kind": "class",
-          "line": 49
+          "line": 51
         }
       ]
     },
     {
       "file": "src/hosted/security/inventory_publication.py",
-      "lines": 187,
+      "lines": 189,
       "symbols": [
         {
           "name": "InventoryPublicationError",
