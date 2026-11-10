@@ -461,6 +461,7 @@ def prepare_native_archive(archive, manifest, pid, *, name_override=None, exclud
         if not hasattr(con, 'deserialize'):
             raise ValueError('HOSTED_LEGACY_IMPORT_DESERIALIZE_UNAVAILABLE')
         con.deserialize(database)
+        del database  # deserialize owns a copy; release the large source buffer.
         deadline = time.monotonic() + 10.0
         remaining = 5_000
         def budget():
@@ -505,7 +506,6 @@ def prepare_native_archive(archive, manifest, pid, *, name_override=None, exclud
         raise ValueError('HOSTED_PACKAGE_DATABASE_INVALID') from exc
     finally:
         con.close()
-
 
 def prepare_native_package(payload, pid, *, name_override=None):
     return prepare_project_package(payload, pid, name_override=name_override, native_only=True)
