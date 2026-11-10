@@ -65,16 +65,23 @@ def test_canvas_revision_change_retains_loaded_book_until_complete_validated_rep
             headers={'Origin':base,'X-Breadmaker-Project':pid})
         assert response.ok
         held=[]
-        def hold_first(route):
-            if not held:held.append(route)
+        old_tag=page.evaluate('()=>window.keptBook.read_tag')
+        def is_new_snapshot_validation(request):
+            tag=request.headers.get('if-none-match')
+            return '/api/book?' in request.url and request.method=='GET' and bool(tag) and tag!=old_tag
+        def hold_final(route):
+            # Bundles eliminate chapter downloads. Hold the replacement's final
+            # authority check, which must gate publication on either read path.
+            if is_new_snapshot_validation(route.request):held.append(route)
             else:route.continue_()
-        page.route('**/api/chapters/*?**',hold_first)
+        page.route('**/api/book?**',hold_final)
         page.locator('.main-tab[data-view="canvas"]').click()
-        with page.expect_request(lambda r:'/api/chapters/' in r.url and r.method=='GET'):
+        with page.expect_request(is_new_snapshot_validation):
             page.locator('.main-tab[data-view="manuscript"]').click()
         expect(page.locator('#editor')).to_be_visible()
         assert page.locator('.full-text-preview').count()==0 and page.locator('dialog[open]').count()==0
         assert page.evaluate('()=>state.bookCache.get(String(state.activeDocumentId))===window.keptBook&&document.querySelector("#editor .manuscript-block")===window.keptNode')
+        assert page.locator('#manuscriptPrimaryPane').evaluate('(pane)=>pane.inert')
         held[0].continue_();page.wait_for_function('()=>!document.querySelector("#manuscriptPrimaryPane").inert')
         assert page.locator('.manuscript-block').count()==520
         assert page.evaluate('()=>state.bookData!==window.keptBook&&!state.dirty&&state.bookData.project.generation>window.keptBook.project.generation')
