@@ -252,3 +252,24 @@ is 8,388,608 bytes (`blob.py:148,2651`), above the fixed 16KiB maximum.
 `_media/_helpers.py:264-265` returns no checksum object for `checksum=None`,
 so `_media/_upload.py:330-339` preserves the pre-set MD5 metadata when building
 the multipart body. These are implementation checks, not live GCS acceptance.
+
+## Inventory branch reconciliation with scene-save main (2026-11-10)
+
+The source-only inventory/publication/canvas branch was reconciled with main
+`49424e92d77ae2f184aefd7c316592258b126bd9` (atomic scene-save PR #46). The merge
+had no conflicts. The generated code index was regenerated for the combined
+source rather than retaining stale line numbers from its automatic merge.
+Inventory, publication, GCS adapter and canvas reducer sources are byte-for-byte
+unchanged from `13c2615b8f4383ee181433775c84e4bb704b3bd1`. The SHA-256 of
+`src/hosted/security/inventory.py` remains
+`fc9d7956c6678f38695f20429e2418c11c59a75846784abeddbdb17b56a50575`.
+The separate saved-text/coverage branch is not included.
+
+All 148 telemetry synthetic cases plus 31 focused scene-mutation/save-failure
+cases pass together (179 total). The unchanged actual Admin `eb090d8` in-memory
+producer/publication/reader harness passes counts, zero, unknown and expiry.
+Telemetry source compilation and whitespace checks pass. The test run reported
+one existing Starlette TestClient/httpx deprecation warning. No local full
+verifier, browser benchmark, live provider operation, deployment, runtime hook or
+activation was run. All previously documented approval and integration gates
+remain in force; merging current main into this source branch does not clear them.
