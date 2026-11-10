@@ -107,12 +107,26 @@ function packageImportStatus(intent){
 }
 async function packageImportPrepare(intent){
   packageImportRender(intent,packageImportText('uploading'));
-  const previous=intent.job?.prepared_batches||0,fd=new FormData();fd.append('file',intent.file);
-  const job=await api('/api/projects/import?resumable=true&preparation_version=2',{method:'POST',body:fd,idempotencyKey:intent.pending.key});
+  const previous=intent.job;
+  let job;
+  if(previous?.prepare_available&&intent.pending.job){
+    job=await api(`/api/projects/import/jobs/${encodeURIComponent(intent.pending.job)}/prepare`,{method:'POST'});
+  }else{
+    const fd=new FormData();fd.append('file',intent.file);
+    job=await api('/api/projects/import?resumable=true&preparation_version=3',{method:'POST',body:fd,idempotencyKey:intent.pending.key});
+  }
   // Continue only a successful, advancing durable preparation response. HTTP
   // failures and stalled/malformed responses pause for explicit Resume; never
   // retry them automatically or discard the existing source/operation binding.
-  if(job?.phase==='preparing'&&(!Number.isSafeInteger(job.prepared_batches)||!Number.isSafeInteger(job.total_batches)||job.prepared_batches<=previous||job.prepared_batches>=job.total_batches))throw new Error(packageImportText('invalid_response'));
+  if(job?.phase==='preparing'){
+    const prior=previous?.prepared_batches||0;
+    let advances=job.prepared_batches>prior;
+    if(job.preparation_version===3){
+      if(job.prepare_available!==true||!Number.isSafeInteger(job.prepared_source_chunks)||!Number.isSafeInteger(job.total_source_chunks)||job.total_source_chunks<1||job.prepared_source_chunks<0||job.prepared_source_chunks>job.total_source_chunks||job.prepared_source_chunks<(previous?.prepared_source_chunks||0))throw new Error(packageImportText('invalid_response'));
+      advances=advances||!previous?.prepare_available||job.prepared_source_chunks>(previous?.prepared_source_chunks||0);
+    }
+    if(!Number.isSafeInteger(job.prepared_batches)||!Number.isSafeInteger(job.total_batches)||job.prepared_batches<prior||job.prepared_batches>job.total_batches||job.total_batches<1||!advances)throw new Error(packageImportText('invalid_response'));
+  }
   return packageImportRecord(intent,job);
 }
 async function packageImportReadStatus(intent){

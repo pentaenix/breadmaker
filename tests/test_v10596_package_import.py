@@ -228,7 +228,7 @@ def test_http_is_global_context_and_requires_idempotency(setup, monkeypatch):
     def forbidden(*args, **kwargs): raise AssertionError('Import acquired an existing project')
     monkeypatch.setattr(one.projects, 'profile_project_target', forbidden)
     with TestClient(app) as client:
-        url = '/api/projects/import?resumable=true&preparation_version=2'
+        url = '/api/projects/import?resumable=true&preparation_version=3'
         files = {'file': ('synthetic.breadmaker', b'small', 'application/zip')}
         stale = client.post('/api/projects/import?resumable=true', files=files,
                             headers={'Idempotency-Key': 'synthetic'})
@@ -241,6 +241,9 @@ def test_http_is_global_context_and_requires_idempotency(setup, monkeypatch):
         result = client.post(url, files=files, headers={'Idempotency-Key': 'synthetic', 'X-Breadmaker-Project': 'a' * 32})
         assert result.status_code == 200, result.text
         job = result.json()['job_id'];base = '/api/projects/import/jobs/' + job
+        assert result.json()['prepare_available'] and result.json()['prepared_batches'] == 0
+        prepared = client.post(base + '/prepare')
+        assert prepared.status_code == 200 and prepared.json()['phase'] == 'staging'
         progress = client.post(base + '/step?batch=0')
         assert progress.status_code == 200 and progress.json()['ready']
         done = client.post(base + '/finish');assert done.status_code == 200, done.text
@@ -453,7 +456,7 @@ def test_invalid_package_does_not_reserve_or_publish_preparation(setup, monkeypa
     assert docs.get(('projects', stable_project_id('op_native_package'))) is None
 
 
-def test_status_and_cancel_remain_available_when_preparation_lane_is_full(monkeypatch):
+def test_status_cancel_and_finish_remain_available_when_preparation_lane_is_full(monkeypatch):
     import asyncio
     from threading import Event
     from anyio import CapacityLimiter
@@ -467,10 +470,11 @@ def test_status_and_cancel_remain_available_when_preparation_lane_is_full(monkey
     calls = []
     def result(kind, uid, job):
         calls.append((kind, uid, job))
-        return {'phase': 'preparing' if kind == 'status' else 'cancelled'}
+        return {'phase': {'status': 'preparing', 'cancel': 'cancelled', 'finish': 'completed'}[kind]}
     monkeypatch.setattr(module, 'PackageImport', lambda projects: SimpleNamespace(
         status=lambda uid, job: result('status', uid, job),
-        cancel=lambda uid, job: result('cancel', uid, job)))
+        cancel=lambda uid, job: result('cancel', uid, job),
+        finish=lambda uid, job: result('finish', uid, job)))
     def slow_preparation():
         started.set()
         assert release.wait(3), 'synthetic preparation was not released'
@@ -480,13 +484,15 @@ def test_status_and_cancel_remain_available_when_preparation_lane_is_full(monkey
             assert await asyncio.to_thread(started.wait, 1)
             status = await asyncio.wait_for(http_api.hosted_package_import_status('job_synthetic'), 1)
             cancelled = await asyncio.wait_for(http_api.hosted_package_import_cancel('job_synthetic'), 1)
-            assert status['phase'] == 'preparing' and cancelled['phase'] == 'cancelled'
+            finished = await asyncio.wait_for(http_api.hosted_package_import_finish('job_synthetic'), 1)
+            assert status['phase'] == 'preparing' and cancelled['phase'] == 'cancelled' and finished['phase'] == 'completed'
             assert not task.done()
         finally:
             release.set()
             await task
     asyncio.run(check())
-    assert calls == [('status', OWNER, 'job_synthetic'), ('cancel', OWNER, 'job_synthetic')]
+    assert calls == [('status', OWNER, 'job_synthetic'), ('cancel', OWNER, 'job_synthetic'),
+                     ('finish', OWNER, 'job_synthetic')]
 
 
 def test_census_accounts_for_unpublished_sources_and_unknown_children(setup):

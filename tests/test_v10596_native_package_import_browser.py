@@ -65,6 +65,10 @@ class Jobs:
         self.preparation_groups = 0
         self.prepared_batches = 0
         self.require_preparation_version = False
+        self.durable = False
+        self.capture_groups = 0
+        self.captured_chunks = 0
+        self.total_source_chunks = 1
         self.finish_lost = False
         self.status_error = None
         self.cancel_error = None
@@ -78,6 +82,10 @@ class Jobs:
         result['prepared_batches'] = self.prepared_batches
         if self.phase == 'preparing':
             result['total_batches'] = 24
+        if self.durable:
+            result.update(preparation_version=3, prepare_available=True,
+                          prepared_source_chunks=self.captured_chunks,
+                          total_source_chunks=self.total_source_chunks)
         if self.phase == 'completed':
             result.update(project={'id': IMPORTED}, reload=True)
         return result
@@ -86,16 +94,18 @@ class Jobs:
         request = route.request
         url = request.url.split('/api/', 1)[1]
         operation = ('status' if request.method == 'GET' else
+                     'prepare' if url.endswith('/prepare') else
                      'step' if '/step?' in url else
                      'finish' if url.endswith('/finish') else
                      'cancel' if url.endswith('/cancel') else 'begin')
         self.calls.append((operation, request))
-        if operation == 'begin' and self.require_preparation_version and 'preparation_version=2' not in url:
+        if operation == 'begin' and self.require_preparation_version and 'preparation_version=3' not in url:
             route.fulfill(status=409, json={'detail': {'code': 'HOSTED_IMPORT_CLIENT_REFRESH_REQUIRED',
                 'message': 'Refresh this page, then select the same file to continue this import safely.'}})
             return
         if self.hold == operation:
             self.held = route
+            self.page.evaluate('()=>window.syntheticHeldRequest=true')
             return
         self.reply(route, operation)
 
@@ -119,8 +129,22 @@ class Jobs:
                 return
         elif operation == 'cancel':
             self.phase = 'cancelled'
+        elif operation == 'prepare':
+            if self.capture_groups:
+                self.capture_groups -= 1
+                self.captured_chunks += 1
+            else:
+                self.prepared_batches += 8
+                if self.preparation_groups:
+                    self.preparation_groups -= 1
+                else:
+                    self.phase = 'staging'
         elif operation == 'begin':
-            if self.preparation_groups:
+            if self.durable:
+                self.phase = 'preparing'
+                self.captured_chunks = 1
+                self.total_source_chunks = 1 + self.capture_groups
+            elif self.preparation_groups:
                 self.preparation_groups -= 1
                 self.prepared_batches += 8
                 self.phase = 'preparing'
@@ -131,6 +155,7 @@ class Jobs:
     def release(self, operation, *, error=None):
         route, self.held = self.held, None
         assert route is not None
+        self.page.evaluate('()=>window.syntheticHeldRequest=false')
         self.reply(route, operation, error=error)
 
     def count(self, operation):
@@ -143,7 +168,8 @@ def browser():
     page = instance.new_page(viewport={'width': 1200, 'height': 850})
     page.set_default_timeout(2500)
     service, errors = Jobs(), []
-    page.expose_function('syntheticRequestHeld', lambda: service.held is not None)
+    service.page = page
+    page.add_init_script('window.syntheticHeldRequest=false')
     page.on('pageerror', lambda error: errors.append(str(error)))
     page.route('http://127.0.0.1/native-import', lambda route: route.fulfill(content_type='text/html', body=shell()))
     page.route('**/api/**', service.handler)
@@ -407,7 +433,7 @@ def test_native_package_preparation_advances_same_key_before_record_steps():
         assert [kind for kind, _ in service.calls] == ['begin', 'begin', 'begin', 'step', 'step', 'finish']
         keys = [request.headers['idempotency-key'] for kind, request in service.calls if kind == 'begin']
         assert len(set(keys)) == 1 and keys[0] == pending(page)[0]['key']
-        assert all('preparation_version=2' in request.url for kind, request in service.calls if kind == 'begin')
+        assert all('preparation_version=3' in request.url for kind, request in service.calls if kind == 'begin')
 
 
 def test_native_package_old_client_refresh_keeps_same_import_key():
@@ -416,7 +442,7 @@ def test_native_package_old_client_refresh_keeps_same_import_key():
         # Model a cached pre-update client, which never sent this protocol flag.
         page.evaluate('''()=>{
             const currentApi=api;
-            api=(url,options)=>currentApi(url.replace('&preparation_version=2',''),options);
+            api=(url,options)=>currentApi(url.replace('&preparation_version=3',''),options);
         }''')
         select(page)
         paused(page)
@@ -432,16 +458,108 @@ def test_native_package_old_client_refresh_keeps_same_import_key():
         assert page.evaluate('opened') == [IMPORTED]
 
 
+def test_native_package_durable_continuation_never_reuploads_the_archive():
+    with browser() as (page, service):
+        service.durable = True
+        service.preparation_groups = 2
+        service.capture_groups = 1
+        select(page)
+        page.wait_for_function('()=>opened.length===1')
+        assert [kind for kind, _ in service.calls] == ['begin', 'prepare', 'prepare', 'prepare', 'prepare', 'step', 'step', 'finish']
+        assert service.count('begin') == 1
+        assert all(not request.post_data_buffer for kind, request in service.calls if kind == 'prepare')
+        assert 'SYNTHETIC' not in json.dumps(pending(page))
+
+
+def test_native_package_durable_resume_after_reload_uses_only_retained_source():
+    with browser() as (page, service):
+        service.durable = True
+        service.preparation_groups = 2
+        service.hold = 'prepare'
+        select(page)
+        page.wait_for_function('()=>window.syntheticHeldRequest===true')
+        original = pending(page)[0]
+        service.release('prepare', error=(504, 'Preparation timed out'))
+        paused(page)
+        page.evaluate('()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+        assert service.count('prepare') == 1 and service.count('begin') == 1
+        service.hold = None
+        page.reload()
+        select(page)
+        page.wait_for_function('()=>opened.length===1')
+        assert service.count('begin') == 1
+        assert pending(page)[0]['key'] == original['key']
+        assert pending(page)[0]['job'] == original['job']
+
+
+def test_native_package_durable_mixed_replica_missing_route_keeps_job():
+    with browser() as (page, service):
+        service.durable = True
+        service.hold = 'prepare'
+        select(page)
+        page.wait_for_function('()=>window.syntheticHeldRequest===true')
+        original = pending(page)[0]
+        service.release('prepare', error=(404, 'Not Found'))
+        paused(page)
+        assert pending(page)[0] == original
+        assert service.count('begin') == 1 and service.count('step') == 0
+        service.hold = None
+        page.locator('#resumeProjectPackageImport').click()
+        page.wait_for_function('()=>opened.length===1')
+        assert service.count('begin') == 1
+
+
+def test_native_package_durable_cancel_during_preparation_never_stages():
+    with browser() as (page, service):
+        service.durable = True
+        service.preparation_groups = 2
+        service.hold = 'prepare'
+        select(page)
+        page.wait_for_function('()=>window.syntheticHeldRequest===true')
+        page.locator('#cancelProjectPackageImport').click()
+        service.release('prepare')
+        expect(page.locator('#projectPackageImportStatus')).to_have_text('Import cancelled')
+        assert service.count('begin') == 1 and service.count('prepare') == 1
+        assert service.count('step') == service.count('finish') == 0
+
+
+def test_native_package_durable_stalled_response_pauses_without_fallback_upload():
+    with browser() as (page, service):
+        service.durable = True
+        service.hold = 'prepare'
+        select(page)
+        page.wait_for_function('()=>window.syntheticHeldRequest===true')
+        route, service.held = service.held, None
+        route.fulfill(json=service.status())
+        paused(page)
+        assert service.count('begin') == 1 and service.count('prepare') == 1
+        assert pending(page)[0]['job'] == service.job
+
+
+def test_native_package_dismissed_durable_preparation_does_not_continue():
+    with browser() as (page, service):
+        service.durable = True
+        service.preparation_groups = 2
+        service.hold = 'prepare'
+        select(page)
+        page.wait_for_function('()=>window.syntheticHeldRequest===true')
+        page.locator('#modalClose').click()
+        service.release('prepare')
+        page.wait_for_function('()=>!projectPackageImportIntent.busy')
+        assert service.count('begin') == 1 and service.count('prepare') == 1
+        assert service.count('step') == 0 and page.evaluate('opened') == []
+
+
 def test_native_package_preparation_failure_pauses_until_explicit_resume():
     with browser() as (page, service):
         service.preparation_groups = 2
         service.hold = 'begin'
         select(page)
-        page.wait_for_function('async()=>await window.syntheticRequestHeld()')
+        page.wait_for_function('()=>window.syntheticHeldRequest===true')
         service.release('begin')
         page.wait_for_function('()=>projectPackageImportIntent.job?.prepared_batches===8')
         expect(page.locator('#cancelProjectPackageImport')).to_be_enabled()
-        page.wait_for_function('async()=>await window.syntheticRequestHeld()')
+        page.wait_for_function('()=>window.syntheticHeldRequest===true')
         assert service.count('begin') == 2 and service.held is not None
         service.release('begin', error=(504, 'Preparation request timed out'))
         paused(page)
@@ -461,7 +579,7 @@ def test_native_package_preparation_can_cancel_between_groups():
         service.preparation_groups = 2
         service.hold = 'begin'
         select(page)
-        page.wait_for_function('async()=>await window.syntheticRequestHeld()')
+        page.wait_for_function('()=>window.syntheticHeldRequest===true')
         service.release('begin')
         expect(page.locator('#cancelProjectPackageImport')).to_be_enabled()
         # The next request may already be in flight; its response may persist
@@ -479,7 +597,7 @@ def test_native_package_stalled_preparation_response_does_not_loop():
     with browser() as (page, service):
         service.hold = 'begin'
         select(page)
-        page.wait_for_function('async()=>await window.syntheticRequestHeld()')
+        page.wait_for_function('()=>window.syntheticHeldRequest===true')
         route, service.held = service.held, None
         assert route is not None
         service.phase = 'preparing'
