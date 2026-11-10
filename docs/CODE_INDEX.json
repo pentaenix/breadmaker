@@ -7910,7 +7910,7 @@
     },
     {
       "file": "src/hosted/account_lifecycle.py",
-      "lines": 217,
+      "lines": 227,
       "symbols": [
         {
           "name": "_LifecycleTransaction",
@@ -7920,12 +7920,12 @@
         {
           "name": "AccountLifecycleDocumentStore",
           "kind": "class",
-          "line": 152
+          "line": 162
         },
         {
           "name": "AccountLifecycleObjectStore",
           "kind": "class",
-          "line": 169
+          "line": 179
         }
       ]
     },
@@ -8212,7 +8212,7 @@
     },
     {
       "file": "src/hosted/domain_store.py",
-      "lines": 1179,
+      "lines": 1195,
       "symbols": [
         {
           "name": "_merge_manuscript_patch",
@@ -8435,98 +8435,103 @@
     },
     {
       "file": "src/hosted/firestore/contracts.py",
-      "lines": 112,
+      "lines": 135,
       "symbols": [
         {
           "name": "HostedStoreError",
           "kind": "class",
-          "line": 7
+          "line": 8
         },
         {
           "name": "DocumentConflict",
           "kind": "class",
-          "line": 11
+          "line": 12
         },
         {
           "name": "DocumentAlreadyExists",
           "kind": "class",
-          "line": 15
+          "line": 16
         },
         {
           "name": "DocumentNotFound",
           "kind": "class",
-          "line": 19
+          "line": 20
         },
         {
           "name": "ProjectUnavailable",
           "kind": "class",
-          "line": 23
+          "line": 24
         },
         {
           "name": "HostedAuthorizationError",
           "kind": "class",
-          "line": 27
+          "line": 28
         },
         {
           "name": "HostedValidationError",
           "kind": "class",
-          "line": 31
+          "line": 32
         },
         {
           "name": "ModelContract",
           "kind": "class",
-          "line": 36
+          "line": 37
         },
         {
           "name": "StoredDocument",
           "kind": "class",
-          "line": 45
+          "line": 46
+        },
+        {
+          "name": "bounded_document_rows",
+          "kind": "function",
+          "line": 52
         },
         {
           "name": "Transaction",
           "kind": "class",
-          "line": 51
+          "line": 74
         },
         {
           "name": "DocumentStore",
           "kind": "class",
-          "line": 65
+          "line": 88
         },
         {
           "name": "Clock",
           "kind": "class",
-          "line": 91
+          "line": 114
         },
         {
           "name": "require_document_path",
           "kind": "function",
-          "line": 95
+          "line": 118
         },
         {
           "name": "require_collection_path",
           "kind": "function",
-          "line": 105
+          "line": 128
         }
       ]
     },
     {
       "file": "src/hosted/firestore/google_driver.py",
-      "lines": 201,
+      "lines": 215,
       "symbols": [
         {
           "name": "_GoogleTransaction",
           "kind": "class",
-          "line": 17
+          "line": 18
         },
         {
           "name": "_snapshot_revision",
           "kind": "function",
-          "line": 71
+          "line": 85
         },
         {
           "name": "GoogleFirestoreDocumentStore",
           "kind": "class",
-          "line": 79
+          "line": 93
         }
       ]
     },
@@ -8568,17 +8573,17 @@
     },
     {
       "file": "src/hosted/firestore/memory.py",
-      "lines": 183,
+      "lines": 191,
       "symbols": [
         {
           "name": "_MemoryTransaction",
           "kind": "class",
-          "line": 19
+          "line": 20
         },
         {
           "name": "MemoryDocumentStore",
           "kind": "class",
-          "line": 62
+          "line": 70
         }
       ]
     },
@@ -12475,32 +12480,37 @@
     },
     {
       "file": "src/hosted/package_import.py",
-      "lines": 675,
+      "lines": 690,
       "symbols": [
+        {
+          "name": "inline_import_enabled",
+          "kind": "function",
+          "line": 43
+        },
         {
           "name": "_json",
           "kind": "function",
-          "line": 41
+          "line": 54
         },
         {
           "name": "_hash",
           "kind": "function",
-          "line": 45
+          "line": 58
         },
         {
           "name": "_parallel",
           "kind": "function",
-          "line": 49
+          "line": 62
         },
         {
           "name": "_GuardedObjects",
           "kind": "class",
-          "line": 82
+          "line": 95
         },
         {
           "name": "PackageImport",
           "kind": "class",
-          "line": 121
+          "line": 134
         }
       ]
     },
@@ -12527,7 +12537,7 @@
     },
     {
       "file": "src/hosted/packages.py",
-      "lines": 723,
+      "lines": 729,
       "symbols": [
         {
           "name": "_fields",

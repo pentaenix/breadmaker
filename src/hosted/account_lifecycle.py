@@ -68,6 +68,16 @@ class _LifecycleTransaction:
         return [self._copy(row) for _, row in sorted(by_path.items())
                 if field is None or row.data.get(field) == value]
 
+    def query_collection_bounded(self, path, *, max_records, max_bytes):
+        # Optional read-only accelerator. Never ignore buffered mutations or
+        # fall back to an unbounded provider query on unsupported adapters.
+        if any(key[:-1] == tuple(path) for key in self.pending):
+            return None
+        query = getattr(self.tx, 'query_collection_bounded', None)
+        if query is None:
+            return None
+        return query(path, max_records=max_records, max_bytes=max_bytes)
+
     def count_collection(self, path):
         prefix = tuple(path)
         count = self.tx.count_collection(prefix)

@@ -761,18 +761,29 @@ class HostedDomainStore:
             self.projects._require_member(tx,pid,uid)
             path=('projects',pid,'blocks');counter=getattr(tx,'count_collection',None)
             if counter is None or counter(path)>10000:return None
-            return [dict(row.data) for row in tx.query_collection(path)
+            query=getattr(tx,'query_collection_bounded',None)
+            if query is None:return None
+            selected=query(path,max_records=10000,max_bytes=8*1024*1024)
+            if selected is None:return None
+            return [dict(row.data) for row in selected
                     if row.data.get('chapter_id') in chapters]
         rows=self.documents.run_transaction(read)
         if rows is None or len(rows)>10000:return None
         pointers={}
         for row in rows:
             pointer=self._read_pointer(row)
+            if pointer is None and 'payload_object' not in row:
+                # Canonical inline content needs no object read. Flat legacy
+                # pointers must retain the ordinary compatibility path.
+                if any(key in row for key in ('object_name','object_generation','object_size')):return None
+                continue
             if not isinstance(pointer,dict) or not pointer.get('bundle_entry'):return None
             pointers[self._payload_key(pointer)]=pointer
         if len(pointers)>256 or sum(int(p.get('object_size') or 0) for p in pointers.values())>2*1024*1024:
             return None
-        verified={};decoded=0;items=list(pointers.items())
+        # Include inline text and document metadata in the total decoded budget.
+        decoded=sum(len(json.dumps(row,ensure_ascii=False,default=str).encode('utf-8')) for row in rows)
+        verified={};items=list(pointers.items())
         with ThreadPoolExecutor(max_workers=8) as pool:
             for offset in range(0,len(items),8):
                 batch=items[offset:offset+8]
@@ -1051,6 +1062,11 @@ class HostedDomainStore:
                 expected_generation=expected_project_generation,
                 stamp=stamp,
             )
+            if hybrid is not None:
+                # Inline imports may be edited into immutable payloads. Do not
+                # retain a second stale copy of prose beside the new pointer.
+                for field in _HYBRID_PAYLOAD_FIELDS.get(logical_entity, ()):
+                    data.pop(field, None)
             data.update(clean_patch)
             data["generation"] = current_generation + 1
             data["updated_at"] = stamp

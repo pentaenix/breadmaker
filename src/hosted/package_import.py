@@ -14,6 +14,7 @@ import gzip
 import hashlib
 import io
 import json
+import os
 import re
 import time
 
@@ -36,6 +37,18 @@ MAX_SOURCE_BYTES = 64 * 1024**2
 MAX_PLAN_BYTES = 256 * 1024**2  # the existing expanded archive boundary, not a row cap
 TARGET_PLAN_BYTES = 4 * 1024**2
 _EMPTY_CHAIN = '0' * 64
+
+
+
+def inline_import_enabled():
+    """Operator-only rollout gate, not a live index probe or user capability.
+
+    Cloud deployment must verify READY exemptions for blocks.content_html and
+    blocks.text_content before setting the readiness attestation. Both flags
+    are required; unknown values, absent settings and rollback remain off.
+    """
+    return (os.environ.get('BREADMAKER_HOSTED_INLINE_IMPORT_BLOCKS') == '1'
+            and os.environ.get('BREADMAKER_HOSTED_INLINE_IMPORT_INDEXES_READY') == '1')
 
 
 def _json(value):
@@ -119,9 +132,10 @@ class _GuardedObjects:
 
 
 class PackageImport:
-    def __init__(self, projects, *, clock=time.time):
+    def __init__(self, projects, *, clock=time.time, inline_blocks=False):
         if projects.domain.encrypted_objects is not None or projects.domain.encrypted_fields is not None:
             raise HostedValidationError('HOSTED_ENCRYPTED_PACKAGE_IMPORT_NOT_READY')
+        self.inline_blocks = inline_blocks
         self.projects = projects
         self.documents = projects.documents
         self.clock = clock
@@ -514,7 +528,8 @@ class PackageImport:
                 raise HostedValidationError('HOSTED_IMPORT_PLAN_BINDING_INVALID')
             render_model_path(model, **item['parents'], **{fields[-1]: item['id']})
             return packages._prepare_import_entity(item['entity'], item['parents'], item['data'], entity_id=item['id'],
-                                                   read_bundle=(bundles or {}).get(item['id']))
+                                                   read_bundle=(bundles or {}).get(item['id']),
+                                                   inline_block=self.inline_blocks)
         if kind == 'asset':
             if set(item) != {'kind', 'path', 'extension', 'sha256', 'data'}:
                 raise HostedValidationError('HOSTED_IMPORT_PLAN_INVALID')

@@ -5,6 +5,7 @@ from threading import RLock
 from typing import Any, Callable, Mapping, TypeVar
 
 from .contracts import (
+    bounded_document_rows,
     DocumentAlreadyExists,
     DocumentStore,
     StoredDocument,
@@ -40,6 +41,13 @@ class _MemoryTransaction(Transaction):
         if field is not None:
             out = [row for row in out if row.data.get(field) == value]
         return out
+
+    def query_collection_bounded(self, collection_path, *, max_records, max_bytes):
+        prefix = require_collection_path(collection_path)
+        # Iterate stored keys without copying the full collection first.
+        rows = (self._owner._get_locked(path) for path in self._owner._documents
+                if len(path) == len(prefix) + 1 and path[:-1] == prefix)
+        return bounded_document_rows(rows, max_records=max_records, max_bytes=max_bytes)
 
     def count_collection(self, collection_path: tuple[str, ...]) -> int:
         prefix = require_collection_path(collection_path)

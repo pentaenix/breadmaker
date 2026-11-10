@@ -455,7 +455,7 @@ class HostedProjectPackageService:
         # it until the final project+owner transaction commits.
         return stable_project_id(operation) if operation else new_project_id()
 
-    def _prepare_import_entity(self, logical:str, ids:Mapping[str,str], data:Mapping[str,Any], *, entity_id:str,read_bundle=None):
+    def _prepare_import_entity(self, logical:str, ids:Mapping[str,str], data:Mapping[str,Any], *, entity_id:str,read_bundle=None, inline_block=False):
         if self.domain.encrypted_objects is not None or self.domain.encrypted_fields is not None:
             # Import stages records before the new project's membership exists.
             # This path must be redesigned instead of bypassing authorizer/KMS.
@@ -476,7 +476,11 @@ class HostedProjectPackageService:
                   _portable_import_payload(logical,data,ids=full_ids,entity_id=entity_id))
         public=_canonical_payload(self.domain._payload_with_identity(logical,portable,entity_id))
         _reject_managed_create_fields(public)
-        hybrid=self.domain._hybrid_payload(logical,public)
+        # Isolated prototype: callers must opt in. Keep ordinary writes and
+        # every non-manuscript hybrid on their established immutable path.
+        inline = (inline_block and logical == 'manuscript_block'
+                  and len(json.dumps(public, ensure_ascii=False, allow_nan=False).encode('utf-8')) <= 4096)
+        hybrid=None if inline else self.domain._hybrid_payload(logical,public)
         if hybrid is not None:
             structured,encoded=hybrid
             stored=dict(structured)
@@ -497,6 +501,8 @@ class HostedProjectPackageService:
         stored['updated_at']=stamp
         stored['_bm_create_operation']=op
         stored['_bm_create_fingerprint']=fingerprint
+        if inline and len(json.dumps(stored, ensure_ascii=False, allow_nan=False).encode('utf-8')) > 8192:
+            raise ValueError('HOSTED_INLINE_IMPORT_DOCUMENT_LIMIT')
         return path,stored
 
     def _stage_entity(self, logical:str, ids:Mapping[str,str], data:Mapping[str,Any], *, entity_id:str, unpublished_only:bool=False) -> None:

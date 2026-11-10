@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable, Mapping, TypeVar
 
 from .contracts import (
+    bounded_document_rows,
     DocumentAlreadyExists,
     DocumentStore,
     StoredDocument,
@@ -42,6 +43,19 @@ class _GoogleTransaction(Transaction):
                 raise RuntimeError("HOSTED_FIRESTORE_SDK_REQUIRED") from exc
         snapshots = query.stream(transaction=self._transaction)
         return [StoredDocument(tuple(doc.reference.path.split("/")), doc.to_dict() or {}, _snapshot_revision(doc)) for doc in snapshots]
+
+    def query_collection_bounded(self, collection_path, *, max_records, max_bytes):
+        key = require_collection_path(collection_path)
+        snapshots = self._client.collection('/'.join(key)).limit(max_records + 1).stream(
+            transaction=self._transaction)
+        try:
+            rows = (StoredDocument(tuple(doc.reference.path.split('/')),
+                    doc.to_dict() or {}, _snapshot_revision(doc)) for doc in snapshots)
+            return bounded_document_rows(rows, max_records=max_records, max_bytes=max_bytes)
+        finally:
+            close = getattr(snapshots, 'close', None)
+            if close is not None:
+                close()
 
     def get_many(self, paths: list[tuple[str, ...]]) -> list[StoredDocument | None]:
         keys=[require_document_path(path) for path in paths]

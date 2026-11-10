@@ -414,8 +414,8 @@ async def hosted_project_import(file:UploadFile=File(...),name:str='',resumable:
         uid=_uid();operation=operation_for('project_import')
         if resumable:
             if operation is None:raise HostedValidationError('HOSTED_IMPORT_IDEMPOTENCY_KEY_REQUIRED')
-            from hosted.package_import import PackageImport
-            return await _package_import_call(PackageImport(runtime.projects).begin,payload,uid,
+            from hosted.package_import import PackageImport, inline_import_enabled
+            return await _package_import_call(PackageImport(runtime.projects, inline_blocks=inline_import_enabled()).begin,payload,uid,
                                                name_override=name or None,operation=operation)
         project=await _package_import_call(HostedProjectPackageService(runtime.projects).import_bytes,
                     payload,uid,name_override=name or None,operation=operation)
@@ -426,29 +426,29 @@ async def hosted_project_import(file:UploadFile=File(...),name:str='',resumable:
 
 @platform_router.get('/api/projects/import/jobs/{job_id}')
 async def hosted_package_import_status(job_id:str):
-    from hosted.package_import import PackageImport
-    try:return await _package_import_call(PackageImport(runtime.projects).status,_uid(),job_id)
+    from hosted.package_import import PackageImport, inline_import_enabled
+    try:return await _package_import_call(PackageImport(runtime.projects, inline_blocks=inline_import_enabled()).status,_uid(),job_id)
     except Exception as exc:raise _error(exc)
 
 
 @platform_router.post('/api/projects/import/jobs/{job_id}/step')
 async def hosted_package_import_step(job_id:str,batch:int):
-    from hosted.package_import import PackageImport
-    try:return await _package_import_call(PackageImport(runtime.projects).step,_uid(),job_id,batch)
+    from hosted.package_import import PackageImport, inline_import_enabled
+    try:return await _package_import_call(PackageImport(runtime.projects, inline_blocks=inline_import_enabled()).step,_uid(),job_id,batch)
     except Exception as exc:raise _error(exc)
 
 
 @platform_router.post('/api/projects/import/jobs/{job_id}/finish')
 async def hosted_package_import_finish(job_id:str):
-    from hosted.package_import import PackageImport
-    try:return await _package_import_call(PackageImport(runtime.projects).finish,_uid(),job_id)
+    from hosted.package_import import PackageImport, inline_import_enabled
+    try:return await _package_import_call(PackageImport(runtime.projects, inline_blocks=inline_import_enabled()).finish,_uid(),job_id)
     except Exception as exc:raise _error(exc)
 
 
 @platform_router.post('/api/projects/import/jobs/{job_id}/cancel')
 async def hosted_package_import_cancel(job_id:str):
-    from hosted.package_import import PackageImport
-    try:return await _package_import_call(PackageImport(runtime.projects).cancel,_uid(),job_id)
+    from hosted.package_import import PackageImport, inline_import_enabled
+    try:return await _package_import_call(PackageImport(runtime.projects, inline_blocks=inline_import_enabled()).cancel,_uid(),job_id)
     except Exception as exc:raise _error(exc)
 
 

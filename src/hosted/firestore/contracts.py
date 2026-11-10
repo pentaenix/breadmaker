@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any, Callable, Iterable, Mapping, Protocol, TypeVar
 
@@ -46,6 +47,28 @@ class StoredDocument:
     path: tuple[str, ...]
     data: Mapping[str, Any]
     revision: int
+
+
+def bounded_document_rows(rows: Iterable[StoredDocument], *, max_records: int,
+                          max_bytes: int) -> list[StoredDocument] | None:
+    """Consume only a bounded serialized snapshot; never return partial results.
+
+    Providers must stream rather than pre-materialize rows. One provider document
+    may cross the budget, but is never retained in the returned snapshot.
+    """
+    if max_records < 1 or max_bytes < 1:
+        raise ValueError("HOSTED_BOUNDED_QUERY_LIMIT_INVALID")
+    result = []
+    size = 0
+    for row in rows:
+        if len(result) >= max_records:
+            return None
+        size += len(json.dumps(dict(row.data), ensure_ascii=False,
+                               allow_nan=False, default=str).encode('utf-8'))
+        if size > max_bytes:
+            return None
+        result.append(row)
+    return result
 
 
 class Transaction(Protocol):
