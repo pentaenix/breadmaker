@@ -575,6 +575,14 @@ def _project_snapshot(pid:str, *, manuscript_only:bool=False, navigation_only:bo
             values={entity:future.result() for entity,future in pending.items()}
             navigation=nav.result();bookmark=member.result()
         tabs=values['document_tab'];chapters=values['chapter'];scenes=values['scene']
+    elif manuscript_only:
+        # These independently authorized metadata reads have no dependency on
+        # each other. Keep request context and the final revision fence intact.
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            pending={entity:pool.submit(copy_context().run,domain.list,entity,parents,user_id=uid)
+                for entity in ('document_tab','chapter','scene')}
+            tabs,chapters,scenes=(pending[entity].result() for entity in ('document_tab','chapter','scene'))
+        navigation={}
     else:
         tabs=domain.list('document_tab',parents,user_id=uid)
         chapters=domain.list('chapter',parents,user_id=uid)

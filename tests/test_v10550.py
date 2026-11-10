@@ -55,7 +55,9 @@ def test_full_text_reads_only_manuscript_entities_and_keeps_exact_revision(monke
         return original(entity,*args,**kwargs)
     monkeypatch.setattr(one.projects.domain,'list',counted)
     result=http._project_snapshot(pid,manuscript_only=True)
-    assert reads==['document_tab','chapter','scene','manuscript_block']
+    # Metadata reads overlap; preserve exact membership/count, not scheduling order.
+    assert sorted(reads)==sorted(['document_tab','chapter','scene','manuscript_block'])
+    assert reads[-1]=='manuscript_block'
     assert result['blocks'] and result['chapters']
     assert all(ch['revision']==str(result['project']['generation']) for ch in result['chapters'])
     assert not {'canvases','maps','reviews'} & result.keys()
