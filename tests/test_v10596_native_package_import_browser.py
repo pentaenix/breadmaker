@@ -62,6 +62,8 @@ class Jobs:
         self.held = None
         self.next_batch = 0
         self.phase = 'staging'
+        self.preparation_groups = 0
+        self.prepared_batches = 0
         self.finish_lost = False
         self.status_error = None
         self.cancel_error = None
@@ -72,6 +74,9 @@ class Jobs:
                       phase=self.phase, ready=self.next_batch >= 2,
                       completed_records=self.next_batch * 1000, total_records=2000,
                       completed_images=self.next_batch, total_images=2)
+        result['prepared_batches'] = self.prepared_batches
+        if self.phase == 'preparing':
+            result['total_batches'] = 24
         if self.phase == 'completed':
             result.update(project={'id': IMPORTED}, reload=True)
         return result
@@ -109,8 +114,13 @@ class Jobs:
                 return
         elif operation == 'cancel':
             self.phase = 'cancelled'
-        elif operation == 'begin' and self.phase == 'preparing':
-            self.phase = 'staging'
+        elif operation == 'begin':
+            if self.preparation_groups:
+                self.preparation_groups -= 1
+                self.prepared_batches += 8
+                self.phase = 'preparing'
+            elif self.phase == 'preparing':
+                self.phase = 'staging'
         route.fulfill(json=self.status())
 
     def release(self, operation, *, error=None):
@@ -381,6 +391,73 @@ def test_native_package_preparing_job_replays_same_upload_key_before_steps():
         assert keys == [original['key'], original['key']]
         assert [kind for kind, _ in service.calls] == ['begin', 'status', 'begin', 'step', 'step', 'finish']
         assert page.evaluate('opened') == [IMPORTED]
+
+
+def test_native_package_preparation_advances_same_key_before_record_steps():
+    with browser() as (page, service):
+        service.preparation_groups = 2
+        select(page)
+        page.wait_for_function('()=>opened.length===1')
+        assert [kind for kind, _ in service.calls] == ['begin', 'begin', 'begin', 'step', 'step', 'finish']
+        keys = [request.headers['idempotency-key'] for kind, request in service.calls if kind == 'begin']
+        assert len(set(keys)) == 1 and keys[0] == pending(page)[0]['key']
+
+
+def test_native_package_preparation_failure_pauses_until_explicit_resume():
+    with browser() as (page, service):
+        service.preparation_groups = 2
+        service.hold = 'begin'
+        select(page)
+        page.wait_for_function('()=>projectPackageImportIntent.busy')
+        service.release('begin')
+        page.wait_for_function('()=>projectPackageImportIntent.job?.prepared_batches===8')
+        expect(page.locator('#cancelProjectPackageImport')).to_be_enabled()
+        page.evaluate('()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+        assert service.count('begin') == 2 and service.held is not None
+        service.release('begin', error=(504, 'Preparation request timed out'))
+        paused(page)
+        original = pending(page)[0]
+        page.evaluate('()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+        assert service.count('begin') == 2 and service.count('step') == 0
+        assert original['phase'] == 'preparing' and page.evaluate('opened') == []
+        service.hold = None
+        page.locator('#resumeProjectPackageImport').click()
+        page.wait_for_function('()=>opened.length===1')
+        keys = [request.headers['idempotency-key'] for kind, request in service.calls if kind == 'begin']
+        assert keys == [original['key']] * 4
+
+
+def test_native_package_preparation_can_cancel_between_groups():
+    with browser() as (page, service):
+        service.preparation_groups = 2
+        service.hold = 'begin'
+        select(page)
+        service.release('begin')
+        expect(page.locator('#cancelProjectPackageImport')).to_be_enabled()
+        # The next request may already be in flight; its response may persist
+        # the next prefix but must never start record staging after cancellation.
+        page.locator('#cancelProjectPackageImport').click()
+        if service.held is not None:
+            service.release('begin')
+        expect(page.locator('#projectPackageImportStatus')).to_have_text('Import cancelled')
+        assert service.count('begin') <= 2 and service.count('cancel') == 1
+        assert service.count('step') == 0 and service.count('finish') == 0
+        assert page.evaluate('opened') == []
+
+
+def test_native_package_stalled_preparation_response_does_not_loop():
+    with browser() as (page, service):
+        service.hold = 'begin'
+        select(page)
+        route, service.held = service.held, None
+        assert route is not None
+        service.phase = 'preparing'
+        route.fulfill(json=service.status())
+        paused(page)
+        page.evaluate('()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+        assert service.count('begin') == 1 and service.count('step') == 0
+        assert not pending(page)[0].get('job')
+        assert page.evaluate('opened') == []
 
 
 def test_native_package_unconfirmed_cancel_preserves_job_until_confirmed():

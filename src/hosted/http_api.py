@@ -41,6 +41,7 @@ product_router=APIRouter()
 _read_cache_capacity=CapacityLimiter(1)
 _bundled_book_capacity=BoundedSemaphore(2)
 _package_import_capacity=CapacityLimiter(2)
+_package_import_control_capacity=CapacityLimiter(2)
 
 _PROJECT_PATH_RE=re.compile(r'^/api/projects/([0-9a-f]{32})(?:/|$)')
 _SHELL_PROJECT_RE=re.compile(r'^/p/[0-9a-f]{32}(?:/(?:canvas|maps|tasks|reviews))?/?$')
@@ -399,11 +400,15 @@ def hosted_project_export(project_id:str):
     except Exception as exc:raise _error(exc)
     return Response(payload,media_type='application/zip',headers={'Content-Disposition':'attachment; filename=project.breadmaker','Cache-Control':'private, no-store'})
 
-async def _package_import_call(function, *args, **kwargs):
+async def _package_import_call(function, *args, _control=False, **kwargs):
     # AnyIO copies request identity/context and bounds simultaneous expensive
     # package requests. Threads complete only this request's finite work.
     context=copy_context()
-    return await to_thread.run_sync(lambda:context.run(function,*args,**kwargs),limiter=_package_import_capacity)
+    # Read-status/cancel must remain reachable while both expensive import
+    # slots are occupied, including requests whose proxy response timed out.
+    # They still use a separate bounded lane and fresh server-side authority.
+    limiter=_package_import_control_capacity if _control else _package_import_capacity
+    return await to_thread.run_sync(lambda:context.run(function,*args,**kwargs),limiter=limiter)
 
 
 @platform_router.post('/api/projects/import')
@@ -427,7 +432,7 @@ async def hosted_project_import(file:UploadFile=File(...),name:str='',resumable:
 @platform_router.get('/api/projects/import/jobs/{job_id}')
 async def hosted_package_import_status(job_id:str):
     from hosted.package_import import PackageImport
-    try:return await _package_import_call(PackageImport(runtime.projects).status,_uid(),job_id)
+    try:return await _package_import_call(PackageImport(runtime.projects).status,_uid(),job_id,_control=True)
     except Exception as exc:raise _error(exc)
 
 
@@ -448,7 +453,7 @@ async def hosted_package_import_finish(job_id:str):
 @platform_router.post('/api/projects/import/jobs/{job_id}/cancel')
 async def hosted_package_import_cancel(job_id:str):
     from hosted.package_import import PackageImport
-    try:return await _package_import_call(PackageImport(runtime.projects).cancel,_uid(),job_id)
+    try:return await _package_import_call(PackageImport(runtime.projects).cancel,_uid(),job_id,_control=True)
     except Exception as exc:raise _error(exc)
 
 
