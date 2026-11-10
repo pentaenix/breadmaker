@@ -108,7 +108,7 @@ function packageImportStatus(intent){
 async function packageImportPrepare(intent){
   packageImportRender(intent,packageImportText('uploading'));
   const previous=intent.job?.prepared_batches||0,fd=new FormData();fd.append('file',intent.file);
-  const job=await api('/api/projects/import?resumable=true',{method:'POST',body:fd,idempotencyKey:intent.pending.key});
+  const job=await api('/api/projects/import?resumable=true&preparation_version=2',{method:'POST',body:fd,idempotencyKey:intent.pending.key});
   // Continue only a successful, advancing durable preparation response. HTTP
   // failures and stalled/malformed responses pause for explicit Resume; never
   // retry them automatically or discard the existing source/operation binding.

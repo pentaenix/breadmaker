@@ -412,8 +412,14 @@ async def _package_import_call(function, *args, _control=False, **kwargs):
 
 
 @platform_router.post('/api/projects/import')
-async def hosted_project_import(file:UploadFile=File(...),name:str='',resumable:bool=False):
+async def hosted_project_import(file:UploadFile=File(...),name:str='',resumable:bool=False,preparation_version:int=1):
     try:
+        if resumable and preparation_version != 2:
+            # An open pre-update tab assumes begin returns staging. Do not let
+            # it repeatedly advance preparation then fail on its next /step.
+            # Refreshed clients retain their source-bound idempotency key.
+            raise HTTPException(409,detail={'code':'HOSTED_IMPORT_CLIENT_REFRESH_REQUIRED',
+                'message':'Refresh this page, then select the same file to continue this import safely.'})
         budget=min(64*1024*1024,_HOSTED_LIMITS.project_package_bytes if _HOSTED_LIMITS else 64*1024*1024)
         payload=await _bounded_upload(file,max_bytes=budget)
         uid=_uid();operation=operation_for('project_import')

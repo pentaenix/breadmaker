@@ -222,14 +222,20 @@ def test_http_is_global_context_and_requires_idempotency(setup, monkeypatch):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
     from hosted import http_api
-    one, _, _, _ = setup
+    one, _, docs, _ = setup
     monkeypatch.setattr(http_api, 'runtime', one)
     app = FastAPI();app.include_router(http_api.platform_router);http_api.install_request_boundary(app)
     def forbidden(*args, **kwargs): raise AssertionError('Import acquired an existing project')
     monkeypatch.setattr(one.projects, 'profile_project_target', forbidden)
     with TestClient(app) as client:
-        url = '/api/projects/import?resumable=true'
+        url = '/api/projects/import?resumable=true&preparation_version=2'
         files = {'file': ('synthetic.breadmaker', b'small', 'application/zip')}
+        stale = client.post('/api/projects/import?resumable=true', files=files,
+                            headers={'Idempotency-Key': 'synthetic'})
+        assert stale.status_code == 409
+        assert stale.json()['detail']['code'] == 'HOSTED_IMPORT_CLIENT_REFRESH_REQUIRED'
+        assert 'select the same file' in stale.json()['detail']['message']
+        assert docs.query_collection(('users', OWNER, 'package_imports')) == []
         assert client.post(url, files=files).status_code == 400
         assert client.post(url, files=files, headers={'Idempotency-Key': 'synthetic', 'X-Breadmaker-Action': 'action_old'}).status_code == 400
         result = client.post(url, files=files, headers={'Idempotency-Key': 'synthetic', 'X-Breadmaker-Project': 'a' * 32})

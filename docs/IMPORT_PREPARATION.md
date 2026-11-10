@@ -46,11 +46,12 @@ continuation. Slow provider calls or expensive pure planning can still exceed
 an HTTP boundary. The existing parser's SQLite instruction/time budget does not
 provide a deadline for all Python processing. No timeout was increased.
 
-Old browser code may pause at its first staging call when a newer server returns
-`preparing`; a refreshed current browser resumes the same job. New browser code
-also accepts the older server's direct `staging` response. Mixed deployment is
-safe for data, but this source change does not guarantee uninterrupted progress
-for stale clients.
+Current browser code explicitly requests `preparation_version=2`. An open old
+tab receives a clear refresh-and-reselect-the-same-file response before any
+preparation work, rather than repeatedly advancing one group then failing its
+staging call. Refresh preserves the source-bound idempotency key and resumes the
+same job. New browser code also accepts an older server's direct `staging`
+response. Existing jobs already in staging can continue without a new upload.
 
 Measure pure planning separately on an authorized local archive:
 
