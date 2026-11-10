@@ -222,14 +222,20 @@ def test_http_is_global_context_and_requires_idempotency(setup, monkeypatch):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
     from hosted import http_api
-    one, _, _, _ = setup
+    one, _, docs, _ = setup
     monkeypatch.setattr(http_api, 'runtime', one)
     app = FastAPI();app.include_router(http_api.platform_router);http_api.install_request_boundary(app)
     def forbidden(*args, **kwargs): raise AssertionError('Import acquired an existing project')
     monkeypatch.setattr(one.projects, 'profile_project_target', forbidden)
     with TestClient(app) as client:
-        url = '/api/projects/import?resumable=true'
+        url = '/api/projects/import?resumable=true&preparation_version=2'
         files = {'file': ('synthetic.breadmaker', b'small', 'application/zip')}
+        stale = client.post('/api/projects/import?resumable=true', files=files,
+                            headers={'Idempotency-Key': 'synthetic'})
+        assert stale.status_code == 409
+        assert stale.json()['detail']['code'] == 'HOSTED_IMPORT_CLIENT_REFRESH_REQUIRED'
+        assert 'select the same file' in stale.json()['detail']['message']
+        assert docs.query_collection(('users', OWNER, 'package_imports')) == []
         assert client.post(url, files=files).status_code == 400
         assert client.post(url, files=files, headers={'Idempotency-Key': 'synthetic', 'X-Breadmaker-Action': 'action_old'}).status_code == 400
         result = client.post(url, files=files, headers={'Idempotency-Key': 'synthetic', 'X-Breadmaker-Project': 'a' * 32})
@@ -349,7 +355,11 @@ def test_interrupted_prepare_replays_only_uncommitted_plan_suffix(setup, monkeyp
         if '/plans/8/' in name: raise RuntimeError('Synthetic timeout after a durable prefix')
         return original(name, chunks, **kwargs)
     monkeypatch.setattr(one.projects.objects, 'write_chunks', fail)
-    with pytest.raises(RuntimeError, match='durable prefix'): start(one, b'small')
+    service, progress = start(one, b'small')
+    assert progress['phase'] == 'preparing' and progress['prepared_batches'] == 8
+    assert len(seen) == 8
+    with pytest.raises(RuntimeError, match='durable prefix'):
+        service.begin(b'small', OWNER, operation='op_native_package')
     from hosted.idempotency import stable_entity_id
     job = stable_entity_id('package_', 'op_native_package')
     service = PackageImport(one.projects)
@@ -362,6 +372,121 @@ def test_interrupted_prepare_replays_only_uncommitted_plan_suffix(setup, monkeyp
     progress = service.begin(b'small', OWNER, operation='op_native_package')
     assert progress['total_batches'] == 11 and progress['phase'] == 'staging'
     assert len(seen) == 3 and not any('/plans/0/' in name for name in seen)
+
+
+def test_preparation_yields_one_group_and_resumes_on_another_replica(setup, monkeypatch):
+    import hosted.package_import as module
+    one, make, docs, _ = setup
+    monkeypatch.setattr(module, 'BATCH_SIZE', 2)
+    monkeypatch.setattr(sys.modules['hosted.native_package'], 'prepare_project_package',
+        lambda raw, pid, **kwargs: source_plan(pid, count=32))
+    writes = []
+    original = one.projects.objects.write_chunks
+    def record(name, chunks, **kwargs):
+        writes.append(name)
+        return original(name, chunks, **kwargs)
+    monkeypatch.setattr(one.projects.objects, 'write_chunks', record)
+    service, first = start(one, b'small')
+    job = first['job_id'];pid = stable_project_id('op_native_package')
+    assert first['phase'] == 'preparing' and first['prepared_batches'] == 8
+    assert first['total_batches'] == 17 and first['next_batch'] == 0
+    assert len(writes) == 8
+    assert docs.get(service._receipt_path(OWNER, job)) is None
+    with pytest.raises(DocumentConflict, match='OUT_OF_ORDER'):
+        service.step(OWNER, job, 0)
+    # A lost response leaves progress in storage, not only in the first worker.
+    replica = PackageImport(make().projects)
+    assert replica.status(OWNER, job) == first
+    second = replica.begin(b'small', OWNER, operation='op_native_package')
+    assert second['phase'] == 'preparing' and second['prepared_batches'] == 16
+    assert len(writes) == 16
+    assert docs.get(('projects', pid)) is None
+    third = service.begin(b'small', OWNER, operation='op_native_package')
+    assert third['phase'] == 'staging' and third['prepared_batches'] == 17
+    # Replaying on either replica writes only the uncommitted suffix. A final
+    # replay in staging does not write or verify already committed objects.
+    assert len(writes) == 17 and len(set(writes)) == 17
+    assert service.begin(b'small', OWNER, operation='op_native_package') == third
+    assert len(writes) == 17
+    assert len(docs.query_collection((*service._path(OWNER, job), 'plans'))) == 17
+    finish_steps(service, third)
+    assert service.finish(OWNER, job)['phase'] == 'completed'
+
+
+def test_preparing_cancel_prevents_replay_and_plan_change_is_rejected(setup, monkeypatch):
+    import hosted.package_import as module
+    one, _, docs, _ = setup
+    monkeypatch.setattr(module, 'BATCH_SIZE', 2)
+    planner = lambda raw, pid, **kwargs: source_plan(pid, count=20)
+    monkeypatch.setattr(sys.modules['hosted.native_package'], 'prepare_project_package', planner)
+    service, progress = start(one, b'small');job = progress['job_id']
+    def changed(raw, pid, **kwargs):
+        plan = planner(raw, pid, **kwargs)
+        plan['records'][-1]['data']['text_content'] = 'Changed after the committed prefix'
+        return plan
+    monkeypatch.setattr(sys.modules['hosted.native_package'], 'prepare_project_package', changed)
+    with pytest.raises(DocumentConflict, match='PLAN_CHANGED'):
+        service.begin(b'small', OWNER, operation='op_native_package')
+    assert service.status(OWNER, job)['prepared_batches'] == 8
+    cancelled = service.cancel(OWNER, job)
+    assert cancelled['phase'] == 'cancelled'
+    monkeypatch.setattr(sys.modules['hosted.native_package'], 'prepare_project_package',
+        lambda *args, **kwargs: pytest.fail('Cancelled source must not be parsed again'))
+    assert service.begin(b'small', OWNER, operation='op_native_package') == cancelled
+    assert len(docs.query_collection((*service._path(OWNER, job), 'plans'))) == 8
+    assert docs.get(('projects', stable_project_id('op_native_package'))) is None
+
+
+def test_invalid_package_does_not_reserve_or_publish_preparation(setup, monkeypatch):
+    from hosted.idempotency import stable_entity_id
+    one, _, docs, _ = setup
+    def invalid(*args, **kwargs):
+        raise ValueError('HOSTED_PACKAGE_HASH_MISMATCH')
+    monkeypatch.setattr(sys.modules['hosted.native_package'], 'prepare_project_package', invalid)
+    monkeypatch.setattr(one.projects.objects, 'write_chunks',
+        lambda *args, **kwargs: pytest.fail('Invalid source must not publish objects'))
+    with pytest.raises(ValueError, match='HASH_MISMATCH'):
+        start(one, b'invalid')
+    service = PackageImport(one.projects)
+    assert docs.get(service._path(OWNER, stable_entity_id('package_', 'op_native_package'))) is None
+    assert docs.get(('hosted_import_operations', 'op_native_package')) is None
+    assert docs.get(('projects', stable_project_id('op_native_package'))) is None
+
+
+def test_status_and_cancel_remain_available_when_preparation_lane_is_full(monkeypatch):
+    import asyncio
+    from threading import Event
+    from anyio import CapacityLimiter
+    from hosted import http_api
+    import hosted.package_import as module
+    started, release = Event(), Event()
+    monkeypatch.setattr(http_api, '_package_import_capacity', CapacityLimiter(1))
+    monkeypatch.setattr(http_api, '_package_import_control_capacity', CapacityLimiter(1))
+    monkeypatch.setattr(http_api, 'runtime', SimpleNamespace(projects=object()))
+    monkeypatch.setattr(http_api, '_uid', lambda: OWNER)
+    calls = []
+    def result(kind, uid, job):
+        calls.append((kind, uid, job))
+        return {'phase': 'preparing' if kind == 'status' else 'cancelled'}
+    monkeypatch.setattr(module, 'PackageImport', lambda projects: SimpleNamespace(
+        status=lambda uid, job: result('status', uid, job),
+        cancel=lambda uid, job: result('cancel', uid, job)))
+    def slow_preparation():
+        started.set()
+        assert release.wait(3), 'synthetic preparation was not released'
+    async def check():
+        task = asyncio.create_task(http_api._package_import_call(slow_preparation))
+        try:
+            assert await asyncio.to_thread(started.wait, 1)
+            status = await asyncio.wait_for(http_api.hosted_package_import_status('job_synthetic'), 1)
+            cancelled = await asyncio.wait_for(http_api.hosted_package_import_cancel('job_synthetic'), 1)
+            assert status['phase'] == 'preparing' and cancelled['phase'] == 'cancelled'
+            assert not task.done()
+        finally:
+            release.set()
+            await task
+    asyncio.run(check())
+    assert calls == [('status', OWNER, 'job_synthetic'), ('cancel', OWNER, 'job_synthetic')]
 
 
 def test_census_accounts_for_unpublished_sources_and_unknown_children(setup):

@@ -225,7 +225,7 @@ class PackageImport:
     @staticmethod
     def _public(data):
         fields = ('job_id', 'phase', 'next_batch', 'total_batches', 'completed_records',
-                  'total_records', 'completed_images', 'total_images', 'source_sha256')
+                  'total_records', 'completed_images', 'total_images', 'source_sha256', 'prepared_batches')
         result = {key: data[key] for key in fields}
         result['ready'] = data['phase'] == 'ready'
         if data['phase'] == 'completed':
@@ -408,9 +408,13 @@ class PackageImport:
                     'decoded_bytes': len(source), 'records': sum(item['kind'] != 'asset' for item in entries),
                     'images': sum(item['kind'] == 'asset' for item in entries)}
         with package_import_staging(op, uid):
-            # Persist progress after <=8 plan uploads. An HTTP timeout can lose
-            # this small group only; same-key replay skips the committed prefix.
-            for start in range(data['prepared_batches'], len(batches), UPLOAD_WORKERS):
+            # A preparation request publishes at most one <=8-plan group, not
+            # the entire archive. Return its durable cursor to the caller, which
+            # can yield/cancel before replaying this same source and operation.
+            # An uncertain request loses at most this group; already committed
+            # plans remain immutable and are skipped on same-key replay.
+            stop = min(data['prepared_batches'] + UPLOAD_WORKERS, len(batches))
+            for start in range(data['prepared_batches'], stop, UPLOAD_WORKERS):
                 if start < data['prepared_batches']:
                     continue
                 group = _parallel(publish, list(enumerate(batches[start:start + UPLOAD_WORKERS], start)))
@@ -442,6 +446,8 @@ class PackageImport:
                     tx.set(path, current)
                     return current
                 data = self.documents.run_transaction(store)
+            if data['phase'] != 'preparing' or data['prepared_batches'] < data['total_batches']:
+                return self._public(data)
             def ready(tx):
                 current = self._load_tx(tx, uid, job, active=True)
                 if current['phase'] != 'preparing':
