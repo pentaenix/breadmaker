@@ -92,3 +92,38 @@ def test_actual_outer_boundary_admits_before_body_and_keeps_controls_live(monkey
             release.set()
             await first
     asyncio.run(check())
+
+
+def test_cancel_scope_does_not_release_admission_while_import_thread_runs(monkeypatch):
+    import anyio
+    from threading import Event
+    from hosted.http_api import _package_import_call
+    monkeypatch.setattr(admission, '_capacity', BoundedSemaphore(1))
+    async def check():
+        entered, release = Event(), Event()
+        scope_ready = anyio.Event()
+        scopes = []
+        def work():
+            entered.set()
+            assert release.wait(3)
+        async def downstream(*args):
+            await _package_import_call(work)
+        async def request():
+            with anyio.CancelScope() as scope:
+                scopes.append(scope)
+                scope_ready.set()
+                await admission.serve(downstream, {}, None, None)
+        async with anyio.create_task_group() as group:
+            group.start_soon(request)
+            await scope_ready.wait()
+            while not entered.is_set():
+                await anyio.sleep(0)
+            try:
+                scopes[0].cancel()
+                await anyio.sleep(0)
+                assert not admission._capacity.acquire(blocking=False)
+            finally:
+                release.set()
+        assert admission._capacity.acquire(blocking=False)
+        admission._capacity.release()
+    anyio.run(check)
