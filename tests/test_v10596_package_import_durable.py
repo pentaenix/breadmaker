@@ -531,3 +531,23 @@ def test_source_metadata_race_returns_already_completed_snapshot_capture(setup, 
     assert replay == completed_capture
     assert prefix == [dict(docs.get(service._snapshot_path(OWNER, job, index)).data) for index in range(10)]
     assert docs.get(service._path(OWNER, job)).data['prepared_batches'] == 0
+
+
+def test_asset_batch_conversion_keeps_one_binary_owner_and_preserves_wire_bytes():
+    import base64
+    released = []
+    class TrackedBytes(bytes):
+        def __del__(self): released.append(True)
+    plan = {'records': [], 'annotations': [], 'assets': [
+        {'path': '/api/assets/probe.png', 'extension': '.png',
+         'sha256': 'a' * 64, 'data': TrackedBytes(b'synthetic-asset')}]}
+    service = object.__new__(PackageImport)
+    batches = service._batches(plan, {'project_id': 'a' * 32, 'stamp': 'synthetic'})
+    assert released == []
+    assert 'data' not in plan['assets'][0]
+    assert type(batches[0][0]['data']) is codec._AssetBytes
+    assert json.loads(imports._json(batches)) == [[{'kind': 'asset', 'path': '/api/assets/probe.png',
+        'extension': '.png', 'sha256': 'a' * 64,
+        'data': base64.b64encode(b'synthetic-asset').decode('ascii')}]]
+    del batches
+    assert released == [True]

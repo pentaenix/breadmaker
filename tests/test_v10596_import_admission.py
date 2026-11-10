@@ -127,3 +127,52 @@ def test_cancel_scope_does_not_release_admission_while_import_thread_runs(monkey
         assert admission._capacity.acquire(blocking=False)
         admission._capacity.release()
     anyio.run(check)
+
+
+def test_raw_task_cancel_holds_slot_until_actual_worker_exit(monkeypatch):
+    import anyio
+    from threading import Event
+    from hosted.http_api import _package_import_call
+    monkeypatch.setattr(admission, '_capacity', BoundedSemaphore(1))
+    async def check():
+        entered, release, done = Event(), Event(), Event()
+        def work():
+            entered.set()
+            try:
+                assert release.wait(3)
+            finally:
+                done.set()
+        async def downstream(*args): await _package_import_call(work)
+        request = asyncio.create_task(admission.serve(downstream, {}, None, None))
+        while not entered.is_set(): await anyio.sleep(0)
+        try:
+            request.cancel()
+            with pytest.raises(asyncio.CancelledError): await request
+            assert not done.is_set()
+            assert not admission._capacity.acquire(blocking=False)
+        finally:
+            release.set()
+        while not done.is_set(): await anyio.sleep(0)
+        # finish_worker follows the function's finally immediately, but its
+        # cross-thread scheduling must be observed rather than assumed.
+        for _ in range(1000):
+            if admission._capacity.acquire(blocking=False):
+                admission._capacity.release()
+                break
+            await anyio.sleep(0.001)
+        else: pytest.fail('Admission leaked after canceled worker finished')
+    asyncio.run(check())
+
+
+def test_late_worker_cannot_enter_closed_request(monkeypatch):
+    from contextvars import copy_context
+    monkeypatch.setattr(admission, '_capacity', BoundedSemaphore(1))
+    saved = []
+    async def downstream(*args): saved.append(copy_context())
+    asyncio.run(admission.serve(downstream, {}, None, None))
+    calls = []
+    with pytest.raises(RuntimeError, match='HOSTED_IMPORT_REQUEST_CLOSED'):
+        saved[0].run(admission.run_worker, lambda: calls.append(True))
+    assert not calls
+    assert admission._capacity.acquire(blocking=False)
+    admission._capacity.release()

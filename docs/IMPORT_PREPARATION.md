@@ -57,6 +57,14 @@ failure mode. A proxy timeout does not prove that its worker stopped.
   memory headroom; it is not a latency optimization or distributed job lock.
 - The verified SQLite source buffer is released immediately after deserialize
   takes its own copy, before native records are materialized.
+- Fresh parser plans retain binary assets only once. An internal immutable
+  marker emits the identical base64 JSON only for the current batch/snapshot,
+  instead of retaining a second complete base64 asset set. Persisted bytes,
+  hashes and strict decoding are unchanged. This trades some repeated encoding
+  CPU for lower peak memory; it is not a speedup claim.
+- Admission uses a request-scoped, thread-aware lease. Cancellation of the
+  outer ASGI task cannot free its slot while an import worker still runs, and
+  a late-dispatched worker cannot enter a closed request lease.
 - Complete archive validation, complete-plan hash pinning, immutable object
   generation/size/hash verification, fresh authority checks, expiry, erasure
   fencing, receipt chains, and atomic final project visibility are unchanged.

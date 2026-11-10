@@ -408,7 +408,8 @@ async def _package_import_call(function, *args, _control=False, **kwargs):
     # slots are occupied, including requests whose proxy response timed out.
     # They still use a separate bounded lane and fresh server-side authority.
     limiter=_package_import_control_capacity if _control else _package_import_capacity
-    return await to_thread.run_sync(lambda:context.run(function,*args,**kwargs),limiter=limiter)
+    from hosted.import_admission import run_worker
+    return await to_thread.run_sync(lambda:context.run(run_worker,function,*args,**kwargs),limiter=limiter)
 
 
 @platform_router.post('/api/projects/import')

@@ -6,8 +6,10 @@ caller. This codec validates the pinned decoded representation independently.
 from __future__ import annotations
 
 import gzip
+import base64
 import json
 import zlib
+from dataclasses import dataclass
 
 from hosted.firestore.contracts import HostedValidationError
 
@@ -21,6 +23,22 @@ _BINDING_KEYS = {'job_id', 'actor', 'project_id', 'source_sha256', 'operation'}
 _WRAPPER_KEYS = _BINDING_KEYS | {'v', 'index', 'first_batch', 'batches'}
 
 
+@dataclass(frozen=True, slots=True)
+class _AssetBytes:
+    """Validated binary bytes, encoded only for the current canonical chunk."""
+    data: bytes
+
+    def __post_init__(self):
+        if not isinstance(self.data, bytes):
+            raise TypeError('Asset bytes required')
+
+
+def _encode_special(value):
+    if type(value) is _AssetBytes:
+        return base64.b64encode(value.data).decode('ascii')
+    raise TypeError('Unsupported canonical JSON value')
+
+
 def _invalid():
     return HostedValidationError('HOSTED_IMPORT_SNAPSHOT_INVALID')
 
@@ -28,7 +46,8 @@ def _invalid():
 def _json(value):
     try:
         return json.dumps(value, sort_keys=True, ensure_ascii=False,
-                          separators=(',', ':'), allow_nan=False).encode('utf-8')
+                          separators=(',', ':'), allow_nan=False,
+                          default=_encode_special).encode('utf-8')
     except (ValueError, TypeError, UnicodeError, RecursionError):
         raise _invalid() from None
 
@@ -39,7 +58,7 @@ def _json_value(value):
         return all(type(k) is str and _json_value(v) for k, v in value.items())
     if type(value) is list:
         return all(_json_value(v) for v in value)
-    return value is None or type(value) in (str, int, float, bool)
+    return value is None or type(value) in (str, int, float, bool, _AssetBytes)
 
 
 def _validate_batches(batches, max_batch_items=64):

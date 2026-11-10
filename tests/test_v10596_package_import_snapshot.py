@@ -162,3 +162,23 @@ def test_missing_wrapper_field_and_custom_item_limit():
     encoded, size = codec.encode_snapshot(BINDING, 2, 7, [[{}, {}], [{}]])
     with pytest.raises(HostedValidationError, match='HOSTED_IMPORT_SNAPSHOT_INVALID'):
         decode(encoded, size, max_batch_items=1)
+
+
+@pytest.mark.parametrize('payload', [b'', b'x', bytes(range(256)), b'asset' * 1000])
+def test_binary_asset_marker_preserves_exact_canonical_wire_and_decode(payload):
+    import base64
+    from hosted.package_import import _json as plan_json
+    old = [[{'kind': 'asset', 'data': base64.b64encode(payload).decode('ascii')},
+            {'kind': 'record', 'data': {'text': '日本語 café', 'nested': [None, True, 1]}}]]
+    lazy = [[{'kind': 'asset', 'data': codec._AssetBytes(payload)}, old[0][1]]]
+    assert plan_json(lazy) == plan_json(old)
+    assert codec.group_batches(lazy) == [(0, lazy)]
+    encoded, size = codec.encode_snapshot(BINDING, 0, 0, lazy)
+    assert (encoded, size) == codec.encode_snapshot(BINDING, 0, 0, old)
+    assert codec.decode_snapshot(encoded, binding=BINDING, index=0,
+        first_batch=0, batch_count=1, decoded_bytes=size) == old
+
+
+def test_binary_asset_marker_rejects_mutable_payload():
+    with pytest.raises(TypeError, match='Asset bytes required'):
+        codec._AssetBytes(bytearray(b'asset'))

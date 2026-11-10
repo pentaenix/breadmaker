@@ -23,6 +23,7 @@ from hosted.firestore.model_registry import MODELS
 from hosted.firestore.repositories import _fingerprint, render_model_path
 from hosted.idempotency import stable_entity_id, stable_project_id
 from hosted.import_staging import package_import_staging
+from hosted.package_import_snapshot import _AssetBytes, _encode_special
 from hosted.packages import HostedProjectPackageService, _fields, _restore_safe, _SKIP
 from hosted.storage.keys import project_asset_key
 from hosted.storage.publication import ImmutableObjectPublisher
@@ -40,7 +41,8 @@ _EMPTY_CHAIN = '0' * 64
 
 
 def _json(value):
-    return json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode()
+    return json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':'),
+                      allow_nan=False, default=_encode_special).encode()
 
 
 def _hash(value):
@@ -312,8 +314,13 @@ class PackageImport:
         return {key: data[key] for key in ('job_id', 'actor', 'project_id', 'source_sha256', 'operation')}
 
     def _batches(self, plan, data):
-        items = [{'kind': 'asset', 'path': item['path'], 'extension': item['extension'], 'sha256': item['sha256'],
-                  'data': base64.b64encode(item['data']).decode('ascii')} for item in plan['assets']]
+        # Consume the fresh parser plan's binary assets without retaining a
+        # second full base64 representation. Canonical JSON encodes only the
+        # current batch/chunk; its wire bytes and all hashes remain unchanged.
+        items = []
+        for item in plan['assets']:
+            items.append({'kind': 'asset', 'path': item['path'], 'extension': item['extension'],
+                          'sha256': item['sha256'], 'data': _AssetBytes(item.pop('data'))})
         items.extend({'kind': 'record', **item} for item in plan['records'])
         items.extend(self._annotation_items(plan, data['project_id'], data['stamp']))
         batches, current, size = [], [], 0
