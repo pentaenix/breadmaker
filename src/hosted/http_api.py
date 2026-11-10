@@ -790,7 +790,33 @@ async def hosted_scene_update(sid:str,request:Request):return _update('scene',{'
 def hosted_scene_delete(sid:str,request:Request):return _delete('scene',{'project_id':_pid(request),'scene_id':sid})
 @product_router.get('/api/scenes/{sid}/manuscript')
 def hosted_scene_manuscript(sid:str,request:Request):
-    pid=_pid(request);scene=_get('scene',{'project_id':pid,'scene_id':sid});blocks=_list('manuscript_block',{'project_id':pid},field='scene_id',value=sid);return {'scene':scene,'blocks':blocks}
+    from hosted.editing_packs import annotation_view
+    pid=_pid(request);domain=_domain();uid=_uid()
+    try:
+        generation=domain.project_generation(pid,uid)
+        scene=domain.get('scene',{'project_id':pid,'scene_id':sid},user_id=uid)
+        blocks=domain.list('manuscript_block',{'project_id':pid},user_id=uid,field='scene_id',value=sid)
+        chapters=domain.list('chapter',{'project_id':pid},user_id=uid,field='tab_id',value=scene.get('tab_id'))
+        order={str(row['id']):index for index,row in enumerate(sorted(chapters,key=lambda row:(int(row.get('position') or 0),str(row['id']))))}
+        blocks.sort(key=lambda row:(order.get(str(row.get('chapter_id')),len(order)),int(row.get('position') or 0),str(row['id'])))
+        block_ids={str(row['id']) for row in blocks};chapter_ids={str(row['chapter_id']) for row in blocks}
+        annotations=[row for row in annotation_view(domain,pid,uid,tab=scene.get('tab_id'))
+            if str(row.get('block_id')) in block_ids or not row.get('block_id') and str(row.get('chapter_id')) in chapter_ids]
+        if domain.project_generation(pid,uid)!=generation:
+            raise DocumentConflict('HOSTED_SNAPSHOT_GENERATION_CHANGED')
+        return {'scene':scene,'blocks':blocks,'annotations':annotations,
+            'chapter_revisions':{cid:str(generation) for cid in chapter_ids}}
+    except Exception as exc:raise _error(exc)
+
+@product_router.put('/api/scenes/{sid}/blocks')
+async def hosted_scene_blocks(sid:str,request:Request):
+    from hosted.scene_mutations import save_scene_blocks
+    body=await _body(request)
+    try:
+        return await run_in_threadpool(save_scene_blocks,_domain(),project_id=_pid(request),
+            scene_id=sid,user_id=_uid(),blocks=body.get('blocks'),
+            expected_revisions=body.get('expected_revisions'),operation=operation_for('scene_save'))
+    except Exception as exc:raise _error(exc)
 
 # Labels / annotations
 @product_router.get('/api/annotations')
@@ -1029,7 +1055,6 @@ def hosted_local_backup_unavailable(rest:str=''):
 # Unported multi-record editor features must never fall back to a best-effort
 # sequence of CRUD calls. They are explicitly unavailable in hosted mode until
 # a single-commit operation contract is implemented (M8B audit boundary).
-@product_router.put('/api/scenes/{scene_id}/blocks')
 @product_router.post('/api/scenes/{scene_id}/remove-blocks')
 @product_router.post('/api/map-lines/{line_id}/populate')
 def hosted_unported_bulk_mutation():

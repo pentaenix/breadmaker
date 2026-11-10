@@ -82,7 +82,7 @@ async function flushSave(){
   const ids=[...state.dirtyChapters];if(!ids.length&&state.viewMode==='chapter'&&state.chapter)ids.push(state.chapter.id);
   if(!ids.length&&state.viewMode!=='scene')throw new Error('MANUSCRIPT_DIRTY_CHAPTER_MISSING');
   const pending=ids.map(id=>[entityId(id),state.chapterDirtyGeneration.get(entityId(id))||state.editGeneration]);
-  const sceneGeneration=state.editGeneration;
+  const sceneGeneration=state.editGeneration,savingScene=state.viewMode==='scene'&&!!state.scene;
   state.saveInFlight=(async()=>{try{
     if(state.viewMode==='scene'&&state.scene)await saveSceneView();else for(const [id] of pending)await saveOneChapter(id);
     for(const [id,generation] of pending){state.chapterSavedGeneration.set(id,Math.max(state.chapterSavedGeneration.get(id)||0,generation));if((state.chapterDirtyGeneration.get(id)||0)<=generation){state.dirtyChapters.delete(id);state.chapterDirtyGeneration.delete(id)}}
@@ -92,7 +92,15 @@ async function flushSave(){
     if(state.viewMode==='scene'){for(const id of [...state.dirtyChapters]){if((state.chapterDirtyGeneration.get(id)||0)<=sceneGeneration){state.dirtyChapters.delete(id);state.chapterDirtyGeneration.delete(id);state.chapterSavedGeneration.set(id,sceneGeneration)}}}
     state.dirty=state.dirtyChapters.size>0;if(!state.dirty)setSaveState('Saved');else setSaveState('Saving…');renderChapterTree();
   }catch(error){for(const [id,generation] of pending){state.dirtyChapters.add(id);state.chapterDirtyGeneration.set(id,Math.max(state.chapterDirtyGeneration.get(id)||0,generation))}state.dirty=true;setSaveState('Save failed');toast('Save failed. Your text remains in this window.',5000);throw error}finally{state.saveInFlight=null}})();
-  try{await state.saveInFlight}catch(error){clearTimeout(state.saveTimer);if(error.code==='MANUSCRIPT_CONFLICT_001'||(runtimeSupports('hosted_persistence')&&error.status===409&&error.message==='HOSTED_GENERATION_CONFLICT'))showManuscriptConflict(error);else if(error.status===409)showLeaseLost(false);else state.saveTimer=setTimeout(()=>flushSave().catch(()=>{}),1500);throw error}
+  try{await state.saveInFlight}catch(error){
+    clearTimeout(state.saveTimer);
+    // Unsupported Scene mutations are save failures, not lost editing leases.
+    // Keep the existing failure status/toast and draft, without retrying an
+    // operation that this server explicitly cannot perform.
+    const unsupportedSceneSave=savingScene&&runtimeSupports('hosted_persistence')&&[400,409].includes(error.status)&&['HOSTED_ATOMIC_BULK_OPERATION_UNAVAILABLE','HOSTED_SCENE_STRUCTURAL_SAVE_UNAVAILABLE'].includes(error.code||error.message);
+    if(unsupportedSceneSave)throw error;
+    if(error.code==='MANUSCRIPT_CONFLICT_001'||(runtimeSupports('hosted_persistence')&&error.status===409&&error.message==='HOSTED_GENERATION_CONFLICT'))showManuscriptConflict(error);else if(error.status===409)showLeaseLost(false);else state.saveTimer=setTimeout(()=>flushSave().catch(()=>{}),1500);throw error
+  }
   if(state.dirty||state.dirtyChapters.size)return flushSave();
   kickHostedReadCache();
   if(state.split?.type==='checkpoint')scheduleCheckpointSplitRender();if(state.split?.type==='history')scheduleHistorySplitRender();
