@@ -187,3 +187,55 @@ commit `7381c8e` removed the older AGENTS milestone handoff; current
 `CONTRIBUTING.md` and `docs/TESTING.md` permit focused test modules. The inventory
 and canvas-projection unit modules were executed with the existing item
 watchdogs. No full release verifier or live provider check was executed.
+
+## Disabled latest-only inventory publication source (2026-11-10)
+
+`hosted.security.inventory_publication` now supplies an explicit one-shot,
+default-disabled coordinator for the existing two-count contract. It reads the
+current aggregate object, collects a new observation, requires strictly newer
+`as_of`, then writes with the exact observed object-generation precondition.
+Absence requires create-only generation zero. A conflict is returned without a
+retry. Equal-second observations are deliberately not newer. Fresh unknown or
+partial observations replace earlier good values with nulls; fatal read/clock
+failures do not publish a fabricated observation, so the previous object can only
+remain usable until the independent Admin freshness ceiling expires.
+
+`hosted.security.inventory_gcs` is a separate uncomposed SDK adapter. It accepts
+an injected bucket matching the reviewed `breadmaker-admin-usage-*` convention
+and standard storage endpoint, never credentials, client paths, URLs or object
+names. Only `cloud-usage/v1/latest.json` is addressable. The naming/endpoint
+checks do not prove resource isolation or authorization. No client is constructed
+and no ADC or environment configuration is read by these modules.
+
+Reads verify object size at most 16KiB, pin the download to the observed
+generation, request a bounded raw range, check byte length and provider MD5
+transport integrity, and validate the closed numeric-only schema. Uploads use
+one bounded multipart request, a fixed no-store cache policy, no custom metadata,
+a server-checked MD5 transport checksum and exact generation CAS. Every SDK RPC
+has an explicit remaining timeout and `retry=None`. The fixed MD5 is transport
+integrity, not an authentication mechanism or a manuscript-content identifier.
+Provider payloads and exception messages are never logged or surfaced. A write
+that may have succeeded before a transport failure returns uncertain, not a
+retry or a claim of success. Callback deadlines are cooperative; no background
+thread, polling loop or scheduler is installed.
+
+There is no separate deletion, listing, historic-object or blanket cleanup API.
+However, GCS overwrite requires delete/overwrite permission semantics even when
+no separate delete request is made. A single live object name does not establish
+retention: bucket versioning, soft delete, retention policy, lifecycle settings,
+minimum IAM, keyless runtime binding, approved privacy notices, publication
+cadence and operator validation remain explicit activation gates. No bucket,
+credential, permission, runtime hook, production read/write or deployment was
+created or enabled by this source change. The existing two-count wire schema and
+unsupported status of words, characters, canvases and concurrency are unchanged.
+
+The focused inventory, canvas projection and publication unit modules pass 148
+synthetic cases. `scripts/check_inventory_admin_contract.py` also exercises the
+actual producer and coordinator through an in-memory latest object and the actual
+Admin HTTP reader/parser at commit
+`eb090d887613ee2d4502045914630c632f4f2a5c`, with an in-memory HTTP opener and a
+synthetic token. Counts, true zero, unknown invalidation and expiry pass. Run it
+with explicit `--admin-source` and `--expected-admin-head` arguments; the harness
+rejects a dirty or mismatched Admin checkout. No real credentials, HTTP calls or
+provider mutations are involved. This is source-level contract evidence, not
+live SDK, IAM, retention, deployment or end-to-end production acceptance.

@@ -13410,6 +13410,113 @@
       ]
     },
     {
+      "file": "src/hosted/security/inventory_gcs.py",
+      "lines": 114,
+      "symbols": [
+        {
+          "name": "_Deadline",
+          "kind": "class",
+          "line": 23
+        },
+        {
+          "name": "_md5",
+          "kind": "function",
+          "line": 36
+        },
+        {
+          "name": "_is_conflict",
+          "kind": "function",
+          "line": 41
+        },
+        {
+          "name": "GoogleInventoryLatestStore",
+          "kind": "class",
+          "line": 49
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/inventory_publication.py",
+      "lines": 187,
+      "symbols": [
+        {
+          "name": "InventoryPublicationError",
+          "kind": "class",
+          "line": 26
+        },
+        {
+          "name": "InventoryWriteConflict",
+          "kind": "class",
+          "line": 30
+        },
+        {
+          "name": "InventoryWriteUncertain",
+          "kind": "class",
+          "line": 34
+        },
+        {
+          "name": "InventoryResource",
+          "kind": "class",
+          "line": 39
+        },
+        {
+          "name": "require_generation",
+          "kind": "function",
+          "line": 48
+        },
+        {
+          "name": "VersionedInventory",
+          "kind": "class",
+          "line": 55
+        },
+        {
+          "name": "LatestInventoryStore",
+          "kind": "class",
+          "line": 65
+        },
+        {
+          "name": "InventoryProducer",
+          "kind": "class",
+          "line": 70
+        },
+        {
+          "name": "utc_now",
+          "kind": "function",
+          "line": 74
+        },
+        {
+          "name": "_utc",
+          "kind": "function",
+          "line": 78
+        },
+        {
+          "name": "_object",
+          "kind": "function",
+          "line": 84
+        },
+        {
+          "name": "_exact",
+          "kind": "function",
+          "line": 93
+        },
+        {
+          "name": "_stamp",
+          "kind": "function",
+          "line": 98
+        },
+        {
+          "name": "decode_inventory",
+          "kind": "function",
+          "line": 104
+        },
+        {
+          "name": "InventoryPublication",
+          "kind": "class",
+          "line": 130
+        }
+      ]
+    },
+    {
       "file": "src/hosted/security/metrics.py",
       "lines": 51,
       "symbols": [
