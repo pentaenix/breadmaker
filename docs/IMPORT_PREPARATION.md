@@ -88,6 +88,16 @@ truncation, timeout weakening or Cloud Run configuration is introduced here.
 Validate the deployed worker/process count and full HTTP/provider memory before
 release. Do not claim production safety from a provider-free synthetic probe.
 
+Public CI now includes `import-memory-smoke`, required before notifying the
+private Cloud pipeline from main. It builds the unchanged pinned hosted image
+and runs text-scale and aggregate-asset synthetic captures with a 512 MiB kernel
+cgroup cap, swap disabled, one CPU, read-only root, tmpfs and no network. It
+checks rejection before body reads and three successful captures per fixture,
+records cgroup peak/events and preserves failures. Reproduce fixture generation
+with `python scripts/benchmark_import_memory.py --generate /tmp/import-fixtures`.
+This is actual runtime/container evidence for capture and admission, not live
+authentication, provider RPCs, complete publication, or all possible archives.
+
 This bounds provider work per request, not wall-clock duration. Initial complete
 validation and snapshot encoding still run synchronously in the bounded worker
 lane. Captures larger than one group repeat native planning for additional
