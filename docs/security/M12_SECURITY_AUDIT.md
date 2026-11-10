@@ -252,3 +252,80 @@ is 8,388,608 bytes (`blob.py:148,2651`), above the fixed 16KiB maximum.
 `_media/_helpers.py:264-265` returns no checksum object for `checksum=None`,
 so `_media/_upload.py:330-339` preserves the pre-set MD5 metadata when building
 the multipart body. These are implementation checks, not live GCS acceptance.
+
+## Disabled saved-text stock and active-parent coverage source (2026-11-10)
+
+`hosted.security.text_stock` and `hosted.security.stock_coverage` are pure,
+unconnected source. Measurement, seeding, advancing and summarizing are off by
+default and return before inspecting their inputs or invoking a proof. There is
+no runtime import, save-path change, store, provider client, query, backfill,
+persistence, account-linked activity or extension to the two-count publication
+schema. These modules do not make live words, characters or canvases available.
+
+Definition `primary_manuscript_non_image_saved_text_v1_ucd16_0_0` uses the Project
+Center scope in `src/api/project_management/metadata.py`: current blocks in tabs
+marked as the primary Manuscript, excluding image blocks. Trusted server metadata
+must establish tab membership and block kind. Words use Python Unicode whitespace
+splitting, so punctuation-only tokens count and Unicode whitespace separates
+words. This matches the existing Project Center word definition, not every
+editor view or checkpoint/history regex. Unicode 16.0.0 is explicitly pinned to
+the repository's Python 3.14 runtime; other Unicode runtimes fail measurement
+rather than silently changing the definition. Mixed definition objects are
+rejected. No Unicode normalization or grapheme/UTF-16 interpretation is applied.
+
+Characters deliberately use a different versioned saved-text definition: sum the
+code points of each saved `text_content`, including its whitespace, without
+adding separators or trimming. Project Center's displayed character value joins
+blocks with spaces and trims the result, so these values must not be presented
+as identical. `content_html`, titles, images, secondary tabs and historical text
+are not inputs. An eligible empty block is known empty text, a SQL-like null
+`text_content` is empty as in Project Center, and unknown eligibility/content
+remains unknown. Known excluded blocks are not inspected. Eligible input is
+strict UTF-8, at most 8MiB per block; no content is retained in a projection or
+exported in a summary.
+
+The private current-stock reducer binds exactly to a project and generation.
+Only a trusted new-empty creation proof can seed zero; generation one alone is
+not sufficient because imports publish nonempty roots at that generation. There
+is no nonempty seed, automatic reseed or deserializer. Complete before/after
+contributions cover each g -> g+1 transition, including edits, deletion, restore,
+Undo/Redo, unrelated root mutations and eligibility changes. Changing the primary
+tab or block kind without every affected before/after contribution invalidates
+known coverage. Unknown baselines stay unknown. Replay, gaps, duplicate blocks,
+impossible before totals, unsafe integers and mixed definitions are rejected.
+The types and `coverage` field are internal trust contracts, not authorization:
+request data must never directly construct authoritative evidence. A future
+caller must verify its entire transaction plan and atomically persist private
+projection state alongside the original root-generation CAS.
+
+The existing `HostedDomainStore`, chapter replacement and ActionJournal paths
+were inspected but not changed. Root/document field allowlists and ActionJournal
+write policies do not currently permit an unreviewed counter field or side write.
+Future composition needs a separately reviewed atomic storage/journal design,
+coverage of every mutation/lifecycle path and approved privacy semantics. It
+must sanitize provider errors and never log manuscripts or provider payloads.
+Trusted creation/proof exceptions in these modules become fixed error codes.
+
+Coverage summaries accept a bounded set of at most 4096 private project-root
+observations and optional same-generation text/canvas projections. They expose
+only fixed scalar counts, including active, excluded, unknown and covered/missing
+root counts. Fleet totals remain null unless a separate trusted verifier proves
+the complete active-parent set and exact generations at one consistent point.
+A matching number from the non-atomic inventory COUNT queries is not proof.
+Incomplete batches cannot be added and called complete. Duplicate roots are
+rejected. Inactive-parent nulls are not themselves evidence of an empty fleet.
+Only a separately proven empty active set produces zero totals. Missing/stale
+projections suppress their corresponding totals; overflow also suppresses totals
+without pretending covered roots are missing. The verifier interface has no
+production implementation and is not itself an access grant or security control.
+
+Focused verification: 98 new synthetic text/coverage cases and all 148 existing
+inventory/canvas/publication cases pass together (246 total). The first focused
+run exposed one incorrect fixture expectation for the character length of a
+synthetic phrase; the fixture was corrected and all five modules rerun. The
+actual Admin `eb090d887613ee2d4502045914630c632f4f2a5c` in-memory contract harness
+still passes counts, zero, unknown and expiry with the unchanged v1 schema.
+Static source compilation, code-index regeneration and whitespace checks pass.
+No full release verifier, live provider test, deployment or activation was run.
+Privacy notices, access, retention, cadence, atomic persistence and full lifecycle
+coverage remain gates. Account-linked presence remains separately deferred.

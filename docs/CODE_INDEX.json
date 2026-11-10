@@ -13544,6 +13544,128 @@
       ]
     },
     {
+      "file": "src/hosted/security/stock_coverage.py",
+      "lines": 154,
+      "symbols": [
+        {
+          "name": "StockCoverageError",
+          "kind": "class",
+          "line": 24
+        },
+        {
+          "name": "ProjectStockObservation",
+          "kind": "class",
+          "line": 29
+        },
+        {
+          "name": "CompleteActiveProjectSet",
+          "kind": "class",
+          "line": 46
+        },
+        {
+          "name": "TrustedActiveProjectSet",
+          "kind": "class",
+          "line": 65
+        },
+        {
+          "name": "StockCoverage",
+          "kind": "class",
+          "line": 77
+        },
+        {
+          "name": "summarize_stock",
+          "kind": "function",
+          "line": 105
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/text_stock.py",
+      "lines": 292,
+      "symbols": [
+        {
+          "name": "TextStockError",
+          "kind": "class",
+          "line": 35
+        },
+        {
+          "name": "_scope",
+          "kind": "function",
+          "line": 39
+        },
+        {
+          "name": "_number",
+          "kind": "function",
+          "line": 48
+        },
+        {
+          "name": "TextCounts",
+          "kind": "class",
+          "line": 54
+        },
+        {
+          "name": "SavedTextBlock",
+          "kind": "class",
+          "line": 75
+        },
+        {
+          "name": "measure_saved_block",
+          "kind": "function",
+          "line": 89
+        },
+        {
+          "name": "EmptyTextCreation",
+          "kind": "class",
+          "line": 131
+        },
+        {
+          "name": "TrustedEmptyTextCreation",
+          "kind": "class",
+          "line": 143
+        },
+        {
+          "name": "TextProjection",
+          "kind": "class",
+          "line": 154
+        },
+        {
+          "name": "_projection",
+          "kind": "function",
+          "line": 165
+        },
+        {
+          "name": "unknown_text_projection",
+          "kind": "function",
+          "line": 176
+        },
+        {
+          "name": "seed_empty_text_projection",
+          "kind": "function",
+          "line": 180
+        },
+        {
+          "name": "TextBlockChange",
+          "kind": "class",
+          "line": 198
+        },
+        {
+          "name": "TextMutation",
+          "kind": "class",
+          "line": 223
+        },
+        {
+          "name": "advance_text_projection",
+          "kind": "function",
+          "line": 255
+        },
+        {
+          "name": "eligible_text_counts",
+          "kind": "function",
+          "line": 282
+        }
+      ]
+    },
+    {
       "file": "src/hosted/storage/__init__.py",
       "lines": 46,
       "symbols": []
