@@ -368,14 +368,6 @@ async def hosted_chapter_split(cid:str,request:Request):
     for pos,block in enumerate(blocks[index:]):_update('manuscript_block',{'project_id':pid,'block_id':str(block.get('id'))},{'chapter_id':new['id'],'position':pos})
     return {'chapter':new}
 
-@router.put('/api/scenes/{sid}/blocks')
-async def hosted_scene_blocks(sid:str,request:Request):
-    pid=_pid(request);body=await _body(request);ids=body.get('block_ids') or body.get('ids') or []
-    if not isinstance(ids,list):raise HTTPException(400,detail='SCENE_BLOCKS_INVALID')
-    for block in _all_blocks(pid):
-        if str(block.get('scene_id') or '')==sid and str(block.get('id')) not in {str(x) for x in ids}:_update('manuscript_block',{'project_id':pid,'block_id':str(block.get('id'))},{'scene_id':None})
-    for bid in ids:_update('manuscript_block',{'project_id':pid,'block_id':str(bid)},{'scene_id':sid})
-    return {'ok':True}
 @router.post('/api/scenes/{sid}/extend')
 async def hosted_scene_extend(sid:str,request:Request):
     body=await _body(request);bid=str(body.get('block_id') or '');
