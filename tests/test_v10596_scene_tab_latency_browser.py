@@ -1,6 +1,4 @@
 """Actual hosted scene rendering from a freshly authorized Full Text snapshot."""
-import pytest
-
 from playwright.sync_api import expect
 from tests.test_v10548_browser import hosted_browser
 from tests.test_v10557_browser import _book
@@ -92,11 +90,7 @@ def test_direct_scene_typing_persists_after_reload(tmp_path):
     _scene_typing_survives_reload(tmp_path, cached=False)
 
 
-@pytest.mark.parametrize('status,error', [
-    (409, 'HOSTED_ATOMIC_BULK_OPERATION_UNAVAILABLE'),
-    (400, 'HOSTED_SCENE_STRUCTURAL_SAVE_UNAVAILABLE'),
-])
-def test_unsupported_scene_save_keeps_editing_and_draft_without_lease_modal(tmp_path, status, error):
+def _assert_unsupported_scene_save_preserves_draft(tmp_path, status, error):
     with hosted_browser(tmp_path, setup_code=SEED) as (base, page):
         projects = page.request.get(base + '/api/workspace').json()['projects']
         pid = next(project['id'] for project in projects if project['name'] == 'Synthetic cached scene test')
@@ -126,3 +120,13 @@ def test_unsupported_scene_save_keeps_editing_and_draft_without_lease_modal(tmp_
         response = page.request.get(base + '/api/scenes/scene_cached/manuscript', headers={'X-Breadmaker-Project': pid})
         assert response.ok
         assert response.json()['blocks'][0]['text_content'] == 'Synthetic scene paragraph 0'
+
+
+def test_unavailable_atomic_scene_save_keeps_editing_and_draft(tmp_path):
+    _assert_unsupported_scene_save_preserves_draft(
+        tmp_path, 409, 'HOSTED_ATOMIC_BULK_OPERATION_UNAVAILABLE')
+
+
+def test_unsupported_structural_scene_save_keeps_editing_and_draft(tmp_path):
+    _assert_unsupported_scene_save_preserves_draft(
+        tmp_path, 400, 'HOSTED_SCENE_STRUCTURAL_SAVE_UNAVAILABLE')
