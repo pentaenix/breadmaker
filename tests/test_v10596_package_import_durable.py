@@ -177,6 +177,26 @@ def test_interrupted_snapshot_capture_replays_immutable_object(setup, monkeypatc
     assert prepare_all(replica, progress)['phase'] == 'staging'
 
 
+def test_capture_memory_lane_keeps_complete_group_and_ordinary_parallelism(setup, monkeypatch):
+    one, _, docs, _ = setup
+    parser(monkeypatch, count=6)
+    monkeypatch.setattr(codec, 'TARGET_SNAPSHOT_BYTES', 1)
+    calls = []
+    native = imports._parallel
+    def observe(fn, items, **kwargs):
+        calls.append((len(items), kwargs.get('workers', imports.UPLOAD_WORKERS)))
+        return native(fn, items, **kwargs)
+    monkeypatch.setattr(imports, '_parallel', observe)
+    service = PackageImport(one.projects)
+    progress = service.begin(RAW, OWNER, operation=OP, durable=True)
+    data = docs.get(service._path(OWNER, progress['job_id'])).data
+    assert calls == [(8, 1)]
+    assert data['snapshot_ready'] and data['captured_chunks'] == 8
+    assert not data['source_ready']
+    service.prepare(OWNER, progress['job_id'])
+    assert calls == [(8, 1), (1, 8)]
+
+
 def test_oversized_capture_retains_original_once_and_resumes_without_file(setup, monkeypatch):
     one, make, docs, _ = setup
     calls = parser(monkeypatch, count=8)
@@ -265,10 +285,14 @@ def test_retained_original_is_verified_and_plan_identity_cannot_drift(setup, mon
 
 def test_cancel_during_snapshot_publication_never_commits_capture_metadata(setup, monkeypatch):
     one, _, docs, _ = setup
+    parser(monkeypatch, count=6)
+    monkeypatch.setattr(codec, 'TARGET_SNAPSHOT_BYTES', 1)
     service = PackageImport(one.projects)
     job = stable_entity_id('package_', OP)
     native = one.projects.objects.write_chunks
+    attempted = []
     def cancel(name, chunks, **kwargs):
+        attempted.append(name)
         result = native(name, chunks, **kwargs)
         service.cancel(OWNER, job)
         return result
@@ -276,6 +300,7 @@ def test_cancel_during_snapshot_publication_never_commits_capture_metadata(setup
     with pytest.raises(DocumentConflict, match='CANCELLED'):
         service.begin(RAW, OWNER, operation=OP, durable=True)
     assert docs.get(service._path(OWNER, job)).data['captured_chunks'] == 0
+    assert len(attempted) == 1 and '/snapshots/' in attempted[0]
     assert docs.query_collection((*service._path(OWNER, job), 'snapshots')) == []
     assert docs.get(('projects', stable_project_id(OP))) is None
 

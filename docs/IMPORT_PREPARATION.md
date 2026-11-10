@@ -33,6 +33,10 @@ failure mode. A proxy timeout does not prove that its worker stopped.
   captures retain the already validated original once and use seven snapshot
   slots per request, including on retries. Additional capture requests can
   rebuild from that verified server-held source without browser retransmission.
+- Snapshot encoding/publication uses one worker per capture request to limit
+  simultaneous JSON, gzip and provider-spool allocations. The complete 7/8-item
+  group and atomic cursor commit stay unchanged. Ordinary plan publication and
+  record preparation retain their existing eight/sixteen-worker limits.
 - Once capture is complete, `POST .../jobs/{job_id}/prepare` reads only the
   required immutable snapshot chunk and publishes at most eight ordinary v1
   plan files. It does not parse the original archive. The existing per-record
@@ -103,6 +107,13 @@ upload, provider RPC latency, record staging or final publication. It is not a
 before/after production speed claim. A preceding local run took 47.76 seconds;
 local variation and subsequent read refinements are not an isolated A/B test.
 Physical provider-request effects remain unmeasured.
+
+These timings precede the capture-only one-worker memory refinement. Remeasure
+begin latency and peak RSS on the final revision before production recovery.
+Infrastructure source configures 512 MiB and one CPU; compressed object size is
+not RSS evidence. The parsed complete plan, JSON intermediates and uploads read
+before admission can coexist, and a valid oversized batch can exceed the 16 MiB
+chunk target. One capture worker does not guarantee a process-wide memory bound.
 
 Measure pure planning separately on an authorized local archive:
 

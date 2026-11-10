@@ -12480,32 +12480,32 @@
     },
     {
       "file": "src/hosted/package_import.py",
-      "lines": 921,
+      "lines": 926,
       "symbols": [
         {
           "name": "_json",
           "kind": "function",
-          "line": 41
+          "line": 42
         },
         {
           "name": "_hash",
           "kind": "function",
-          "line": 45
+          "line": 46
         },
         {
           "name": "_parallel",
           "kind": "function",
-          "line": 49
+          "line": 50
         },
         {
           "name": "_GuardedObjects",
           "kind": "class",
-          "line": 82
+          "line": 83
         },
         {
           "name": "PackageImport",
           "kind": "class",
-          "line": 121
+          "line": 122
         }
       ]
     },

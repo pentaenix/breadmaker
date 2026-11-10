@@ -31,6 +31,7 @@ from security.image_security import HOSTED_DEFAULT_IMAGE_BYTES, inspect_hosted_i
 BATCH_SIZE = 64
 UPLOAD_WORKERS = 8
 PREPARE_WORKERS = 16
+SNAPSHOT_CAPTURE_WORKERS = 1
 LIFETIME = 86400
 MAX_SOURCE_BYTES = 64 * 1024**2
 MAX_PLAN_BYTES = 256 * 1024**2  # the existing expanded archive boundary, not a row cap
@@ -580,7 +581,11 @@ class PackageImport:
                         'batch_count': len(parts), 'plan_sha256': data['plan_sha256'],
                         'object_name': obj.name, 'object_generation': obj.generation,
                         'object_sha256': obj.sha256, 'object_size': obj.size, 'decoded_bytes': decoded_bytes}
-            group = _parallel(publish, list(enumerate(chunks[start:start + slots], start)))
+            # Bound JSON/gzip and provider-spool memory independently of the
+            # durable group size. Keep all 7/8 chunks in the same transaction:
+            # smaller partial groups may have no retained original to resume.
+            group = _parallel(publish, list(enumerate(chunks[start:start + slots], start)),
+                              workers=SNAPSHOT_CAPTURE_WORKERS)
             chain = data['snapshot_chain']
             for part in group:
                 part['previous_chain'] = chain
