@@ -135,3 +135,55 @@ canvases require active-parent eligibility; words and characters require trusted
 save-time counters rather than manuscript traversal. Those metrics remain
 unavailable. Synthetic focused tests are added for owner/CI execution; no agent
 suite or live integration check was run for this source preparation.
+
+## Unconnected canvas projection source (2026-11-10)
+
+`hosted.security.canvas_projection` adds a pure private count reducer, with no
+runtime import, store, query, writer, account identifier, manuscript read, or
+telemetry hook. Existing saves, imports, project mutations and the two-field
+Admin inventory schema are unchanged. No projection is collected or persisted.
+
+The definition is current canvas-root existence within a project, excluding
+nodes, edges, versions and lifetime creation events. A projection records a
+private project scope, exact project generation and integer count or unknown.
+Trusted complete transaction before/after existence images produce the delta;
+updates to an existing canvas contribute zero. Duplicate roots, non-unit
+transitions, replay, out-of-order or foreign-project application, underflow and
+overflow fail closed. Unknown baselines remain unknown through every mutation.
+
+A new zero baseline requires the `TrustedEmptyProjectCreation` server-only proof
+interface. Its future implementation must verify authorized empty creation and
+absence of a prior projection in the same transaction. Generation one, a client
+Boolean or a request payload is not proof: imports can publish nonempty roots at
+generation one. No production proof implementation, deserializer, reseed API,
+nonempty initialization or backfill is included. Python types do not establish
+authority; request data must never construct this evidence or private state.
+The proof interface alone is not a security mechanism. Verifier failures become
+a fixed structural error; future composition must also sanitize errors and
+never log provider payloads.
+
+The existing integration points are `HostedDomainStore.create` / `delete` and
+`_advance_project` in `src/hosted/domain_store.py`, plus the explicit generation
+advance in `src/hosted/chapter_mutations.py` and canvas-version activation in
+`src/hosted/canvas_versions.py`. Future integration must cover every root
+advance, including unrelated edits, Undo/Redo, import, restore and account/project
+lifecycle paths. It must write the projection atomically with the original
+mutation and exact generation CAS. This module does not install those hooks.
+Unsupported or skipped transitions must invalidate coverage, never guess a delta.
+
+`eligible_canvas_count` emits only an integer or null, and only an explicit
+active root of the same project and exact generation makes a known count
+eligible. Deleted, erased, staging, missing and stale observations yield null,
+not a fabricated zero. A future fleet aggregator must separately prove complete
+active-parent coverage; summing only known projections is not a total.
+
+Words and characters remain unavailable pending canonical count definitions and
+coverage across save, import and Undo paths. Presence remains unavailable pending
+approved privacy and activity semantics. This source slice adds no permission,
+credential, runtime setting, live provider call or deployment authorization.
+
+Focused synthetic verification on 2026-11-10 uses the current repository policy:
+commit `7381c8e` removed the older AGENTS milestone handoff; current
+`CONTRIBUTING.md` and `docs/TESTING.md` permit focused test modules. The inventory
+and canvas-projection unit modules were executed with the existing item
+watchdogs. No full release verifier or live provider check was executed.
