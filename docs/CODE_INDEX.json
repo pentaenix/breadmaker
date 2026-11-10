@@ -13221,7 +13221,7 @@
     },
     {
       "file": "src/hosted/scene_mutations.py",
-      "lines": 155,
+      "lines": 157,
       "symbols": [
         {
           "name": "save_scene_blocks",

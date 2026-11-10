@@ -44,7 +44,9 @@ def save_scene_blocks(domain, *, project_id, scene_id, user_id, blocks,
         if not isinstance(incoming, Mapping):
             raise HostedValidationError('HOSTED_SCENE_BLOCK_INVALID')
         raw = dict(incoming)
-        bid = require_opaque_id(str(raw.get('id') or ''), label='block_id')
+        if not raw.get('id'):
+            raise HostedValidationError('HOSTED_SCENE_STRUCTURAL_SAVE_UNAVAILABLE')
+        bid = require_opaque_id(str(raw['id']), label='block_id')
         if bid in seen:
             raise HostedValidationError('HOSTED_SCENE_BLOCK_DUPLICATE')
         seen.add(bid)

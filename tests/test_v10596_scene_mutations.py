@@ -63,12 +63,13 @@ def test_multi_chapter_save_single_revision_and_durable_replay(scene):
         save(scene, blocks=[{**row, 'text_content': 'Different'} for row in scene[5]])
 
 
-@pytest.mark.parametrize('kind', ['delete', 'insert', 'move', 'missing_revision', 'managed', 'foreign_scene'])
+@pytest.mark.parametrize('kind', ['delete', 'insert', 'insert_temporary', 'move', 'missing_revision', 'managed', 'foreign_scene'])
 def test_unsupported_or_malformed_requests_leave_all_canonical_state_unchanged(scene, kind):
     before = canonical(scene)
     blocks = deepcopy(scene[5]); options = {}
     if kind == 'delete': blocks.pop()
     if kind == 'insert': blocks.append({'id': 'b_new', 'chapter_id': blocks[0]['chapter_id'], 'text_content': 'new'})
+    if kind == 'insert_temporary': blocks.append({'id': None, 'chapter_id': blocks[0]['chapter_id'], 'text_content': 'new'})
     if kind == 'move': blocks[0]['chapter_id'] = blocks[1]['chapter_id']
     if kind == 'missing_revision': options['expected_revisions'] = {}
     if kind == 'managed': blocks[0]['payload_object'] = {}
