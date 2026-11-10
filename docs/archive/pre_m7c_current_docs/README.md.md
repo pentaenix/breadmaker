@@ -45,7 +45,7 @@ The hosted image is separate from local dependencies (`requirements-hosted.txt`)
 ## 10.3.37 — Checkpoint 11 pre-deployment security gate
 Verification-only corrective: 10.3.37 keeps the prior runtime/security behavior and narrows the toolbar race contract to reject executable `requestAnimationFrame(` calls rather than matching prose comments.
 
-Checkpoint 11 removes the temporary auth UI preview completely and freezes the real Auth0 path for adversarial testing. Schema 42 remains current-only; direct project routes authorize membership, redirect handling rejects browser-normalization tricks, account linking compensates provider-side partial commits, and TOTP replacement prepares enrollment before deleting the working factor. The final consultant pass also bounds locale restart state, retires superseded OIDC/browser-binding transactions, rate-limits locale restarts, rejects ambiguous Host fields, pins Auth0 discovery endpoints to the issuer origin, and prevents wrong-session callbacks from consuming link/step-up state. Local Breadmaker remains accountless.
+Checkpoint 11 removes the temporary auth UI preview completely and freezes the real Auth0 path for adversarial testing. Schema 42 remains current-only; direct project routes authorize membership, redirect handling rejects browser-normalization tricks, account linking compensates provider-side partial commits, and TOTP replacement prepares enrollment before deleting the working factor. The final security review also bounds locale restart state, retires superseded OIDC/browser-binding transactions, rate-limits locale restarts, rejects ambiguous Host fields, pins Auth0 discovery endpoints to the issuer origin, and prevents wrong-session callbacks from consuming link/step-up state. Local Breadmaker remains accountless.
 Authenticated link/step-up transaction stores also enforce per-user transaction ceilings, and failed wrapper binds retire their underlying OIDC state instead of consuming shared capacity until TTL expiry.
 The final corrective pass also positions the floating manuscript selection toolbar before it becomes interactive, removing the delayed-bookmark-tooltip hover race without shortening the 300 ms UX delay.
 
@@ -309,7 +309,7 @@ For architecture/navigation, start with [`CONTRIBUTING.md`](CONTRIBUTING.md); co
 
 ## 10.0.0 — Repository boundary
 
-Breadmaker 10.0.0 establishes the permanent two-repository release layout. This folder is the public/open-source `breadmaker` repository. The commercial deployment/IaC repository is the sibling `breadmaker-cloud` folder in the release archive. The application runtime and security baseline are inherited unchanged from the fully verified 9.6.15 release; local Breadmaker remains accountless and offline-capable. See `docs/REPOSITORY_SPLIT.md`.
+Breadmaker 10.0.0 establishes the permanent two-repository release layout. This folder is the public/open-source `breadmaker` repository. The commercial deployment/IaC repository is maintained separately. The application runtime and security baseline are inherited unchanged from the fully verified 9.6.15 release; local Breadmaker remains accountless and offline-capable. See `docs/REPOSITORY_SPLIT.md`.
 
 ## 9.6.15 — Verification isolation cleanup
 

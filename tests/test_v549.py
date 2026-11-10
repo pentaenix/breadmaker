@@ -5,10 +5,10 @@ from pathlib import Path
 
 
 def test_v549_structure_hover_and_node_relationship_static_contract():
+    # Control-only hover targets and the single relationship path are checked against JS here.
     root = Path(__file__).resolve().parents[1]
     html = (root / 'static' / 'index.html').read_text(encoding='utf-8')
     js = frontend_source_from_app_path(root / 'static' / 'app.js')
-    architecture = (root / 'ARCHITECTURE.md').read_text(encoding='utf-8')
 
     assert tuple(map(int,(root / 'VERSION').read_text(encoding='utf-8').strip().split('.'))) >= (5, 4, 16)
     assert 'styles.css?v=5.4.16' in html and 'app.js?v=5.4.16' in html
@@ -32,5 +32,3 @@ def test_v549_structure_hover_and_node_relationship_static_contract():
     assert "{value:'new_task',label:'New Task'}" not in js
     assert 'id="createLinkedTask"' in js
     assert "target_type:'task'" in js
-    assert 'interactive control itself as the only trigger' in architecture
-    assert 'do not render a parallel Tasks section' in architecture

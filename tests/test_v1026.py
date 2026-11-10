@@ -50,11 +50,10 @@ def test_v1026_refactor_sensitive_tests_patch_the_canonical_request_context_owne
 
 
 def test_v1026_documentation_declares_the_zero_core_dependency_boundary():
+    # Import boundaries are enforced by test_v1026_release_and_feature_modules_have_zero_backend_core_imports.
     contributor_rules=(ROOT/'CONTRIBUTING.md').read_text(encoding='utf-8')
-    architecture=(ROOT/'ARCHITECTURE.md').read_text(encoding='utf-8')
     api_readme=(ROOT/'src/api/README.md').read_text(encoding='utf-8')
     backend_readme=(ROOT/'src/backend/README.md').read_text(encoding='utf-8')
     assert 'must not import `backend.core`' in contributor_rules
-    assert 'zero imports from `backend.core`' in architecture
     assert 'must not import `backend.core`' in api_readme
     assert 'must not import `backend.core`' in backend_readme

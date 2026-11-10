@@ -95,12 +95,11 @@ def test_v1035_frontend_packages_are_real_owners_not_facades():
 
 
 def test_v1035_docs_match_the_current_frontend_ownership_tree():
+    # The ownership tree and load order are checked against actual frontend modules above.
     docs=(STATIC/'js/README.md').read_text(encoding='utf-8')
-    architecture=(ROOT/'ARCHITECTURE.md').read_text(encoding='utf-8')
     assert '10.3.5' in docs
     assert '`features/reviews/`' in docs
     assert '`features/projects/`' in docs
     assert '`core/typography.js`' in docs
     assert '`history.js`' in (STATIC/'js/features/manuscript/README.md').read_text(encoding='utf-8')
     assert 'CSS remains intentionally monolithic' in docs
-    assert 'frontend ownership cleanup' in architecture

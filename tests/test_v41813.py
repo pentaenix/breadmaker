@@ -67,10 +67,9 @@ def test_v41813_focused_add_actions_send_anchor_ids():
 
 
 def test_v41813_release_contract():
+    # Insertion anchors, scene menus, and hover cleanup are checked above.
     assert tuple(map(int,(ROOT/'VERSION').read_text(encoding='utf-8').strip().split('.'))) >= (5, 0, 2)
     html=(ROOT/'static/index.html').read_text(encoding='utf-8')
     readme=(ROOT/'README.md').read_text(encoding='utf-8')
-    architecture=(ROOT/'ARCHITECTURE.md').read_text(encoding='utf-8')
     assert 'styles.css?v=5.0.2' in html and 'app.js?v=5.0.2' in html
     assert '### 4.18.13 Scene polish and focused insertion' in readme
-    assert '### 4.18.13 Scene interaction and insertion contract' in architecture

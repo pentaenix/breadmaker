@@ -13,9 +13,8 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
         'project.read', 'project.edit', 'project.manage', 'project.delete', 'project.members.manage',
         'review.manage', 'review.process', 'task.create', 'checkpoint.create',
     }),
-    # 9.2 intentionally keeps local membership small: Editors can work in the project
-    # but cannot delete it or change who belongs to it. Read-only collaboration remains
-    # a later hosted/runtime concern; Review Participants stay a separate domain.
+    # Local editors can edit but cannot delete the project or manage membership.
+    # Review participants have separate permissions.
     'editor': frozenset({
         'project.read', 'project.edit',
         'review.manage', 'review.process', 'task.create', 'checkpoint.create',

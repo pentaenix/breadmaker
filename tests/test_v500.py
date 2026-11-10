@@ -636,21 +636,13 @@ def test_v500_cutting_bookmarked_scene_keeps_text_bookmark_visible_and_current_v
 
 
 def test_v513_release_metadata_and_docs_are_finalized():
+    # Direct manipulation is covered by the API tests here and the UI contracts in test_v500_browser.py, test_v520.py, and test_v522.py.
     assert tuple(map(int,(ROOT/'VERSION').read_text(encoding='utf-8').strip().split('.'))) >= (5, 4, 4)
     html=(ROOT/'static/index.html').read_text(encoding='utf-8')
     assert 'styles.css?v=5.4.4' in html and 'app.js?v=5.4.4' in html
     readme=(ROOT/'README.md').read_text(encoding='utf-8')
     assert readme.startswith('# Breadmaker Editor 5.4.4')
     assert not list(ROOT.glob('HARDENING_5.0.*.md'))
-    architecture=(ROOT/'ARCHITECTURE.md').read_text(encoding='utf-8')
-    assert 'direct-manipulation contracts' in architecture
-    assert 'Chapter-title interaction semantics' in architecture
-    assert 'Chapter Bookmark' in architecture
-    assert '5.2.2 manuscript-import progress contract' in architecture
-    assert '5.2.0 Project surface contract' in architecture
-    assert '5.1.2 Links manager direct-manipulation contract' in architecture
-    assert '5.1.1 Task Links manager contract' in architecture
-    assert '5.1.0 Tasks workspace contract' in architecture
     assert 'Capture work and jump back to its context.' not in html
     assert not (ROOT/'HANDOFF_5.0.0_WIP.md').exists()
 

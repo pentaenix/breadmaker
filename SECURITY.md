@@ -4,9 +4,9 @@
 
 Please don't put working exploits, credentials, private manuscripts, or unpatched vulnerabilities into public GitHub issues.
 
-Use **GitHub private vulnerability reporting** from the [pentaenix/breadmaker Security tab](https://github.com/pentaenix/breadmaker/security) if the maintainer has enabled it. If it is unavailable, request a private reporting channel without posting exploit details. The maintainer needs to enable private reporting or provide a security contact before inviting public vulnerability reports.
+Please [report a vulnerability privately on GitHub](https://github.com/pentaenix/breadmaker/security/advisories/new). Private vulnerability reporting is enabled for this repository.
 
-Include the affected version, the component involved, and a reproduction using **invented data**. Please do not attach real manuscripts, tokens, or account credentials. Breadmaker is pre-alpha; no guaranteed response or remediation time is published.
+Include the affected version, what happened, and steps to reproduce it with invented data. Please leave out real manuscripts, tokens, and account credentials. I don’t promise a fixed response or fix time while Breadmaker is in pre-alpha.
 
 ## What is and is not protected
 
@@ -18,7 +18,7 @@ Include the affected version, the component involved, and a reproduction using *
 
 **Dependencies.** Release verification includes dependency vulnerability checks. Findings still need review and fixes; a passing scan cannot guarantee the absence of vulnerabilities.
 
-Developers should start with [Architecture](ARCHITECTURE.md) and [hosted trust boundaries](docs/HOSTED_DATA_TRUST_BOUNDARIES_M12.md). For the scope and limits of the experimental private recovery implementation, see [M12 source closure](docs/security/M12_SOURCE_CLOSURE.md).
+Developers should start with the [development guide](docs/DEVELOPMENT.md) and [hosted trust boundaries](docs/HOSTED_DATA_TRUST_BOUNDARIES_M12.md). For the scope and limits of the experimental private recovery implementation, see [M12 source closure](docs/security/M12_SOURCE_CLOSURE.md).
 
 ## Historical security notes
 
@@ -34,7 +34,7 @@ The entries below describe past threats, experiments, and design decisions; they
 The local editor remains a zero-secret product. The new `hosted` runtime is staging-only, single-process, Auth0-only, HTTPS-only, and refuses the development unauthenticated bypass. Staging client secrets and the security-intent HMAC are supplied only as Secret Manager resource references; payloads are fetched with workload identity through ADC and are never required by `./run`. Production hosted activation is still blocked in code.
 
 ## 10.3.37 — Checkpoint 11 adversarial gate
-Checkpoint 11 treats the real hosted identity path as hostile input: replay, redirect confusion, cross-user project IDs, cross-provider identity substitution, linking/MFA partial failure, session fixation/revocation, enumeration, privilege scope and local/hosted isolation are explicit release gates. The final consultant pass additionally prevents locale-restart state amplification, requires same-origin Auth0 discovery endpoints, rejects duplicate/missing Host authority, preserves legitimate link/step-up transactions when a different session presents their state, and makes every OIDC callback failure taxonomy generic at the HTTP boundary. The pre-integration auth preview has been deleted.
+Checkpoint 11 treats the real hosted identity path as hostile input: replay, redirect confusion, cross-user project IDs, cross-provider identity substitution, linking/MFA partial failure, session fixation/revocation, enumeration, privilege scope and local/hosted isolation are explicit release gates. The final security review additionally prevents locale-restart state amplification, requires same-origin Auth0 discovery endpoints, rejects duplicate/missing Host authority, preserves legitimate link/step-up transactions when a different session presents their state, and makes every OIDC callback failure taxonomy generic at the HTTP boundary. The pre-integration auth preview has been deleted.
 Authenticated account-link transactions and step-up transactions/grants also enforce per-user ceilings, and failed wrapper binds retire their underlying OIDC state instead of consuming shared capacity until TTL expiry.
 Hosted rate-limit identity bookkeeping is hard-bounded too; a distributed source-address spray cannot grow the process-local bucket map indefinitely.
 
@@ -126,7 +126,7 @@ Breadmaker does not expose `eval`, `exec`, Python pickle deserialization, `os.sy
 
 ### Repository authority
 
-The authoritative security surfaces are the `breadmaker` and `breadmaker-cloud` repositories. OpenTofu/bundle-root tooling is not part of the deployed Editor runtime. Files above the two repositories in combined archives are disposable release orchestration and must not own product secrets, runtime policy, or deployed behavior.
+The authoritative security surfaces are the application and its separate infrastructure configuration. OpenTofu/bundle-root tooling is not part of the deployed Editor runtime. Files above the two repositories in combined archives are disposable release orchestration and must not own product secrets, runtime policy, or deployed behavior.
 
 
 ### Hosted container image baseline

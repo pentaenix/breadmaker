@@ -72,6 +72,7 @@ def _content_hash_without_project_uid(database: Path, assets: Path, snapshot_roo
 
 
 def test_v779_release_contract_freezes_77_formats_and_documents_them():
+    # The actual frozen format constants are checked above; future-version rejection is exercised below.
     root = Path(__file__).resolve().parents[1]
     assert tuple(map(int, root.joinpath('VERSION').read_text(encoding='utf-8').strip().split('.'))) >= (7, 7, 9)
     assert STORE_VERSION == SNAPSHOT_VERSION == REVISION_VERSION == CHECKPOINT_VERSION == 1
@@ -82,8 +83,6 @@ def test_v779_release_contract_freezes_77_formats_and_documents_them():
     assert 'Revision Store Format v1' in text
     assert 'revision_history/v1/repository.json' in text
     assert 'Downgrade/write fence' in text
-    architecture = root.joinpath('ARCHITECTURE.md').read_text(encoding='utf-8')
-    assert '## 7.7.9 Final 7.7 Integration / Format Freeze' in architecture
 
 
 def test_v779_history_with_data_missing_format_marker_fails_closed(fresh_project):

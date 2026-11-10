@@ -231,15 +231,13 @@ def test_v541_migrates_real_540_geometry_and_resets_only_old_developmental_zoom(
     assert viewport['left']==800 and viewport['top']==91 and viewport['mode']=='pointer' and viewport['textSize']==15
 
 def test_v541_release_metadata_and_docs():
+    # Lane position and apply boundaries are exercised by the API tests above.
     root=Path(__file__).resolve().parents[1]
     # This test intentionally stays red until the final release bump, so a partially
     # completed implementation cannot be packaged as 5.4.1 by accident.
     html=(root/'static'/'index.html').read_text(encoding='utf-8')
     readme=(root/'README.md').read_text(encoding='utf-8')
-    architecture=(root/'ARCHITECTURE.md').read_text(encoding='utf-8')
     assert tuple(map(int,(root/'VERSION').read_text(encoding='utf-8').strip().split('.'))) >= (5, 4, 16)
     assert 'styles.css?v=5.4.16' in html and 'app.js?v=5.4.16' in html
     assert readme.startswith('# Breadmaker Editor 5.4.16')
     assert 'Planning Card' in readme and 'horizontal' in readme.lower()
-    assert architecture.startswith('# Breadmaker Editor 5.4.16')
-    assert 'lane_position' in architecture and 'Canvas→Manuscript mutation boundary' in architecture

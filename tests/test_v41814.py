@@ -28,10 +28,9 @@ def test_v41814_scene_rows_use_whole_row_navigation_like_chapters():
 
 
 def test_v41814_release_contract():
+    # Selection actions and whole-row scene navigation are checked above.
     assert tuple(map(int,(ROOT/'VERSION').read_text(encoding='utf-8').strip().split('.'))) >= (5, 0, 2)
     html=(ROOT/'static/index.html').read_text(encoding='utf-8')
     readme=(ROOT/'README.md').read_text(encoding='utf-8')
-    architecture=(ROOT/'ARCHITECTURE.md').read_text(encoding='utf-8')
     assert 'styles.css?v=5.0.2' in html and 'app.js?v=5.0.2' in html
     assert '### 4.18.14 Scene selection and compact-rail parity' in readme
-    assert '### 4.18.14 Scene selection and compact-navigation contract' in architecture

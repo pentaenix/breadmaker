@@ -415,8 +415,18 @@ def test_v770_local_recovery_retention_never_lets_future_timestamp_outrank_gener
     assert expected_newest in remaining
     assert max(remaining)==expected_newest
 
-def test_v770_documented_generation_contract_remains_part_of_current_architecture():
-    root=Path(__file__).resolve().parents[1]
-    architecture=(root/'ARCHITECTURE.md').read_text(encoding='utf-8')
-    assert '## 7.7.0 Canonical generation authority' in architecture
-    assert 'Canonical generation never decreases.' in architecture
+def test_v770_schema_generation_guard_rejects_decrease_without_runtime_wrapper():
+    from contextlib import closing
+    from storage.schema import SCHEMA_SQL
+
+    # Exercise the shipped trigger independently of the transaction wrapper.
+    trigger = SCHEMA_SQL.split('CREATE TRIGGER projects_generation_never_decreases', 1)[1].split('END;', 1)[0]
+    with closing(sqlite3.connect(':memory:')) as con:
+        con.execute('CREATE TABLE projects (id INTEGER PRIMARY KEY, project_generation INTEGER)')
+        con.execute('INSERT INTO projects VALUES (1, 4)')
+        con.executescript('CREATE TRIGGER projects_generation_never_decreases' + trigger + 'END;')
+        with pytest.raises(sqlite3.IntegrityError, match='PROJECT_GENERATION_DECREASE_FORBIDDEN'):
+            con.execute('UPDATE projects SET project_generation=3 WHERE id=1')
+        assert con.execute('SELECT project_generation FROM projects').fetchone()[0] == 4
+        con.execute('UPDATE projects SET project_generation=5 WHERE id=1')
+        assert con.execute('SELECT project_generation FROM projects').fetchone()[0] == 5

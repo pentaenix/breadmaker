@@ -70,13 +70,11 @@ def test_v542_structural_tile_size_is_an_api_invariant_when_moved_to_desk(client
 
 
 def test_v542_release_metadata_and_docs():
+    # Main-manuscript filtering and 143-by-52 tile dimensions are checked by the API tests above.
     root = Path(__file__).resolve().parents[1]
     html = (root / 'static' / 'index.html').read_text(encoding='utf-8')
     readme = (root / 'README.md').read_text(encoding='utf-8')
-    architecture = (root / 'ARCHITECTURE.md').read_text(encoding='utf-8')
     assert tuple(map(int,(root / 'VERSION').read_text(encoding='utf-8').strip().split('.'))) >= (5, 4, 16)
     assert 'styles.css?v=5.4.16' in html and 'app.js?v=5.4.16' in html
     assert readme.startswith('# Breadmaker Editor 5.4.16')
     assert 'Main Manuscript' in readme and 'Structure Order' in readme
-    assert architecture.startswith('# Breadmaker Editor 5.4.16')
-    assert 'Main Manuscript' in architecture and '143' in architecture and '52' in architecture

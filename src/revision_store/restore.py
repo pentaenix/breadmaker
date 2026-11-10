@@ -497,9 +497,9 @@ def restore_local_revision(
         if stage_hook:
             stage_hook('SAFETY_REVISION_VERIFIED')
 
-        # Publishing a missing immutable asset is safe before activation; orphan bytes
-        # after a crash are acceptable, while a DB reference to missing bytes is not.
-        # It deliberately happens after both independent pre-restore safety roots exist.
+        # Create both pre-restore safety copies before publishing missing assets.
+        # Publish assets before activating the database: a crash may leave orphan
+        # files, but must not leave database references to missing files.
         _publish_materialized_assets(Path(materialized['root']),asset_dir=bound_root/'assets')
         if stage_hook:
             stage_hook('ASSETS_VERIFIED')
