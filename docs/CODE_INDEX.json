@@ -21040,7 +21040,7 @@
     },
     {
       "file": "static/js/features/manuscript/persistence.js",
-      "lines": 111,
+      "lines": 119,
       "symbols": [
         {
           "name": "captureAutoHistory",
@@ -21110,12 +21110,12 @@
         {
           "name": "showManuscriptConflict",
           "kind": "function",
-          "line": 100
+          "line": 108
         },
         {
           "name": "countWords",
           "kind": "function",
-          "line": 110
+          "line": 118
         }
       ]
     },
