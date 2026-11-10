@@ -127,13 +127,19 @@ class GoogleCloudObjectStore(ObjectStore):
                     if_generation_match=expected,
                     checksum="auto",
                 )
+            # SDK upload_from_file replaces Blob properties with the server's
+            # creation response (not the locally assigned request metadata).
+            # Validate that response directly; a second metadata GET for the
+            # same immutable generation adds no byte-integrity evidence.
+            # Keep the legacy fallback for an incomplete provider response.
             # No storage.objects.update / blob.patch permission is necessary.
             if not blob.generation:
                 blob.reload()
             generation = int(blob.generation or 0)
             if generation < 1:
                 raise ObjectGenerationConflict("HOSTED_OBJECT_GENERATION_MISSING")
-            blob.reload(if_generation_match=generation)
+            if blob.size is None:
+                blob.reload(if_generation_match=generation)
             result = self._metadata(blob)
             if (result.generation != generation or result.size != total or
                     result.sha256 != local_sha or
