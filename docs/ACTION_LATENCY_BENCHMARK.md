@@ -68,14 +68,22 @@ Regression tests cover coalescing, ordinary cached reuse, mutation invalidation,
 late results, project switches, forced reads, failure/retry, and actual browser
 Undo/Redo restoration. The existing hosted first-write/workspace test also passes.
 
-## Separate scene-save blocker
+## Scene-save reliability fix
 
 On f6217eb, editing prose in scene view returned HTTP 409
 `HOSTED_ATOMIC_BULK_OPERATION_UNAVAILABLE`, leaving `Save failed` and dirty state.
-This was observed in a disposable hosted-dev fixture, not production. The
-intentional fail-closed scene route must not be replaced by the old non-atomic
-compatibility route. Scene save needs a dedicated atomic implementation and
-revision checks; successful scene-rendering tests do not cover saving.
+This was reproduced both in hosted-dev and in an explicitly authorized tiny
+production fixture. Two live scene PUT requests returned 409; reload retained
+original text. The deployed source confirms the intentional unsupported route.
+The generic 409 UI incorrectly attributed this to another browser tab.
+
+This change implements bounded atomic in-place scene prose saves: revision
+checks, current membership/actor checks, immutable object staging, a single
+publication transaction, idempotent receipts, and durable Undo/Redo. Browser
+regressions cover direct scene editing and cached Full Text-to-scene editing,
+including reload and preservation of untouched text. Structural inserts,
+deletes, reorders, private codecs and reference reanchoring remain unsupported;
+this is not a claim that every scene editing operation is now implemented.
 
 ## Production observations and remaining coverage
 
@@ -90,14 +98,38 @@ These include browser-control overhead. Cold and Notes-panel timings were
 inconclusive because visibility tooling was inconsistent. No original fixture
 content was edited or deleted, and no audio played.
 
-Production at verification: revision `breadmaker-production-00067-n4v`, 100%
-traffic, image digest
-`sha256:6a16667021913140d0df31b6768a80b6ee9a17b2395da3431d4afad73e70ea2e`.
-Registry tag identifies Editor `54ec73679ab9c690713915531db7217ab49dd5e2` and
-Cloud `527573b6ed97e75b6a5cf4fd28319be5e0fa1e32`. PR #44/f6217eb was not deployed.
+Production was verified from read-only service and registry metadata to be on
+Editor 54ec736, not the merged PR #44/f6217eb. Infrastructure identifiers are
+retained only in the private investigation record.
 
-Coverage remains representative, not every control: production typing/save and
-create/delete await a separately authorized disposable production fixture;
-Canvas/Map creation, checkpoints, imports/exports, reviews, mobile and failure
-recovery need dedicated measurements. Do not generalize task deletion to other
-entity deletion or local memory-backed saves to Firestore durability.
+A separate eight-record native fixture eventually published, but its finish
+request timed out after 60 seconds; status recovery took another 35.7 seconds.
+This is eventual recovery, not healthy import latency. Scene prose
+saving failed as described above. An empty fixture's chapter prose saved.
+Both disposable projects were moved to recoverable Trash after the test;
+the original novel and durable reusable baseline were not modified. These
+were functional checks, not robust end-to-end latency samples.
+
+A larger native fixture failed during upload/preparation before any published
+project was verified: initial HTTP 503 after 30.156 seconds; one built-in Resume
+ended in HTTP 504 after 60.006 seconds. No further retry was attempted. The existing
+preparation path can publish all preparation groups in one request; subsequent
+staging throughput improvements do not remove that request-boundary problem.
+JSON fragment import is explicitly unsupported in hosted mode and currently
+produces an unhandled rejection rather than a clear failure notice.
+
+## Coverage limits and priorities
+
+1. Reliability before speed: atomic scene saving, accurate error presentation,
+   and durable bounded large-import preparation.
+2. Cold Full Text rendering is the largest measured local interaction delay;
+   compare realistic production cold/warm data after deployment verification.
+3. Task read coalescing removes redundant backend work with no claimed local
+   end-to-end speedup.
+
+Coverage remains representative, not every control: production chapter typing,
+scene save and project creation/deletion were functional checks; controlled
+latencies cover typing/autosave and task creation/deletion/Undo/Redo. Canvas/Map
+creation, checkpoints, exports, reviews, mobile and broader failure recovery
+need dedicated measurements. Do not generalize task deletion to other entity
+deletion or local memory-backed saves to Firestore durability.
