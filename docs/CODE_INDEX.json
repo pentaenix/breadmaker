@@ -11460,6 +11460,22 @@
       ]
     },
     {
+      "file": "src/hosted/import_admission.py",
+      "lines": 32,
+      "symbols": [
+        {
+          "name": "needs_admission",
+          "kind": "function",
+          "line": 12
+        },
+        {
+          "name": "serve",
+          "kind": "async_function",
+          "line": 17
+        }
+      ]
+    },
+    {
       "file": "src/hosted/import_staging.py",
       "lines": 55,
       "symbols": [
@@ -14602,7 +14618,7 @@
     },
     {
       "file": "src/server.py",
-      "lines": 172,
+      "lines": 179,
       "symbols": [
         {
           "name": "_hosted_body_limit",

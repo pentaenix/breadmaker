@@ -48,8 +48,15 @@ failure mode. A proxy timeout does not prove that its worker stopped.
 - The existing modal, cancellation, ownership, and session-recovery patterns are
   reused. Failed HTTP calls and stalled/malformed preparation responses pause
   for explicit Resume. They do not start automatic retries or a new job.
-- Status, cancellation and constant-size atomic finish have a separate two-request control lane; expensive
-  operations remain limited to two requests. Neither lane is unbounded.
+- Status, cancellation and constant-size atomic finish have a separate two-request
+  control lane. The outer hosted ASGI boundary admits only one expensive import
+  request per process before reading its body or parsing multipart data. A second
+  begin/prepare/step receives `503 HOSTED_IMPORT_BUSY` with `Retry-After: 2`, without
+  entering an in-memory upload queue. The existing explicit Resume preserves the
+  same source/job key. This deliberately trades concurrent import throughput for
+  memory headroom; it is not a latency optimization or distributed job lock.
+- The verified SQLite source buffer is released immediately after deserialize
+  takes its own copy, before native records are materialized.
 - Complete archive validation, complete-plan hash pinning, immutable object
   generation/size/hash verification, fresh authority checks, expiry, erasure
   fencing, receipt chains, and atomic final project visibility are unchanged.
@@ -64,6 +71,14 @@ failure mode. A proxy timeout does not prove that its worker stopped.
   an integrity failure and no process-local job or persistent content cache.
 
 ## Limitations and rollout
+
+Admission is per process, not a total-instance RSS guarantee: multiple server
+processes, other endpoint workloads, provider buffers and valid large archives
+still matter. The existing 256 MiB expanded-archive and 100,000-row limits are
+not a proof of safety in a 512 MiB instance. No new archive restriction, data
+truncation, timeout weakening or Cloud Run configuration is introduced here.
+Validate the deployed worker/process count and full HTTP/provider memory before
+release. Do not claim production safety from a provider-free synthetic probe.
 
 This bounds provider work per request, not wall-clock duration. Initial complete
 validation and snapshot encoding still run synchronously in the bounded worker

@@ -167,6 +167,13 @@ async def app(scope, receive, send):
         return
     limit=_hosted_body_limit(scope)
     if limit is not None:
+        from hosted import import_admission
+        if import_admission.needs_admission(scope):
+            async def bounded_import(scope,receive,send):
+                await _serve_with_hosted_body_limit(scope,receive,send,limit)
+            await import_admission.serve(bounded_import,scope,receive,send)
+            return
+    if limit is not None:
         await _serve_with_hosted_body_limit(scope,receive,send,limit)
         return
     await core.app(scope,receive,send)
