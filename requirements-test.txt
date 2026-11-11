@@ -2,7 +2,7 @@
 # Verification exercises real Google signature and Firestore RPC boundaries.
 # These SDKs remain absent from the local Editor's production requirements.
 -r requirements-hosted.txt
-pytest==9.0.3
+pytest==9.2.0
 playwright==1.57.0
 requests==2.33.0
 httpx==0.28.1
