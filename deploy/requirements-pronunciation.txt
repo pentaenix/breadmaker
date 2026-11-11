@@ -21,7 +21,7 @@ pydantic-core==2.46.5
 pypinyin==0.55.0
 python-crfsuite==0.9.12
 regex==2026.9.29
-starlette==1.7.0
+starlette==1.10.0
 typing-inspection==0.4.4
 typing-extensions==4.16.0
 unidic-lite==1.0.8
