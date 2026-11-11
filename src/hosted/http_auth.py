@@ -23,6 +23,7 @@ _IDENTITY_PLATFORM = runtime.mode in {'hosted_dev','hosted'} and runtime.session
 if _IDENTITY_PLATFORM:
     from auth.identity_platform import IdentityPlatformError, csrf_matches, new_csrf_token
     from auth.identity_platform_security import IdentityPlatformSecurityService
+    from hosted.billing import DisabledBillingService
 
     _IP_CSRF_COOKIE='__Host-breadmaker_csrf' if runtime.sessions.cookie_secure else 'breadmaker_csrf'
     _IP_SECURITY=IdentityPlatformSecurityService(runtime.sessions,runtime.accounts)
@@ -161,6 +162,7 @@ if _IDENTITY_PLATFORM:
         try:
             payload=_IP_SECURITY.snapshot(principal)
             payload['provider_availability']=dict(_ip_client_config().get('providers') or {})
+            payload['billing']=DisabledBillingService().account_snapshot(authenticated_account_id=principal.user_id)
             return JSONResponse(payload,headers=_ip_no_store_headers())
         except IdentityPlatformError as exc:raise HTTPException(409,detail=str(exc)) from exc
 

@@ -5,6 +5,8 @@
   "native_name": "Português (Brasil)",
   "direction": "ltr",
   "strings": {
+    "account_security.subscription": "Assinatura",
+    "account_security.subscription_unavailable": "A cobrança de assinaturas ainda não está conectada.",
     "package_import.restart": "Começar de novo",
     "package_import.title": "Importando projeto",
     "package_import.back": "Voltar",
