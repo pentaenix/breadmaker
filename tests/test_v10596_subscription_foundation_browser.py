@@ -2,14 +2,12 @@
 import json
 from pathlib import Path
 
-import pytest
 from scripts.browser_runtime import start_browser, close_browser
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-@pytest.mark.parametrize('width', [320, 900, 1280])
-def test_subscription_unavailable_reuses_account_section_without_actions(width):
+def _assert_subscription_section(width):
     playwright, browser, _ = start_browser()
     try:
         page = browser.new_page(viewport={'width': width, 'height': 720})
@@ -37,3 +35,17 @@ def test_subscription_unavailable_reuses_account_section_without_actions(width):
         page.close()
     finally:
         close_browser(playwright, browser)
+
+
+# Browser release jobs discover top-level test functions, each as one pytest
+# item. Explicit cases preserve all widths without changing verifier accounting.
+def test_subscription_unavailable_mobile():
+    _assert_subscription_section(320)
+
+
+def test_subscription_unavailable_narrow_desktop():
+    _assert_subscription_section(900)
+
+
+def test_subscription_unavailable_desktop():
+    _assert_subscription_section(1280)
