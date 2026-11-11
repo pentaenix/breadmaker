@@ -16,7 +16,7 @@ misaki[ja,zh]==0.7.4
 mojimoji==0.0.13
 ordered-set==4.1.0
 proces==0.1.7
-pydantic==2.13.5
+pydantic==2.14.1
 pydantic-core==2.46.5
 pypinyin==0.55.0
 python-crfsuite==0.9.12
