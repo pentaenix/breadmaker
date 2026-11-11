@@ -79,7 +79,7 @@ if _IDENTITY_PLATFORM:
             '<!doctype html><html><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             '<title>Sign in · Breadmaker</title>'
-            f'<link rel="stylesheet" href="/static/css/account/identity-platform.css?v={APP_VERSION}">'
+            f'<link rel="stylesheet" href="/static/css/account/identity-platform.css?v={APP_VERSION}&privacy=9">'
             f'<link rel="icon" type="image/svg+xml" href="/static/breadmaker_logo.svg?v={APP_VERSION}">'
             '</head><body><div id="identityLogin" class="identity-login">'
             '<header class="identity-header"><a class="identity-brand" href="https://breadmaker.studio" aria-label="Breadmaker">'
@@ -94,7 +94,12 @@ if _IDENTITY_PLATFORM:
             '<section class="identity-card" aria-labelledby="identityHeading">'
             '<h1 id="identityHeading" data-auth-key="auth.login.title">Login</h1>'
             '<div id="identityMessage" class="identity-message" role="status" aria-live="polite" hidden></div>'
-            '<form id="identityEmailForm" autocomplete="on">'
+            '<aside id="identityNotice" class="identity-notice" aria-label="Hosted service privacy notice">'
+            '<p id="identityNoticeStatus" role="status" aria-live="polite">Loading privacy notice…</p>'
+            '<div id="identityNoticeContent"></div>'
+            '<button id="identityNoticeRetry" type="button" class="identity-link" hidden>Retry</button>'
+            '</aside>'
+            '<form id="identityEmailForm" autocomplete="on" aria-describedby="identityNotice">'
             '<label><span data-auth-key="auth.login.email_placeholder">Enter Email</span><input id="identityEmail" type="email" autocomplete="email" required></label>'
             '<label><span data-auth-key="auth.login.password_placeholder">Password</span><span class="identity-password">'
             '<input id="identityPassword" type="password" autocomplete="current-password" minlength="8" required>'
@@ -110,7 +115,7 @@ if _IDENTITY_PLATFORM:
             '</section><footer class="identity-footer"><a href="https://breadmaker.studio/privacy" data-auth-key="auth.privacy_policy">Privacy Policy</a></footer>'
             '</div></main></div>'
             f'<script src="/static/js/core/i18n.js?v={APP_VERSION}"></script>'
-            f'<script type="module" src="/static/js/features/account/identity-platform.js?v={APP_VERSION}"></script>'
+            f'<script type="module" src="/static/js/features/account/identity-platform.js?v={APP_VERSION}&privacy=9"></script>'
             '</body></html>',
             headers=_ip_no_store_headers(),
         )
