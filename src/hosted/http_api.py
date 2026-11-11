@@ -117,6 +117,12 @@ async def _provider_binding(provider,*args,**kwargs):
 
 async def hosted_request_boundary(request: Request, call_next):
     path=canonical_request_path(request)
+    # Already-public legal copy, never identity/config/project data. This exact
+    # owner validates method, raw path and query before any cookie binding.
+    from hosted.signup_notice import PATH as signup_notice_path, dispatch as signup_notice
+    if (path == signup_notice_path
+            and runtime.sessions.metadata().get('auth_mode') == 'identity_platform'):
+        return await signup_notice(request)
     # Exact-path machine owner, NOT a public-API/session/CSRF exception. It must
     # validate Google's signature + pinned service-account identity before I/O.
     from hosted.narration.maintenance_identity import PATH as narration_gc_path

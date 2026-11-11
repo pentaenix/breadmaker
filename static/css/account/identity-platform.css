@@ -47,3 +47,11 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible{o
 .identity-secret{display:block;overflow-wrap:anywhere;padding:10px;background:var(--surface2);border-radius:5px;font:600 13px ui-monospace,SFMono-Regular,Menlo,monospace;user-select:all}
 .identity-code-row{display:flex;gap:8px;margin-top:14px}.identity-code-row input{font-size:20px;letter-spacing:.15em;text-align:center}
 @media(max-width:600px){.identity-login{padding:16px 14px 20px}.identity-brand{font-size:14px}.identity-header-actions{font-size:12px;gap:9px}.identity-center{padding:18px 0 8px}.identity-stack{width:min(100%,390px)}.identity-card{padding:26px 22px}.identity-code-row{display:grid}}
+
+/* The auth shell is standalone. Reuse its existing section rhythm/theme tokens;
+   required legal disclosure stays expanded in document flow, never a tooltip. */
+.identity-notice{margin:0 0 22px;padding-bottom:20px;border-bottom:1px solid var(--line);font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.identity-notice h2{font-size:14px;line-height:1.5;margin:0 0 10px}
+.identity-notice p{margin:0 0 10px}.identity-notice p:last-child{margin-bottom:0}
+.identity-notice a{color:var(--text);text-underline-offset:2px}
+.identity-notice .identity-link{font-size:12px;text-decoration:underline;text-underline-offset:2px}

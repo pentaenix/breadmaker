@@ -33,7 +33,7 @@ export const sendPasswordResetEmail=async()=>window.authCalls.push('password-res
 
 
 @contextmanager
-def auth_browser(home, *, admitted=True):
+def auth_browser(home, *, admitted=True, notice_handler=None, sdk=SDK):
     source = (ROOT / 'src/hosted/http_auth.py').read_text()
     node = next(n for n in ast.walk(ast.parse(source))
                 if isinstance(n, ast.FunctionDef) and n.name == 'identity_platform_login_shell')
@@ -53,9 +53,15 @@ def auth_browser(home, *, admitted=True):
             content_type='application/javascript', headers={'Access-Control-Allow-Origin': '*'},
             body='export const getApps=()=>[];export const initializeApp=()=>({});'))
         page.route('https://www.gstatic.com/firebasejs/*/firebase-auth.js', lambda route: route.fulfill(
-            content_type='application/javascript', headers={'Access-Control-Allow-Origin': '*'}, body=SDK))
+            content_type='application/javascript', headers={'Access-Control-Allow-Origin': '*'}, body=sdk))
         page.route(base + '/api/auth/client-config', lambda route: route.fulfill(json={
             'firebase': {'projectId': 'synthetic'}, 'providers': {'google': True, 'apple': False}}))
+        from hosted.signup_notice import parse_notice
+        def default_notice(route):
+            locale='es' if route.request.url.endswith('locale=es') else 'en'
+            raw=(ROOT/f'tests/fixtures/signup-notice-v9.{locale}.html').read_bytes()
+            route.fulfill(json=parse_notice(raw,locale))
+        page.route(base + '/api/auth/signup-notice?**', notice_handler or default_notice)
         page.route(base + '/api/auth/csrf', lambda route: route.fulfill(json={'csrf_token': 'synthetic-csrf'}))
         exchanges = []
         def exchange(route):

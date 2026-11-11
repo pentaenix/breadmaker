@@ -105,6 +105,8 @@ def test_release_identity_is_a_single_shared_contract(monkeypatch, tmp_path):
                 "frontend:'10.5.99'" if label == 'bootstrap identity' else (
                     'identity-platform-client.js?v=10.5.99' if 'import' in label else '/static/app.js?v=10.5.99')))
         path.write_text('\n'.join([token] * (2 if label == "logo cache keys" else count)), encoding='utf-8')
+        if label == 'identity import':
+            path.write_text(path.read_text() + '\n./signup-notice.js?v=10.5.99&privacy=9', encoding='utf-8')
     (tmp_path / 'VERSION').write_text('10.5.99\n', encoding='utf-8')
     monkeypatch.setattr(verifier, 'ROOT', tmp_path)
     assert release.validate(tmp_path) == '10.5.99'
@@ -133,3 +135,23 @@ def test_release_identity_is_a_single_shared_contract(monkeypatch, tmp_path):
     else:
         raise AssertionError('An invalid release version was accepted')
     assert before == {p: p.read_bytes() for p in tmp_path.rglob('*') if p.is_file()}
+
+
+def test_identity_release_metadata_rejects_unknown_module_cache_key(tmp_path):
+    from scripts import sync_editor_release_metadata as release
+    for relative, pattern, label, count in release.FIELDS:
+        path=tmp_path/relative;path.parent.mkdir(parents=True,exist_ok=True)
+        token=('Implemented through **10.5.99**:' if relative.startswith('docs/') else
+               "frontend:'10.5.99'" if label=='bootstrap identity' else
+               'breadmaker_logo.svg?v=10.5.99' if label=='logo cache keys' else
+               'identity-platform-client.js?v=10.5.99' if 'import' in label else
+               '/static/app.js?v=10.5.99')
+        path.write_text(token)
+    (tmp_path/'VERSION').write_text('10.5.99\n')
+    auth=tmp_path/'static/js/features/account/identity-platform.js'
+    original=auth.read_text()
+    for module in ('unreviewed.js?v=10.5.99','signup-notice.js?v=bad'):
+        auth.write_text(original+'\n'+module)
+        try:release.validate(tmp_path)
+        except ValueError as exc:assert 'unsupported or unversioned identity import' in str(exc)
+        else:raise AssertionError('Unknown or malformed module bypassed metadata gate')

@@ -25,7 +25,7 @@ FIELDS = (
     ("static/css/reviews/workspace.css", r"(?<=breadmaker_logo\.svg\?v=)[0-9]+\.[0-9]+\.[0-9]+", "logo cache keys", 1),
     ("static/js/core/boot.js", r"(?<=frontend:')[0-9]+\.[0-9]+\.[0-9]+", "bootstrap identity", 1),
     ("static/js/features/account/security.js", r"(?<=identity-platform-client\.js\?v=)[0-9]+\.[0-9]+\.[0-9]+", "security import", 1),
-    ("static/js/features/account/identity-platform.js", r"(?<=identity-platform-client\.js\?v=)[0-9]+\.[0-9]+\.[0-9]+", "identity import", 1),
+    ("static/js/features/account/identity-platform.js", r"(?:(?<=identity-platform-client\.js\?v=)|(?<=signup-notice\.js\?v=))[0-9]+\.[0-9]+\.[0-9]+", "identity import", 1),
     ("docs/BREADMAKER_REVIEW_IMPLEMENTATION_PLAN.md", r"(?<=^Implemented through \*\*)[0-9]+\.[0-9]+\.[0-9]+(?=\*\*:)", "Review current-release marker", 1),
 )
 
