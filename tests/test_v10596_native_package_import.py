@@ -23,6 +23,32 @@ TARGET = 'd' * 32
 STAMP = '2026-01-01T00:00:00Z'
 
 
+def test_verified_database_buffer_released_before_record_planning(tmp_path, monkeypatch):
+    import hosted.native_package as native
+    released = []
+
+    class TrackedBytes(bytes):
+        def __del__(self):
+            released.append(True)
+
+    read = native.native_database_bytes
+    plan = native._plan_native_records
+    monkeypatch.setattr(native, 'native_database_bytes',
+                        lambda *args: TrackedBytes(read(*args)))
+
+    def checked_plan(*args, **kwargs):
+        assert released == [True]
+        return plan(*args, **kwargs)
+
+    monkeypatch.setattr(native, '_plan_native_records', checked_plan)
+    con, path = database(tmp_path, wal=True)
+    try:
+        result = prepare_native_package(package(con, path), TARGET)
+        assert any(row['entity'] == 'manuscript_block' for row in result['records'])
+    finally:
+        con.close()
+
+
 def database(tmp_path, *, wal=False):
     path = tmp_path / 'source.sqlite3'
     con = sqlite3.connect(path)
