@@ -89,3 +89,187 @@ Editor 10.5.11 eliminated all seven `encoded` NameError regressions, but the own
 ## 2026-10-14 — Security firewall retention / 10.5.14 corrective
 
 Editor 10.5.13 user verification: 1,608 passed / 3 failed / 1 skipped, all three failures only from fixed SHA-256 expectations for the authorized 10.5.12 two-module verifier prewarm. The 10.5.14 corrective leaves `scripts/verify_release.py`, `tests/conftest.py`, all runtime, storage, IAM, and Cloud files unchanged, updating exactly three old expected hashes after comparing to 10.5.11/10.5.12 sources. The firewall continues to compare exact SHA-256 digests for all protected files. This is **not** proof of fully encrypted hosted storage, successful attack simulation, live tenant isolation or compliance. Full Editor user verification is pending.
+
+## Source-only operational inventory preparation (2026-11-08)
+
+`hosted.security.inventory` is a separate, default-disabled producer candidate.
+It is not wired into local or hosted runtime, has no endpoint, scheduler, client
+creation, environment switch, persistence, or Admin transport. No live provider
+query, IAM change, deployment, or collection activation accompanies this source.
+The existing user-scoped `DailyUsageMetrics` validation-only module is unchanged.
+
+The versioned `cloud_operational_inventory_v1` definition permits exactly two
+provider COUNT aggregates: top-level `users` where `status == active`, and
+top-level `projects` with the same filter. These are persisted application
+accounts and current published project roots. They are not distinct people,
+online/concurrent users, lifetime creations, or project counts joined against
+owner eligibility. Missing status is excluded, even where legacy runtime paths
+treat it as active. Staged, deleted and erasure-pending roots do not match. A
+successful zero is zero; unavailable, incomplete, stale, or failed data is null.
+
+The compact JSON contract contains only schema/source constants, UTC seconds,
+fixed coverage enums, and `active_cloud_accounts` / `current_cloud_projects`
+integer-or-null values. Counts must be genuine nonnegative integers at most
+9,007,199,254,740,991; no IDs, emails, titles, provider exception messages, or
+manuscript fields enter the payload. Each SDK COUNT stream is consumed at most
+two result rows, must contain exactly one `total` aggregate, and is closed.
+The pinned Firestore 2.34.0 SDK decodes COUNT zero as `0.0`; only that exact
+SDK representation is normalized to integer zero at the fixed COUNT boundary.
+All other floats and all non-integer snapshot/wire counts remain invalid.
+Queries have a 20-second RPC timeout and no retry. An overall 60-second budget
+and 900-second export freshness ceiling fail closed. Provider read times must
+fall inside the UTC observation window; clock reversal fails structurally.
+
+The two aggregate queries run sequentially, not in a transaction. Coverage is
+explicitly `non_atomic`; `complete` means both narrow queries completed, not
+that they describe one instant or all product usage. Any one-query failure
+suppresses both counts. No document download, collection-group query, content
+crawl, mutation, or fallback to cached counts is supported.
+
+Activation remains blocked pending approved privacy notices/terms, permission
+review, provider/index verification, minimum required IAM, an authenticated
+aggregate-only publication/read boundary, and operator validation. An injected
+client with `enabled=True` is only a mechanical gate, not approval to collect.
+Concurrency requires separately approved account-linked activity semantics;
+canvases require active-parent eligibility; words and characters require trusted
+save-time counters rather than manuscript traversal. Those metrics remain
+unavailable. Synthetic focused tests are added for owner/CI execution; no agent
+suite or live integration check was run for this source preparation.
+
+## Unconnected canvas projection source (2026-11-10)
+
+`hosted.security.canvas_projection` adds a pure private count reducer, with no
+runtime import, store, query, writer, account identifier, manuscript read, or
+telemetry hook. Existing saves, imports, project mutations and the two-field
+Admin inventory schema are unchanged. No projection is collected or persisted.
+
+The definition is current canvas-root existence within a project, excluding
+nodes, edges, versions and lifetime creation events. A projection records a
+private project scope, exact project generation and integer count or unknown.
+Trusted complete transaction before/after existence images produce the delta;
+updates to an existing canvas contribute zero. Duplicate roots, non-unit
+transitions, replay, out-of-order or foreign-project application, underflow and
+overflow fail closed. Unknown baselines remain unknown through every mutation.
+
+A new zero baseline requires the `TrustedEmptyProjectCreation` server-only proof
+interface. Its future implementation must verify authorized empty creation and
+absence of a prior projection in the same transaction. Generation one, a client
+Boolean or a request payload is not proof: imports can publish nonempty roots at
+generation one. No production proof implementation, deserializer, reseed API,
+nonempty initialization or backfill is included. Python types do not establish
+authority; request data must never construct this evidence or private state.
+The proof interface alone is not a security mechanism. Verifier failures become
+a fixed structural error; future composition must also sanitize errors and
+never log provider payloads.
+
+The existing integration points are `HostedDomainStore.create` / `delete` and
+`_advance_project` in `src/hosted/domain_store.py`, plus the explicit generation
+advance in `src/hosted/chapter_mutations.py` and canvas-version activation in
+`src/hosted/canvas_versions.py`. Future integration must cover every root
+advance, including unrelated edits, Undo/Redo, import, restore and account/project
+lifecycle paths. It must write the projection atomically with the original
+mutation and exact generation CAS. This module does not install those hooks.
+Unsupported or skipped transitions must invalidate coverage, never guess a delta.
+
+`eligible_canvas_count` emits only an integer or null, and only an explicit
+active root of the same project and exact generation makes a known count
+eligible. Deleted, erased, staging, missing and stale observations yield null,
+not a fabricated zero. A future fleet aggregator must separately prove complete
+active-parent coverage; summing only known projections is not a total.
+
+Words and characters remain unavailable pending canonical count definitions and
+coverage across save, import and Undo paths. Presence remains unavailable pending
+approved privacy and activity semantics. This source slice adds no permission,
+credential, runtime setting, live provider call or deployment authorization.
+
+Focused synthetic verification on 2026-11-10 uses the current repository policy:
+commit `7381c8e` removed the older AGENTS milestone handoff; current
+`CONTRIBUTING.md` and `docs/TESTING.md` permit focused test modules. The inventory
+and canvas-projection unit modules were executed with the existing item
+watchdogs. No full release verifier or live provider check was executed.
+
+## Disabled latest-only inventory publication source (2026-11-10)
+
+`hosted.security.inventory_publication` now supplies an explicit one-shot,
+default-disabled coordinator for the existing two-count contract. It reads the
+current aggregate object, collects a new observation, requires strictly newer
+`as_of`, then writes with the exact observed object-generation precondition.
+Absence requires create-only generation zero. A conflict is returned without a
+retry. Equal-second observations are deliberately not newer. Fresh unknown or
+partial observations replace earlier good values with nulls; fatal read/clock
+failures do not publish a fabricated observation, so the previous object can only
+remain usable until the independent Admin freshness ceiling expires.
+
+`hosted.security.inventory_gcs` is a separate uncomposed SDK adapter. It accepts
+an injected bucket matching the reviewed `breadmaker-admin-usage-*` convention
+and standard storage endpoint, never credentials, client paths, URLs or object
+names. Only `cloud-usage/v1/latest.json` is addressable. The naming/endpoint
+checks do not prove resource isolation or authorization. No client is constructed
+and no ADC or environment configuration is read by these modules.
+
+Reads verify object size at most 16KiB, pin the download to the observed
+generation, request a bounded raw range, check byte length and provider MD5
+transport integrity, and validate the closed numeric-only schema. Uploads use
+one bounded multipart request, a fixed no-store cache policy, no custom metadata,
+a server-checked MD5 transport checksum and exact generation CAS. Every SDK RPC
+has an explicit remaining timeout and `retry=None`. The fixed MD5 is transport
+integrity, not an authentication mechanism or a manuscript-content identifier.
+Provider payloads and exception messages are never logged or surfaced. A write
+that may have succeeded before a transport failure returns uncertain, not a
+retry or a claim of success. Callback deadlines are cooperative; no background
+thread, polling loop or scheduler is installed. SDK credential refresh and
+injected identity callbacks are not forcibly cancelled by RPC timeouts; future
+keyless composition must separately bound these operations.
+
+There is no separate deletion, listing, historic-object or blanket cleanup API.
+However, GCS overwrite requires delete/overwrite permission semantics even when
+no separate delete request is made. A single live object name does not establish
+retention: bucket versioning, soft delete, retention policy, lifecycle settings,
+minimum IAM, keyless runtime binding, approved privacy notices, publication
+cadence and operator validation remain explicit activation gates. No bucket,
+credential, permission, runtime hook, production read/write or deployment was
+created or enabled by this source change. The existing two-count wire schema and
+unsupported status of words, characters, canvases and concurrency are unchanged.
+
+The focused inventory, canvas projection and publication unit modules pass 148
+synthetic cases. `scripts/check_inventory_admin_contract.py` also exercises the
+actual producer and coordinator through an in-memory latest object and the actual
+Admin HTTP reader/parser at commit
+`eb090d887613ee2d4502045914630c632f4f2a5c`, with an in-memory HTTP opener and a
+synthetic token. Counts, true zero, unknown invalidation and expiry pass. Run it
+with explicit `--admin-source` and `--expected-admin-head` arguments; the harness
+rejects a dirty or mismatched Admin checkout. No real credentials, HTTP calls or
+provider mutations are involved. This is source-level contract evidence, not
+live SDK, IAM, retention, deployment or end-to-end production acceptance.
+
+Pinned SDK source was also inspected directly, not only exercised by mocks.
+The installed `google-cloud-storage==3.16.0` matches `requirements-hosted.txt`.
+In that package, `blob.py:4801` exposes writable `md5_hash` through the scalar
+property setter in `_helpers.py:605-609`; `blob.py:94-102,1870-1873` includes
+changed `md5Hash` in writable metadata. `upload_from_string` forwards known
+length and checksum unchanged at `blob.py:3368-3383`. The multipart threshold
+is 8,388,608 bytes (`blob.py:148,2651`), above the fixed 16KiB maximum.
+`_media/_helpers.py:264-265` returns no checksum object for `checksum=None`,
+so `_media/_upload.py:330-339` preserves the pre-set MD5 metadata when building
+the multipart body. These are implementation checks, not live GCS acceptance.
+
+## Inventory branch reconciliation with scene-save main (2026-11-10)
+
+The source-only inventory/publication/canvas branch was reconciled with main
+`49424e92d77ae2f184aefd7c316592258b126bd9` (atomic scene-save PR #46). The merge
+had no conflicts. The generated code index was regenerated for the combined
+source rather than retaining stale line numbers from its automatic merge.
+Inventory, publication, GCS adapter and canvas reducer sources are byte-for-byte
+unchanged from `13c2615b8f4383ee181433775c84e4bb704b3bd1`. The SHA-256 of
+`src/hosted/security/inventory.py` remains
+`fc9d7956c6678f38695f20429e2418c11c59a75846784abeddbdb17b56a50575`.
+The separate saved-text/coverage branch is not included.
+
+All 148 telemetry synthetic cases plus 31 focused scene-mutation/save-failure
+cases pass together (179 total). The unchanged actual Admin `eb090d8` in-memory
+producer/publication/reader harness passes counts, zero, unknown and expiry.
+Telemetry source compilation and whitespace checks pass. The test run reported
+one existing Starlette TestClient/httpx deprecation warning. No local full
+verifier, browser benchmark, live provider operation, deployment, runtime hook or
+activation was run. All previously documented approval and integration gates
+remain in force; merging current main into this source branch does not clear them.

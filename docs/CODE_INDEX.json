@@ -13374,6 +13374,87 @@
       "symbols": []
     },
     {
+      "file": "src/hosted/security/canvas_projection.py",
+      "lines": 225,
+      "symbols": [
+        {
+          "name": "CanvasProjectionError",
+          "kind": "class",
+          "line": 35
+        },
+        {
+          "name": "_generation",
+          "kind": "function",
+          "line": 39
+        },
+        {
+          "name": "_scope",
+          "kind": "function",
+          "line": 44
+        },
+        {
+          "name": "_count",
+          "kind": "function",
+          "line": 53
+        },
+        {
+          "name": "EmptyProjectCreation",
+          "kind": "class",
+          "line": 59
+        },
+        {
+          "name": "TrustedEmptyProjectCreation",
+          "kind": "class",
+          "line": 76
+        },
+        {
+          "name": "CanvasProjection",
+          "kind": "class",
+          "line": 90
+        },
+        {
+          "name": "_projection",
+          "kind": "function",
+          "line": 101
+        },
+        {
+          "name": "seed_empty_projection",
+          "kind": "function",
+          "line": 114
+        },
+        {
+          "name": "unknown_projection",
+          "kind": "function",
+          "line": 129
+        },
+        {
+          "name": "CanvasRootChange",
+          "kind": "class",
+          "line": 135
+        },
+        {
+          "name": "CanvasMutation",
+          "kind": "class",
+          "line": 154
+        },
+        {
+          "name": "advance_projection",
+          "kind": "function",
+          "line": 180
+        },
+        {
+          "name": "ProjectRootObservation",
+          "kind": "class",
+          "line": 196
+        },
+        {
+          "name": "eligible_canvas_count",
+          "kind": "function",
+          "line": 210
+        }
+      ]
+    },
+    {
       "file": "src/hosted/security/cloud_kms.py",
       "lines": 65,
       "symbols": [
@@ -13417,6 +13498,164 @@
           "name": "HostedEnvelopeCodec",
           "kind": "class",
           "line": 58
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/inventory.py",
+      "lines": 211,
+      "symbols": [
+        {
+          "name": "InventoryValidationError",
+          "kind": "class",
+          "line": 39
+        },
+        {
+          "name": "_utc_now",
+          "kind": "function",
+          "line": 43
+        },
+        {
+          "name": "_utc",
+          "kind": "function",
+          "line": 47
+        },
+        {
+          "name": "_count",
+          "kind": "function",
+          "line": 54
+        },
+        {
+          "name": "_stamp",
+          "kind": "function",
+          "line": 60
+        },
+        {
+          "name": "InventorySnapshot",
+          "kind": "class",
+          "line": 65
+        },
+        {
+          "name": "_active_status_filter",
+          "kind": "function",
+          "line": 121
+        },
+        {
+          "name": "_active_root_count",
+          "kind": "function",
+          "line": 127
+        },
+        {
+          "name": "GoogleFirestoreInventoryProducer",
+          "kind": "class",
+          "line": 159
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/inventory_gcs.py",
+      "lines": 116,
+      "symbols": [
+        {
+          "name": "_Deadline",
+          "kind": "class",
+          "line": 25
+        },
+        {
+          "name": "_md5",
+          "kind": "function",
+          "line": 38
+        },
+        {
+          "name": "_is_conflict",
+          "kind": "function",
+          "line": 43
+        },
+        {
+          "name": "GoogleInventoryLatestStore",
+          "kind": "class",
+          "line": 51
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/inventory_publication.py",
+      "lines": 189,
+      "symbols": [
+        {
+          "name": "InventoryPublicationError",
+          "kind": "class",
+          "line": 26
+        },
+        {
+          "name": "InventoryWriteConflict",
+          "kind": "class",
+          "line": 30
+        },
+        {
+          "name": "InventoryWriteUncertain",
+          "kind": "class",
+          "line": 34
+        },
+        {
+          "name": "InventoryResource",
+          "kind": "class",
+          "line": 39
+        },
+        {
+          "name": "require_generation",
+          "kind": "function",
+          "line": 48
+        },
+        {
+          "name": "VersionedInventory",
+          "kind": "class",
+          "line": 55
+        },
+        {
+          "name": "LatestInventoryStore",
+          "kind": "class",
+          "line": 65
+        },
+        {
+          "name": "InventoryProducer",
+          "kind": "class",
+          "line": 70
+        },
+        {
+          "name": "utc_now",
+          "kind": "function",
+          "line": 74
+        },
+        {
+          "name": "_utc",
+          "kind": "function",
+          "line": 78
+        },
+        {
+          "name": "_object",
+          "kind": "function",
+          "line": 84
+        },
+        {
+          "name": "_exact",
+          "kind": "function",
+          "line": 93
+        },
+        {
+          "name": "_stamp",
+          "kind": "function",
+          "line": 98
+        },
+        {
+          "name": "decode_inventory",
+          "kind": "function",
+          "line": 104
+        },
+        {
+          "name": "InventoryPublication",
+          "kind": "class",
+          "line": 130
         }
       ]
     },
