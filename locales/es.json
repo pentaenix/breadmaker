@@ -5,6 +5,8 @@
   "native_name": "Español",
   "direction": "ltr",
   "strings": {
+    "account_security.subscription": "Suscripción",
+    "account_security.subscription_unavailable": "La facturación de suscripciones aún no está conectada.",
     "package_import.restart": "Empezar de nuevo",
     "package_import.title": "Importando proyecto",
     "package_import.back": "Atrás",

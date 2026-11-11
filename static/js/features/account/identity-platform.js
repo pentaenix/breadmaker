@@ -1,11 +1,66 @@
 import {
-  identityClient,signInProvider,signInEmail,createEmailAccount,sendVerification,reloadUser,
+  identityClient,identityConfig,signInProvider,signInEmail,createEmailAccount,sendVerification,reloadUser,
   sendPasswordReset,enrolledTotp,beginTotpEnrollment,exchangeServerSession,signOutClient
-} from './identity-platform-client.js?v=10.5.96';
+} from './identity-platform-client.js?v=10.5.96&privacy=9';
+
+import {noticeLanguage,renderSignupNotice} from './signup-notice.js?v=10.5.96&privacy=9';
 
 const $=selector=>document.querySelector(selector);
 const message=$('#identityMessage'),totp=$('#identityTotp'),social=$('#identitySocial');
-let signup=false,localeSequence=0;
+let signup=false,localeSequence=0,busyActive=false;
+let noticeState='loading',noticeLocale='',noticeSequence=0,noticeAbort=null,sdkReady=false;
+const noticeCopy={
+  en:{loading:'Loading privacy notice…',retry:'Retry',unavailable:'The privacy notice is unavailable. Account creation and Google/Apple sign-in are temporarily unavailable. You can still sign in with email or reset your password.',fallback:'This notice is available in English and Spanish. English is shown.'},
+  es:{loading:'Cargando el aviso de privacidad…',retry:'Reintentar',unavailable:'El aviso de privacidad no está disponible. La creación de cuentas y el acceso con Google o Apple no están disponibles temporalmente. Puede iniciar sesión con correo electrónico o restablecer su contraseña.',fallback:''}
+};
+function currentNoticeLanguage(){return noticeLanguage(document.documentElement.lang)}
+function creationReady(){return noticeState==='ready'&&noticeLocale===currentNoticeLanguage()&&sdkReady}
+function updateAvailability(){
+  document.querySelectorAll('button,input').forEach(el=>{
+    const creating=el.hasAttribute('data-provider')||(el.id==='identityEmailSignIn'&&signup);
+    el.disabled=busyActive||el.dataset.providerUnavailable==='true'||(creating&&!creationReady());
+  });
+}
+function requireNotice(){
+  if(creationReady())return true;
+  showMessage(noticeCopy[currentNoticeLanguage()].unavailable,'error');return false;
+}
+function suspendNotice(){
+  noticeSequence++;noticeAbort?.abort();noticeState='loading';noticeLocale='';
+  $('#identityNoticeContent').replaceChildren();
+  $('#identityNoticeStatus').hidden=false;$('#identityNoticeStatus').textContent=noticeCopy[currentNoticeLanguage()].loading;
+  $('#identityNoticeRetry').hidden=true;updateAvailability();
+}
+async function loadNotice(){
+  suspendNotice();const sequence=noticeSequence,locale=currentNoticeLanguage(),copy=noticeCopy[locale];
+  const status=$('#identityNoticeStatus'),retry=$('#identityNoticeRetry');
+  status.hidden=false;status.textContent=copy.loading;retry.hidden=true;retry.textContent=copy.retry;
+  const controller=new AbortController();noticeAbort=controller;
+  const timer=setTimeout(()=>controller.abort(),8000);
+  try{
+    const response=await fetch(`/api/auth/signup-notice?locale=${locale}`,{credentials:'omit',cache:'no-store',redirect:'error',signal:controller.signal,headers:{Accept:'application/json'}});
+    if(!response.ok)throw new Error('SIGNUP_NOTICE_UNAVAILABLE');
+    const raw=await response.text();if(raw.length>64000)throw new Error('SIGNUP_NOTICE_INVALID');
+    const payload=JSON.parse(raw);
+    if(sequence!==noticeSequence)return;
+    renderSignupNotice($('#identityNoticeContent'),payload,locale);
+    noticeLocale=locale;noticeState='ready';
+    const fallback=document.documentElement.lang!==locale;
+    status.textContent=fallback?copy.fallback:'';status.hidden=!fallback;
+    // Only prepare the provider SDK after the disclosure has been rendered. A
+    // completed preparation keeps the later popup inside its user click flow.
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    if(sequence!==noticeSequence)return;
+    try{await identityClient();sdkReady=true}catch{
+      if(sequence===noticeSequence){sdkReady=false;retry.hidden=false;showMessage('Sign-in is temporarily unavailable. Please retry.','error')}
+    }
+  }catch{
+    if(sequence!==noticeSequence)return;
+    noticeState='error';status.hidden=false;status.textContent=copy.unavailable;retry.hidden=false;
+  }finally{
+    clearTimeout(timer);if(sequence===noticeSequence)updateAvailability();
+  }
+}
 const languages=[['en','English'],['es','Español'],['fr','Français'],['it','Italiano'],['ja','日本語'],['pt-BR','Português'],['zh-CN','简体中文']];
 const themes=['light','dusk','dark'];
 function authText(key,fallback){return i18nReady?i18nText(key):fallback}
@@ -28,11 +83,13 @@ function setMode(value){
   for(const selector of ['#identityHeaderMode','#identityEmailSignUp'])label(selector,signup?'auth.login.action':'auth.signup.action',signup?'Log in':'Sign up');
   $('#identityPassword').autocomplete=signup?'new-password':'current-password';
   $('#identityForgotPassword').hidden=signup;
+  updateAvailability();
 }
 async function chooseLanguage(code){
-  const sequence=++localeSequence,payload=await fetchLocalePayload(code);
+  suspendNotice();const sequence=++localeSequence,payload=await fetchLocalePayload(code);
   if(sequence!==localeSequence)return;
   installLocalePayload(payload,{persist:true});refreshLabels();$('#identityLanguage').open=false;
+  loadNotice();
 }
 function setupPresentation(){
   let theme='light',language='en';
@@ -44,7 +101,7 @@ function setupPresentation(){
   };
   for(const [code,name] of languages){
     const button=document.createElement('button');button.type='button';button.textContent=name;button.dataset.locale=code;
-    button.onclick=()=>chooseLanguage(code).catch(error=>showMessage(error.message,'error'));$('#identityLanguages').append(button);
+    button.onclick=()=>chooseLanguage(code).catch(error=>{showMessage(error.message,'error');loadNotice()});$('#identityLanguages').append(button);
   }
   $('#identityHeaderMode').onclick=$('#identityEmailSignUp').onclick=()=>setMode(!signup);
   $('#identityShowPassword').onclick=()=>{
@@ -53,7 +110,7 @@ function setupPresentation(){
     label('#identityShowPassword',shown?'auth.login.hide':'auth.login.show',shown?'Hide':'Show');
   };
   setMode(false);refreshLabels();
-  chooseLanguage(languages.some(([code])=>code===language)?language:'en').catch(()=>{/* Keep usable English labels when offline. */});
+  chooseLanguage(languages.some(([code])=>code===language)?language:'en').catch(()=>{loadNotice()});
 }
 function showMessage(text,kind='info'){message.hidden=false;message.className=`identity-message ${kind}`;message.textContent=String(text||'')}
 function hideMessage(){message.hidden=true;message.textContent=''}
@@ -68,7 +125,7 @@ function safeReturn(){
     return target.pathname+target.search+target.hash;
   }catch{return '/'}
 }
-function busy(on){document.querySelectorAll('button,input').forEach(el=>{el.disabled=!!on||el.dataset.providerUnavailable==='true'})}
+function busy(on){busyActive=!!on;updateAvailability()}
 async function askTotp({displayName}){
   return new Promise(resolve=>{
     totp.hidden=false;totp.innerHTML='<h2>Two-step verification</h2><p>Enter the current code from <span id="identityTotpDisplayName"></span>.</p><div class="identity-code-row"><input id="identityTotpCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8" autofocus><button id="identityTotpContinue" type="button">Continue</button></div>';
@@ -105,19 +162,23 @@ async function finish(user,{passwordAccount=false}={}){
 }
 async function withBusy(fn){hideMessage();busy(true);try{await fn()}catch(error){try{await signOutClient()}catch{};const text=error?.message||'Sign-in failed.';showMessage(text.includes('PRIVATE_ALPHA_')?'This account is not approved for Breadmaker access.':text,'error')}finally{busy(false)}}
 async function renderSocial(){
-  const {config}=await identityClient();const buttons=[];
+  const config=await identityConfig();const buttons=[];
   // Official artwork served locally: https://developers.google.com/identity/branding-guidelines
-  if(config.providers.google)buttons.push('<button type="button" data-provider="google" class="provider"><img class="identity-provider-icon" src="/static/google_signin_logo.png" width="20" height="20" alt="" aria-hidden="true"><span>Continue with Google</span></button>');
-  buttons.push(`<button type="button" data-provider="apple" class="provider"${config.providers.apple?'':' disabled aria-disabled="true" data-provider-unavailable="true"'}><span class="identity-provider-icon identity-apple-icon" aria-hidden="true"></span><span>Continue with Apple</span></button>`);
+  if(config.providers.google)buttons.push('<button type="button" data-provider="google" class="provider" aria-describedby="identityNotice" disabled><img class="identity-provider-icon" src="/static/google_signin_logo.png" width="20" height="20" alt="" aria-hidden="true"><span>Continue with Google</span></button>');
+  buttons.push(`<button type="button" data-provider="apple" class="provider" aria-describedby="identityNotice"${config.providers.apple?'':' disabled aria-disabled="true" data-provider-unavailable="true"'}><span class="identity-provider-icon identity-apple-icon" aria-hidden="true"></span><span>Continue with Apple</span></button>`);
   social.innerHTML=buttons.join('');
-  social.querySelectorAll('[data-provider]:not(:disabled)').forEach(button=>button.onclick=()=>withBusy(async()=>{const result=await signInProvider(button.dataset.provider,askTotp);await finish(result.user)}));
+  social.querySelectorAll('[data-provider]:not([data-provider-unavailable=true])').forEach(button=>button.onclick=()=>{if(button.dataset.providerUnavailable==='true'||busyActive||!requireNotice())return;withBusy(async()=>{const result=await signInProvider(button.dataset.provider,askTotp);await finish(result.user)})});
+  updateAvailability();
 }
-$('#identityEmailForm').addEventListener('submit',event=>{event.preventDefault();withBusy(async()=>{
+$('#identityEmailForm').addEventListener('submit',event=>{event.preventDefault();if(busyActive||(signup&&!requireNotice()))return;withBusy(async()=>{
   let result;
   if(signup){try{result=await createEmailAccount($('#identityEmail').value,$('#identityPassword').value)}catch{throw new Error('Could not create an account with those credentials.')}}
   else result=await signInEmail($('#identityEmail').value,$('#identityPassword').value,askTotp);
   await finish(result.user,{passwordAccount:true});
 })});
 $('#identityForgotPassword').onclick=()=>withBusy(async()=>{const email=$('#identityEmail').value;if(!email)throw new Error('Enter your email first.');await sendPasswordReset(email);showMessage('If this address has a password account, Identity Platform has sent the reset email.')});
+$('#identityNoticeRetry').onclick=()=>loadNotice();
+window.addEventListener('pagehide',suspendNotice);
+window.addEventListener('pageshow',event=>{if(event.persisted)loadNotice()});
 setupPresentation();
 renderSocial().catch(error=>showMessage(error.message,'error'));

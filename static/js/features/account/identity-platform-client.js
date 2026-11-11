@@ -7,7 +7,7 @@ async function loadModules(){
   const [appMod,authMod]=await Promise.all([import(APP_URL),import(AUTH_URL)]);
   return {appMod,authMod};
 }
-async function loadConfig(){
+export async function identityConfig(){
   const response=await fetch('/api/auth/client-config',{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
   if(!response.ok)throw new Error(`Identity configuration unavailable (${response.status})`);
   return response.json();
@@ -15,14 +15,15 @@ async function loadConfig(){
 export async function identityClient(){
   if(cachedClient)return cachedClient;
   cachedClient=(async()=>{
-    const [{appMod,authMod},config]=await Promise.all([loadModules(),loadConfig()]);
+    const [{appMod,authMod},config]=await Promise.all([loadModules(),identityConfig()]);
     const app=appMod.getApps().find(item=>item.name==='breadmaker-identity-platform')||appMod.initializeApp(config.firebase,'breadmaker-identity-platform');
     const auth=authMod.getAuth(app);
     await authMod.setPersistence(auth,authMod.inMemoryPersistence);
     await auth.authStateReady();
     return {app,auth,authMod,config};
   })();
-  return cachedClient;
+  const attempt=cachedClient;
+  try{return await attempt}catch(error){if(cachedClient===attempt)cachedClient=null;throw error}
 }
 export function providerFor(authMod,name){
   if(name==='google'){

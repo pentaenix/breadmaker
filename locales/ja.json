@@ -5,6 +5,8 @@
   "native_name": "日本語",
   "direction": "ltr",
   "strings": {
+    "account_security.subscription": "サブスクリプション",
+    "account_security.subscription_unavailable": "サブスクリプションの請求機能はまだ接続されていません。",
     "package_import.restart": "最初からやり直す",
     "package_import.title": "プロジェクトをインポート中",
     "package_import.back": "戻る",
