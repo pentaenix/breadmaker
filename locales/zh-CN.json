@@ -5,6 +5,8 @@
   "native_name": "简体中文",
   "direction": "ltr",
   "strings": {
+    "account_security.subscription": "订阅",
+    "account_security.subscription_unavailable": "订阅计费尚未连接。",
     "package_import.restart": "重新开始",
     "package_import.title": "正在导入项目",
     "package_import.back": "返回",

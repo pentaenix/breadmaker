@@ -156,6 +156,13 @@ function accountSecuritySessionRows(snapshot){
   return sessions.map(item=>{const isCurrent=String(item.session_id||'')===current,canRevoke=snapshot?.selective_session_revocation_supported!==false&&!isCurrent;return `<div class="account-security-row"><div class="account-security-provider" aria-hidden="true">◉</div><div class="account-security-copy"><strong>${escapeHtml(isCurrent?i18nText('account_security.this_session'):i18nText('account_security.other_session'))}${isCurrent?`<span class="account-security-badge primary">${escapeHtml(i18nText('account_security.current'))}</span>`:''}</strong><small>${escapeHtml(accountSecurityAuthMethodLabel(item.auth_method))}${item.last_seen_at?` · ${escapeHtml(i18nText('account_security.last_active',{time:accountSecurityTime(item.last_seen_at)}))}`:''}</small></div><div class="account-security-actions">${canRevoke?`<button type="button" data-security-revoke-session="${escapeHtml(item.session_id)}" class="danger">${escapeHtml(i18nText('account_security.revoke'))}</button>`:''}</div></div>`}).join('')
 }
 
+// This phase deliberately renders no checkout/cancellation action. Provider
+// connection and verified paid-period display require a later reviewed adapter.
+function accountSubscriptionSection(snapshot){
+  if(snapshot?.billing?.connected!==false||snapshot.billing.status!=='unavailable')return '';
+  return `<section class="account-security-section" aria-labelledby="accountSubscriptionHeading"><div class="account-security-section-head"><div><h3 id="accountSubscriptionHeading">${escapeHtml(i18nText('account_security.subscription'))}</h3></div></div><div class="account-security-empty">${escapeHtml(i18nText('account_security.subscription_unavailable'))}</div></section>`;
+}
+
 async function openAccountSecurity(){
   if(!accountSecurityAvailable())return;
   closeUserProfilePopover();
@@ -164,6 +171,7 @@ async function openAccountSecurity(){
   let snapshot;
   try{snapshot=await api('/api/auth/security')}catch(error){$('#modalBody').innerHTML=`<div class="account-security-warning">${escapeHtml(error.message||i18nText('account_security.unavailable'))}</div>`;return}
   const body=`<div class="account-security-shell"><p class="account-security-intro">${escapeHtml(i18nText('account_security.intro'))}</p>
+  ${accountSubscriptionSection(snapshot)}
   <section class="account-security-section"><div class="account-security-section-head"><div><h3>${escapeHtml(i18nText('account_security.signin_methods'))}</h3><p>${escapeHtml(i18nText('account_security.signin_methods_help'))}</p></div><button id="securityLinkMethod" class="quiet-button" type="button">${escapeHtml(i18nText('account_security.add_method'))}</button></div><div class="account-security-list">${accountSecurityIdentityRows(snapshot)}</div></section>
   <section class="account-security-section"><div class="account-security-section-head"><div><h3>${escapeHtml(i18nText('account_security.two_step'))}</h3><p>${escapeHtml(i18nText('account_security.two_step_help'))}</p></div></div><div class="account-security-list">${accountSecurityMfaRows(snapshot)}</div></section>
   <section class="account-security-section"><div class="account-security-section-head"><div><h3>${escapeHtml(i18nText('account_security.sessions'))}</h3><p>${escapeHtml(i18nText('account_security.sessions_help'))}</p></div></div><div class="account-security-list">${accountSecuritySessionRows(snapshot)}</div></section>
