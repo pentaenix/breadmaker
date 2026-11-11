@@ -5,6 +5,8 @@
   "native_name": "English",
   "direction": "ltr",
   "strings": {
+    "account_security.subscription": "Subscription",
+    "account_security.subscription_unavailable": "Subscription billing is not connected yet.",
     "package_import.restart": "Start again",
     "package_import.title": "Importing Project",
     "package_import.back": "Back",

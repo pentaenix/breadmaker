@@ -8048,6 +8048,37 @@
       ]
     },
     {
+      "file": "src/hosted/billing.py",
+      "lines": 88,
+      "symbols": [
+        {
+          "name": "_utc",
+          "kind": "function",
+          "line": 13
+        },
+        {
+          "name": "PaidPeriod",
+          "kind": "class",
+          "line": 20
+        },
+        {
+          "name": "BillingUnavailable",
+          "kind": "class",
+          "line": 51
+        },
+        {
+          "name": "BillingService",
+          "kind": "class",
+          "line": 55
+        },
+        {
+          "name": "DisabledBillingService",
+          "kind": "class",
+          "line": 63
+        }
+      ]
+    },
+    {
       "file": "src/hosted/canvas_versions.py",
       "lines": 294,
       "symbols": [
@@ -9312,7 +9343,7 @@
     },
     {
       "file": "src/hosted/http_auth.py",
-      "lines": 211,
+      "lines": 213,
       "symbols": []
     },
     {
@@ -16691,7 +16722,7 @@
     },
     {
       "file": "static/js/features/account/security.js",
-      "lines": 182,
+      "lines": 190,
       "symbols": [
         {
           "name": "accountSecurityMode",
@@ -16814,9 +16845,14 @@
           "line": 153
         },
         {
+          "name": "accountSubscriptionSection",
+          "kind": "function",
+          "line": 161
+        },
+        {
           "name": "openAccountSecurity",
           "kind": "function",
-          "line": 158
+          "line": 165
         }
       ]
     },
@@ -28010,70 +28046,70 @@
       "method": "GET",
       "function": "identity_platform_login_shell",
       "file": "src/hosted/http_auth.py",
-      "line": 74,
+      "line": 75,
       "path": "/auth/login"
     },
     {
       "method": "GET",
       "function": "identity_platform_client_config",
       "file": "src/hosted/http_auth.py",
-      "line": 119,
+      "line": 120,
       "path": "/api/auth/client-config"
     },
     {
       "method": "GET",
       "function": "identity_platform_csrf",
       "file": "src/hosted/http_auth.py",
-      "line": 123,
+      "line": 124,
       "path": "/api/auth/csrf"
     },
     {
       "method": "POST",
       "function": "identity_platform_exchange",
       "file": "src/hosted/http_auth.py",
-      "line": 133,
+      "line": 134,
       "path": "/api/auth/session/exchange"
     },
     {
       "method": "GET",
       "function": "identity_platform_security_snapshot",
       "file": "src/hosted/http_auth.py",
-      "line": 158,
+      "line": 159,
       "path": "/api/auth/security"
     },
     {
       "method": "POST",
       "function": "identity_platform_security_proof",
       "file": "src/hosted/http_auth.py",
-      "line": 168,
+      "line": 170,
       "path": "/api/auth/security/proof"
     },
     {
       "method": "POST",
       "function": "identity_platform_security_sync",
       "file": "src/hosted/http_auth.py",
-      "line": 177,
+      "line": 179,
       "path": "/api/auth/security/sync"
     },
     {
       "method": "POST",
       "function": "identity_platform_logout_everywhere",
       "file": "src/hosted/http_auth.py",
-      "line": 194,
+      "line": 196,
       "path": "/api/auth/logout-everywhere"
     },
     {
       "method": "POST",
       "function": "identity_platform_logout_everywhere",
       "file": "src/hosted/http_auth.py",
-      "line": 194,
+      "line": 196,
       "path": "/api/auth/security/sign-out-everywhere"
     },
     {
       "method": "POST",
       "function": "identity_platform_selective_session_revoke",
       "file": "src/hosted/http_auth.py",
-      "line": 207,
+      "line": 209,
       "path": "/api/auth/security/session/revoke"
     },
     {
