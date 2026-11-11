@@ -1,6 +1,6 @@
 # Staging-only, digest-deployed immutable archive operator, no HTTP listener.
 # Never copy repo root (may include manuscript files, .envs, credentials).
-FROM python:3.14.7-slim-trixie
+FROM python:3.15.0-slim-trixie
 WORKDIR /app
 COPY requirements.txt requirements-hosted.txt ./
 RUN python -m pip install --no-cache-dir -r requirements-hosted.txt
