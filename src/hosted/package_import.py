@@ -23,6 +23,7 @@ from hosted.firestore.model_registry import MODELS
 from hosted.firestore.repositories import _fingerprint, render_model_path
 from hosted.idempotency import stable_entity_id, stable_project_id
 from hosted.import_staging import package_import_staging
+from hosted.package_import_snapshot import _AssetBytes, _encode_special
 from hosted.packages import HostedProjectPackageService, _fields, _restore_safe, _SKIP
 from hosted.storage.keys import project_asset_key
 from hosted.storage.publication import ImmutableObjectPublisher
@@ -31,6 +32,7 @@ from security.image_security import HOSTED_DEFAULT_IMAGE_BYTES, inspect_hosted_i
 BATCH_SIZE = 64
 UPLOAD_WORKERS = 8
 PREPARE_WORKERS = 16
+SNAPSHOT_CAPTURE_WORKERS = 1
 LIFETIME = 86400
 MAX_SOURCE_BYTES = 64 * 1024**2
 MAX_PLAN_BYTES = 256 * 1024**2  # the existing expanded archive boundary, not a row cap
@@ -39,7 +41,8 @@ _EMPTY_CHAIN = '0' * 64
 
 
 def _json(value):
-    return json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode()
+    return json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':'),
+                      allow_nan=False, default=_encode_special).encode()
 
 
 def _hash(value):
@@ -139,6 +142,14 @@ class PackageImport:
     def _receipt_path(cls, uid, job):
         return (*cls._path(uid, job), 'receipts', 'head')
 
+    @classmethod
+    def _snapshot_path(cls, uid, job, index):
+        return (*cls._path(uid, job), 'snapshots', str(index))
+
+    @classmethod
+    def _source_path(cls, uid, job):
+        return (*cls._path(uid, job), 'sources', 'archive')
+
     @staticmethod
     def _account(tx, uid, rows=None):
         user = rows[('users', uid)] if rows is not None else tx.get(('users', uid))
@@ -225,9 +236,14 @@ class PackageImport:
     @staticmethod
     def _public(data):
         fields = ('job_id', 'phase', 'next_batch', 'total_batches', 'completed_records',
-                  'total_records', 'completed_images', 'total_images', 'source_sha256')
+                  'total_records', 'completed_images', 'total_images', 'source_sha256', 'prepared_batches')
         result = {key: data[key] for key in fields}
         result['ready'] = data['phase'] == 'ready'
+        if data.get('snapshot_format') == 1:
+            result.update(preparation_version=3,
+                          prepare_available=bool(data.get('snapshot_ready') or data.get('source_ready')),
+                          prepared_source_chunks=data['captured_chunks'],
+                          total_source_chunks=data['total_source_chunks'])
         if data['phase'] == 'completed':
             result.update(project=data['result'], reload=True, ok=True)
         return result
@@ -298,8 +314,13 @@ class PackageImport:
         return {key: data[key] for key in ('job_id', 'actor', 'project_id', 'source_sha256', 'operation')}
 
     def _batches(self, plan, data):
-        items = [{'kind': 'asset', 'path': item['path'], 'extension': item['extension'], 'sha256': item['sha256'],
-                  'data': base64.b64encode(item['data']).decode('ascii')} for item in plan['assets']]
+        # Consume the fresh parser plan's binary assets without retaining a
+        # second full base64 representation. Canonical JSON encodes only the
+        # current batch/chunk; its wire bytes and all hashes remain unchanged.
+        items = []
+        for item in plan['assets']:
+            items.append({'kind': 'asset', 'path': item['path'], 'extension': item['extension'],
+                          'sha256': item['sha256'], 'data': _AssetBytes(item.pop('data'))})
         items.extend({'kind': 'record', **item} for item in plan['records'])
         items.extend(self._annotation_items(plan, data['project_id'], data['stamp']))
         batches, current, size = [], [], 0
@@ -316,7 +337,7 @@ class PackageImport:
             batches.append(current)
         return batches
 
-    def begin(self, raw, uid, *, name_override=None, operation):
+    def begin(self, raw, uid, *, name_override=None, operation, durable=False):
         uid = require_user_id(uid)
         op = require_opaque_id(operation, label='operation')
         if self.projects.domain.encrypted_objects is not None or self.projects.domain.encrypted_fields is not None:
@@ -340,6 +361,10 @@ class PackageImport:
         if old is not None:
             old = self._load(uid, job)
             if old['phase'] != 'preparing':
+                return self._public(old)
+            if durable and (old.get('snapshot_ready') or old.get('source_ready')):
+                # The same source/key may recover a lost begin response. Its
+                # immutable continuation is already retained; do not reparse.
                 return self._public(old)
         from hosted.native_package import prepare_project_package
         plan = prepare_project_package(raw, pid, name_override=name_override)
@@ -392,6 +417,12 @@ class PackageImport:
         data = self.documents.run_transaction(pin)
         if data['phase'] != 'preparing':
             return self._public(data)
+        if durable:
+            return self._capture_snapshot(raw, uid, job, data, batches)
+        return self._prepare_plans(uid, job, data, batches)
+
+    def _prepare_plans(self, uid, job, data, batches, *, first_batch=0, snapshot_index=None):
+        pid, op, path = data['project_id'], data['operation'], self._path(uid, job)
         objects = self._objects(uid, job, data)
         def publish(item):
             index, entries = item
@@ -408,12 +439,19 @@ class PackageImport:
                     'decoded_bytes': len(source), 'records': sum(item['kind'] != 'asset' for item in entries),
                     'images': sum(item['kind'] == 'asset' for item in entries)}
         with package_import_staging(op, uid):
-            # Persist progress after <=8 plan uploads. An HTTP timeout can lose
-            # this small group only; same-key replay skips the committed prefix.
-            for start in range(data['prepared_batches'], len(batches), UPLOAD_WORKERS):
+            # A preparation request publishes at most one <=8-plan group, not
+            # the entire archive. Return its durable cursor to the caller, which
+            # can yield/cancel before replaying this same source and operation.
+            # An uncertain request loses at most this group; already committed
+            # plans remain immutable and are skipped on same-key replay.
+            stop = min(data['prepared_batches'] + UPLOAD_WORKERS, first_batch + len(batches))
+            for start in range(data['prepared_batches'], stop, UPLOAD_WORKERS):
                 if start < data['prepared_batches']:
                     continue
-                group = _parallel(publish, list(enumerate(batches[start:start + UPLOAD_WORKERS], start)))
+                offset = start - first_batch
+                if offset < 0:
+                    raise HostedValidationError('HOSTED_IMPORT_SNAPSHOT_RANGE_INVALID')
+                group = _parallel(publish, list(enumerate(batches[offset:offset + UPLOAD_WORKERS], start)))
                 chain = data['preparation_chain']
                 for descriptor in group:
                     descriptor['previous_chain'] = chain
@@ -429,19 +467,32 @@ class PackageImport:
                         if row is not None and dict(row.data) != part:
                             raise DocumentConflict('HOSTED_IMPORT_PLAN_CHANGED')
                     if current['prepared_batches'] > start:
-                        if any(row is None for row in existing):
+                        overlap = min(current['prepared_batches'] - start, len(group))
+                        if any(row is None for row in existing[:overlap]):
                             raise DocumentConflict('HOSTED_IMPORT_PLAN_MISSING')
-                        return current
-                    if (current['prepared_batches'] != start
+                        if overlap == len(group):
+                            return current
+                        # A snapshot boundary may yield a shorter group than a
+                        # concurrent legacy upload. Its committed prefix must be
+                        # byte-identical and its receipt chain exact before this
+                        # request can commit only the still-uncommitted suffix.
+                        if current['preparation_chain'] != group[overlap - 1]['chain']:
+                            raise DocumentConflict('HOSTED_IMPORT_PLAN_CHANGED')
+                    elif (current['prepared_batches'] != start
                             or current['preparation_chain'] != group[0]['previous_chain']):
                         raise DocumentConflict('HOSTED_IMPORT_PLAN_CHANGED')
                     for row, target, part in zip(existing, paths, group):
                         if row is None:
                             tx.create(target, part)
                     current.update(prepared_batches=start + len(group), preparation_chain=chain)
+                    if snapshot_index is not None:
+                        current['source_chunk_cursor'] = snapshot_index + int(
+                            current['prepared_batches'] == first_batch + len(batches))
                     tx.set(path, current)
                     return current
                 data = self.documents.run_transaction(store)
+            if data['phase'] != 'preparing' or data['prepared_batches'] < data['total_batches']:
+                return self._public(data)
             def ready(tx):
                 current = self._load_tx(tx, uid, job, active=True)
                 if current['phase'] != 'preparing':
@@ -456,6 +507,213 @@ class PackageImport:
                 tx.set(path, current)
                 return current
             return self._public(self.documents.run_transaction(ready))
+
+    @staticmethod
+    def _batches_fingerprint(batches):
+        digest = hashlib.sha256()
+        for entries in batches:
+            digest.update(bytes.fromhex(_hash(entries)))
+        return digest.hexdigest()
+
+    def _capture_snapshot(self, raw, uid, job, data, batches):
+        """Retain the canonical plan once, before file-free bounded continuations.
+
+        Small/ordinary captures need only immutable canonical chunks. If capture
+        spans requests, retain the already validated original too, so later
+        capture groups never require another browser upload. No delete authority
+        is assumed: all inputs remain in the existing erasure/retention census.
+        """
+        from hosted.package_import_snapshot import group_batches, encode_snapshot, MAX_DECODED_BYTES
+        if (self._batches_fingerprint(batches) != data['plan_sha256']
+                or len(batches) != data['total_batches']):
+            raise DocumentConflict('HOSTED_IMPORT_PLAN_CHANGED')
+        chunks = group_batches(batches)
+        layout = _hash([[first, len(parts)] for first, parts in chunks])
+        path = self._path(uid, job)
+        def pin(tx):
+            current = self._load_tx(tx, uid, job, active=True, expected=data)
+            if current['phase'] != 'preparing':
+                return current
+            if (current.get('snapshot_format') not in (None, 1)
+                    or current.get('snapshot_layout_sha256') not in (None, layout)
+                    or current.get('total_source_chunks') not in (None, len(chunks))):
+                raise DocumentConflict('HOSTED_IMPORT_SNAPSHOT_CHANGED')
+            if current.get('snapshot_format') is None:
+                current.update(snapshot_format=1, snapshot_layout_sha256=layout,
+                    total_source_chunks=len(chunks), captured_chunks=0, captured_batches=0,
+                    snapshot_chain=_EMPTY_CHAIN, snapshot_ready=not chunks, source_ready=False,
+                    source_chunk_cursor=0)
+                tx.set(path, current)
+            return current
+        data = self.documents.run_transaction(pin)
+        if data['phase'] != 'preparing':
+            return self._public(data)
+        if data['snapshot_ready']:
+            return self._prepare_plans(uid, job, data, []) if not batches else self._public(data)
+        objects = self._objects(uid, job, data)
+        with package_import_staging(data['operation'], uid):
+            # Keep the capture group boundary identical on retries/replicas,
+            # even after another request has retained the original source.
+            slots = UPLOAD_WORKERS - int(len(chunks) > UPLOAD_WORKERS)
+            if len(chunks) > UPLOAD_WORKERS and not data['source_ready']:
+                key = f"projects/{data['project_id']}/package-imports/{job}/sources/{data['source_sha256']}.breadmaker"
+                obj = ImmutableObjectPublisher(objects).publish_bytes(key, raw, max_bytes=MAX_SOURCE_BYTES,
+                                                                      content_type='application/zip').object
+                source = {'v': 1, **self._binding(data), 'object_name': obj.name,
+                          'object_generation': obj.generation, 'object_sha256': obj.sha256, 'object_size': obj.size}
+                def store_source(tx):
+                    current = self._load_tx(tx, uid, job, active=True, expected=data)
+                    prior = tx.get(self._source_path(uid, job))
+                    if prior is not None and dict(prior.data) != source:
+                        raise DocumentConflict('HOSTED_IMPORT_SNAPSHOT_CHANGED')
+                    if current['phase'] != 'preparing':
+                        return current
+                    if prior is None:
+                        tx.create(self._source_path(uid, job), source)
+                    current['source_ready'] = True
+                    tx.set(path, current)
+                    return current
+                data = self.documents.run_transaction(store_source)
+            if data['phase'] != 'preparing' or data['snapshot_ready']:
+                return self._public(data)
+            start = data['captured_chunks']
+            def publish(item):
+                index, (first, parts) = item
+                encoded, decoded_bytes = encode_snapshot(self._binding(data), index, first, parts)
+                digest = hashlib.sha256(encoded).hexdigest()
+                key = f"projects/{data['project_id']}/package-imports/{job}/snapshots/{index}/{digest}.json.gz"
+                obj = ImmutableObjectPublisher(objects).publish_bytes(key, encoded, max_bytes=MAX_DECODED_BYTES,
+                                                                      content_type='application/gzip').object
+                return {'v': 1, **self._binding(data), 'index': index, 'first_batch': first,
+                        'batch_count': len(parts), 'plan_sha256': data['plan_sha256'],
+                        'object_name': obj.name, 'object_generation': obj.generation,
+                        'object_sha256': obj.sha256, 'object_size': obj.size, 'decoded_bytes': decoded_bytes}
+            # Bound JSON/gzip and provider-spool memory independently of the
+            # durable group size. Keep all 7/8 chunks in the same transaction:
+            # smaller partial groups may have no retained original to resume.
+            group = _parallel(publish, list(enumerate(chunks[start:start + slots], start)),
+                              workers=SNAPSHOT_CAPTURE_WORKERS)
+            chain = data['snapshot_chain']
+            for part in group:
+                part['previous_chain'] = chain
+                chain = _hash(part)
+                part['chain'] = chain
+            def store(tx):
+                current = self._load_tx(tx, uid, job, active=True, expected=data)
+                if current['phase'] != 'preparing':
+                    return current
+                paths = [self._snapshot_path(uid, job, part['index']) for part in group]
+                existing = tx.get_many(paths)
+                for row, part in zip(existing, group):
+                    if row is not None and dict(row.data) != part:
+                        raise DocumentConflict('HOSTED_IMPORT_SNAPSHOT_CHANGED')
+                if current['captured_chunks'] > start:
+                    if any(row is None for row in existing):
+                        raise DocumentConflict('HOSTED_IMPORT_SNAPSHOT_MISSING')
+                    return current
+                if (not group or current['captured_chunks'] != start
+                        or current['captured_batches'] != group[0]['first_batch']
+                        or current['snapshot_chain'] != group[0]['previous_chain']):
+                    raise DocumentConflict('HOSTED_IMPORT_SNAPSHOT_CHANGED')
+                for row, target, part in zip(existing, paths, group):
+                    if row is None:
+                        tx.create(target, part)
+                current.update(captured_chunks=start + len(group),
+                               captured_batches=group[-1]['first_batch'] + group[-1]['batch_count'],
+                               snapshot_chain=chain)
+                if current['captured_chunks'] == current['total_source_chunks']:
+                    if current['captured_batches'] != current['total_batches']:
+                        raise DocumentConflict('HOSTED_IMPORT_SNAPSHOT_RANGE_INVALID')
+                    current['snapshot_ready'] = True
+                tx.set(path, current)
+                return current
+            return self._public(self.documents.run_transaction(store))
+
+    def _snapshot_descriptor(self, uid, job, data, index):
+        from hosted.package_import_ownership import snapshot_descriptor_valid
+        def read(tx):
+            self._load_tx(tx, uid, job, active=True, expected=data)
+            row = tx.get(self._snapshot_path(uid, job, index))
+            if row is None:
+                raise HostedValidationError('HOSTED_IMPORT_SNAPSHOT_MISSING')
+            return dict(row.data)
+        part = self.documents.run_transaction(read)
+        if not snapshot_descriptor_valid(part, data, index):
+            raise HostedValidationError('HOSTED_IMPORT_SNAPSHOT_BINDING_INVALID')
+        return part
+
+    def _snapshot_for_batch(self, uid, job, data, index):
+        hint = data.get('source_chunk_cursor', 0)
+        if type(hint) is not int or not 0 <= hint <= data['total_source_chunks']:
+            raise HostedValidationError('HOSTED_IMPORT_SNAPSHOT_RANGE_INVALID')
+        if hint < data['total_source_chunks']:
+            part = self._snapshot_descriptor(uid, job, data, hint)
+            if part['first_batch'] <= index < part['first_batch'] + part['batch_count']:
+                return part
+        # A legacy replica may have advanced the ordinary plan cursor. Search
+        # only fixed indexed descriptors, never scan an unbounded collection.
+        low, high = 0, data['total_source_chunks']
+        while low < high:
+            middle = (low + high) // 2
+            part = self._snapshot_descriptor(uid, job, data, middle)
+            if index < part['first_batch']:
+                high = middle
+            elif index >= part['first_batch'] + part['batch_count']:
+                low = middle + 1
+            else:
+                return part
+        raise HostedValidationError('HOSTED_IMPORT_SNAPSHOT_RANGE_INVALID')
+
+    def _read_retained(self, uid, job, data, part):
+        objects = self._objects(uid, job, data)
+        verified = getattr(objects, 'read_verified_bytes', None)
+        if callable(verified) and part['object_size'] <= 2 * 1024**2:
+            raw = verified(part['object_name'], if_generation_match=part['object_generation'],
+                           expected_size=part['object_size'], expected_sha256=part['object_sha256'])
+        else:
+            # Large retained chunks use bounded 4 MiB reads instead of paying
+            # a media request for every 256 KiB. Generation and complete size /
+            # SHA verification, plus fresh before/after authority, are unchanged.
+            raw = b''.join(objects.read_chunks(part['object_name'], max_bytes=part['object_size'],
+                if_generation_match=part['object_generation'], chunk_size=4 * 1024**2))
+        if len(raw) != part['object_size'] or hashlib.sha256(raw).hexdigest() != part['object_sha256']:
+            raise HostedValidationError('HOSTED_IMPORT_SNAPSHOT_INTEGRITY_FAILED')
+        return raw
+
+    def prepare(self, uid, job):
+        """Continue from verified retained inputs; no browser file is needed."""
+        from hosted.package_import_ownership import source_descriptor_valid
+        from hosted.package_import_snapshot import decode_snapshot
+        uid = require_user_id(uid)
+        data = self._load(uid, job)
+        if data['phase'] != 'preparing':
+            if data['phase'] == 'cancelled':
+                raise DocumentConflict('HOSTED_IMPORT_CANCELLED')
+            return self._public(data)
+        if data.get('snapshot_format') != 1:
+            raise HostedValidationError('HOSTED_IMPORT_SOURCE_REQUIRED')
+        with package_import_staging(data['operation'], uid):
+            if not data['snapshot_ready']:
+                def source(tx):
+                    self._load_tx(tx, uid, job, active=True, expected=data)
+                    row = tx.get(self._source_path(uid, job))
+                    if row is None or not source_descriptor_valid(dict(row.data), data):
+                        raise HostedValidationError('HOSTED_IMPORT_SNAPSHOT_BINDING_INVALID')
+                    return dict(row.data)
+                part = self.documents.run_transaction(source)
+                raw = self._read_retained(uid, job, data, part)
+                from hosted.native_package import prepare_project_package
+                plan = prepare_project_package(raw, data['project_id'], name_override=data['name_override'] or None)
+                return self._capture_snapshot(raw, uid, job, data, self._batches(plan, data))
+            if data['prepared_batches'] == data['total_batches']:
+                return self._prepare_plans(uid, job, data, [])
+            part = self._snapshot_for_batch(uid, job, data, data['prepared_batches'])
+            raw = self._read_retained(uid, job, data, part)
+            batches = decode_snapshot(raw, binding=self._binding(data), index=part['index'],
+                first_batch=part['first_batch'], batch_count=part['batch_count'],
+                decoded_bytes=part['decoded_bytes'], max_batch_items=BATCH_SIZE)
+            return self._prepare_plans(uid, job, data, batches, first_batch=part['first_batch'],
+                                       snapshot_index=part['index'])
 
     def _read_plan(self, uid, job, data, index):
         def descriptor(tx):

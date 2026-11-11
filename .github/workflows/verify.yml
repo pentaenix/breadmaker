@@ -131,10 +131,57 @@ jobs:
           path: ${{ runner.temp }}/narration-proof/
           if-no-files-found: error
           retention-days: 7
+  import-memory-smoke:
+    name: import-memory-smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      PYTHON_BASE_DIGEST: 771146c2dfc880902a185f060c3db5571473c46b267edd98c3119c83068dfb61
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - name: Generate deterministic synthetic import fixtures
+        run: |
+          set -euo pipefail
+          python -m pip install -r requirements-hosted.txt
+          python scripts/benchmark_import_memory.py --generate "$RUNNER_TEMP/import-memory-fixtures"
+          mkdir -p "$RUNNER_TEMP/import-memory-proof"
+      - name: Build the unchanged pinned hosted runtime
+        run: docker build --build-arg "PYTHON_BASE_DIGEST=$PYTHON_BASE_DIGEST" -f deploy/Dockerfile.hosted -t breadmaker-import-memory:verified .
+      - name: Prove admission and repeated imports inside 512 MiB with tmpfs
+        run: |
+          set -euo pipefail
+          for fixture in text assets; do
+            name="breadmaker-import-memory-$fixture"
+            set +e
+            docker run --name "$name" --network none --read-only --cpus 1 --memory 512m --memory-swap 512m --cgroupns private \
+              --tmpfs /tmp:rw,noexec,nosuid,size=128m \
+              -e BREADMAKER_RUNTIME=local -e BREADMAKER_BENCH_ROOT=/app \
+              -v "$GITHUB_WORKSPACE/scripts/benchmark_import_memory.py:/tmp/benchmark_import_memory.py:ro" \
+              -v "$RUNNER_TEMP/import-memory-fixtures:/fixtures:ro" \
+              --entrypoint python breadmaker-import-memory:verified /tmp/benchmark_import_memory.py \
+              --fixture "/fixtures/$fixture.breadmaker" --source-sha "$GITHUB_SHA" --require-memory-mib 512 \
+              > "$RUNNER_TEMP/import-memory-proof/$fixture.json" 2> "$RUNNER_TEMP/import-memory-proof/$fixture.stderr"
+            result=$?
+            docker inspect --format '{{json .State}}' "$name" > "$RUNNER_TEMP/import-memory-proof/$fixture-container.json"
+            docker rm "$name"
+            set -e
+            test "$result" -eq 0
+          done
+      - name: Preserve memory evidence including failed limits
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: import-memory-${{ github.sha }}
+          path: ${{ runner.temp }}/import-memory-proof/
+          if-no-files-found: warn
+          retention-days: 7
   notify-cloud-main:
     name: notify-cloud-main
-    needs: [editor-full-suite, narration-artifacts]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.editor-full-suite.result == 'success' && needs.narration-artifacts.result == 'success' && vars.CLOUD_REPOSITORY != ''
+    needs: [editor-full-suite, narration-artifacts, import-memory-smoke]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.editor-full-suite.result == 'success' && needs.narration-artifacts.result == 'success' && needs.import-memory-smoke.result == 'success' && vars.CLOUD_REPOSITORY != ''
     runs-on: ubuntu-24.04
     steps:
       - name: Ask Cloud to reverify both current protected mains

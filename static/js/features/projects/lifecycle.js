@@ -103,7 +103,31 @@ function packageImportRender(intent,label,detail=''){
 }
 function packageImportStatus(intent){
   const job=intent.job;
-  return packageImportText(job?.phase==='completed'?'completed':job?.phase==='cancelled'?'cancelled':intent.cancelRequested?'cancelling':intent.pending?.publishing?'publishing':job?.ready?'ready':'staging');
+  return packageImportText(job?.phase==='completed'?'completed':job?.phase==='cancelled'?'cancelled':intent.cancelRequested?'cancelling':intent.pending?.publishing?'publishing':job?.phase==='preparing'?'uploading':job?.ready?'ready':'staging');
+}
+async function packageImportPrepare(intent){
+  packageImportRender(intent,packageImportText('uploading'));
+  const previous=intent.job;
+  let job;
+  if(previous?.prepare_available&&intent.pending.job){
+    job=await api(`/api/projects/import/jobs/${encodeURIComponent(intent.pending.job)}/prepare`,{method:'POST'});
+  }else{
+    const fd=new FormData();fd.append('file',intent.file);
+    job=await api('/api/projects/import?resumable=true&preparation_version=3',{method:'POST',body:fd,idempotencyKey:intent.pending.key});
+  }
+  // Continue only a successful, advancing durable preparation response. HTTP
+  // failures and stalled/malformed responses pause for explicit Resume; never
+  // retry them automatically or discard the existing source/operation binding.
+  if(job?.phase==='preparing'){
+    const prior=previous?.prepared_batches||0;
+    let advances=job.prepared_batches>prior;
+    if(job.preparation_version===3){
+      if(job.prepare_available!==true||!Number.isSafeInteger(job.prepared_source_chunks)||!Number.isSafeInteger(job.total_source_chunks)||job.total_source_chunks<1||job.prepared_source_chunks<0||job.prepared_source_chunks>job.total_source_chunks||job.prepared_source_chunks<(previous?.prepared_source_chunks||0))throw new Error(packageImportText('invalid_response'));
+      advances=advances||!previous?.prepare_available||job.prepared_source_chunks>(previous?.prepared_source_chunks||0);
+    }
+    if(!Number.isSafeInteger(job.prepared_batches)||!Number.isSafeInteger(job.total_batches)||job.prepared_batches<prior||job.prepared_batches>job.total_batches||job.total_batches<1||!advances)throw new Error(packageImportText('invalid_response'));
+  }
+  return packageImportRecord(intent,job);
 }
 async function packageImportReadStatus(intent){
   return packageImportRecord(intent,await api(`/api/projects/import/jobs/${encodeURIComponent(intent.pending.job)}`));
@@ -139,11 +163,9 @@ async function runProjectPackageImport(intent,{checkOnly=false}={}){
     }
     if(!ownsProjectPackageImport(intent))return;
     if(intent.pending.job)await packageImportReadStatus(intent);
-    if(!intent.pending.job||(intent.job?.phase==='preparing'&&!intent.pending.publishing&&!intent.cancelRequested)){
+    if(!intent.pending.job){
       if(!ownsProjectPackageImport(intent))return;
-      packageImportRender(intent,packageImportText('uploading'));
-      const fd=new FormData();fd.append('file',intent.file);
-      packageImportRecord(intent,await api('/api/projects/import?resumable=true',{method:'POST',body:fd,idempotencyKey:intent.pending.key}));
+      await packageImportPrepare(intent);
     }
     if(!ownsProjectPackageImport(intent))return;
     if(checkOnly&&intent.job.phase!=='completed'&&intent.job.phase!=='cancelled'){
@@ -155,6 +177,13 @@ async function runProjectPackageImport(intent,{checkOnly=false}={}){
       if(!ownsProjectPackageImport(intent))return;
       packageImportRender(intent,packageImportStatus(intent));
       if(intent.cancelRequested){await packageImportCancel(intent);break}
+      if(intent.job.phase==='preparing'){
+        await new Promise(resolve=>requestAnimationFrame(resolve));
+        if(!ownsProjectPackageImport(intent))return;
+        if(intent.cancelRequested)continue;
+        await packageImportPrepare(intent);
+        continue;
+      }
       if(intent.job.ready){
         intent.pending.publishing=true;packageImportSave(intent);packageImportRender(intent,packageImportText('publishing'));
         try{packageImportRecord(intent,await api(`/api/projects/import/jobs/${encodeURIComponent(intent.pending.job)}/finish`,{method:'POST'}))}

@@ -4,11 +4,13 @@ The `project_package_import_resumable` capability opts new clients into the nati
 package job protocol. Existing clients can continue the inline multipart endpoint.
 This adds no revision-root storage format and does not activate unrelated imports.
 
-- `POST /api/projects/import?resumable=true` takes the existing multipart file and
+- `POST /api/projects/import?resumable=true&preparation_version=3` takes the existing multipart file and
   optional `name` query, plus a stable `Idempotency-Key`.
+- `POST .../{job_id}/prepare` continues from retained verified canonical chunks,
+  without another multipart file.
 - `GET /api/projects/import/jobs/{job_id}` reads authoritative progress.
 - `POST .../{job_id}/step?batch=N` stages at most 64 canonical records with at most
-  eight parallel uploads. One existing annotation pack is one canonical record;
+  sixteen parallel preparation workers. One existing annotation pack is one canonical record;
   its established row/encoded/decoded limits still apply.
 - `POST .../{job_id}/finish` publishes the project, owner, completion receipt and
   account selection in one transaction.
@@ -18,21 +20,27 @@ This adds no revision-root storage format and does not activate unrelated import
 Every route derives its actor from the authenticated server session and ignores
 existing project selectors. Structural action headers are rejected. Blocking
 parsing/provider work runs off the event loop with a two-request capacity limit;
+status/cancel/atomic finish have a separate bounded two-request control lane;
 no persistent in-process background job owns progress.
 
 The response carries `job_id`, `phase`, `next_batch`, `total_batches`,
 `completed_records`, `total_records`, `completed_images`, `total_images`,
-`source_sha256` and `ready`. Phases are `preparing`, `staging`, `ready`, `completed`
+`source_sha256`, `prepared_batches` and `ready`. Durable-capture responses also
+include protocol version, `prepare_available` and source-chunk counts, never
+object pointers or content. Phases are `preparing`, `staging`, `ready`, `completed`
 and terminal `cancelled`/`expired`. Completed status and finish include the original `project` and
 `reload: true`, including after a lost response or replica change.
 
 Preparation validates the complete archive before content staging. A source hash,
 actor, operation and whole-plan fingerprint pin the immutable source. Plans live
 in bounded content-addressed objects; individual small descriptors live below the
-account job, not in one growing Firestore document. Preparation commits after at
-most eight plan uploads. Replaying the same file/key after interruption skips the
-committed prefix. A `preparing` response therefore requires replaying begin with
-the same file/key, not requesting batch zero.
+account job, not in one growing Firestore document. Canonical snapshots are
+captured in bounded groups first. Ordinary preparation commits after at most
+eight plan uploads and consumes only the required verified snapshot chunk.
+When `prepare_available` is true, a `preparing` response continues through
+`/prepare`, never batch zero or another file upload. Legacy jobs without retained
+inputs still replay begin with the same file/key to upgrade. See
+[durable preparation](IMPORT_PREPARATION.md) for limits, rollout and measurements.
 
 Each batch verifies its exact path, generation, hash, decoded size and schema.
 Fresh job/reservation/account/erasure checks fence object reads and writes. The
@@ -51,7 +59,8 @@ replace a paragraph's canonical object. Source bounds remain 64 MiB HTTP,
 ## Retention and account erasure
 
 `users/{uid}/package_imports/{job_id}` and its exact `plans/{index}` and
-`receipts/head` descendants have explicit ownership classification. A matching
+`receipts/head`, `snapshots/{index}` and optional `sources/archive` descendants
+have explicit ownership classification. A matching
 actor-bound reservation and derived project ID are required; unknown descendants
 remain completeness blockers. Unpublished project prefixes are inventoried even
 when they contain only plan objects, or the job is cancelled/expired.
