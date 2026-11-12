@@ -252,13 +252,24 @@ async function loadSceneData(id){
 }
 async function loadBookData(tabId,{preview=null,force=false,validated=false}={}){
   const id=entityId(tabId),project=runtimeSupports('hosted_persistence')?currentProjectIdentity():'',editGeneration=state.editGeneration,readEpoch=state.manuscriptReadEpoch||0,actor=typeof currentUserIdentity==='function'?currentUserIdentity():'';
-  function remember(data){state.bookCache.delete(id);state.bookCache.set(id,data);while(state.bookCache.size>2)state.bookCache.delete(state.bookCache.keys().next().value);return data}
+  function remember(data){
+    state.bookCache.delete(id);state.bookCache.set(id,data);
+    // Keep the existing two-large-book ceiling, but do not let tiny auxiliary
+    // tabs evict a novel. Small snapshots have both row and serialized-size
+    // limits; authorization is still revalidated on every cache hit below.
+    const small=book=>book.blocks?.length<=256&&JSON.stringify(book).length<=262144;
+    let large=0;const evict=[];
+    for(const [key,book] of [...state.bookCache].reverse())if(!small(book)&&++large>2)evict.push(key);
+    for(const key of evict)state.bookCache.delete(key);
+    while(state.bookCache.size>8)state.bookCache.delete(state.bookCache.keys().next().value);
+    return data;
+  }
   function active(){if(preview?.cancelled||String(currentProjectIdentity())!==String(project)||actor!==(typeof currentUserIdentity==='function'?currentUserIdentity():'')||state.editGeneration!==editGeneration||(state.manuscriptReadEpoch||0)!==readEpoch||state.dirty||state.saveInFlight)throw Object.assign(new Error('Full Text loading cancelled'),{cancelled:true})}
   if(!force&&state.bookCache.has(id)){
     const cached=state.bookCache.get(id);
-    if(!runtimeSupports('hosted_persistence')||validated)return cached;
+    if(!runtimeSupports('hosted_persistence')||validated)return remember(cached);
     const updated=await api(`/api/book?tab_id=${encodeURIComponent(id)}${state.hostedChapterFirst?'&manifest=true':''}`,{headers:{'If-None-Match':cached.read_tag},acceptNotModified:true});
-    active();if(updated===null)return cached;
+    active();if(updated===null)return remember(cached);
     if(!state.hostedChapterFirst)return remember(updated);
   }
   if(!state.hostedChapterFirst){const data=await api(`/api/book?tab_id=${id}`);if(runtimeSupports('hosted_persistence'))active();for(const cid of data.cache_refresh_chapters||[])queueHostedReadCache(cid,data.project?.generation);return remember(data)}
@@ -390,9 +401,15 @@ function fullTextPreview(){
   paper.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')preview.cancel()});activeFullTextPreview=preview;return preview;
 }
 async function openWholeBook(save=true,refreshSearch=true,{keepLoaded=false,force=false,validated=false}={}){
-  if(fullTextLoading)return;const request=state.manuscriptSelectionRequest=(state.manuscriptSelectionRequest||0)+1;
-  if(save)await flushSave();if(request!==state.manuscriptSelectionRequest||!state.activeDocumentId)return;
-  fullTextLoading=true;let settle;fullTextSettled=new Promise(resolve=>{settle=resolve});const documentId=state.activeDocumentId,cached=state.bookCache.has(entityId(documentId)),navigation=workspaceNavigation,selection=state.viewMode,chapterId=state.chapter?.id,sceneId=state.scene?.id;
+  const navigation=workspaceNavigation,request=state.manuscriptSelectionRequest=(state.manuscriptSelectionRequest||0)+1;
+  if(fullTextLoading){
+    // Preserve the newest selection instead of dropping clicks while a different
+    // tab is loading. Detach its preview; its validated cache fill may finish.
+    cancelFullTextPreview();await fullTextSettled;
+    if(request!==state.manuscriptSelectionRequest||navigation!==workspaceNavigation)return;
+  }
+  if(save)await flushSave();if(request!==state.manuscriptSelectionRequest||navigation!==workspaceNavigation||!state.activeDocumentId)return;
+  fullTextLoading=true;let settle;fullTextSettled=new Promise(resolve=>{settle=resolve});const documentId=state.activeDocumentId,cached=state.bookCache.has(entityId(documentId)),selection=state.viewMode,chapterId=state.chapter?.id,sceneId=state.scene?.id;
   const preview=!keepLoaded&&!cached&&runtimeSupports('hosted_persistence')&&state.hostedChapterFirst?fullTextPreview():null;
   const spinner=!preview&&runtimeSupports('hosted_persistence')?fullTextLoadingIndicator():null;
   try{const data=await loadBookData(documentId,{preview,force,validated});if(request!==state.manuscriptSelectionRequest||preview?.cancelled||preview?.detached||navigation!==workspaceNavigation||state.activeDocumentId!==documentId||state.viewMode!==selection||state.chapter?.id!==chapterId||state.scene?.id!==sceneId||(keepLoaded&&state.viewMode!=='book'))return;preview?.close();normalizeManuscriptNavMode();syncManuscriptViewControls();state.viewMode='book';state.bookData=data;for(const ch of data.chapters||[])state.chapterRevisions.set(entityId(ch.id),ch.revision||state.chapterRevisions.get(entityId(ch.id))||'');state.scene=null;state.sceneData=null;state.sceneGap=null;state.chapter=null;state.chapterData=null;resetDirtyState();setSaveState('Saved');renderDocuments();renderChapterTree();const reused=renderBookEditor({reuse:true});if(!reused)$('#documentScroller').scrollTop=0;if(refreshSearch)refreshFindForContext();syncCheckpointPanelContext();syncCheckpointComparisonContext();syncHistoryComparisonContext();scheduleCommentsWorkspaceSync();schedulePersistManuscriptLocation();
