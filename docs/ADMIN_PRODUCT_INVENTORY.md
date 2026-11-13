@@ -27,9 +27,13 @@ review content, title, author identity or manuscript body is retrieved.
 
 The only document query projects `status` and `generation`. Six fixed child
 collection COUNT aggregates follow for each eligible project. A second projected
-root query must reproduce the entire project-ID/generation map. Canonical
-mutations advance the project generation, so concurrent edits, removal or
-publication invalidate all totals. This is a non-atomic observation, not a
+root query must reproduce the entire project-ID/generation map. Canonical domain mutations and the ActionDocumentStore journal wrapper advance
+the project generation. Generation-changing concurrent edits, removal or
+publication invalidate all totals. The low-level entity repository does not
+independently advance project generation: deployment must retain the canonical
+journal composition, and this producer does not prove absence of bypass writes.
+Each projected root scan is also checked against a bounded active-root COUNT
+with provider read_time, including empty populations. This is a non-atomic observation, not a
 historical snapshot; an edit after collection ends is covered by the timestamp
 and freshness limit, not by a claim of ongoing accuracy. No failed or incomplete
 run becomes zero. Empty eligible populations become known zero only after both
@@ -50,8 +54,8 @@ supply those metrics or repurpose their missing data as zero.
 
 ## Bounded operations and budget
 
-Each run makes two root queries plus six aggregate queries per eligible project:
-no more than 602 RPCs. Each root query limits its result to 101 projected rows;
+Each run makes two root queries, two root COUNTs and six child aggregate queries per eligible project:
+no more than 604 RPCs. Each root query limits its result to 101 projected rows;
 101 means over-cap, not a truncated usable total. Each child query is limited to
 10,001 records before COUNT; a count above 10,000 invalidates the result. Each RPC
 has retries disabled and at most five seconds, and the whole collection has a

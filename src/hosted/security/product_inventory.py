@@ -9,7 +9,9 @@ Existing projects need no content backfill for these existence counts. Writing
 size and activity are unknown until their own authoritative producers exist.
 
 Both root scans must match, and every project generation must be unchanged.
-This detects canonical mutation during collection but is not an atomic fleet
+This detects generation-advancing mutation during collection, not low-level
+writer bypasses. Runtime must retain the canonical action-journal wrapper. It is
+not an atomic fleet
 snapshot. No cache, writes, credentials, scheduler or runtime activation.
 """
 from __future__ import annotations
@@ -70,7 +72,7 @@ class ProductInventorySnapshot:
 class GoogleFirestoreProductInventoryProducer:
     """Injected authorized client only. Disabled does not contact dependencies.
 
-    Two bounded root queries plus six aggregates per eligible project; at most
+    Two bounded root queries, two root COUNTs and six child aggregates per eligible project; at most
     100 projects and 60 seconds. Larger fleets explicitly return unknown rather
     than publishing a partial total. Collection names cannot be supplied by a
     client. No query_collection_group or document body fallback exists.
@@ -104,11 +106,20 @@ class GoogleFirestoreProductInventoryProducer:
                 times.append(_utc(snapshot.read_time))
         finally:
             stream.close()
+        query = (self.client.collection('projects').where(filter=_active_status_filter())
+                 .limit(MAX_PROJECTS + 1))
+        total, observed = self._aggregate(query, timeout)
+        if total != len(roots):
+            raise ValueError('PRODUCT_INVENTORY_ROOT_CHANGED')
+        times.append(observed)
         return roots, times
 
     def _count(self, pid, collection, timeout):
-        stream = self.client.collection(f'projects/{pid}/{collection}').limit(MAX_RECORDS_PER_COLLECTION + 1).count(alias='total').stream(
-            retry=None, timeout=timeout())
+        query = self.client.collection(f'projects/{pid}/{collection}').limit(MAX_RECORDS_PER_COLLECTION + 1)
+        return self._aggregate(query, timeout)
+
+    def _aggregate(self, query, timeout):
+        stream = query.count(alias='total').stream(retry=None, timeout=timeout())
         try:
             iterator, missing = iter(stream), object()
             row = next(iterator, missing)

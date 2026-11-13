@@ -22,6 +22,7 @@ class Client:
     def collection(self, path):
         client = self
         class Query:
+            aggregate = False
             def where(self, *, filter):
                 assert path == 'projects' and filter == ('status', '==', 'active')
                 return self
@@ -32,12 +33,15 @@ class Client:
                 assert value == (101 if path == 'projects' else 10001)
                 return self
             def count(self, *, alias):
-                assert alias == 'total' and path.split('/')[-1] in module.COLLECTIONS.values()
+                assert alias == 'total' and (path == 'projects' or path.split('/')[-1] in module.COLLECTIONS.values())
+                self.aggregate = True
                 return self
             def stream(self, *, retry, timeout):
                 assert retry is None and 0 < timeout <= 5
                 client.calls.append(path)
-                if path == 'projects':
+                if path == 'projects' and self.aggregate:
+                    rows = [[SimpleNamespace(alias='total', value=len(client.roots[client.scans-1]), read_time=START)]]
+                elif path == 'projects':
                     roots = client.roots[client.scans]
                     client.scans += 1
                     rows = [SimpleNamespace(reference=SimpleNamespace(path=f'projects/{pid}'),
@@ -68,7 +72,7 @@ def test_fixed_metadata_only_counts_and_closed_streams(monkeypatch):
     result = collect(monkeypatch, client)
     assert result['coverage']['completeness'] == 'complete'
     assert result['metrics'] == {'current_cloud_projects': 1, **dict.fromkeys(module.COLLECTIONS, 2)}
-    assert len(client.calls) == 8
+    assert len(client.calls) == 10
     assert all(stream.closed for stream in client.streams)
     assert PID not in json.dumps(result)
 
@@ -86,7 +90,7 @@ def test_failure_or_bound_is_unknown_never_partial_zero(monkeypatch, count):
 def test_no_active_projects_is_known_zero(monkeypatch):
     client = Client(roots=[[], []])
     assert set(collect(monkeypatch, client)['metrics'].values()) == {0}
-    assert client.calls == ['projects', 'projects']
+    assert client.calls == ['projects'] * 4
 
 def test_project_cap_fails_closed(monkeypatch):
     client = Client(roots=[[(f'{i:032x}', 1) for i in range(101)]])
