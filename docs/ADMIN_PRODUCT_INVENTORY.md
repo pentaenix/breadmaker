@@ -59,7 +59,9 @@ no more than 604 RPCs. Each root query limits its result to 101 projected rows;
 101 means over-cap, not a truncated usable total. Each child query is limited to
 10,001 records before COUNT; a count above 10,000 invalidates the result. Each RPC
 has retries disabled and at most five seconds, and the whole collection has a
-60-second monotonic deadline. All streams are closed. Any limit or provider
+60-second monotonic deadline. A trusted caller can supply an earlier absolute
+monotonic deadline; every query uses the lesser remaining budget, including
+collection after delayed admission. An already expired deadline runs no query. All streams are closed. Any limit or provider
 failure yields unknown. These are work bounds, not a dollar-spend guarantee;
 provider pricing and existing total-app spend must be checked before scheduling.
 There is no timer or automatic retry. Keep this disabled until a refresh cadence

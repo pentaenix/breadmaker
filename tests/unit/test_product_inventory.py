@@ -19,6 +19,7 @@ class Client:
     def __init__(self, roots=None, count=2):
         self.roots = roots if roots is not None else [[(PID, 1)], [(PID, 1)]]
         self.count, self.calls, self.streams, self.scans = count, [], [], 0
+        self.timeouts = []
     def collection(self, path):
         client = self
         class Query:
@@ -39,6 +40,7 @@ class Client:
             def stream(self, *, retry, timeout):
                 assert retry is None and 0 < timeout <= 5
                 client.calls.append(path)
+                client.timeouts.append(timeout)
                 if path == 'projects' and self.aggregate:
                     rows = [[SimpleNamespace(alias='total', value=len(client.roots[client.scans-1]), read_time=START)]]
                 elif path == 'projects':
@@ -102,3 +104,23 @@ def test_stale_snapshot_does_not_refresh_counts():
     result = json.loads(snapshot.json_bytes(now=END+timedelta(seconds=901)))
     assert set(result['metrics'].values()) == {None}
     assert result['as_of'] == '2026-11-13T00:00:02Z'
+
+
+def test_expired_outer_deadline_never_queries(monkeypatch):
+    monkeypatch.setattr(module, '_active_status_filter', lambda: ('status', '==', 'active'))
+    client = Client()
+    stamps = iter([START, END])
+    producer = module.GoogleFirestoreProductInventoryProducer(client=client, enabled=True,
+        utc_now=lambda: next(stamps), monotonic=lambda: 10.0)
+    assert producer.collect(deadline=9.0).values is None
+    assert client.calls == []
+
+
+def test_outer_deadline_clamps_each_rpc(monkeypatch):
+    monkeypatch.setattr(module, '_active_status_filter', lambda: ('status', '==', 'active'))
+    client = Client(roots=[[], []])
+    stamps = iter([START, END])
+    producer = module.GoogleFirestoreProductInventoryProducer(client=client, enabled=True,
+        utc_now=lambda: next(stamps), monotonic=lambda: 10.0)
+    assert producer.collect(deadline=10.25).values is not None
+    assert client.timeouts == [0.25] * 4

@@ -17,6 +17,7 @@ snapshot. No cache, writes, credentials, scheduler or runtime activation.
 from __future__ import annotations
 
 import json
+import math
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -136,16 +137,19 @@ class GoogleFirestoreProductInventoryProducer:
         finally:
             stream.close()
 
-    def collect(self):
+    def collect(self, *, deadline=None):
         start = _utc(self.now())
         if not self.enabled or self.client is None:
             return ProductInventorySnapshot(start, start)
         begun, values = self.clock(), None
+        if deadline is not None and (type(deadline) not in (int, float) or not math.isfinite(deadline)):
+            raise ValueError('PRODUCT_INVENTORY_DEADLINE_INVALID')
+        until = min(begun + MAX_READ_SECONDS, deadline) if deadline is not None else begun + MAX_READ_SECONDS
         def timeout():
-            elapsed = self.clock() - begun
-            if not 0 <= elapsed < MAX_READ_SECONDS:
+            current = self.clock()
+            if not begun <= current < until:
                 raise ValueError('PRODUCT_INVENTORY_DEADLINE')
-            return min(RPC_SECONDS, MAX_READ_SECONDS - elapsed)
+            return min(RPC_SECONDS, until - current)
         try:
             roots, times = self._roots(timeout)
             totals = dict.fromkeys(FIELDS, 0)
