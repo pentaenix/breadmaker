@@ -16,12 +16,13 @@ class Stream:
     def close(self): self.closed = True
 
 class Client:
-    def __init__(self, roots=None, count=2):
+    def __init__(self, roots=None, fault=None):
         self.roots = roots if roots is not None else [[(PID, 1)], [(PID, 1)]]
-        self.count, self.calls, self.streams, self.scans = count, [], [], 0
+        self.fault, self.calls, self.streams, self.scans = fault, [], [], 0
         self.timeouts = []
         self.updated = START.isoformat()
     def collection(self, path):
+        assert path == 'projects'
         client = self
         class Query:
             aggregate = False
@@ -32,7 +33,7 @@ class Client:
                 assert fields == ['status', 'generation', 'updated_at']
                 return self
             def limit(self, value):
-                assert value == (101 if path == 'projects' else 10001)
+                assert value == 101
                 return self
             def count(self, *, alias):
                 assert alias == 'total' and path == 'projects'
@@ -42,19 +43,31 @@ class Client:
                 assert retry is None and 0 < timeout <= 5
                 client.calls.append(path)
                 client.timeouts.append(timeout)
-                if path == 'projects' and self.aggregate:
+                if client.fault == 'stream_error':
+                    raise RuntimeError('private provider details')
+                if self.aggregate:
                     rows = [[SimpleNamespace(alias='total', value=len(client.roots[client.scans-1]), read_time=START)]]
-                elif path == 'projects':
+                else:
                     roots = client.roots[client.scans]
                     client.scans += 1
                     rows = [SimpleNamespace(reference=SimpleNamespace(path=f'projects/{pid}'),
                             exists=True, read_time=START,
                             to_dict=lambda generation=g: {'status': 'active', 'generation': generation, 'updated_at': client.updated})
                             for pid, g in roots]
-                else:
-                    if isinstance(client.count, Exception): raise client.count
-                    rows = [[SimpleNamespace(alias='total', value=client.count, read_time=START)]]
+                if self.aggregate:
+                    if client.fault == 'empty_aggregate': rows=[]
+                    elif client.fault == 'wrong_alias': rows[0][0].alias='private'
+                    elif client.fault == 'bad_count': rows[0][0].value=True
+                    elif client.fault == 'count_mismatch': rows[0][0].value=2
+                    elif client.fault == 'missing_time': rows[0][0].read_time=None
+                    elif client.fault == 'old_time': rows[0][0].read_time=START-timedelta(seconds=1)
+                    elif client.fault == 'extra_row': rows=rows+rows
                 stream = Stream(rows)
+                if client.fault == 'iteration_error':
+                    def broken():
+                        raise RuntimeError('private iteration details')
+                        yield
+                    stream.rows=broken()
                 client.streams.append(stream)
                 return stream
         return Query()
@@ -125,3 +138,27 @@ def test_updated_timestamp_change_without_generation_change_is_unknown(monkeypat
     stamps=iter([START,END])
     result=Changed(client=object(),enabled=True,utc_now=lambda:next(stamps)).collect()
     assert result.values is None
+
+@pytest.mark.parametrize('fault',['stream_error','iteration_error','empty_aggregate',
+    'wrong_alias','bad_count','count_mismatch','missing_time','old_time','extra_row'])
+def test_provider_failures_and_invalid_observation_are_unknown(monkeypatch,fault):
+    client=Client(fault=fault)
+    result=collect(monkeypatch,client)
+    assert result['coverage']['completeness']=='unknown'
+    assert set(result['metrics'].values())=={None}
+    assert 'private' not in json.dumps(result)
+    assert all(stream.closed for stream in client.streams)
+
+def test_deadline_expires_during_root_iteration_before_any_further_rpc(monkeypatch):
+    client=Client();ticks=iter([0.,0.,60.])
+    result=collect(monkeypatch,client,monotonic=lambda:next(ticks))
+    assert set(result['metrics'].values())=={None}
+    assert len(client.calls)==1 and all(stream.closed for stream in client.streams)
+
+def test_outer_deadline_clamps_every_rpc(monkeypatch):
+    monkeypatch.setattr(module,'_active_status_filter',lambda:('status','==','active'))
+    client=Client();stamps=iter([START,END])
+    producer=module.GoogleFirestoreProjectRecencyProducer(client=client,enabled=True,
+        utc_now=lambda:next(stamps),monotonic=lambda:10.)
+    assert producer.collect(deadline=10.25).values is not None
+    assert client.timeouts==[.25]*4
