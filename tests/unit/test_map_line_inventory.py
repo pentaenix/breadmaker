@@ -33,7 +33,8 @@ class Client:
                 assert fields==(['status','generation'] if path=='projects' else [])
                 self.projection=fields;return self
             def limit(self,value):
-                assert value==(10001 if path.endswith('/lines') else 101)
+                assert (value==10001 if path.endswith('/lines') else
+                        1<=value<=101 if path.endswith('/story_maps') and self.projection==[] else value==101)
                 self.bound=value;return self
             def count(self,*,alias):
                 assert alias=='total';self.aggregate=True;return self
@@ -50,6 +51,7 @@ class Client:
                     pid=path.split('/')[1]
                     if not self.aggregate:client.parent_scans[pid]=client.parent_scans.get(pid,0)+1
                     rows=client.maps.get(pid,[[],[]])[client.parent_scans[pid]-1]
+                    if not self.aggregate:rows=rows[:self.bound]
                     count=len(rows);values=[(path+'/'+mid,{}) for mid in rows]
                     if client.fault=='content_projection':values=[(path+'/map_one',{'title':'private'})]
                 else:
@@ -144,3 +146,13 @@ def test_stale_and_impossible_snapshot():
     assert set(json.loads(snapshot.json_bytes(now=END+timedelta(seconds=901)))['metrics'].values())=={None}
     for values in [(0,1,0),(1,101,0),(1,1,10001)]:
         with pytest.raises(ValueError):module.MapLineInventorySnapshot(START,END,dict(zip(module.FIELDS,values)))
+
+
+def test_parent_query_limit_shrinks_with_fleet_budget(monkeypatch):
+    other='b'*32
+    client=Client(projects=[[(PID,1),(other,1)]]*2,
+        maps={PID:[[f'map_{i}' for i in range(99)]]*2,other:[['map_one']]*2})
+    assert collect(monkeypatch,client).values['current_story_maps']==100
+    bounds=[bound for path,projection,aggregate,bound in client.calls
+            if path.endswith('/story_maps') and not aggregate]
+    assert bounds==[101,2,101,2]

@@ -60,7 +60,9 @@ class GoogleFirestoreMapLineInventoryProducer(GoogleFirestoreProductInventoryPro
         parents, times = {}, []
         for pid in roots:
             path = f'projects/{pid}/story_maps'
-            stream = self.client.collection(path).select([]).limit(MAX_MAPS+1).stream(
+            # Shrinking query limit bounds provider work, not merely iteration.
+            remaining = MAX_MAPS - len(parents)
+            stream = self.client.collection(path).select([]).limit(remaining+1).stream(
                 retry=None, timeout=timeout())
             seen = set()
             try:
