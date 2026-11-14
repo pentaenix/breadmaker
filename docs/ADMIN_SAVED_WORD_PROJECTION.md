@@ -59,3 +59,24 @@ These are foundation tests, not proof of canonical transaction integration.
 No runtime switch, persistent metadata write, live scan, IAM or credential is
 introduced by these files. Any integration requires reviewed synthetic transaction
 and recovery tests plus normal exact-head CI before a separate activation decision.
+
+## Uncomposed invalidation guard
+
+`saved_word_guard.SavedWordCoverageGuard` is an explicit opt-in transaction
+adapter, not installed by runtime. When placed below ActionDocumentStore it sees
+canonical writes and journal restoration without changing the root-authority
+allowlist or inserting telemetry in Undo records. It invalidates an EXISTING
+ledger on changed project roots, blocks or chapters; it never creates a ledger
+or promotes coverage. Missing ledger remains unknown, including import/restore
+publication. Identical writes and receipt-only replay do not update the ledger.
+All reads precede writes, and invalidation shares the canonical transaction.
+
+This intentionally conservative phase also invalidates on non-content root
+changes. It is safe but not a useful live counter until writer contribution
+integration is reviewed. Read cost when explicitly enabled: one ledger lookup
+per affected project per transaction attempt, plus one root lookup if not already
+staged; one ledger write when it exists. Buffering captures before-images and can
+add document reads per modified record. Retries multiply these costs. The wrapper
+must therefore not be silently enabled for production saves. Disabled delegates
+straight through with no added reads or writes. Backfill/initialization and
+actual contribution publication remain absent.
