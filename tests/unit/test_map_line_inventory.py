@@ -62,6 +62,8 @@ class Client:
                     rows=[[SimpleNamespace(alias='total',value=count,read_time=stamp)]]
                     if client.fault=='empty_count':rows=[]
                     if client.fault=='bad_alias':rows[0][0].alias='private'
+                    if client.fault=='parent_count_mismatch' and path.endswith('/story_maps'):
+                        rows[0][0].value=count+1
                 else:
                     rows=[SimpleNamespace(reference=SimpleNamespace(path=p),exists=True,
                         read_time=stamp,to_dict=lambda d=data:d) for p,data in values]
@@ -156,3 +158,22 @@ def test_parent_query_limit_shrinks_with_fleet_budget(monkeypatch):
     bounds=[bound for path,projection,aggregate,bound in client.calls
             if path.endswith('/story_maps') and not aggregate]
     assert bounds==[101,2,101,2]
+
+
+def test_parent_count_disagrees_with_projection(monkeypatch):
+    client=Client(fault='parent_count_mismatch')
+    assert collect(monkeypatch,client).values is None
+    assert not any(path.endswith('/lines') for path,*_ in client.calls)
+    assert all(s.closed for s in client.streams)
+
+@pytest.mark.parametrize('limit',[1,2,101])
+def test_sdk_empty_select_is_names_only_at_wire_boundary(limit):
+    from google.auth.credentials import AnonymousCredentials
+    from google.cloud.firestore_v1 import Client as FirestoreClient
+    client=FirestoreClient(project='synthetic-project',credentials=AnonymousCredentials())
+    query=client.collection('projects/'+PID+'/story_maps').select([]).limit(limit)
+    wire=query._to_protobuf()
+    assert [field.field_path for field in wire.select.fields]==['__name__']
+    assert wire.limit==limit
+    assert wire.from_[0].collection_id=='story_maps'
+    assert not wire.from_[0].all_descendants
