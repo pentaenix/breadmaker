@@ -84,3 +84,28 @@ def test_failed_transaction_keeps_ledger(monkeypatch):
         guard.run_transaction(fail)
     assert raw.get(('projects', pid)) is not None
     assert raw.get((LEDGER_COLLECTION, pid)).data == previous
+
+
+def test_opt_in_save_counts_plaintext_and_journal_restores_metadata(monkeypatch):
+    app, raw, _, pid, cid = setup(monkeypatch)
+    domain = app.projects.domain
+    domain.saved_word_projection_enabled = True
+    journal = ActionJournal(domain.documents)
+    _replace(app, pid, cid, [{'text_content': 'two words'}], 'op_word_initial')
+    token = journal.begin(pid, OWNER, 'Synthetic counted save')['token']
+    with bind_action(token, pid, OWNER):
+        _replace(app, pid, cid, [{'text_content': 'three saved words'}], 'op_word_counted')
+    journal.finish(pid, OWNER, token)
+    def totals():
+        return [row.data['_bm_saved_word_v1']['words'] for row in raw.query_collection(('projects', pid, 'blocks'))]
+    assert totals() == [3]
+    journal.restore(pid, OWNER, token, 'undo')
+    assert totals() == [2]
+    journal.restore(pid, OWNER, token, 'redo')
+    assert totals() == [3]
+
+
+def test_default_save_has_no_word_metadata(monkeypatch):
+    app, raw, _, pid, cid = setup(monkeypatch, enabled=False)
+    _replace(app, pid, cid, [{'text_content': 'Synthetic'}], 'op_word_no_metadata')
+    assert all('_bm_saved_word_v1' not in row.data for row in raw.query_collection(('projects', pid, 'blocks')))

@@ -141,6 +141,7 @@ def replace_chapter_blocks(domain, *, project_id: str, chapter_id: str, user_id:
             stored = dict(public)
         if domain.encrypted_objects is not None:
             _check_encrypted_block_metadata(stored)
+        stored.update(domain._saved_word_metadata('manuscript_block', merged))
         row_bytes = len(json.dumps(stored,ensure_ascii=False,sort_keys=True).encode('utf-8'))
         if row_bytes > MAX_REPLACEMENT_DOCUMENT_BYTES:
             raise HostedValidationError('HOSTED_CHAPTER_BLOCK_TOO_LARGE')

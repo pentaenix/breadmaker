@@ -80,3 +80,19 @@ add document reads per modified record. Retries multiply these costs. The wrappe
 must therefore not be silently enabled for production saves. Disabled delegates
 straight through with no added reads or writes. Backfill/initialization and
 actual contribution publication remain absent.
+
+The optional `HostedDomainStore(saved_word_projection_enabled=True)` injection
+now prepares a server-owned `_bm_saved_word_v1` block contribution from plaintext
+already present during ordinary create/update and chapter replacement. Bootstrap
+never passes this option. Omitted/oversized plaintext produces unknown metadata;
+it does not trigger an extra content read or reject an author's save. Existing
+unchanged blocks do not gain coverage. Contributions travel in canonical journal
+before/after images, so Undo/Redo restore them with the corresponding content.
+Import/restore paths that bypass these writers remain uncounted and the guard
+invalidates totals. This is not complete coverage or aggregate publication.
+
+When later approved and enabled, counting is O(changed saved text length), capped
+at one million characters per block, outside transaction retry loops. It adds a
+small operational count to each changed block, and to journal images of that
+block; there is no extra per-block write. That new metadata is a privacy expansion
+requiring activation approval even though no plaintext enters Admin.

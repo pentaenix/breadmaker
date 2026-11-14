@@ -205,7 +205,8 @@ class HostedDomainStore:
 
     def __init__(self, documents, objects: ObjectStore, *,
                  encrypted_objects: HostedEncryptedObjectStore | None = None,
-                 encrypted_fields: HostedPrivateFirestoreFields | None = None) -> None:
+                 encrypted_fields: HostedPrivateFirestoreFields | None = None,
+                 saved_word_projection_enabled: bool = False) -> None:
         # Explicit injection ONLY. Neither the local runtime nor hosted bootstrap
         # configures encryption implicitly. M12D covers block payloads ONLY;
         # private Firestore metadata and all other families still need migration.
@@ -216,6 +217,7 @@ class HostedDomainStore:
         # Pilot stays opt-in; local and normal hosted runtime never inject it.
         if encrypted_fields is not None and encrypted_objects is not None:
             audit_private_model_coverage()
+        self.saved_word_projection_enabled = saved_word_projection_enabled is True
         self.encrypted_fields = encrypted_fields
         self.encrypted_objects = encrypted_objects
         self.documents = documents
@@ -298,6 +300,17 @@ class HostedDomainStore:
         project["generation"] = current + 1
         project["updated_at"] = stamp
         tx.set(project_path, project)
+
+    def _saved_word_metadata(self, logical_entity, plaintext):
+        # Explicit injection only; never hydrate/decrypt for this derived metric.
+        if not self.saved_word_projection_enabled or logical_entity != 'manuscript_block':
+            return {}
+        from hosted.security.saved_word_projection import count_saved_text, DEFINITION
+        try:
+            count = count_saved_text(plaintext.get('text_content')).words
+        except ValueError:
+            count = None  # Metadata failure must not reject the author's save.
+        return {'_bm_saved_word_v1': {'definition': DEFINITION, 'words': count}}
 
     def _hybrid_payload(self, logical_entity: str, public: Mapping[str, Any]) -> tuple[dict[str, Any], bytes] | None:
         fields = _HYBRID_PAYLOAD_FIELDS.get(logical_entity)
@@ -585,6 +598,8 @@ class HostedDomainStore:
             stored_public = self.encrypted_fields.seal(
                 logical_entity, ids, stored_public if hybrid is not None else public)
             fingerprint = _fingerprint(stored_public)  # fingerprint of ciphertext only
+
+        stored_public.update(self._saved_word_metadata(logical_entity, public))
 
         def mutate(tx):
             project_path, project = self._authorize_and_project(tx, model, ids, uid, mutation=True)
@@ -1028,6 +1043,7 @@ class HostedDomainStore:
             clean_patch = {"_bm_private_fields": self.encrypted_fields.seal(
                 logical_entity, ids, content)["_bm_private_fields"]}
 
+        clean_patch.update(self._saved_word_metadata(logical_entity, merged_for_object))
         fingerprint = _fingerprint(clean_patch)
         stamp = self.clock.now_iso()
 
