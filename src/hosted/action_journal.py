@@ -9,6 +9,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from contextvars import ContextVar
 from copy import deepcopy
+from datetime import datetime, timezone
 import json
 import secrets
 import time
@@ -16,6 +17,10 @@ import time
 from .firestore.contracts import DocumentConflict, DocumentNotFound, HostedValidationError, StoredDocument
 from .firestore.ids import require_opaque_id, require_project_id, require_user_id
 from .firestore.repositories import HostedProjectRepository
+
+def _modification_stamp():
+    return datetime.now(timezone.utc).isoformat()
+
 
 _ACTION = ContextVar('hosted_structural_action', default=None)
 MAX_RECORDS = 100
@@ -171,7 +176,8 @@ class ActionDocumentStore:
             action['records'] = list(records.values())
             next_root = buffered.pending.get(root_path)
             if next_root is None:
-                next_root = {**root, 'generation': int(root['generation']) + 1}
+                next_root = {**root, 'generation': int(root['generation']) + 1,
+                             'updated_at': _modification_stamp()}
                 buffered.pending[root_path] = next_root
             action['generation'] = int(next_root['generation'])
             if action['generation'] <= int(root['generation']):
@@ -261,6 +267,7 @@ class ActionJournal:
                 record['current'] = desired
                 pending.append((path, desired))
             root['generation'] = int(root['generation']) + 1
+            root['updated_at'] = _modification_stamp()
             action['generation'], action['state'] = root['generation'], target_state
             root['_bm_structural_head'] = token if direction == 'redo' else action.get('parent')
             root['_bm_structural_actor'] = uid
