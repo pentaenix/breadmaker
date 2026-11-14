@@ -3,18 +3,12 @@ import {
   sendPasswordReset,enrolledTotp,beginTotpEnrollment,exchangeServerSession,signOutClient
 } from './identity-platform-client.js?v=10.5.96&privacy=9';
 
-import {noticeLanguage,renderSignupNotice} from './signup-notice.js?v=10.5.96&privacy=9';
 
 const $=selector=>document.querySelector(selector);
 const message=$('#identityMessage'),totp=$('#identityTotp'),social=$('#identitySocial');
 let signup=false,localeSequence=0,busyActive=false;
-let noticeState='loading',noticeLocale='',noticeSequence=0,noticeAbort=null,sdkReady=false;
-const noticeCopy={
-  en:{loading:'Loading privacy notice…',retry:'Retry',unavailable:'The privacy notice is unavailable. Account creation and Google/Apple sign-in are temporarily unavailable. You can still sign in with email or reset your password.',fallback:'This notice is available in English and Spanish. English is shown.'},
-  es:{loading:'Cargando el aviso de privacidad…',retry:'Reintentar',unavailable:'El aviso de privacidad no está disponible. La creación de cuentas y el acceso con Google o Apple no están disponibles temporalmente. Puede iniciar sesión con correo electrónico o restablecer su contraseña.',fallback:''}
-};
-function currentNoticeLanguage(){return noticeLanguage(document.documentElement.lang)}
-function creationReady(){return noticeState==='ready'&&noticeLocale===currentNoticeLanguage()&&sdkReady}
+let sdkReady=false;
+function creationReady(){return sdkReady}
 function updateAvailability(){
   document.querySelectorAll('button,input').forEach(el=>{
     const creating=el.hasAttribute('data-provider')||(el.id==='identityEmailSignIn'&&signup);
@@ -23,43 +17,15 @@ function updateAvailability(){
 }
 function requireNotice(){
   if(creationReady())return true;
-  showMessage(noticeCopy[currentNoticeLanguage()].unavailable,'error');return false;
+  showMessage('Sign-in is temporarily unavailable. Please retry.','error');return false;
 }
-function suspendNotice(){
-  noticeSequence++;noticeAbort?.abort();noticeState='loading';noticeLocale='';
-  $('#identityNoticeContent').replaceChildren();
-  $('#identityNoticeStatus').hidden=false;$('#identityNoticeStatus').textContent=noticeCopy[currentNoticeLanguage()].loading;
-  $('#identityNoticeRetry').hidden=true;updateAvailability();
-}
+function suspendNotice(){}
 async function loadNotice(){
-  suspendNotice();const sequence=noticeSequence,locale=currentNoticeLanguage(),copy=noticeCopy[locale];
-  const status=$('#identityNoticeStatus'),retry=$('#identityNoticeRetry');
-  status.hidden=false;status.textContent=copy.loading;retry.hidden=true;retry.textContent=copy.retry;
-  const controller=new AbortController();noticeAbort=controller;
-  const timer=setTimeout(()=>controller.abort(),8000);
-  try{
-    const response=await fetch(`/api/auth/signup-notice?locale=${locale}`,{credentials:'omit',cache:'no-store',redirect:'error',signal:controller.signal,headers:{Accept:'application/json'}});
-    if(!response.ok)throw new Error('SIGNUP_NOTICE_UNAVAILABLE');
-    const raw=await response.text();if(raw.length>64000)throw new Error('SIGNUP_NOTICE_INVALID');
-    const payload=JSON.parse(raw);
-    if(sequence!==noticeSequence)return;
-    renderSignupNotice($('#identityNoticeContent'),payload,locale);
-    noticeLocale=locale;noticeState='ready';
-    const fallback=document.documentElement.lang!==locale;
-    status.textContent=fallback?copy.fallback:'';status.hidden=!fallback;
-    // Only prepare the provider SDK after the disclosure has been rendered. A
-    // completed preparation keeps the later popup inside its user click flow.
-    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-    if(sequence!==noticeSequence)return;
-    try{await identityClient();sdkReady=true}catch{
-      if(sequence===noticeSequence){sdkReady=false;retry.hidden=false;showMessage('Sign-in is temporarily unavailable. Please retry.','error')}
-    }
-  }catch{
-    if(sequence!==noticeSequence)return;
-    noticeState='error';status.hidden=false;status.textContent=copy.unavailable;retry.hidden=false;
-  }finally{
-    clearTimeout(timer);if(sequence===noticeSequence)updateAvailability();
-  }
+  // The public privacy policy is linked in the footer, never fetched or rendered
+  // inside authentication. Prepare the SDK without copying personal legal data.
+  try{await identityClient();sdkReady=true}catch{
+    sdkReady=false;showMessage('Sign-in is temporarily unavailable. Please reload to retry.','error');
+  }finally{updateAvailability()}
 }
 const languages=[['en','English'],['es','Español'],['fr','Français'],['it','Italiano'],['ja','日本語'],['pt-BR','Português'],['zh-CN','简体中文']];
 const themes=['light','dusk','dark'];
@@ -164,8 +130,8 @@ async function withBusy(fn){hideMessage();busy(true);try{await fn()}catch(error)
 async function renderSocial(){
   const config=await identityConfig();const buttons=[];
   // Official artwork served locally: https://developers.google.com/identity/branding-guidelines
-  if(config.providers.google)buttons.push('<button type="button" data-provider="google" class="provider" aria-describedby="identityNotice" disabled><img class="identity-provider-icon" src="/static/google_signin_logo.png" width="20" height="20" alt="" aria-hidden="true"><span>Continue with Google</span></button>');
-  buttons.push(`<button type="button" data-provider="apple" class="provider" aria-describedby="identityNotice"${config.providers.apple?'':' disabled aria-disabled="true" data-provider-unavailable="true"'}><span class="identity-provider-icon identity-apple-icon" aria-hidden="true"></span><span>Continue with Apple</span></button>`);
+  if(config.providers.google)buttons.push('<button type="button" data-provider="google" class="provider" disabled><img class="identity-provider-icon" src="/static/google_signin_logo.png" width="20" height="20" alt="" aria-hidden="true"><span>Continue with Google</span></button>');
+  buttons.push(`<button type="button" data-provider="apple" class="provider"${config.providers.apple?'':' disabled aria-disabled="true" data-provider-unavailable="true"'}><span class="identity-provider-icon identity-apple-icon" aria-hidden="true"></span><span>Continue with Apple</span></button>`);
   social.innerHTML=buttons.join('');
   social.querySelectorAll('[data-provider]:not([data-provider-unavailable=true])').forEach(button=>button.onclick=()=>{if(button.dataset.providerUnavailable==='true'||busyActive||!requireNotice())return;withBusy(async()=>{const result=await signInProvider(button.dataset.provider,askTotp);await finish(result.user)})});
   updateAvailability();
@@ -177,7 +143,6 @@ $('#identityEmailForm').addEventListener('submit',event=>{event.preventDefault()
   await finish(result.user,{passwordAccount:true});
 })});
 $('#identityForgotPassword').onclick=()=>withBusy(async()=>{const email=$('#identityEmail').value;if(!email)throw new Error('Enter your email first.');await sendPasswordReset(email);showMessage('If this address has a password account, Identity Platform has sent the reset email.')});
-$('#identityNoticeRetry').onclick=()=>loadNotice();
 window.addEventListener('pagehide',suspendNotice);
 window.addEventListener('pageshow',event=>{if(event.persisted)loadNotice()});
 setupPresentation();
