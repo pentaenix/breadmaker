@@ -140,3 +140,93 @@ def test_root_revision_change_prevents_publication():
     client.document = document
     with pytest.raises(SavedWordsUnavailable, match='ROOTS_CHANGED'):
         producer(client).collect(deadline=130)
+
+
+def test_maximum_population_and_policy_stay_within_documented_budget():
+    from hosted.firestore.ids import identity_binding_id
+    from hosted.security.saved_word_identity import WordIdentity
+    issuer = 'identity-platform://synthetic'
+    rows = {}
+    pins = []
+    for i in range(132):
+        uid = 'usr_' + format(i + 1, '032x')
+        rows['users/' + uid] = {'user_id': uid, 'status': 'active',
+                               'created_at': '2023-11-14T22:13:20Z'}
+        if i < 100:
+            pid = format(i + 1, '032x')
+            rows['projects/' + pid] = {'status': 'active', 'generation': 2}
+            rows['projects/' + pid + '/members/' + uid] = {
+                'role': 'owner', 'user_id': uid, 'created_at': '2023-11-14T22:13:21Z'}
+            rows['admin_saved_word_coverage/' + pid] = {
+                'schema_version': 1, 'definition': 'saved_text_unicode_words_v1',
+                'state': 'complete', 'canonical_revision': 2, 'blocks': 1, 'words': 3}
+        else:
+            subject = 'external_' + str(i)
+            pins.append(WordIdentity(issuer, subject, 1700000000000, uid,
+                '2023-11-14T22:13:20Z', 1700000001.0, '2023-11-14T22:13:21Z'))
+            rows['identity_bindings/' + identity_binding_id(issuer + '\n' + subject)] = {
+                'issuer': issuer, 'subject': subject, 'user_id': uid, 'status': 'active',
+                'created_at_epoch': 1700000001.0, 'created_at': '2023-11-14T22:13:21Z'}
+    policy_calls = []
+    class MaximumPolicy(PolicyReader):
+        def load_policy(self, *, deadline):
+            policy_calls.append('load')
+            return WordPolicy('policy_1', tuple(pins))
+        def read_policy_revision(self, *, deadline):
+            policy_calls.append('revision')
+            return 'policy_1'
+    account_calls = []
+    def account(**kwargs):
+        account_calls.append((kwargs['issuer'], kwargs['subject']))
+        return {'issuer': kwargs['issuer'], 'subject': kwargs['subject'],
+                'created_at_ms': 1700000000000, 'tenant_id': None}
+    client = Client(rows)
+    result = producer(client, MaximumPolicy(), account).collect(deadline=130)
+    assert result['metrics']['all_saved_words'] == 300
+    assert result['coverage']['eligible_projects'] == 100
+    assert len(account_calls) == len(set(account_calls)) == 32
+    gets = [call for call in client.calls if call[0] == 'get']
+    assert len([call for call in gets if call[1].startswith('users/')]) == 132
+    assert len({call[1] for call in gets}) == len(gets) == 264
+    assert policy_calls == ['load', 'revision']
+    assert len(client.calls) + len(policy_calls) == 368
+    # Charge each query at its requested cap (including overflow sentinels),
+    # rather than just the synthetic rows returned. Profile reads are separate.
+    conservative_reads = len(gets) + sum(call[3] for call in client.calls
+                                        if call[0] == 'query') + len(policy_calls)
+    assert conservative_reads == 668
+
+
+def test_elapsed_deadline_stops_after_inflight_read_without_partial_result():
+    elapsed = [100.0]
+    policy_calls = []
+    class TimedPolicy(PolicyReader):
+        def load_policy(self, *, deadline):
+            policy_calls.append('load')
+            return super().load_policy(deadline=deadline)
+        def read_policy_revision(self, *, deadline):
+            policy_calls.append('revision')
+            return super().read_policy_revision(deadline=deadline)
+    client = Client(records())
+    original_document = client.document
+    def document(path):
+        reference = original_document(path)
+        original_get = reference.get
+        def get(**kwargs):
+            result = original_get(**kwargs)
+            elapsed[0] += 2
+            return result
+        reference.get = get
+        return reference
+    client.document = document
+    reader = producer(client, TimedPolicy())
+    reader.monotonic = lambda: elapsed[0]
+    with pytest.raises(SavedWordsUnavailable, match='DEADLINE'):
+        reader.collect(deadline=103)
+    assert [call[1] for call in client.calls] == [
+        'projects', 'admin_saved_word_coverage/' + PID,
+        'projects/' + PID + '/members', 'users/' + UID]
+    # The profile read used the remaining one second; its late return is
+    # rejected before either final fence or any candidate totals are produced.
+    assert client.calls[-1][-1]['timeout'] == 1
+    assert elapsed[0] == 104 and policy_calls == ['load']
