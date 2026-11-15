@@ -96,3 +96,12 @@ at one million characters per block, outside transaction retry loops. It adds a
 small operational count to each changed block, and to journal images of that
 block; there is no extra per-block write. That new metadata is a privacy expansion
 requiring activation approval even though no plaintext enters Admin.
+
+Native/document import shared `_prepare_import_entity` and encrypted live restore
+now use the same explicit domain option to recompute block contributions from
+plaintext already authorized by those workflows. Incoming counts are not trusted.
+Restore computes only after its existing readback check; it adds no decryption
+operation for counting. Publication still does NOT initialize a project ledger,
+so these contributions alone cannot produce a complete Admin total. Synthetic
+regressions exercise malicious supplied count replacement and actual encrypted
+restore without exposing content in operational metadata.

@@ -374,6 +374,7 @@ class HostedEncryptedLiveRestorer:
                     opened = domain.encrypted_fields.open(logical, scoped_ids, stored)
                 if _canonical(portable(logical, opened)) != _canonical(portable(logical, payload)):
                     raise HostedEncryptedLiveRestoreError('HOSTED_PRIVATE_RESTORE_READBACK_MISMATCH')
+                stored.update(domain._saved_word_metadata(logical, payload))
                 stored.update({'generation': 1, 'created_at': stamp, 'updated_at': stamp,
                                '_bm_create_operation': 'private_restore',
                                '_bm_create_fingerprint': hashlib.sha256(

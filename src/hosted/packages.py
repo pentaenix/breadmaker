@@ -488,6 +488,7 @@ class HostedProjectPackageService:
                 stored['_bm_read_bundle']={**read_bundle,'source_sha256':stored['payload_object']['object_sha256']}
         else:
             stored=dict(public)
+        stored.update(self.domain._saved_word_metadata(logical, public))
         stamp=self.domain.clock.now_iso()
         op='import_'+logical+'_'+entity_id
         if len(op)>160:op='import_'+_fingerprint({'logical':logical,'id':entity_id})[:48]

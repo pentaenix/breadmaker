@@ -109,3 +109,29 @@ def test_default_save_has_no_word_metadata(monkeypatch):
     app, raw, _, pid, cid = setup(monkeypatch, enabled=False)
     _replace(app, pid, cid, [{'text_content': 'Synthetic'}], 'op_word_no_metadata')
     assert all('_bm_saved_word_v1' not in row.data for row in raw.query_collection(('projects', pid, 'blocks')))
+
+
+def test_import_preparation_recomputes_not_trusts_supplied_count(monkeypatch):
+    from hosted.packages import HostedProjectPackageService
+    app, _, _, pid, _ = setup(monkeypatch)
+    app.projects.domain.saved_word_projection_enabled = True
+    service = HostedProjectPackageService(app.projects)
+    _, stored = service._prepare_import_entity('manuscript_block', {'project_id': pid},
+        {'text_content': 'two words', '_bm_saved_word_v1': {'words': 999}}, entity_id='b_words_import')
+    assert stored['_bm_saved_word_v1']['words'] == 2
+
+
+def test_encrypted_restore_counts_existing_authorized_plaintext_only():
+    from tests.test_v10524_private_live_restore import source_archive, private_store, DEST, OWNER as SOURCE_OWNER
+    from hosted.encrypted_live_restore import HostedEncryptedLiveRestorer
+    source_pid, reader = source_archive()
+    docs, _, destination, _ = private_store(DEST)
+    destination.domain.saved_word_projection_enabled = True
+    restorer = HostedEncryptedLiveRestorer(reader, destination,
+        authorize_destination=lambda uid: uid == DEST)
+    result = restorer.restore(source_pid, SOURCE_OWNER, DEST,
+        operation='private_backup', restore_operation='restore_words_synthetic')
+    row = docs.get(('projects', result.destination_project_id, 'blocks', 'b_1'))
+    assert row.data['_bm_saved_word_v1']['words'] == 2
+    assert 'Unpublished secret' not in str(row.data)
+    assert docs.get((LEDGER_COLLECTION, result.destination_project_id)) is None
