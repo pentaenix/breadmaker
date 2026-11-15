@@ -70,6 +70,26 @@ class HostedSandboxPurgeExecutor:
         self.recovery = planner.recovery_objects
         self.now = now or (lambda: datetime.now(timezone.utc))
 
+    def _fence_word_sidecars(self, pid, data, tx=None):
+        from hosted.security.saved_word_retention import LEDGER_COLLECTION, POLICY_PATH
+        expected_mode = self.planner.saved_word_memory_purge_enabled
+        if bool(data.get('saved_word_sidecars')) != expected_mode:
+            raise DocumentConflict('HOSTED_PURGE_SAVED_WORD_MODE_CHANGED')
+        if not expected_mode:
+            return
+        states = data['saved_word_sidecars']
+        allowed = {(LEDGER_COLLECTION, pid), POLICY_PATH}
+        if len(states) != 2 or {tuple(item['path']) for item in states} != allowed:
+            raise DocumentConflict('HOSTED_PURGE_SAVED_WORD_SCOPE_CHANGED')
+        store = tx if tx is not None else self.documents
+        for item in states:
+            row = store.get(tuple(item['path']))
+            digest = hashlib.sha256(json.dumps(dict(row.data), sort_keys=True,
+                separators=(',', ':')).encode()).hexdigest() if row else None
+            if (row.revision if row else None) != item['revision'] or (
+                    digest != item['data_fingerprint']):
+                raise DocumentConflict('HOSTED_PURGE_SAVED_WORD_SIDECAR_DRIFT')
+
     @staticmethod
     def _identity(pid: str, uid: str, key: str) -> str:
         if not isinstance(key, str) or not _KEY.fullmatch(key):
@@ -178,6 +198,11 @@ class HostedSandboxPurgeExecutor:
             'inflight': None, 'lease_owner': None, 'lease_until': None,
             'physical_purge_authorized': False,
         }
+        if self.planner.saved_word_memory_purge_enabled:
+            data['saved_word_sidecars'] = [dict(path=list(path), revision=revision,
+                data_fingerprint=hashlib.sha256(json.dumps(value, sort_keys=True,
+                    separators=(',', ':')).encode()).hexdigest() if value is not None else None)
+                                          for path, revision, value in plan.saved_word_sidecar_states]
         self._check_scope(pid, data)
         if len(json.dumps(data, sort_keys=True, separators=(',', ':')).encode('utf-8')) > MAX_SANDBOX_MANIFEST_BYTES:
             raise ValueError('HOSTED_PURGE_SANDBOX_MANIFEST_TOO_LARGE')
@@ -185,6 +210,7 @@ class HostedSandboxPurgeExecutor:
 
         def reserve(tx):
             self._assert_tombstone(pid, uid, data, tx=tx)
+            self._fence_word_sidecars(pid, data, tx=tx)
             original = tx.get(('purge_preparations', pid))
             if original is None or original.data.get('receipt_id') != operation_hash:
                 raise DocumentConflict('HOSTED_PURGE_SANDBOX_PREPARATION_STALE')
@@ -209,6 +235,8 @@ class HostedSandboxPurgeExecutor:
         if not isinstance(data.get('cursor'), int) or not 0 <= data['cursor'] <= data['total']:
             raise DocumentConflict('HOSTED_PURGE_SANDBOX_RECEIPT_CORRUPT')
         self._check_scope(pid, data)
+        if data['state'] != 'sandbox_completed':
+            self._fence_word_sidecars(pid, data)
         return data
 
     def _fence_remaining(self, pid: str, data: dict) -> None:
@@ -262,12 +290,14 @@ class HostedSandboxPurgeExecutor:
         self._assert_tombstone(pid, uid, data)
         self._verify_archive(data, pid, uid)
         self._fence_remaining(pid, data)
+        self._fence_word_sidecars(pid, data)
         cursor = data['cursor']
         path = self._receipt_path(pid)
         now = self._clock()
         if cursor < len(data['objects']):
             item = data['objects'][cursor]
             def claim(tx):
+                self._fence_word_sidecars(pid, data, tx=tx)
                 current = tx.get(path)
                 if current is None or current.data.get('cursor') != cursor:
                     raise DocumentConflict('HOSTED_PURGE_SANDBOX_CURSOR_CHANGED')
@@ -281,11 +311,20 @@ class HostedSandboxPurgeExecutor:
                                  lease_until=(now + timedelta(seconds=LEASE_SECONDS)).isoformat())
                 tx.set(path, next_data)
             self.documents.run_transaction(claim)
-            meta = self.content.stat(item['name'])
-            if meta is not None:
-                if meta.generation != item['generation'] or meta.sha256 != item['sha256']:
-                    raise DocumentConflict('HOSTED_PURGE_SANDBOX_OBJECT_DRIFT')
-                self.content.delete(item['name'], if_generation_match=item['generation'])
+            def delete_object():
+                meta = self.content.stat(item['name'])
+                if meta is not None:
+                    if meta.generation != item['generation'] or meta.sha256 != item['sha256']:
+                        raise DocumentConflict('HOSTED_PURGE_SANDBOX_OBJECT_DRIFT')
+                    self.content.delete(item['name'], if_generation_match=item['generation'])
+            if self.planner.saved_word_memory_purge_enabled:
+                # Exact-memory providers only: fence sidecars under the same
+                # lock throughout this irreversible synthetic object step.
+                with self.documents._lock:
+                    self._fence_word_sidecars(pid, data)
+                    delete_object()
+            else:
+                delete_object()
             # A missing object is only tolerable because claim is durable.
             if crash_after_object_delete:
                 raise SimulatedPurgeCrash('HOSTED_PURGE_SANDBOX_CRASH_AFTER_OBJECT_DELETE')
@@ -308,6 +347,7 @@ class HostedSandboxPurgeExecutor:
         targets = [tuple(ordinary[doc_index]['path'])] if doc_index < len(ordinary) else [
             tuple(data['documents'][-2]['path']), tuple(data['documents'][-1]['path'])]
         def delete_docs(tx):
+            self._fence_word_sidecars(pid, data, tx=tx)
             current = tx.get(path)
             if current is None or current.data.get('cursor') != cursor:
                 raise DocumentConflict('HOSTED_PURGE_SANDBOX_CURSOR_CHANGED')
@@ -321,11 +361,16 @@ class HostedSandboxPurgeExecutor:
                        if p[:2] == ('projects', pid)}
             if present != expected:
                 raise DocumentConflict('HOSTED_PURGE_SANDBOX_DOCUMENT_DRIFT')
-            for target in targets:
-                tx.delete(target)
             updated = dict(current.data)
             updated['cursor'] = cursor + 1
             updated['state'] = 'sandbox_completed' if updated['cursor'] == updated['total'] else 'sandbox_running'
-            tx.set(path, updated)
-            return updated
+            def publish(writes):
+                for target in targets:
+                    writes.delete(target)
+                writes.set(path, updated)
+                return updated
+            if self.planner.saved_word_memory_purge_enabled and ('projects', pid) in targets:
+                from hosted.security.saved_word_guard import SavedWordCoverageGuard
+                return SavedWordCoverageGuard(self.documents, enabled=True)._execute_transaction(tx, publish)
+            return publish(tx)
         return self._progress(self.documents.run_transaction(delete_docs))

@@ -78,7 +78,15 @@ def _same_generation(root, action):
 
 
 def _semantic(data):
-    return None if data is None else {k:v for k,v in data.items() if k not in {'generation','updated_at','_bm_read_bundle'}}
+    if data is None:
+        return None
+    result = {k:v for k,v in data.items() if k not in {'generation','updated_at','_bm_read_bundle'}}
+    # Only the derived ABA binding is non-semantic. Count and definition remain
+    # strict, and _without_read_cache keeps the complete record comparison strict.
+    metadata = result.get('_bm_saved_word_v1')
+    if isinstance(metadata, dict):
+        result['_bm_saved_word_v1'] = {k:v for k,v in metadata.items() if k != 'source_generation'}
+    return result
 
 
 def _without_read_cache(data):
@@ -260,9 +268,13 @@ class ActionJournal:
                     raise DocumentConflict('HOSTED_ACTION_RECORD_CHANGED')
                 desired = deepcopy(record['after' if direction == 'redo' else 'before'])
                 if desired is not None:
+                    previous_generation = desired.get('generation')
                     # Never reuse an old record generation after a restore (ABA).
                     desired['generation'] = max(int((current or {}).get('generation', 0)),
                         int(desired.get('generation', 0)), int(record.get('high_water', 0))) + 1
+                    if len(path) == 4 and path[2] == 'blocks':
+                        from hosted.security.saved_word_projection import rebind_restored_contribution
+                        rebind_restored_contribution(desired, previous_generation=previous_generation)
                     record['high_water'] = desired['generation']
                 record['current'] = desired
                 pending.append((path, desired))

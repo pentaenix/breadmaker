@@ -53,6 +53,31 @@ class _GoogleTransaction(Transaction):
             for doc in snapshots if doc.exists}
         return [found.get(path) for path in keys]
 
+    def saved_word_project(self, project_id: str, *, timeout: float):
+        from .ids import require_project_id
+        if not 0 < timeout <= 30:
+            raise ValueError('WORD_METADATA_QUERY_LIMIT')
+        path = ('projects', require_project_id(project_id))
+        snapshot = self._ref(path).get(field_paths=['status', 'generation'],
+            transaction=self._transaction, timeout=timeout, retry=None)
+        return (StoredDocument(path, snapshot.to_dict() or {}, _snapshot_revision(snapshot))
+                if snapshot.exists else None)
+
+    def saved_word_metadata(self, project_id: str, *, limit: int, timeout: float):
+        from .ids import require_project_id
+        if type(limit) is not int or not 1 <= limit <= 1001 or not 0 < timeout <= 30:
+            raise ValueError('WORD_METADATA_QUERY_LIMIT')
+        query = self._client.collection('projects/' + require_project_id(project_id) + '/blocks')
+        snapshots = query.select(['generation', '_bm_saved_word_v1']).limit(limit).stream(
+            transaction=self._transaction, timeout=timeout, retry=None)
+        try:
+            return [StoredDocument(tuple(doc.reference.path.split('/')), doc.to_dict() or {},
+                                   _snapshot_revision(doc)) for doc in snapshots]
+        finally:
+            close = getattr(snapshots, 'close', None)
+            if close is not None:
+                close()
+
     def count_collection(self, collection_path: tuple[str, ...]) -> int:
         key = require_collection_path(collection_path)
         results = self._client.collection('/'.join(key)).count(alias='total').get(transaction=self._transaction)

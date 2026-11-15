@@ -41,6 +41,22 @@ class _MemoryTransaction(Transaction):
             out = [row for row in out if row.data.get(field) == value]
         return out
 
+    def saved_word_project(self, project_id: str, *, timeout: float):
+        from .ids import require_project_id
+        if not 0 < timeout <= 30:
+            raise ValueError('WORD_METADATA_QUERY_LIMIT')
+        row = self.get(('projects', require_project_id(project_id)))
+        return (StoredDocument(row.path, {key: value for key, value in row.data.items()
+                    if key in {'status', 'generation'}}, row.revision) if row else None)
+
+    def saved_word_metadata(self, project_id: str, *, limit: int, timeout: float):
+        from .ids import require_project_id
+        if type(limit) is not int or not 1 <= limit <= 1001 or not 0 < timeout <= 30:
+            raise ValueError('WORD_METADATA_QUERY_LIMIT')
+        rows = self.query_collection(('projects', require_project_id(project_id), 'blocks'))[:limit]
+        return [StoredDocument(row.path, {key: value for key, value in row.data.items()
+                    if key in {'generation', '_bm_saved_word_v1'}}, row.revision) for row in rows]
+
     def count_collection(self, collection_path: tuple[str, ...]) -> int:
         prefix = require_collection_path(collection_path)
         return sum(len(path) == len(prefix)+1 and path[:-1] == prefix for path in self._owner._documents)

@@ -1,0 +1,94 @@
+[
+  {
+    "name": "synthetic_exclude",
+    "now": 100,
+    "review": {
+      "schema_version": 1,
+      "mode": "preview_only",
+      "executable": false,
+      "scope": "saved_words_only",
+      "action": "exclude",
+      "hosted_user_id": "usr_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "currently_excluded": false,
+      "desired_excluded": true,
+      "changes_policy": true,
+      "expected_before_revision": "policy_empty",
+      "expected_after_revision": "cd4cf7dd83e9ab304dc7aba4bc3f9657",
+      "mapping_fingerprint": "a2ddc0d4c7fae812119d4e3ec9a2ee7385787358d563b92b9b4537d4498cda04",
+      "idempotency_key": "synthetic_synthetic_exclude",
+      "invalidate_word_totals": true,
+      "prepared_at": 100,
+      "expires_at": 160,
+      "review_fingerprint": "56a34bc25bade34fdcfb23274bccc58ad29c2d2a3b8e69b595a5f3d8c2e5831b"
+    }
+  },
+  {
+    "name": "synthetic_include",
+    "now": 100,
+    "review": {
+      "schema_version": 1,
+      "mode": "preview_only",
+      "executable": false,
+      "scope": "saved_words_only",
+      "action": "include",
+      "hosted_user_id": "usr_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "currently_excluded": true,
+      "desired_excluded": false,
+      "changes_policy": true,
+      "expected_before_revision": "policy_excluded",
+      "expected_after_revision": "6cf66effb0521a3cf88aaefae623d3b4",
+      "mapping_fingerprint": "a2ddc0d4c7fae812119d4e3ec9a2ee7385787358d563b92b9b4537d4498cda04",
+      "idempotency_key": "synthetic_synthetic_include",
+      "invalidate_word_totals": true,
+      "prepared_at": 100,
+      "expires_at": 160,
+      "review_fingerprint": "46a037170a3204b888c9bd6121f5fa87419d037fb3022f05ca9965b8c2f57ab7"
+    }
+  },
+  {
+    "name": "synthetic_noop_exclude",
+    "now": 100,
+    "review": {
+      "schema_version": 1,
+      "mode": "preview_only",
+      "executable": false,
+      "scope": "saved_words_only",
+      "action": "exclude",
+      "hosted_user_id": "usr_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "currently_excluded": true,
+      "desired_excluded": true,
+      "changes_policy": false,
+      "expected_before_revision": "policy_excluded",
+      "expected_after_revision": "policy_excluded",
+      "mapping_fingerprint": "a2ddc0d4c7fae812119d4e3ec9a2ee7385787358d563b92b9b4537d4498cda04",
+      "idempotency_key": "synthetic_synthetic_noop_exclude",
+      "invalidate_word_totals": false,
+      "prepared_at": 100,
+      "expires_at": 160,
+      "review_fingerprint": "e03187e997c6ff4bbb46df0a49282dbf6428cdedb1139305d204c41ba688d326"
+    }
+  },
+  {
+    "name": "synthetic_remove_unavailable_filter",
+    "now": 100,
+    "review": {
+      "schema_version": 1,
+      "mode": "preview_only",
+      "executable": false,
+      "scope": "saved_words_only",
+      "action": "include",
+      "hosted_user_id": "usr_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "currently_excluded": true,
+      "desired_excluded": false,
+      "changes_policy": true,
+      "expected_before_revision": "policy_unavailable",
+      "expected_after_revision": "a9136922e1b34aa9cbfc91562b8a6711",
+      "mapping_fingerprint": "a2ddc0d4c7fae812119d4e3ec9a2ee7385787358d563b92b9b4537d4498cda04",
+      "idempotency_key": "synthetic_remove_unavailable",
+      "invalidate_word_totals": true,
+      "prepared_at": 100,
+      "expires_at": 160,
+      "review_fingerprint": "cde823c85c0059ec0aa08dc061a2c05895b60cf3f23704ef865f1d12b5430172"
+    }
+  }
+]

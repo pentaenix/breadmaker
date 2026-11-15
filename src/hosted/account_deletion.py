@@ -39,6 +39,8 @@ class AccountDeletionPreview:
     staged_import_projects: tuple[str, ...] = ()
     staged_import_document_paths: tuple[tuple[str, ...], ...] = ()
     staged_import_object_names: tuple[str, ...] = ()
+    saved_word_ledger_paths: tuple[tuple[str, ...], ...] = ()
+    saved_word_policy_reference_paths: tuple[tuple[str, ...], ...] = ()
 
     def public(self) -> dict:
         """Suppress account/provider identifiers and object paths in UI summaries."""
@@ -56,6 +58,8 @@ class AccountDeletionPreview:
             'staged_import_project_count': len(self.staged_import_projects),
             'staged_import_document_count': len(self.staged_import_document_paths),
             'staged_import_object_count': len(self.staged_import_object_names),
+            'saved_word_ledger_count': len(self.saved_word_ledger_paths),
+            'saved_word_policy_reference_count': len(self.saved_word_policy_reference_paths),
         }
 
 
@@ -69,13 +73,15 @@ class HostedAccountDeletionPlanner:
     """
 
     def __init__(self, documents: MemoryDocumentStore, content: MemoryObjectStore,
-                 recovery: MemoryObjectStore, actor_user_id: Callable[[], str]):
+                 recovery: MemoryObjectStore, actor_user_id: Callable[[], str], *,
+                 saved_word_retention_enabled: bool = False):
         if (type(documents) is not MemoryDocumentStore or type(content) is not MemoryObjectStore
                 or type(recovery) is not MemoryObjectStore or content is recovery
                 or not callable(actor_user_id)):
             raise ValueError('HOSTED_ACCOUNT_DISCOVERY_MEMORY_ONLY')
         self.documents, self.content, self.recovery = documents, content, recovery
         self.actor_user_id = actor_user_id
+        self.saved_word_retention_enabled = saved_word_retention_enabled is True
 
     def _snapshot(self) -> tuple[tuple[tuple[str, ...], dict, int], ...]:
         with self.documents._lock:
@@ -159,6 +165,33 @@ class HostedAccountDeletionPlanner:
         if owned & collaborating:
             raise DocumentConflict('HOSTED_ACCOUNT_MEMBERSHIP_INCONSISTENT')
         staged = {pid for _, pid in jobs.values() if ('projects', pid) not in by_path}
+        from hosted.security.saved_word_retention import POLICY_PATH, LEDGER_COLLECTION, policy_references_user
+        word_ledgers, word_policies, orphan_ledgers = set(), set(), set()
+        policy_unverified = False
+        if self.saved_word_retention_enabled:
+            # Also retain attribution through existing purge audits after roots and
+            # memberships disappear. Sidecars are not account-delete candidates.
+            audited_projects = {by_path[path][0].get('project_id') for path in audit_docs}
+            word_ledgers = {path for path in by_path if len(path) == 2
+                            and path[0] == LEDGER_COLLECTION and path[1] in owned | staged | audited_projects}
+            # With neither root nor membership/audit attribution, an orphan sidecar
+            # cannot safely be assigned to a user. Conservatively block erasure
+            # claims until separately reviewed; this grants no deletion authority.
+            membership_projects = {p[1] for p in by_path if len(p) >= 4
+                                   and p[0] == 'projects' and p[2] == 'members'}
+            orphan_ledgers = {path for path in by_path if len(path) == 2 and path[0] == LEDGER_COLLECTION
+                              and ('projects', path[1]) not in by_path
+                              and path[1] not in membership_projects}
+            word_ledgers |= orphan_ledgers
+            word_policies = set()
+            policy_unverified = False
+            if POLICY_PATH in by_path:
+                try:
+                    if policy_references_user(by_path[POLICY_PATH][0], uid):
+                        word_policies.add(POLICY_PATH)
+                except (ValueError, TypeError, RuntimeError):
+                    policy_unverified = True
+                    word_policies.add(POLICY_PATH)
         staged_docs = {path for path, _, _ in before if len(path) >= 2 and path[0] == 'projects' and path[1] in staged}
         def staged_objects():
             return tuple(sorted((o.name, o.generation, o.sha256) for pid in staged
@@ -201,9 +234,17 @@ class HostedAccountDeletionPlanner:
             blockers.append('HOSTED_ACCOUNT_ORPHANED_PROJECT_MEMBERSHIP')
         if unknown:
             blockers.append('HOSTED_ACCOUNT_UNCLASSIFIED_USER_REFERENCES')
+        if word_ledgers:
+            blockers.append('HOSTED_ACCOUNT_SAVED_WORD_LEDGER_CLEANUP_REQUIRED')
+        if orphan_ledgers:
+            blockers.append('HOSTED_ACCOUNT_SAVED_WORD_ORPHAN_LEDGER_UNATTRIBUTED')
+        if word_policies:
+            blockers.append('HOSTED_ACCOUNT_SAVED_WORD_POLICY_REVIEW_REQUIRED')
+        if policy_unverified:
+            blockers.append('HOSTED_ACCOUNT_SAVED_WORD_POLICY_UNVERIFIED')
         # Include all observed revisions, not just paths. No PII leaves the
         # operator boundary; callers see a hash and aggregate counts.
-        relevant_paths = account_docs | audit_docs | staged_docs | {('projects', pid) for pid in owned | collaborating
+        relevant_paths = account_docs | audit_docs | staged_docs | word_ledgers | word_policies | {('projects', pid) for pid in owned | collaborating
                                           if ('projects', pid) in by_path}
         canonical = {
             'uid': uid,
@@ -222,4 +263,6 @@ class HostedAccountDeletionPlanner:
             tuple(sorted(blockers)), fingerprint, retained_purge_audit_paths=tuple(sorted(audit_docs)),
             staged_import_projects=tuple(sorted(staged)), staged_import_document_paths=tuple(sorted(staged_docs)),
             staged_import_object_names=tuple(name for name, _, _ in staged_names),
+            saved_word_ledger_paths=tuple(sorted(word_ledgers)),
+            saved_word_policy_reference_paths=tuple(sorted(word_policies)),
         )
