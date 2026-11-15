@@ -51,6 +51,9 @@ class PurgeInventory:
     physical_purge_authorized: bool = False
     document_inventory_exhaustive: bool = False
     missing_parent_paths: tuple[tuple[str, ...], ...] = ()
+    saved_word_ledger_paths: tuple[tuple[str, ...], ...] = ()
+    saved_word_policy_reference_paths: tuple[tuple[str, ...], ...] = ()
+    blockers: tuple[str, ...] = ()
 
     def public(self) -> dict:
         # No object names, document IDs or owner metadata leak into an ordinary
@@ -67,6 +70,9 @@ class PurgeInventory:
             'document_inventory_exhaustive': self.document_inventory_exhaustive,
             'orphaned_parent_references': len(self.missing_parent_paths),
             'fingerprint': self.fingerprint,
+            'saved_word_ledger_count': len(self.saved_word_ledger_paths),
+            'saved_word_policy_reference_count': len(self.saved_word_policy_reference_paths),
+            'blockers': list(self.blockers),
         }
 
 
@@ -82,7 +88,8 @@ class HostedPurgePlanner:
                  retention_days: int = MIN_TRASH_DAYS,
                  now: Callable[[], datetime] | None = None,
                  max_entries: int = MAX_INVENTORY_ENTRIES,
-                 discovery: ProjectTreeDiscovery | None = None) -> None:
+                 discovery: ProjectTreeDiscovery | None = None,
+                 saved_word_retention_enabled: bool = False) -> None:
         # Retain the canonical hosted project service: preparation receipts
         # delegate independently verified pre-delete backup reads through it.
         # Its Firestore/GCS stores are still the sole runtime authority.
@@ -96,6 +103,7 @@ class HostedPurgePlanner:
         self.content_objects: ObjectStore = projects.objects
         self.recovery_objects = recovery_objects
         self.discovery = discovery
+        self.saved_word_retention_enabled = saved_word_retention_enabled is True
         self.now = now or (lambda: datetime.now(timezone.utc))
         if recovery_objects is self.content_objects:
             raise ValueError('HOSTED_PURGE_INDEPENDENT_RECOVERY_REQUIRED')
@@ -167,6 +175,26 @@ class HostedPurgePlanner:
         if deletion_time > clock:
             raise ValueError('HOSTED_PURGE_TOMBSTONE_IN_FUTURE')
         eligible = deletion_time + timedelta(days=self.retention_days)
+        from hosted.security.saved_word_retention import POLICY_PATH, LEDGER_COLLECTION, policy_references_user
+        ledger_path = (LEDGER_COLLECTION, pid)
+        ledger = policy = None
+        word_ledgers = word_policies = ()
+        blockers = []
+        if self.saved_word_retention_enabled:
+            ledger = self.documents.get(ledger_path)
+            policy = self.documents.get(POLICY_PATH)
+            word_ledgers = (ledger_path,) if ledger is not None else ()
+            word_policies = ()
+            blockers = []
+            if word_ledgers:
+                blockers.append('HOSTED_PURGE_SAVED_WORD_LEDGER_CLEANUP_REQUIRED')
+            try:
+                if policy_references_user(dict(policy.data) if policy else None, uid):
+                    word_policies = (POLICY_PATH,)
+                    blockers.append('HOSTED_PURGE_SAVED_WORD_POLICY_REVIEW_REQUIRED')
+            except (ValueError, TypeError, RuntimeError):
+                word_policies = (POLICY_PATH,)
+                blockers.append('HOSTED_PURGE_SAVED_WORD_POLICY_UNVERIFIED')
         if self.discovery is not None:
             tree = self.discovery.scan(pid, max_entries=self.max_entries)
             if not tree.complete or root not in tree.documents:
@@ -193,13 +221,16 @@ class HostedPurgePlanner:
         recovery = self.recovery_objects.list_prefix(recovery_prefix)
         if any(not obj.name.startswith(recovery_prefix) for obj in recovery):
             raise DocumentConflict('HOSTED_PURGE_RECOVERY_SCOPE_VIOLATION')
-        if len(docs) + len(missing_parents) + len(content) + len(recovery) > self.max_entries:
+        if len(docs) + len(missing_parents) + len(content) + len(recovery) + len(word_ledgers) + len(word_policies) > self.max_entries:
             raise ValueError('HOSTED_PURGE_INVENTORY_TOO_LARGE')
         # A project entity commit must advance the root generation, but the
         # present query protocol does not guarantee a consistent descendant
         # scan. This is a preview only; never use its hash as purge authority.
         after = self.documents.get(root)
         if after is None or after.revision != before.revision or after.data != before.data:
+            raise DocumentConflict('HOSTED_PURGE_CONCURRENT_MUTATION')
+        if self.saved_word_retention_enabled and (self.documents.get(ledger_path) != ledger
+                or self.documents.get(POLICY_PATH) != policy):
             raise DocumentConflict('HOSTED_PURGE_CONCURRENT_MUTATION')
         live_objects = tuple(sorted((obj.name, int(obj.generation), obj.sha256) for obj in content))
         saved_objects = tuple(sorted((obj.name, int(obj.generation), obj.sha256) for obj in recovery))
@@ -209,6 +240,10 @@ class HostedPurgePlanner:
         summary = {'project_id': pid, 'owner': uid, 'generation': generation,
                    'deleted_at': str(data['deleted_at']), 'docs': docs, 'document_states': doc_states, 'missing_parents': missing_parents,
                    'content': live_objects, 'recovery': saved_objects}
+        if self.saved_word_retention_enabled:
+            summary.update(saved_word_ledger_revision=ledger.revision if ledger else None,
+                           saved_word_policy_revision=policy.revision if policy else None,
+                           saved_word_blockers=blockers)
         fingerprint = hashlib.sha256(json.dumps(summary, separators=(',', ':'),
                                                sort_keys=True).encode('utf-8')).hexdigest()
         return PurgeInventory(
@@ -217,6 +252,11 @@ class HostedPurgePlanner:
             retention_elapsed=clock >= eligible, firestore_paths=docs,
             content_objects=live_objects, retained_recovery_objects=saved_objects,
             fingerprint=fingerprint,
-            document_inventory_exhaustive=self.discovery is not None,
+            # Existing executors only understand project-subtree authority.
+            # Never extend that authority to a shared policy or sidecar silently.
+            document_inventory_exhaustive=self.discovery is not None and not blockers,
             missing_parent_paths=missing_parents,
+            saved_word_ledger_paths=word_ledgers,
+            saved_word_policy_reference_paths=word_policies,
+            blockers=tuple(blockers),
         )

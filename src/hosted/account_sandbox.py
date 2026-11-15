@@ -98,6 +98,27 @@ class HostedSandboxAccountClosure:
                 or (len(path) >= 2 and path[0] not in ('projects', 'users') and path[1] == uid))
 
     def _documents_locked(self, uid: str, tx) -> dict[tuple[str, ...], str]:
+        if self.planner.saved_word_retention_enabled:
+            from hosted.security.saved_word_retention import POLICY_PATH, LEDGER_COLLECTION, policy_references_user
+            policy = tx.get(POLICY_PATH)
+            try:
+                referenced = policy_references_user(dict(policy.data) if policy else None, uid)
+            except (ValueError, TypeError, RuntimeError):
+                referenced = True
+            # Recheck inside each memory transaction, including resumed receipts.
+            # Unknown orphan attribution never grants permission to erase it.
+            records = tx._owner._documents
+            for path in records:
+                if len(path) != 2 or path[0] != LEDGER_COLLECTION:
+                    continue
+                member = records.get(('projects', path[1], 'members', uid))
+                audit_owned = any(records.get((family, path[1]), ({},))[0].get('owner_user_id') == uid
+                                  for family in ('purge_preparations', 'purge_sandbox_executions'))
+                if (('projects', path[1]) not in records
+                        or (member and member[0].get('role') == 'owner') or audit_owned):
+                    referenced = True
+            if referenced:
+                raise DocumentConflict('HOSTED_ACCOUNT_SANDBOX_SAVED_WORD_REFERENCES')
         # Whole-memory scan is intentional: an unrecognized user reference must
         # not be invisible merely because no registered collection knows it.
         return {path: str(row[1]) for path, row in tx._owner._documents.items()
@@ -182,6 +203,7 @@ class HostedSandboxAccountClosure:
             return self._progress(self._load(uid, receipt_id))
         preview = self.planner.preview(uid)
         if (preview.owned_projects or preview.missing_project_roots or preview.staged_import_projects
+                or preview.saved_word_ledger_paths or preview.saved_word_policy_reference_paths
                 or 'HOSTED_ACCOUNT_UNCLASSIFIED_USER_REFERENCES' in preview.blockers):
             raise DocumentConflict('HOSTED_ACCOUNT_SANDBOX_PROJECTS_OR_UNKNOWN_REFERENCES')
         with self.documents._lock:

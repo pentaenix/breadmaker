@@ -111,6 +111,12 @@ class SavedWordCoverageGuard:
                 root_path = ('projects', pid)
                 after_doc = buffered.get(root_path)
                 after_root = dict(after_doc.data) if after_doc else None
+                if root_path in buffered.pending and buffered.pending[root_path] is None:
+                    # Coverage is project-derived state outside the canonical
+                    # subtree. Physical root erasure must erase it atomically,
+                    # never leave a retained unknown ledger behind.
+                    ledgers[path] = None
+                    continue
                 before_root = (buffered.before[root_path] if root_path in buffered.before
                                else after_root)
                 changes = [(buffered.before[p], data) for p, data in buffered.pending.items()
@@ -126,7 +132,10 @@ class SavedWordCoverageGuard:
                 else:
                     tx.set(path, data)
             for path, data in ledgers.items():
-                tx.set(path, data)
+                if data is None:
+                    tx.delete(path)
+                else:
+                    tx.set(path, data)
             return result
 
         return self.store.run_transaction(execute, max_attempts=max_attempts)

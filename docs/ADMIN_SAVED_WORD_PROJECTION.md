@@ -1,5 +1,32 @@
 # Saved-word projection foundation (not connected)
 
+## Retention and deletion preparation (default off)
+
+The enabled coverage guard deletes an existing `admin_saved_word_coverage/{project}`
+ledger atomically when a transaction physically removes an existing project root.
+Soft deletion still invalidates coverage. A failed transaction preserves both
+records. Deleting an already absent root is a no-op and does not clean up an
+orphan ledger; such a ledger requires separately reviewed cleanup.
+
+Project purge and memory-only account preflight have an explicit
+`saved_word_retention_enabled=False` option. Default project preflight performs
+no new saved-word ledger/policy reads and preserves its existing fingerprint.
+Opt-in project preflight reads and fences the exact project ledger and canonical
+shared policy at `admin_operational/saved_word_policy_v1`. It lists them separately
+from the project subtree and blocks existing subtree-only executors when cleanup
+or policy review is needed. It never adds shared policy to deletion candidates.
+Memory-only account preflight inventories owned/staged/purge-audit-linked ledgers
+and nested policy identity references; unattributed orphan ledgers and malformed
+policy schemas block an erasure-complete claim. References require explicitly
+reviewed policy-entry removal, not deletion of the shared policy document.
+
+These are synthetic preparation boundaries, not a production erasure executor.
+Runtime composition must enable retention census with the metric before any live
+activation. Existing snapshots/cache copies, audit receipts, independent recovery
+archives, provider backups and previously exported aggregates are not erased by
+root-ledger cleanup. Their retention/invalidation requires separate integration
+and authority; this patch makes no claim of complete historical data erasure.
+
 This source is unwired and default-off. No live access or initialization has been
 performed. The pure projection functions make no provider calls; the separately
 opt-in transaction adapter and metadata initializer are described below. This is
