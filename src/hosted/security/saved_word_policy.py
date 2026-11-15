@@ -4,7 +4,7 @@ One pinned identity per hosted owner; aliases do not consume additional slots.
 Future persistence MUST atomically CAS the policy and idempotency receipt, and
 invalidate policy-bound cache publication. Returning a candidate is not execution.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import hashlib
 import json
 import re
@@ -42,6 +42,7 @@ class WordPolicy:
 class WordReview:
     target: WordIdentity
     payload: tuple
+    stored_removal: bool = False
 
     def public(self):
         return dict(self.payload)
@@ -106,7 +107,17 @@ def candidate_update(policy, current_target, review, *, applied_receipts, now, e
     if (type(now) is not int or not values['prepared_at'] <= now < values['expires_at']
             or policy.revision != values['expected_before_revision']):
         raise ValueError('WORD_POLICY_REVIEW_EXPIRED_OR_STALE')
-    if (not match_pinned_identity(review.target, current_target)
+    if review.stored_removal:
+        # A server-owned removal review targets the exact existing filter, not
+        # a currently authenticating provider account. Never add via this path.
+        existing = next((entry for entry in policy.entries
+                         if entry.hosted_user_id == review.target.hosted_user_id), None)
+        if (values['action'] != 'include' or values['desired_excluded'] is not False
+                or not match_pinned_identity(existing, review.target)
+                or review.target.fingerprint != values['mapping_fingerprint']):
+            raise ValueError('WORD_POLICY_STORED_ENTRY_CHANGED')
+        current_target = review.target
+    elif (not match_pinned_identity(review.target, current_target)
             or current_target.fingerprint != values['mapping_fingerprint']):
         raise ValueError('WORD_POLICY_MAPPING_CHANGED')
     previous = next((entry for entry in policy.entries if entry.hosted_user_id == current_target.hosted_user_id), None)
@@ -120,3 +131,24 @@ def candidate_update(policy, current_target, review, *, applied_receipts, now, e
             entries = tuple(entry for entry in entries if entry.hosted_user_id != current_target.hosted_user_id)
     proposed = WordPolicy(values['expected_after_revision'], entries)
     return WordPolicyCandidate(proposed, key, claimed)
+
+
+def prepare_stored_removal(policy, *, hosted_user_id, expected_revision,
+                           idempotency_key, now, enabled=False):
+    """Explicitly review removing an existing filter even if provider is gone.
+
+    Uses the exact stored server policy entry. This is not proof of a current
+    provider mapping and cannot create an exclusion or mutate any account.
+    Future handler must retrieve this server-owned review, never trust a flag
+    supplied in request JSON.
+    """
+    if enabled is not True:
+        return None
+    if not isinstance(policy, WordPolicy) or policy.revision != expected_revision:
+        raise ValueError('WORD_POLICY_REVISION_CONFLICT')
+    target = next((entry for entry in policy.entries if entry.hosted_user_id == hosted_user_id), None)
+    if target is None:
+        raise ValueError('WORD_POLICY_STORED_ENTRY_MISSING')
+    review = prepare_review(policy, target, action='include', expected_revision=expected_revision,
+        idempotency_key=idempotency_key, now=now, enabled=True)
+    return replace(review, stored_removal=True)

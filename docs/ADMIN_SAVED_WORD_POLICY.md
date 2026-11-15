@@ -39,8 +39,14 @@ receipt under an atomic current-revision CAS; fence cached totals against that
 same policy head. No-op/replay must not reset the existing refresh quota or trigger
 an automatic provider scan. This executor/persistence is not implemented.
 
-Current include preparation requires a fresh trusted identity. A separate explicit
-stored-entry removal review is still needed for stale/deleted provider accounts
-whose fresh mapping can no longer be obtained. Do not claim universal reversibility
-or activate policy editing until this path and retention rules are implemented.
-No account deletion, membership/permission change, credentials or live reads occur.
+An explicit prepare_stored_removal path now reviews removal of the exact current
+server-stored policy entry even when its provider account is deleted or cannot be
+resolved. The internal server-owned review marks this removal-only path; public
+preview keys remain unchanged and action is include. Candidate update verifies
+both exact policy revision and stored identity fingerprint before removing that
+entry. It neither proves a current provider mapping nor acts on an account.
+The future UI must label removal of an existing filter accurately and the handler
+must not accept a caller-supplied stored_removal flag or reconstruct server-owned
+reviews from public JSON. A durable executor and listing/review handler are still
+absent. No account deletion, membership/permission change, credentials or live
+reads occur.

@@ -83,3 +83,27 @@ def test_exact_expiry_is_rejected():
     target = identity(); policy = WordPolicy('initial'); prepared = review(policy, target)
     with pytest.raises(ValueError, match='EXPIRED_OR_STALE'):
         apply(policy, target, prepared, now=160)
+
+
+def test_explicit_stored_removal_does_not_need_current_provider_account():
+    from hosted.security.saved_word_policy import prepare_stored_removal
+    original = identity(); policy = WordPolicy('existing', (original,))
+    prepared = prepare_stored_removal(policy, hosted_user_id=original.hosted_user_id,
+        expected_revision='existing', idempotency_key='remove_deleted', now=100, enabled=True)
+    assert prepared.public()['action'] == 'include'
+    assert prepared.public()['executable'] is False
+    proposed = apply(policy, None, prepared).policy
+    assert proposed.entries == () and policy.entries == (original,)
+    with pytest.raises(ValueError, match='STORED_ENTRY_MISSING'):
+        prepare_stored_removal(policy, hosted_user_id=identity(2).hosted_user_id,
+            expected_revision='existing', idempotency_key='wrong_entry', now=100, enabled=True)
+
+
+def test_stored_removal_rejects_changed_entry_even_if_revision_reused():
+    from hosted.security.saved_word_policy import prepare_stored_removal
+    original = identity(); policy = WordPolicy('existing', (original,))
+    prepared = prepare_stored_removal(policy, hosted_user_id=original.hosted_user_id,
+        expected_revision='existing', idempotency_key='remove_entry', now=100, enabled=True)
+    changed = WordPolicy('existing', (replace(original, subject='changed_alias'),))
+    with pytest.raises(ValueError, match='STORED_ENTRY_CHANGED'):
+        apply(changed, None, prepared)
