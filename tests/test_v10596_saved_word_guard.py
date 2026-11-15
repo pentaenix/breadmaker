@@ -116,8 +116,11 @@ def test_import_preparation_recomputes_not_trusts_supplied_count(monkeypatch):
     app, _, _, pid, _ = setup(monkeypatch)
     app.projects.domain.saved_word_projection_enabled = True
     service = HostedProjectPackageService(app.projects)
+    with pytest.raises(ValueError, match='HOSTED_PACKAGE_PROVIDER_FIELDS_FORBIDDEN'):
+        service._prepare_import_entity('manuscript_block', {'project_id': pid},
+            {'text_content': 'two words', '_bm_saved_word_v1': {'words': 999}}, entity_id='b_words_import')
     _, stored = service._prepare_import_entity('manuscript_block', {'project_id': pid},
-        {'text_content': 'two words', '_bm_saved_word_v1': {'words': 999}}, entity_id='b_words_import')
+        {'text_content': 'two words'}, entity_id='b_words_import')
     assert stored['_bm_saved_word_v1']['words'] == 2
 
 
