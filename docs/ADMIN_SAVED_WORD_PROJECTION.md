@@ -1,4 +1,28 @@
-# Saved-word projection foundation (not connected)
+# Saved-word projection and opt-in runtime composition
+
+## Explicit canonical runtime flag
+
+`BREADMAKER_SAVED_WORDS_ENABLED=true` composes contribution writes and coverage
+maintenance in hosted/hosted-dev runtime. Missing, empty, `false`, and `0` retain
+the previous disabled store chain; other values fail configuration validation.
+This flag is separate from the Cloud Admin aggregate/route flag and does not
+enable an Admin endpoint or change any deployment setting by itself.
+
+The exact production chain when enabled is `ActionDocumentStore` then
+`SavedWordCoverageGuard` then `AccountLifecycleDocumentStore` then the Google
+document provider. Developer memory injection preserves the optional lifecycle
+facade in the same position. Coverage stays below journal replay and above the
+account-erasure fence. Project, asset and private-history domain constructors
+receive the same explicit boolean; package import and encrypted restore inherit
+the destination project domain option. No additional content read is performed.
+
+Runtime composition never initializes a ledger or performs a legacy content
+backfill. Already missing coverage stays unknown even while newly saved blocks
+gain metadata. Existing production physical-deletion authority is unchanged;
+the separately gated memory-only purge proof cannot enable live erasure.
+Cloud extraction must recognize only this exact reviewed wrapper position,
+not generically unwrap arbitrary stores. Release configuration must preserve and
+roll back this contribution flag independently of the aggregate flag.
 
 ## Retention and deletion preparation (default off)
 
@@ -48,7 +72,7 @@ failure deleting the ledger rolls all four changes back. Default-disabled
 manifests and inventory fingerprints remain unchanged. This memory-lock proof
 does not establish production cross-provider atomicity or production authority.
 
-This source is unwired and default-off. No live access or initialization has been
+This source is default-off. No live access or initialization has been
 performed. The pure projection functions make no provider calls; the separately
 opt-in transaction adapter and metadata initializer are described below. This is
 not a connected Admin producer or a content-backfill implementation.
@@ -104,15 +128,15 @@ snapshot and do not automatically scan or reset the shared refresh allowance.
 
 Synthetic tests cover tokenizer examples, disabled lazy inputs, unknown coverage,
 create/edit/delete/Undo arithmetic, revision conflicts and invalid/negative data.
-These are foundation tests, not proof of canonical transaction integration.
-No runtime switch, persistent metadata write, live scan, IAM or credential is
-introduced by these files. Any integration requires reviewed synthetic transaction
-and recovery tests plus normal exact-head CI before a separate activation decision.
+Additional synthetic runtime tests cover explicit flag parsing, exact wrapper
+order, lifecycle fencing, save/replay/Undo/Redo, package import and encrypted
+restore. No live scan, IAM or credential change is performed by this source
+patch. Deployment still requires exact-head CI and explicit release configuration.
 
-## Uncomposed invalidation guard
+## Default-off coverage transaction guard
 
 `saved_word_guard.SavedWordCoverageGuard` is an explicit opt-in transaction
-adapter, not installed by runtime. When placed below ActionDocumentStore it sees
+adapter, installed only by the explicit runtime flag above. Below ActionDocumentStore it sees
 canonical writes and journal restoration without changing the root-authority
 allowlist or inserting telemetry in Undo records. It conservatively handles an EXISTING ledger on changed project roots, blocks
 or chapters; mutation callbacks never create a ledger or promote coverage. The
@@ -120,8 +144,7 @@ revision-bound maintenance extension and separate initializer are described belo
 publication. Identical writes and receipt-only replay do not update the ledger.
 All reads precede writes, and invalidation shares the canonical transaction.
 
-This uncomposed adapter must not be treated as a live counter until the complete
-writer contribution and initialization integration is reviewed. Read cost when explicitly enabled: one ledger lookup
+This adapter does not establish missing coverage or initialize a live counter. Read cost when explicitly enabled: one ledger lookup
 per affected project per transaction attempt, plus one root lookup if not already
 staged; one ledger write when it exists. Buffering captures before-images and can
 add document reads per modified record. Retries multiply these costs. The wrapper
@@ -131,8 +154,8 @@ is described below.
 
 The optional `HostedDomainStore(saved_word_projection_enabled=True)` injection
 now prepares a server-owned `_bm_saved_word_v1` block contribution from plaintext
-already present during ordinary create/update and chapter replacement. Bootstrap
-never passes this option. Omitted/oversized plaintext produces unknown metadata;
+already present during ordinary create/update and chapter replacement. The explicit
+runtime flag now passes this option consistently; default bootstrap does not. Omitted/oversized plaintext produces unknown metadata;
 it does not trigger an extra content read or reject an author's save. Existing
 unchanged blocks do not gain coverage. Contributions travel in canonical journal
 before/after images, so Undo/Redo restore them with the corresponding content.

@@ -480,7 +480,8 @@ class HostedAuthorizationService:
 class HostedCloudProjectRepository:
     def __init__(self, documents, objects: ObjectStore, authority: FirestoreProjectRepository,
                  users: HostedUserRepository, user_id_provider: Callable[[], str], *,
-                 encrypted_objects=None, encrypted_fields=None):
+                 encrypted_objects=None, encrypted_fields=None,
+                 saved_word_projection_enabled: bool = False):
         self.documents = documents
         self.objects = objects
         self.authority = authority
@@ -495,6 +496,7 @@ class HostedCloudProjectRepository:
         self.domain = HostedDomainStore(
             documents, objects, encrypted_objects=encrypted_objects,
             encrypted_fields=encrypted_fields,
+            saved_word_projection_enabled=saved_word_projection_enabled,
         )
 
     def _uid(self, value: str | None = None) -> str:
@@ -819,7 +821,8 @@ class HostedCommittedAssetStore:
     blob without that record is an orphan candidate rather than a committed asset.
     """
     def __init__(self, documents, objects: ObjectStore, user_id_provider: Callable[[], str], project_id_provider: Callable[[], str],
-                 *, encrypted_fields=None, encrypted_objects=None):
+                 *, encrypted_fields=None, encrypted_objects=None,
+                 saved_word_projection_enabled: bool = False):
         self.documents=documents
         self.objects=objects
         self.user_id_provider=user_id_provider
@@ -829,7 +832,8 @@ class HostedCommittedAssetStore:
         self.private = encrypted_fields is not None
         self.domain=HostedDomainStore(documents,objects,
                                       encrypted_fields=encrypted_fields,
-                                      encrypted_objects=encrypted_objects)
+                                      encrypted_objects=encrypted_objects,
+                                      saved_word_projection_enabled=saved_word_projection_enabled)
         self.raw=HostedAssetStore(objects,project_id=project_id_provider)
 
     @staticmethod
@@ -964,7 +968,8 @@ class HostedCommittedAssetStore:
 
 class HostedHistoryStore:
     def __init__(self, documents, objects: ObjectStore, user_id_provider: Callable[[], str], project_id_provider: Callable[[], str],
-                 *, encrypted_fields=None, encrypted_objects=None):
+                 *, encrypted_fields=None, encrypted_objects=None,
+                 saved_word_projection_enabled: bool = False):
         self.documents=documents;self.objects=objects;self.user_id_provider=user_id_provider;self.project_id_provider=project_id_provider
         if (encrypted_fields is None) != (encrypted_objects is None):
             raise ValueError('HOSTED_PRIVATE_HISTORY_BOTH_CODECS_REQUIRED')
@@ -974,7 +979,8 @@ class HostedHistoryStore:
         self.private = encrypted_fields is not None
         self.domain = (HostedDomainStore(documents, objects,
                        encrypted_fields=encrypted_fields,
-                       encrypted_objects=encrypted_objects) if self.private else None)
+                       encrypted_objects=encrypted_objects,
+                       saved_word_projection_enabled=saved_word_projection_enabled) if self.private else None)
         self.publisher=HostedHybridObjectPublisher(objects,documents)
         self.projects=self.domain.projects if self.private else FirestoreProjectRepository(documents)
 

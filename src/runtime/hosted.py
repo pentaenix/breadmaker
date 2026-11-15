@@ -111,6 +111,10 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
     environment=str(os.environ.get('BREADMAKER_ENV') or ('development' if runtime_mode=='hosted_dev' else '')).strip().lower()
     _validate_mode(runtime_mode,auth_mode,environment)
     _validate_worker_configuration()
+    word_flag = os.environ.get('BREADMAKER_SAVED_WORDS_ENABLED', '')
+    if word_flag not in {'', 'false', '0', 'true'}:
+        raise RuntimeError('HOSTED_SAVED_WORD_CONFIGURATION_INVALID')
+    saved_words_enabled = word_flag == 'true'
 
     documents,objects=_stores(runtime_mode, documents, objects)
     lifecycle = None
@@ -123,6 +127,12 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
         lifecycle = documents
     if lifecycle is not None:
         objects = AccountLifecycleObjectStore(objects, lifecycle)
+    if saved_words_enabled:
+        from hosted.security.saved_word_guard import SavedWordCoverageGuard
+        # Exact composition: journal -> coverage -> account lifecycle -> provider.
+        # Undo/Redo and canonical writes share the same coverage transaction.
+        # Do not initialize ledgers, scan old content, or enable Admin here.
+        documents = SavedWordCoverageGuard(documents, enabled=True)
     documents=ActionDocumentStore(documents)
     project_authority=FirestoreProjectRepository(documents)
     users=HostedUserRepository(HostedStructuredRepository(documents))
@@ -160,7 +170,8 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
 
     context=HostedProjectContextProvider(project_authority,users,user_id_provider,kind=identity_kind)
     identity=HostedIdentityProvider(documents,objects,project_authority,context,user_id_provider,kind=identity_kind)
-    projects=HostedCloudProjectRepository(documents,objects,project_authority,users,user_id_provider)
+    projects=HostedCloudProjectRepository(documents,objects,project_authority,users,user_id_provider,
+        saved_word_projection_enabled=saved_words_enabled)
     context.project_target_provider=projects.profile_project_target
 
     def current_project_id():
@@ -170,8 +181,10 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
         if not target:raise RuntimeError('PROJECT_CONTEXT_REQUIRED')
         return target
 
-    assets=HostedCommittedAssetStore(documents,objects,user_id_provider,current_project_id)
-    history=HostedHistoryStore(documents,objects,user_id_provider,current_project_id)
+    assets=HostedCommittedAssetStore(documents,objects,user_id_provider,current_project_id,
+        saved_word_projection_enabled=saved_words_enabled)
+    history=HostedHistoryStore(documents,objects,user_id_provider,current_project_id,
+        saved_word_projection_enabled=saved_words_enabled)
     backups=HostedBackupStore()
     usage=HostedProjectUsageService(documents,objects)
     from hosted.narration.composition import configured as configured_narration
