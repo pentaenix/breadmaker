@@ -169,3 +169,111 @@ def test_default_import_preparation_adds_no_word_metadata(monkeypatch):
         'manuscript_block', {'project_id': pid}, {'text_content': 'two words'},
         entity_id='b_words_default_import')
     assert '_bm_saved_word_v1' not in stored
+
+
+def test_complete_initialization_and_atomic_aggregate_maintenance(monkeypatch):
+    import time
+    app, raw, guard, pid, cid = setup(monkeypatch)
+    domain = app.projects.domain
+    domain.saved_word_projection_enabled = True
+    _replace(app, pid, cid, [{'text_content': 'two words'}], 'op_ledger_seed')
+    revision = app.projects.get(pid)['generation']
+    result = guard.initialize_metadata(pid, expected_revision=revision, deadline=time.monotonic()+20)
+    assert result['state'] == 'complete' and result['words'] == 2
+    journal = ActionJournal(domain.documents)
+    token = journal.begin(pid, OWNER, 'Counted edit')['token']
+    with bind_action(token, pid, OWNER):
+        _replace(app, pid, cid, [{'text_content': 'three saved words'}], 'op_ledger_edit')
+    journal.finish(pid, OWNER, token)
+    assert raw.get((LEDGER_COLLECTION, pid)).data['words'] == 3
+    journal.restore(pid, OWNER, token, 'undo')
+    assert raw.get((LEDGER_COLLECTION, pid)).data['words'] == 2
+    journal.restore(pid, OWNER, token, 'redo')
+    assert raw.get((LEDGER_COLLECTION, pid)).data['words'] == 3
+    _replace(app, pid, cid, [], 'op_ledger_delete')
+    final = raw.get((LEDGER_COLLECTION, pid)).data
+    assert final['state'] == 'complete' and final['words'] == 0 and final['blocks'] == 0
+
+
+def test_disabled_writer_invalidates_stale_contribution(monkeypatch):
+    import time
+    app, raw, guard, pid, cid = setup(monkeypatch)
+    domain = app.projects.domain
+    domain.saved_word_projection_enabled = True
+    _replace(app, pid, cid, [{'id': 'b_binding', 'text_content': 'two words'}], 'op_binding_seed')
+    guard.initialize_metadata(pid, expected_revision=app.projects.get(pid)['generation'],
+                              deadline=time.monotonic()+20)
+    domain.saved_word_projection_enabled = False
+    domain.update('manuscript_block', {'project_id': pid, 'block_id': 'b_binding'},
+        {'text_content': 'now three words'}, user_id=OWNER, operation='op_disabled_change')
+    assert raw.get((LEDGER_COLLECTION, pid)).data['state'] == 'unknown'
+    result = guard.initialize_metadata(pid, expected_revision=app.projects.get(pid)['generation'],
+                                       deadline=time.monotonic()+20)
+    assert result['state'] == 'unknown' and result['words'] is None
+
+
+def test_initializer_missing_metadata_deadline_revision_and_off(monkeypatch):
+    import time
+    app, raw, guard, pid, _ = setup(monkeypatch)
+    rev = app.projects.get(pid)['generation']
+    result = guard.initialize_metadata(pid, expected_revision=rev, deadline=time.monotonic()+20)
+    assert result['state'] == 'unknown'
+    previous = raw.get((LEDGER_COLLECTION, pid)).revision
+    for revision, deadline in [(rev+1, time.monotonic()+20), (rev, time.monotonic()-1)]:
+        with pytest.raises(ValueError):
+            guard.initialize_metadata(pid, expected_revision=revision, deadline=deadline)
+    assert raw.get((LEDGER_COLLECTION, pid)).revision == previous
+    guard.enabled = False
+    assert guard.initialize_metadata(pid, expected_revision=rev, deadline=0) is None
+
+
+def test_initializer_overflow_never_publishes_partial_total(monkeypatch):
+    import time
+    app, raw, guard, pid, _ = setup(monkeypatch)
+    metadata = {'definition': 'saved_text_unicode_words_v1', 'words': 1, 'source_generation': 1}
+    def seed_many(tx):
+        for i in range(1001):
+            tx.set(('projects', pid, 'blocks', 'b_limit_' + str(i)),
+                   {'generation': 1, '_bm_saved_word_v1': metadata})
+    raw.run_transaction(seed_many)
+    result = guard.initialize_metadata(pid, expected_revision=app.projects.get(pid)['generation'],
+                                       deadline=time.monotonic()+20)
+    assert result['state'] == 'unknown' and result['words'] is None
+
+
+@pytest.mark.parametrize('explicit_revision', [False, True])
+def test_generic_update_replay_keeps_bound_count_and_revision(monkeypatch, explicit_revision):
+    import time
+    app, raw, guard, pid, cid = setup(monkeypatch)
+    domain = app.projects.domain
+    domain.saved_word_projection_enabled = True
+    _replace(app, pid, cid, [{'id': 'b_replay', 'text_content': 'two words'}], 'op_replay_seed')
+    revision = app.projects.get(pid)['generation']
+    guard.initialize_metadata(pid, expected_revision=revision, deadline=time.monotonic()+20)
+    options = {'expected_project_revision': revision} if explicit_revision else {}
+    for _ in range(2):
+        domain.update('manuscript_block', {'project_id': pid, 'block_id': 'b_replay'},
+            {'text_content': 'three saved words'}, user_id=OWNER,
+            operation='op_binding_replay', **options)
+    row = raw.get(('projects', pid, 'blocks', 'b_replay')).data
+    assert app.projects.get(pid)['generation'] == revision + 1
+    assert row['generation'] == row['_bm_saved_word_v1']['source_generation'] == 2
+    assert raw.get((LEDGER_COLLECTION, pid)).data['words'] == 3
+
+
+def test_encrypted_chapter_replay_ignores_only_derived_binding():
+    from tests.test_v10524_private_live_restore import private_store, OWNER as PRIVATE_OWNER
+    from hosted.chapter_mutations import replace_chapter_blocks
+    docs, _, projects, _ = private_store(PRIVATE_OWNER)
+    projects.domain.saved_word_projection_enabled = True
+    pid = projects.create('Synthetic encrypted replay')['id']
+    cid = projects.domain.list('chapter', {'project_id': pid}, user_id=PRIVATE_OWNER)[0]['id']
+    revision = projects.get(pid)['generation']
+    options = dict(project_id=pid, chapter_id=cid, user_id=PRIVATE_OWNER,
+        blocks=[{'id': 'b_1', 'text_content': 'two words'}],
+        operation='op_encrypted_binding', expected_revision=revision)
+    first = replace_chapter_blocks(projects.domain, **options)
+    second = replace_chapter_blocks(projects.domain, **options)
+    assert first['generation'] == second['generation'] == revision + 1
+    row = docs.get(('projects', pid, 'blocks', 'b_1')).data
+    assert row['_bm_saved_word_v1']['source_generation'] == row['generation']

@@ -141,7 +141,8 @@ def replace_chapter_blocks(domain, *, project_id: str, chapter_id: str, user_id:
             stored = dict(public)
         if domain.encrypted_objects is not None:
             _check_encrypted_block_metadata(stored)
-        stored.update(domain._saved_word_metadata('manuscript_block', merged))
+        stored.update(domain._saved_word_metadata('manuscript_block', merged,
+            source_generation=int((old or {}).get('generation', 0)) + 1))
         row_bytes = len(json.dumps(stored,ensure_ascii=False,sort_keys=True).encode('utf-8'))
         if row_bytes > MAX_REPLACEMENT_DOCUMENT_BYTES:
             raise HostedValidationError('HOSTED_CHAPTER_BLOCK_TOO_LARGE')
@@ -154,7 +155,8 @@ def replace_chapter_blocks(domain, *, project_id: str, chapter_id: str, user_id:
         # Ciphertext-pointers are idempotently stable per operation and block.
         # Do not persist an unkeyed digest of the full plaintext chapter in
         # Firestore receipts when the encrypted block boundary is selected.
-        digest = _fingerprint({'chapter_id':cid, 'prepared':[(eid, stored) for eid,_,stored,_ in prepared],
+        from hosted.security.saved_word_projection import contribution_intent
+        digest = _fingerprint({'chapter_id':cid, 'prepared':[(eid, contribution_intent(stored)) for eid,_,stored,_ in prepared],
                                'expected_revision':expected_revision})
 
     def mutate(tx):

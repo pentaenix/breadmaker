@@ -61,3 +61,12 @@ def test_replacement_cannot_underflow():
     with pytest.raises(ValueError):
         prepare_replacement(Projection(1, 1, 2), expected_revision=1,
             next_revision=2, removed=[Contribution(3)], added=[], enabled=True)
+
+
+def test_revision_bound_contribution_rejects_stale_or_unversioned_metadata():
+    from hosted.security.saved_word_projection import verified_contribution, FIELD
+    metadata = {'definition': 'saved_text_unicode_words_v1', 'words': 2, 'source_generation': 4}
+    assert verified_contribution({'generation': 4, FIELD: metadata}).words == 2
+    assert verified_contribution({'generation': 5, FIELD: metadata}) is None
+    assert verified_contribution({'generation': True, FIELD: metadata}) is None
+    assert verified_contribution({'generation': 4, FIELD: {'words': 2}}) is None

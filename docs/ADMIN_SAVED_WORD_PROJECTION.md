@@ -1,8 +1,9 @@
 # Saved-word projection foundation (not connected)
 
-This source is unwired and default-off. It makes no Firestore, object-store, KMS,
-identity, or network calls, and does not establish coverage for any live project.
-It is not an Admin producer or a backfill implementation.
+This source is unwired and default-off. No live access or initialization has been
+performed. The pure projection functions make no provider calls; the separately
+opt-in transaction adapter and metadata initializer are described below. This is
+not a connected Admin producer or a content-backfill implementation.
 
 `count_saved_text` counts already-authorized saved plaintext using the existing
 History/checkpoint Unicode regex `[\w’'-]+`, version `saved_text_unicode_words_v1`.
@@ -65,21 +66,20 @@ and recovery tests plus normal exact-head CI before a separate activation decisi
 `saved_word_guard.SavedWordCoverageGuard` is an explicit opt-in transaction
 adapter, not installed by runtime. When placed below ActionDocumentStore it sees
 canonical writes and journal restoration without changing the root-authority
-allowlist or inserting telemetry in Undo records. It invalidates an EXISTING
-ledger on changed project roots, blocks or chapters; it never creates a ledger
-or promotes coverage. Missing ledger remains unknown, including import/restore
+allowlist or inserting telemetry in Undo records. It conservatively handles an EXISTING ledger on changed project roots, blocks
+or chapters; mutation callbacks never create a ledger or promote coverage. The
+revision-bound maintenance extension and separate initializer are described below. Missing ledger remains unknown, including import/restore
 publication. Identical writes and receipt-only replay do not update the ledger.
 All reads precede writes, and invalidation shares the canonical transaction.
 
-This intentionally conservative phase also invalidates on non-content root
-changes. It is safe but not a useful live counter until writer contribution
-integration is reviewed. Read cost when explicitly enabled: one ledger lookup
+This uncomposed adapter must not be treated as a live counter until the complete
+writer contribution and initialization integration is reviewed. Read cost when explicitly enabled: one ledger lookup
 per affected project per transaction attempt, plus one root lookup if not already
 staged; one ledger write when it exists. Buffering captures before-images and can
 add document reads per modified record. Retries multiply these costs. The wrapper
 must therefore not be silently enabled for production saves. Disabled delegates
-straight through with no added reads or writes. Backfill/initialization and
-actual contribution publication remain absent.
+straight through with no added reads or writes. Content backfill remains absent; the later explicit metadata-only initializer
+is described below.
 
 The optional `HostedDomainStore(saved_word_projection_enabled=True)` injection
 now prepares a server-owned `_bm_saved_word_v1` block contribution from plaintext
@@ -105,3 +105,43 @@ operation for counting. Publication still does NOT initialize a project ledger,
 so these contributions alone cannot produce a complete Admin total. Synthetic
 regressions exercise rejection of malicious supplied counts and actual encrypted
 restore without exposing content in operational metadata.
+
+## Revision binding and explicit metadata initialization (still uncomposed)
+
+Contributions now include `source_generation`. A count is usable only when its
+schema/definition/count are valid and that generation equals its canonical block
+revision. Disabled-writer changes leave stale metadata unusable. Idempotency
+fingerprints exclude only this derived source generation, preserving count and
+all original request semantics. Undo/Redo rebind only an already-valid historical
+contribution after the existing exact-image CAS; their semantic chain comparison
+ignores only the derived generation while retaining count/definition checks.
+
+`SavedWordCoverageGuard.initialize_metadata` is a separate explicit opt-in method,
+not called by runtime or Admin. It requires an active project's exact expected
+revision, then scans at most 1001 direct block metadata records within that same
+transaction. The Google adapter projects only root status/generation and block
+generation/contribution. 1000 blocks is the completeness cap; the extra record is
+an overflow sentinel. Missing, stale or malformed contributions and overflow
+publish unknown, never a partial total. No text, body object or decryption is read.
+This can establish complete zero only from a verified empty canonical collection.
+
+The initializer's 30-second budget bounds/checks projected reads, NOT provider
+transaction begin/commit latency. It requests one transaction attempt; any
+uncertain commit must be checked by a future authorized caller, not retried
+blindly. Maximum scan billing is 1001 projected block document reads plus the
+project read and one ledger write per attempt (empty query has provider minimum
+billing). Projection reduces exposed fields, not per-document read billing.
+There is no scheduler, manual UI action, quota allocation, initializer endpoint or
+activation configuration yet. Existing ledger initialization/backfill remains
+unapproved and unperformed.
+
+For an already verified complete ledger at the previous project revision, the
+transaction guard can now apply exact before/after bound block contributions and
+advance the aggregate atomically. Unknown never becomes complete from mutation.
+Missing bindings, stale revisions or unsupported mutation paths invalidate it.
+Root-only metadata changes may preserve counts when the canonical revision is
+unchanged; ordinary generation advances preserve a complete total with zero block
+delta. Explicit initialization remains necessary for legacy/missing coverage.
+External direct writes that forge or bypass canonical revisions are outside this
+proof and must not be presented as covered. Account-owner attribution and Admin
+policy/exclusion aggregation are still separate, unimplemented production steps.

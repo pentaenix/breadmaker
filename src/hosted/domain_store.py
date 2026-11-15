@@ -301,7 +301,7 @@ class HostedDomainStore:
         project["updated_at"] = stamp
         tx.set(project_path, project)
 
-    def _saved_word_metadata(self, logical_entity, plaintext):
+    def _saved_word_metadata(self, logical_entity, plaintext, *, source_generation=1):
         # Explicit injection only; never hydrate/decrypt for this derived metric.
         if not self.saved_word_projection_enabled or logical_entity != 'manuscript_block':
             return {}
@@ -310,7 +310,8 @@ class HostedDomainStore:
             count = count_saved_text(plaintext.get('text_content')).words
         except ValueError:
             count = None  # Metadata failure must not reject the author's save.
-        return {'_bm_saved_word_v1': {'definition': DEFINITION, 'words': count}}
+        return {'_bm_saved_word_v1': {'definition': DEFINITION, 'words': count,
+                                    'source_generation': source_generation}}
 
     def _hybrid_payload(self, logical_entity: str, public: Mapping[str, Any]) -> tuple[dict[str, Any], bytes] | None:
         fields = _HYBRID_PAYLOAD_FIELDS.get(logical_entity)
@@ -1043,8 +1044,16 @@ class HostedDomainStore:
             clean_patch = {"_bm_private_fields": self.encrypted_fields.seal(
                 logical_entity, ids, content)["_bm_private_fields"]}
 
-        clean_patch.update(self._saved_word_metadata(logical_entity, merged_for_object))
-        fingerprint = _fingerprint(clean_patch)
+        clean_patch.update(self._saved_word_metadata(logical_entity, merged_for_object,
+                                                    source_generation=entity_generation + 1))
+        fingerprint_payload = dict(clean_patch)
+        if '_bm_saved_word_v1' in fingerprint_payload:
+            # Replayed operations see a newer entity generation. Bind the count
+            # only on publication; do not turn its ABA revision into new intent.
+            fingerprint_payload['_bm_saved_word_v1'] = {
+                key: value for key, value in fingerprint_payload['_bm_saved_word_v1'].items()
+                if key != 'source_generation'}
+        fingerprint = _fingerprint(fingerprint_payload)
         stamp = self.clock.now_iso()
 
         def mutate(tx):

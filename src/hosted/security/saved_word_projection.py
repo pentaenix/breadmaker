@@ -91,3 +91,41 @@ def prepare_replacement(current, *, expected_revision, next_revision,
     after = prepare_complete_snapshot(added, revision=next_revision, enabled=True)
     return Projection(next_revision, current.blocks - before.blocks + after.blocks,
                       current.words - before.words + after.words)
+
+
+FIELD = '_bm_saved_word_v1'
+
+
+def verified_contribution(row):
+    """Return a count only when server metadata matches this exact block revision."""
+    if not isinstance(row, dict):
+        return None
+    metadata = row.get(FIELD)
+    if (not isinstance(metadata, dict)
+            or set(metadata) != {'definition', 'words', 'source_generation'}
+            or metadata.get('definition') != DEFINITION
+            or not _integer(row.get('generation'), 1, 2**53-1)
+            or type(metadata.get('source_generation')) is not int
+            or metadata['source_generation'] != row['generation']
+            or not _integer(metadata.get('words'), 0, MAX_WORDS)):
+        return None
+    return Contribution(metadata['words'])
+
+
+def rebind_restored_contribution(row, *, previous_generation):
+    """Rebind only a verified historical contribution after canonical Undo CAS.
+
+    Caller has already proven exact journal before/after images and is changing
+    only the ABA generation, not content. Invalid historical metadata stays stale.
+    """
+    if verified_contribution({**row, 'generation': previous_generation}) is not None:
+        row[FIELD] = {**row[FIELD], 'source_generation': row['generation']}
+
+
+def contribution_intent(row):
+    """Idempotency intent excludes only the derived publication generation."""
+    result = dict(row)
+    if isinstance(result.get(FIELD), dict):
+        result[FIELD] = {key: value for key, value in result[FIELD].items()
+                         if key != 'source_generation'}
+    return result
