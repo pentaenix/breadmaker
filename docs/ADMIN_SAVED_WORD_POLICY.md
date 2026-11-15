@@ -50,3 +50,9 @@ must not accept a caller-supplied stored_removal flag or reconstruct server-owne
 reviews from public JSON. A durable executor and listing/review handler are still
 absent. No account deletion, membership/permission change, credentials or live
 reads occur.
+
+If the selected issuer/subject already appears in policy but its binding or
+incarnation proof changed, preparation fails before offering a preview. A no-op
+must not silently preserve a stale same-identity pin or propose a contradictory
+second owner. Use explicit stored-filter removal and a separately verified fresh
+exclusion if the owner intends that change.

@@ -71,6 +71,10 @@ def prepare_review(policy, target, *, action, expected_revision, idempotency_key
     if type(now) is not int or now < 0:
         raise ValueError('WORD_POLICY_TIME')
     _token(idempotency_key)
+    same_external = next((entry for entry in policy.entries
+                          if (entry.issuer, entry.subject) == (target.issuer, target.subject)), None)
+    if same_external is not None and not match_pinned_identity(same_external, target):
+        raise ValueError('WORD_POLICY_EXTERNAL_IDENTITY_CHANGED')
     previous = next((entry for entry in policy.entries if entry.hosted_user_id == target.hosted_user_id), None)
     if previous is not None and previous.hosted_created_at != target.hosted_created_at:
         raise ValueError('WORD_POLICY_OWNER_INCARNATION_CHANGED')

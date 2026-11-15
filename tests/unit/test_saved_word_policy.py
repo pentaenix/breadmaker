@@ -75,7 +75,7 @@ def test_existing_owner_noop_allowed_at_full_capacity():
 def test_recreated_owner_rejected_before_review():
     original = identity()
     policy = WordPolicy('existing', (original,))
-    with pytest.raises(ValueError, match='OWNER_INCARNATION_CHANGED'):
+    with pytest.raises(ValueError, match='OWNER_INCARNATION_CHANGED|EXTERNAL_IDENTITY_CHANGED'):
         review(policy, replace(original, hosted_created_at='2024-01-01T00:00:00Z'))
 
 
@@ -107,3 +107,11 @@ def test_stored_removal_rejects_changed_entry_even_if_revision_reused():
     changed = WordPolicy('existing', (replace(original, subject='changed_alias'),))
     with pytest.raises(ValueError, match='STORED_ENTRY_CHANGED'):
         apply(changed, None, prepared)
+
+
+def test_changed_external_binding_rejected_before_review():
+    original = identity(); policy = WordPolicy('existing', (original,))
+    for changed in [replace(original, hosted_user_id=identity(2).hosted_user_id),
+                    replace(original, binding_created_at_epoch=1700000002.0)]:
+        with pytest.raises(ValueError, match='EXTERNAL_IDENTITY_CHANGED'):
+            review(policy, changed)
