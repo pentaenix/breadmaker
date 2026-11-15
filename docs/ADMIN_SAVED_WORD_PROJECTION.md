@@ -27,6 +27,27 @@ archives, provider backups and previously exported aggregates are not erased by
 root-ledger cleanup. Their retention/invalidation requires separate integration
 and authority; this patch makes no claim of complete historical data erasure.
 
+### Exact-memory purge composition proof
+
+A second explicit option, `saved_word_memory_purge_enabled=False`, is accepted
+only with enabled retention census, the exact raw memory document driver, and
+its exact memory discovery adapter. It permits the existing memory-only purge
+rehearsal to carry the inventoried project ledger through its existing owner,
+tombstone, retention, independent archive, preparation receipt and manifest gates.
+It does not make a Google/live executor available or unwrap unknown store types.
+Policy references still block preparation and are never removed by this path.
+
+The receipt pins both ledger and shared-policy presence, document revision and
+data fingerprint; it does not copy policy identities into another retained
+snapshot. Every resumed destructive step checks those pins, including absent
+sidecars that appear later. Synthetic object deletion holds the memory document
+lock while checking sidecars and deleting its exact generation. Final root,
+owner membership, existing ledger and progress receipt change in one enclosing
+memory transaction through the same guard logic used by canonical saves. A
+failure deleting the ledger rolls all four changes back. Default-disabled
+manifests and inventory fingerprints remain unchanged. This memory-lock proof
+does not establish production cross-provider atomicity or production authority.
+
 This source is unwired and default-off. No live access or initialization has been
 performed. The pure projection functions make no provider calls; the separately
 opt-in transaction adapter and metadata initializer are described below. This is

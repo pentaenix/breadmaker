@@ -84,61 +84,70 @@ class SavedWordCoverageGuard:
         if not self.enabled:
             return self.store.run_transaction(fn, max_attempts=max_attempts)
 
-        def execute(tx):
-            buffered = _CoverageTransaction(tx)
-            result = fn(buffered)
-            affected = set()
-            for path, after in buffered.pending.items():
-                if path and path[0] == LEDGER_COLLECTION:
-                    raise ValueError('WORD_COVERAGE_LEDGER_WRITE_FORBIDDEN')
-                if not path or path[0] != 'projects':
-                    continue
-                if len(path) == 2 or (len(path) == 4 and path[2] in {'blocks', 'chapters'}):
-                    # Only a canonical state change invalidates: receipt-only
-                    # replays and byte-identical writes do not change coverage.
-                    if after != buffered.before[path]:
-                        affected.add(require_project_id(path[1]))
-            ledgers = {}
-            for pid in sorted(affected):
-                path = (LEDGER_COLLECTION, pid)
-                if path in buffered.pending:
-                    raise ValueError('WORD_COVERAGE_LEDGER_WRITE_FORBIDDEN')
-                old = tx.get(path)
-                # Do not create operational metadata for existing projects just
-                # because an unrelated save occurred. Initialization is separate.
-                if old is None:
-                    continue
-                root_path = ('projects', pid)
-                after_doc = buffered.get(root_path)
-                after_root = dict(after_doc.data) if after_doc else None
-                if root_path in buffered.pending and buffered.pending[root_path] is None:
-                    # Coverage is project-derived state outside the canonical
-                    # subtree. Physical root erasure must erase it atomically,
-                    # never leave a retained unknown ledger behind.
-                    ledgers[path] = None
-                    continue
-                before_root = (buffered.before[root_path] if root_path in buffered.before
-                               else after_root)
-                changes = [(buffered.before[p], data) for p, data in buffered.pending.items()
-                           if len(p) == 4 and p[:3] == ('projects', pid, 'blocks')
-                           and buffered.before[p] != data]
-                ledgers[path] = _maintain(dict(old.data), before_root, after_root, changes)
-            # All reads, including coverage/root reads, precede provider writes.
-            for path, data in buffered.pending.items():
-                if data is None:
-                    tx.delete(path)
-                elif buffered.before[path] is None:
-                    tx.create(path, data)
-                else:
-                    tx.set(path, data)
-            for path, data in ledgers.items():
-                if data is None:
-                    tx.delete(path)
-                else:
-                    tx.set(path, data)
-            return result
+        return self.store.run_transaction(lambda tx: self._execute_transaction(tx, fn),
+                                          max_attempts=max_attempts)
 
-        return self.store.run_transaction(execute, max_attempts=max_attempts)
+    def _execute_transaction(self, tx, fn):
+        """Internal guard boundary, also used by exact-memory purge rehearsal.
+
+        Caller must already own the enclosing transaction. This grants no new
+        authorization and never constructs a provider or commits independently.
+        """
+        if not self.enabled:
+            return fn(tx)
+        buffered = _CoverageTransaction(tx)
+        result = fn(buffered)
+        affected = set()
+        for path, after in buffered.pending.items():
+            if path and path[0] == LEDGER_COLLECTION:
+                raise ValueError('WORD_COVERAGE_LEDGER_WRITE_FORBIDDEN')
+            if not path or path[0] != 'projects':
+                continue
+            if len(path) == 2 or (len(path) == 4 and path[2] in {'blocks', 'chapters'}):
+                # Only a canonical state change invalidates: receipt-only
+                # replays and byte-identical writes do not change coverage.
+                if after != buffered.before[path]:
+                    affected.add(require_project_id(path[1]))
+        ledgers = {}
+        for pid in sorted(affected):
+            path = (LEDGER_COLLECTION, pid)
+            if path in buffered.pending:
+                raise ValueError('WORD_COVERAGE_LEDGER_WRITE_FORBIDDEN')
+            old = tx.get(path)
+            # Do not create operational metadata for existing projects just
+            # because an unrelated save occurred. Initialization is separate.
+            if old is None:
+                continue
+            root_path = ('projects', pid)
+            after_doc = buffered.get(root_path)
+            after_root = dict(after_doc.data) if after_doc else None
+            if root_path in buffered.pending and buffered.pending[root_path] is None:
+                # Coverage is project-derived state outside the canonical
+                # subtree. Physical root erasure must erase it atomically,
+                # never leave a retained unknown ledger behind.
+                ledgers[path] = None
+                continue
+            before_root = (buffered.before[root_path] if root_path in buffered.before
+                           else after_root)
+            changes = [(buffered.before[p], data) for p, data in buffered.pending.items()
+                       if len(p) == 4 and p[:3] == ('projects', pid, 'blocks')
+                       and buffered.before[p] != data]
+            ledgers[path] = _maintain(dict(old.data), before_root, after_root, changes)
+        # All reads, including coverage/root reads, precede provider writes.
+        for path, data in buffered.pending.items():
+            if data is None:
+                tx.delete(path)
+            elif buffered.before[path] is None:
+                tx.create(path, data)
+            else:
+                tx.set(path, data)
+        for path, data in ledgers.items():
+            if data is None:
+                tx.delete(path)
+            else:
+                tx.set(path, data)
+        return result
+
 
 
     def initialize_metadata(self, project_id, *, expected_revision, deadline):

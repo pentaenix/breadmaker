@@ -54,6 +54,7 @@ class PurgeInventory:
     saved_word_ledger_paths: tuple[tuple[str, ...], ...] = ()
     saved_word_policy_reference_paths: tuple[tuple[str, ...], ...] = ()
     blockers: tuple[str, ...] = ()
+    saved_word_sidecar_states: tuple = ()
 
     def public(self) -> dict:
         # No object names, document IDs or owner metadata leak into an ordinary
@@ -89,7 +90,8 @@ class HostedPurgePlanner:
                  now: Callable[[], datetime] | None = None,
                  max_entries: int = MAX_INVENTORY_ENTRIES,
                  discovery: ProjectTreeDiscovery | None = None,
-                 saved_word_retention_enabled: bool = False) -> None:
+                 saved_word_retention_enabled: bool = False,
+                 saved_word_memory_purge_enabled: bool = False) -> None:
         # Retain the canonical hosted project service: preparation receipts
         # delegate independently verified pre-delete backup reads through it.
         # Its Firestore/GCS stores are still the sole runtime authority.
@@ -104,6 +106,14 @@ class HostedPurgePlanner:
         self.recovery_objects = recovery_objects
         self.discovery = discovery
         self.saved_word_retention_enabled = saved_word_retention_enabled is True
+        self.saved_word_memory_purge_enabled = saved_word_memory_purge_enabled is True
+        if self.saved_word_memory_purge_enabled:
+            from hosted.firestore.memory import MemoryDocumentStore
+            from hosted.purge_discovery import MemoryProjectTreeDiscovery
+            if (not self.saved_word_retention_enabled or type(self.documents) is not MemoryDocumentStore
+                    or type(discovery) is not MemoryProjectTreeDiscovery
+                    or discovery.documents is not self.documents):
+                raise ValueError('HOSTED_SAVED_WORD_PURGE_MEMORY_ONLY')
         self.now = now or (lambda: datetime.now(timezone.utc))
         if recovery_objects is self.content_objects:
             raise ValueError('HOSTED_PURGE_INDEPENDENT_RECOVERY_REQUIRED')
@@ -186,7 +196,7 @@ class HostedPurgePlanner:
             word_ledgers = (ledger_path,) if ledger is not None else ()
             word_policies = ()
             blockers = []
-            if word_ledgers:
+            if word_ledgers and not self.saved_word_memory_purge_enabled:
                 blockers.append('HOSTED_PURGE_SAVED_WORD_LEDGER_CLEANUP_REQUIRED')
             try:
                 if policy_references_user(dict(policy.data) if policy else None, uid):
@@ -244,6 +254,8 @@ class HostedPurgePlanner:
             summary.update(saved_word_ledger_revision=ledger.revision if ledger else None,
                            saved_word_policy_revision=policy.revision if policy else None,
                            saved_word_blockers=blockers)
+            if self.saved_word_memory_purge_enabled:
+                summary['saved_word_memory_purge'] = True
         fingerprint = hashlib.sha256(json.dumps(summary, separators=(',', ':'),
                                                sort_keys=True).encode('utf-8')).hexdigest()
         return PurgeInventory(
@@ -259,4 +271,8 @@ class HostedPurgePlanner:
             saved_word_ledger_paths=word_ledgers,
             saved_word_policy_reference_paths=word_policies,
             blockers=tuple(blockers),
+            saved_word_sidecar_states=tuple((path, row.revision if row else None,
+                                            dict(row.data) if row else None)
+                for path, row in ((ledger_path, ledger), (POLICY_PATH, policy)))
+                if self.saved_word_memory_purge_enabled else (),
         )
