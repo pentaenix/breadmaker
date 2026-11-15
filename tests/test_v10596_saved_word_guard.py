@@ -124,17 +124,48 @@ def test_import_preparation_recomputes_not_trusts_supplied_count(monkeypatch):
     assert stored['_bm_saved_word_v1']['words'] == 2
 
 
-def test_encrypted_restore_counts_existing_authorized_plaintext_only():
+@pytest.mark.parametrize('enabled', [False, True])
+def test_encrypted_restore_counts_existing_authorized_plaintext_only(enabled):
     from tests.test_v10524_private_live_restore import source_archive, private_store, DEST, OWNER as SOURCE_OWNER
     from hosted.encrypted_live_restore import HostedEncryptedLiveRestorer
     source_pid, reader = source_archive()
     docs, _, destination, _ = private_store(DEST)
-    destination.domain.saved_word_projection_enabled = True
+    destination.domain.saved_word_projection_enabled = enabled
     restorer = HostedEncryptedLiveRestorer(reader, destination,
         authorize_destination=lambda uid: uid == DEST)
     result = restorer.restore(source_pid, SOURCE_OWNER, DEST,
         operation='private_backup', restore_operation='restore_words_synthetic')
     row = docs.get(('projects', result.destination_project_id, 'blocks', 'b_1'))
-    assert row.data['_bm_saved_word_v1']['words'] == 2
+    if enabled:
+        assert row.data['_bm_saved_word_v1']['words'] == 2
+    else:
+        assert '_bm_saved_word_v1' not in row.data
     assert 'Unpublished secret' not in str(row.data)
     assert docs.get((LEDGER_COLLECTION, result.destination_project_id)) is None
+
+
+def test_generic_create_update_delete_contributions(monkeypatch):
+    app, raw, _, pid, cid = setup(monkeypatch)
+    domain = app.projects.domain
+    domain.saved_word_projection_enabled = True
+    domain.create('manuscript_block', {'project_id': pid},
+        {'chapter_id': cid, 'text_content': 'two words'},
+        user_id=OWNER, entity_id='b_generic_words', operation='op_generic_create')
+    path = ('projects', pid, 'blocks', 'b_generic_words')
+    assert raw.get(path).data['_bm_saved_word_v1']['words'] == 2
+    domain.update('manuscript_block', {'project_id': pid, 'block_id': 'b_generic_words'},
+        {'text_content': 'three saved words'}, user_id=OWNER, operation='op_generic_update')
+    assert raw.get(path).data['_bm_saved_word_v1']['words'] == 3
+    seed(raw, pid)
+    domain.delete('manuscript_block', {'project_id': pid, 'block_id': 'b_generic_words'}, user_id=OWNER)
+    assert raw.get(path) is None
+    assert raw.get((LEDGER_COLLECTION, pid)).data['words'] is None
+
+
+def test_default_import_preparation_adds_no_word_metadata(monkeypatch):
+    from hosted.packages import HostedProjectPackageService
+    app, _, _, pid, _ = setup(monkeypatch, enabled=False)
+    _, stored = HostedProjectPackageService(app.projects)._prepare_import_entity(
+        'manuscript_block', {'project_id': pid}, {'text_content': 'two words'},
+        entity_id='b_words_default_import')
+    assert '_bm_saved_word_v1' not in stored

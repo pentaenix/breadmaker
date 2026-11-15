@@ -88,8 +88,8 @@ never passes this option. Omitted/oversized plaintext produces unknown metadata;
 it does not trigger an extra content read or reject an author's save. Existing
 unchanged blocks do not gain coverage. Contributions travel in canonical journal
 before/after images, so Undo/Redo restore them with the corresponding content.
-Import/restore paths that bypass these writers remain uncounted and the guard
-invalidates totals. This is not complete coverage or aggregate publication.
+Uncovered legacy paths invalidate totals. Import/restore staging integration is
+described below. This is not complete coverage or aggregate publication.
 
 When later approved and enabled, counting is O(changed saved text length), capped
 at one million characters per block, outside transaction retry loops. It adds a
@@ -103,5 +103,5 @@ plaintext already authorized by those workflows. Incoming counts are not trusted
 Restore computes only after its existing readback check; it adds no decryption
 operation for counting. Publication still does NOT initialize a project ledger,
 so these contributions alone cannot produce a complete Admin total. Synthetic
-regressions exercise malicious supplied count replacement and actual encrypted
+regressions exercise rejection of malicious supplied counts and actual encrypted
 restore without exposing content in operational metadata.
