@@ -32,6 +32,8 @@ class ProductionPurgePreflight:
     archive_sha256: str
     blockers: tuple[str, ...]
     production_deletion_authorized: bool = False
+    saved_word_ledger_count: int = 0
+    saved_word_policy_reference_count: int = 0
 
     def public(self) -> dict:
         return {
@@ -43,6 +45,8 @@ class ProductionPurgePreflight:
             'archive_verified': bool(self.archive_sha256),
             'blockers': list(self.blockers),
             'production_deletion_authorized': False,
+            'saved_word_ledger_count': self.saved_word_ledger_count,
+            'saved_word_policy_reference_count': self.saved_word_policy_reference_count,
         }
 
 
@@ -71,14 +75,33 @@ class HostedGooglePurgePreflight:
         self.planner = HostedPurgePlanner(
             projects, archives, retention_days=retention_days, now=now,
             max_entries=max_entries, discovery=GoogleProjectTreeDiscovery(docs),
+            # Retained data survives disabled metric flags. The operator census
+            # must always see it, without granting any cleanup/delete authority.
+            saved_word_retention_enabled=True,
         )
 
     def inspect(self, project_id: str, owner_user_id: str, *, archive_operation: str) -> ProductionPurgePreflight:
         pid, uid = require_project_id(project_id), require_user_id(owner_user_id)
         # All reads are bounded by planner/archive limits and scope.
         first = self.planner.preview(pid, uid)
-        if not first.document_inventory_exhaustive or not first.retention_elapsed:
+        if not first.retention_elapsed:
             raise DocumentConflict('HOSTED_OPERATOR_DISCOVERY_OR_RETENTION_INCOMPLETE')
+        if not first.document_inventory_exhaustive:
+            if not first.blockers or any(not item.startswith('HOSTED_PURGE_SAVED_WORD_')
+                                         for item in first.blockers):
+                raise DocumentConflict('HOSTED_OPERATOR_DISCOVERY_OR_RETENTION_INCOMPLETE')
+            second = self.planner.preview(pid, uid)
+            if first != second:
+                raise DocumentConflict('HOSTED_OPERATOR_CROSS_PROVIDER_DRIFT')
+            # Stop before expensive archive streaming, retaining explicit
+            # diagnostic blockers and no archive/deletion-authority claim.
+            return ProductionPurgePreflight(first.fingerprint,
+                len(first.firestore_paths), len(first.missing_parent_paths),
+                len(first.content_objects), len(first.retained_recovery_objects), '',
+                tuple(dict.fromkeys((*first.blockers,
+                    *HostedProductionPurgeGate.assess().missing_proofs))),
+                saved_word_ledger_count=len(first.saved_word_ledger_paths),
+                saved_word_policy_reference_count=len(first.saved_word_policy_reference_paths))
         snapshot_id, name = self.recovery._key(pid, uid, archive_operation)
         meta = self.recovery.recovery_objects.stat(name)
         if meta is None:

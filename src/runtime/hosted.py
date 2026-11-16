@@ -131,8 +131,10 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
         from hosted.security.saved_word_guard import SavedWordCoverageGuard
         # Exact composition: journal -> coverage -> account lifecycle -> provider.
         # Undo/Redo and canonical writes share the same coverage transaction.
-        # Do not initialize ledgers, scan old content, or enable Admin here.
-        documents = SavedWordCoverageGuard(documents, enabled=True)
+        # Only a newly published root can establish bounded metadata coverage.
+        # Existing manuscripts are never initialized or scanned by this flag.
+        documents = SavedWordCoverageGuard(documents, enabled=True,
+                                          initialize_new_projects=True)
     documents=ActionDocumentStore(documents)
     project_authority=FirestoreProjectRepository(documents)
     users=HostedUserRepository(HostedStructuredRepository(documents))
