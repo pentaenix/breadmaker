@@ -16,9 +16,11 @@ account-erasure fence. Project, asset and private-history domain constructors
 receive the same explicit boolean; package import and encrypted restore inherit
 the destination project domain option. No additional content read is performed.
 
-Runtime composition never initializes a ledger or performs a legacy content
-backfill. Already missing coverage stays unknown even while newly saved blocks
-gain metadata. Existing production physical-deletion authority is unchanged;
+The enabled runtime initializes only a newly published project root from bounded
+generation-bound metadata in its publication transaction. It never initializes
+an existing manuscript or performs a legacy content backfill. Already missing
+coverage stays unknown even while newly saved blocks gain metadata. Existing
+production physical-deletion authority is unchanged;
 the separately gated memory-only purge proof cannot enable live erasure.
 Cloud extraction must recognize only this exact reviewed wrapper position,
 not generically unwrap arbitrary stores. Release configuration must preserve and
@@ -45,8 +47,11 @@ policy schemas block an erasure-complete claim. References require explicitly
 reviewed policy-entry removal, not deletion of the shared policy document.
 
 These are synthetic preparation boundaries, not a production erasure executor.
-Runtime composition must enable retention census with the metric before any live
-activation. Existing snapshots/cache copies, audit receipts, independent recovery
+The exact Google operator preflight always enables this census, even when the
+metric is disabled: retained records outlive feature settings. It reports stable
+ledger/policy blockers before archive streaming and never grants deletion
+authority. Generic memory planners retain their explicit default-off option.
+Existing snapshots/cache copies, audit receipts, independent recovery
 archives, provider backups and previously exported aggregates are not erased by
 root-ledger cleanup. Their retention/invalidation requires separate integration
 and authority; this patch makes no claim of complete historical data erasure.
@@ -138,13 +143,15 @@ patch. Deployment still requires exact-head CI and explicit release configuratio
 `saved_word_guard.SavedWordCoverageGuard` is an explicit opt-in transaction
 adapter, installed only by the explicit runtime flag above. Below ActionDocumentStore it sees
 canonical writes and journal restoration without changing the root-authority
-allowlist or inserting telemetry in Undo records. It conservatively handles an EXISTING ledger on changed project roots, blocks
-or chapters; mutation callbacks never create a ledger or promote coverage. The
-revision-bound maintenance extension and separate initializer are described below. Missing ledger remains unknown, including import/restore
-publication. Identical writes and receipt-only replay do not update the ledger.
+allowlist or inserting telemetry in Undo records. It conservatively maintains an
+existing ledger on changed project roots, blocks or chapters. Mutation of an
+existing project cannot create a ledger or promote unknown coverage. The runtime
+sets `initialize_new_projects=True` only under its existing explicit contribution
+flag; the constructor default remains false. New-root publication is described
+below. Identical writes and receipt-only replay do not update the ledger.
 All reads precede writes, and invalidation shares the canonical transaction.
 
-This adapter does not establish missing coverage or initialize a live counter. Read cost when explicitly enabled: one ledger lookup
+This adapter does not establish missing legacy coverage. Read cost when explicitly enabled: one ledger lookup
 per affected project per transaction attempt, plus one root lookup if not already
 staged; one ledger write when it exists. Buffering captures before-images and can
 add document reads per modified record. Retries multiply these costs. The wrapper
@@ -172,12 +179,38 @@ Native/document import shared `_prepare_import_entity` and encrypted live restor
 now use the same explicit domain option to recompute block contributions from
 plaintext already authorized by those workflows. Incoming counts are not trusted.
 Restore computes only after its existing readback check; it adds no decryption
-operation for counting. Publication still does NOT initialize a project ledger,
-so these contributions alone cannot produce a complete Admin total. Synthetic
+operation for counting. New-root guard composition can initialize the destination
+ledger from those validated staged contributions. Synthetic
 regressions exercise rejection of malicious supplied counts and actual encrypted
 restore without exposing content in operational metadata.
 
-## Revision binding and explicit metadata initialization (still uncomposed)
+## New-root publication and legacy initialization
+
+Ordinary project creation publishes a verified empty root, then seeds its block
+through canonical writes. Native/document import stages blocks before root
+publication. The new-root guard queries at most 1001 block metadata records,
+overlays block writes buffered in the same transaction and accepts at most 1000
+valid contributions at root generation 1. The projected fields are only
+`generation` and `_bm_saved_word_v1`; no text, object read or decryption is added.
+All provider reads precede writes, and root plus ledger commit or fail together.
+The metadata query has a 2-second timeout with elapsed-time checks; this does not
+bound transaction begin/commit latency. One query per publication attempt costs
+up to 1001 document reads (empty queries have minimum provider billing), plus the
+existing ledger/root reads and one ledger write. Existing transaction retries can
+multiply these costs up to their configured attempt count; no new retry is added.
+
+Missing/stale/malformed metadata, timeout, unsupported provider or overflow stores
+unknown, never partial zero. A retained orphan ledger rejects project-ID reuse
+without overwriting it. Ordinary later saves never query metadata for a missing
+legacy ledger. Unknown coverage cannot become complete through later subset edits.
+Flag-off behavior still adds no guard IO. The lifecycle facade forwards only the
+explicit projected-read methods before pending writes and preserves its account
+freeze checks around publication.
+
+The privileged encrypted restorer is verified with an explicit destination guard.
+Its existing operator-only staging does not carry ordinary package-import
+authority through the application lifecycle facade; that separate security fence
+remains unchanged. These checks do not authorize a production restore route.
 
 Contributions now include `source_generation`. A count is usable only when its
 schema/definition/count are valid and that generation equals its canonical block

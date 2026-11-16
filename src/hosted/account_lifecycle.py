@@ -77,6 +77,16 @@ class _LifecycleTransaction:
                 count += int(data is not None) - int(before is not None)
         return count
 
+    def saved_word_project(self, project_id, *, timeout):
+        if self.pending:
+            raise DocumentConflict('WORD_METADATA_QUERY_AFTER_WRITE')
+        return self.tx.saved_word_project(project_id, timeout=timeout)
+
+    def saved_word_metadata(self, project_id, *, limit, timeout):
+        if self.pending:
+            raise DocumentConflict('WORD_METADATA_QUERY_AFTER_WRITE')
+        return self.tx.saved_word_metadata(project_id, limit=limit, timeout=timeout)
+
     def create(self, path, data):
         key = require_document_path(path)
         if self.get(key) is not None:

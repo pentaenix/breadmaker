@@ -4,17 +4,20 @@ Install BELOW ActionDocumentStore so Undo/Redo and journal fallback pass through
 this boundary. Never install inside a journal callback: the ledger is operational
 state, not a user-authorized project mutation or an Undo record.
 
-Only a separately requested bounded metadata initialization can establish full
-coverage. Mutations may maintain complete coverage, but never promote unknown.
+Explicit new-root composition can establish coverage from bounded metadata at
+publication. Existing manuscripts require separate initialization. Mutations may
+maintain complete coverage, but never promote unknown.
 """
 from hosted.action_journal import _BufferedTransaction
 from hosted.firestore.ids import require_project_id
+from hosted.firestore.contracts import DocumentConflict
 from hosted.security.saved_word_projection import (
     DEFINITION, Projection, prepare_replacement, verified_contribution,
 )
 import time
 
 MAX_INITIAL_BLOCKS = 1000
+NEW_PROJECT_METADATA_SECONDS = 2.0
 
 
 def _ledger(revision, projection=None):
@@ -73,9 +76,57 @@ class _CoverageTransaction(_BufferedTransaction):
 
 
 class SavedWordCoverageGuard:
-    def __init__(self, store, *, enabled=False):
+    def __init__(self, store, *, enabled=False, initialize_new_projects=False):
         self.store = store
         self.enabled = enabled is True
+        self.initialize_new_projects = initialize_new_projects is True
+
+    def _new_project_ledger(self, tx, buffered, pid, root):
+        """Only root creation: bounded projected metadata, never old content.
+
+        Imports/restores stage blocks before publishing authority. Read those
+        generation-bound contributions in the same publication transaction.
+        Missing/oversized/stale evidence produces unknown, never partial zero.
+        Ordinary existing-project writes cannot enter this path.
+        """
+        revision = root.get('generation')
+        unknown = _ledger(revision if type(revision) is int else None)
+        if root.get('status') != 'active' or type(revision) is not int or revision != 1:
+            return unknown
+        reader = getattr(tx, 'saved_word_metadata', None)
+        if not callable(reader):
+            return unknown
+        deadline = time.monotonic() + NEW_PROJECT_METADATA_SECONDS
+        try:
+            rows = reader(pid, limit=MAX_INITIAL_BLOCKS + 1,
+                          timeout=NEW_PROJECT_METADATA_SECONDS)
+            if time.monotonic() >= deadline or len(rows) > MAX_INITIAL_BLOCKS:
+                return unknown
+            projected = {}
+            for row in rows:
+                if (len(row.path) != 4 or row.path[:3] != ('projects', pid, 'blocks')
+                        or row.path in projected):
+                    return unknown
+                projected[row.path] = dict(row.data)
+            # Include canonical block changes buffered in this very transaction.
+            for path, data in buffered.pending.items():
+                if len(path) == 4 and path[:3] == ('projects', pid, 'blocks'):
+                    if data is None:
+                        projected.pop(path, None)
+                    else:
+                        projected[path] = data
+            if len(projected) > MAX_INITIAL_BLOCKS:
+                return unknown
+            contributions = [verified_contribution(row) for row in projected.values()]
+            if time.monotonic() >= deadline or any(item is None for item in contributions):
+                return unknown
+            return _ledger(revision, Projection(revision, len(contributions),
+                sum(item.words for item in contributions)))
+        except Exception:
+            # Counting cannot turn missing/unsupported metadata into authority.
+            # The enclosing provider transaction still owns commit/conflicts and
+            # the account lifecycle fence; no write is performed here.
+            return unknown
 
     def __getattr__(self, name):
         return getattr(self.store, name)
@@ -117,8 +168,19 @@ class SavedWordCoverageGuard:
             # Do not create operational metadata for existing projects just
             # because an unrelated save occurred. Initialization is separate.
             if old is None:
+                root_path = ('projects', pid)
+                if (self.initialize_new_projects and root_path in buffered.pending
+                        and buffered.before[root_path] is None
+                        and buffered.pending[root_path] is not None):
+                    ledgers[path] = self._new_project_ledger(
+                        tx, buffered, pid, buffered.pending[root_path])
                 continue
             root_path = ('projects', pid)
+            if (self.initialize_new_projects and root_path in buffered.pending
+                    and buffered.before[root_path] is None
+                    and buffered.pending[root_path] is not None):
+                # A reused root ID must not overwrite an unattributed old ledger.
+                raise DocumentConflict('WORD_COVERAGE_PROJECT_ID_REUSE')
             after_doc = buffered.get(root_path)
             after_root = dict(after_doc.data) if after_doc else None
             if root_path in buffered.pending and buffered.pending[root_path] is None:
