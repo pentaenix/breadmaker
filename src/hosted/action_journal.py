@@ -141,7 +141,7 @@ class _BufferedTransaction:
 
 class ActionDocumentStore:
     """Transparent hosted store; journals ONLY explicitly bound product requests."""
-    def __init__(self, store): self.store = store
+    def __init__(self, store): self.store, self.restore_repair = store, None
     def __getattr__(self, name): return getattr(self.store, name)
 
     def run_transaction(self, fn, *, max_attempts=5):
@@ -204,6 +204,7 @@ class ActionDocumentStore:
 class ActionJournal:
     def __init__(self, documents):
         self.documents = documents.store if isinstance(documents, ActionDocumentStore) else documents
+        self.restore_repair = documents.restore_repair if type(documents) is ActionDocumentStore else None
 
     def begin(self, pid, uid, label='', scope='full', scope_id=None):
         pid, uid = require_project_id(pid), require_user_id(uid)
@@ -252,7 +253,8 @@ class ActionJournal:
             _same_generation(root, action)
             target_state = {'undo':'undone', 'redo':'finished', 'rollback':'rolled_back'}[direction]
             if action['state'] == target_state:
-                return {'ok': True, 'changed': False}
+                return {'ok': True, 'changed': False}, [r['path'][-1] for r in action['records']
+                    if len(r['path'])==4 and tuple(r['path'][:3])==('projects',pid,'blocks')]
             allowed = {'undo':{'finished'}, 'redo':{'undone'}, 'rollback':{'open'}}[direction]
             if action['state'] not in allowed:
                 raise DocumentConflict('HOSTED_ACTION_STATE_CONFLICT')
@@ -311,5 +313,10 @@ class ActionJournal:
             tx.set(('projects', pid), root)
             tx.set(_path(uid, token), action)
             if related_data: tx.set(_path(uid,related_token),related_data)
-            return {'ok': True, 'changed': bool(pending)}
-        return self.documents.run_transaction(restore)
+            return {'ok': True, 'changed': bool(pending)}, [p[-1] for p,_ in pending
+                if len(p)==4 and p[:3]==('projects',pid,'blocks')]
+        result,blocks=self.documents.run_transaction(restore)
+        if blocks and callable(self.restore_repair):
+            try:self.restore_repair(project_id=pid,actor_user_id=uid,block_ids=blocks)
+            except Exception:pass  # Undo already committed; coverage remains unknown.
+        return result

@@ -99,13 +99,11 @@ class _GoogleTransaction(Transaction):
             close = getattr(stream, 'close', None)
             if close is not None: close()
 
-    def saved_word_memberships(self, user_id: str, *, timeout: float):
-        from .ids import require_user_id
+    def saved_word_active_projects(self, *, timeout: float):
         from google.cloud.firestore_v1.base_query import FieldFilter
-        if not 0 < timeout <= 2: raise ValueError('WORD_MEMBERSHIP_QUERY_LIMIT')
-        query = self._client.collection_group('members').where(
-            filter=FieldFilter('user_id', '==', require_user_id(user_id)))
-        stream = query.select(['user_id', 'role', 'created_at']).limit(101).stream(
+        if not 0 < timeout <= 2: raise ValueError('WORD_PROJECT_QUERY_LIMIT')
+        query = self._client.collection('projects').where(filter=FieldFilter('status','==','active'))
+        stream = query.select(['status','generation','created_at']).limit(101).stream(
             transaction=self._transaction, timeout=timeout, retry=None)
         try:
             return [StoredDocument(tuple(row.reference.path.split('/')), row.to_dict() or {},
@@ -131,6 +129,14 @@ class _GoogleTransaction(Transaction):
         finally:
             close = getattr(stream, 'close', None)
             if close is not None: close()
+
+    def saved_word_block(self, project_id: str, block_id: str, *, timeout=2):
+        from .ids import require_project_id, require_opaque_id
+        if not 0 < timeout <= 2: raise ValueError('WORD_BLOCK_QUERY_LIMIT')
+        path=('projects',require_project_id(project_id),'blocks',require_opaque_id(block_id,label='block_id'))
+        row=self._ref(path).get(field_paths=['generation','_bm_saved_word_v1'],
+            transaction=self._transaction,timeout=timeout,retry=None)
+        return StoredDocument(path,row.to_dict() or {},_snapshot_revision(row)) if row.exists else None
 
     def create(self, path: tuple[str, ...], data: Mapping[str, Any]) -> None:
         self._transaction.create(self._ref(path), dict(data))

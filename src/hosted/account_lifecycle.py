@@ -92,9 +92,9 @@ class _LifecycleTransaction:
             raise DocumentConflict('WORD_METADATA_QUERY_AFTER_WRITE')
         return self.tx.saved_word_owners(project_id, timeout=timeout)
 
-    def saved_word_memberships(self, user_id, *, timeout):
+    def saved_word_active_projects(self, *, timeout):
         if self.pending: raise DocumentConflict('WORD_METADATA_QUERY_AFTER_WRITE')
-        return self.tx.saved_word_memberships(user_id, timeout=timeout)
+        return self.tx.saved_word_active_projects(timeout=timeout)
 
     def saved_word_page(self, project_id, *, after_id=None, limit=33, timeout=2):
         if self.pending: raise DocumentConflict('WORD_METADATA_QUERY_AFTER_WRITE')

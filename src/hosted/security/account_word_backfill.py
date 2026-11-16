@@ -14,7 +14,7 @@ from hosted.security.saved_word_identity import verify_owner, _stamp
 from hosted.security.saved_word_projection import count_saved_text, verified_contribution, DEFINITION, MAX_TEXT_CHARS
 from hosted.security.account_word_guard import proof_path, proof_count
 from hosted.security import account_word_state as records
-from hosted.security.account_word_backfill_store import BoundedAccountWordStore, BackfillUnavailable
+from hosted.security.account_word_backfill_store import BoundedAccountWordStore, BackfillUnavailable,BackfillBudgetExceeded
 
 MAX_PAGE = 32
 MAX_TEXT_READS = 8
@@ -67,30 +67,29 @@ class AccountWordBackfill:
 
     def _census(self, tx, uid, deadline):
         profile = self._profile(tx, uid)
-        memberships = tx.saved_word_memberships(uid, timeout=self._remaining(deadline))
-        if len(memberships) > 100: raise BackfillUnavailable('WORD_BACKFILL_PROJECT_LIMIT')
+        projects = tx.saved_word_active_projects(timeout=self._remaining(deadline))
+        if len(projects) > 100: raise BackfillUnavailable('WORD_BACKFILL_PROJECT_LIMIT')
         roots, seen = {}, set()
-        for row in memberships:
+        for row in projects:
             self._remaining(deadline)
             p = row.path
-            if (len(p) != 4 or p[0] != 'projects' or p[2:] != ('members', uid)
-                    or row.data.get('user_id') != uid or row.data.get('role') not in {'owner', 'editor'}):
-                raise BackfillUnavailable('WORD_BACKFILL_MEMBERSHIP_UNVERIFIED')
+            if len(p)!=2 or p[0]!='projects' or row.data.get('status')!='active':
+                raise BackfillUnavailable('WORD_BACKFILL_ROOT_UNVERIFIED')
             pid = require_project_id(p[1])
-            if pid in seen: raise BackfillUnavailable('WORD_BACKFILL_MEMBERSHIP_UNVERIFIED')
+            if pid in seen: raise BackfillUnavailable('WORD_BACKFILL_ROOT_UNVERIFIED')
             seen.add(pid)
-            if row.data['role'] != 'owner': continue
-            root = tx.get(('projects', pid))
-            if root is None: raise BackfillUnavailable('WORD_BACKFILL_ORPHAN_PROJECT')
-            if root.data.get('status') in {'deleted', 'erasure_pending', 'retired'}: continue
-            if root.data.get('status') != 'active': raise BackfillUnavailable('WORD_BACKFILL_ROOT_UNVERIFIED')
             owners = tx.saved_word_owners(pid, timeout=self._remaining(deadline))
+            if len(owners)!=1:raise BackfillUnavailable('WORD_BACKFILL_OWNER_UNVERIFIED')
+            owner_uid=require_user_id(owners[0].data.get('user_id'))
+            if owners[0].path!=('projects',pid,'members',owner_uid) or owners[0].data.get('role')!='owner':
+                raise BackfillUnavailable('WORD_BACKFILL_OWNER_UNVERIFIED')
+            if owner_uid!=uid:continue
             verify_owner(project_id=pid, owner_rows=[(r.path, dict(r.data)) for r in owners], hosted_user=profile)
-            _stamp(root.data.get('created_at'))
-            generation = root.data.get('generation')
+            _stamp(row.data.get('created_at'))
+            generation = row.data.get('generation')
             if type(generation) is not int or not 1 <= generation <= records.MAX_REVISION:
                 raise BackfillUnavailable('WORD_BACKFILL_ROOT_UNVERIFIED')
-            roots[pid] = dict(created_at=root.data['created_at'], generation=generation)
+            roots[pid] = dict(created_at=row.data['created_at'], generation=generation)
         return profile, roots
 
     def inspect_account(self, uid, *, deadline):
@@ -188,6 +187,78 @@ class AccountWordBackfill:
                         pages=job['pages'], plaintext_reads=job['plaintext_reads'])
         return self._run(handle['user_id'], inspect, deadline)
 
+    def repair_current_blocks(self, uid, pid, block_ids, *, deadline):
+        """Repair only now-current missing proofs after a committed restore.
+
+        Does not initialize legacy coverage from a subset or change any journal
+        image. Bounded to eight bodies and the same per-step text budget. A
+        replay observes existing proofs instead of adding them twice.
+        """
+        uid,pid=require_user_id(uid),require_project_id(pid)
+        if type(block_ids) not in (list,tuple) or len(block_ids)>128:
+            raise BackfillUnavailable('WORD_REPAIR_BLOCK_LIMIT')
+        bids=sorted({require_opaque_id(b,label='block_id') for b in block_ids})
+        def inspect(tx):
+            profile=self._profile(tx,uid);root=tx.get(('projects',pid))
+            if root is None or root.data.get('status')!='active':
+                raise BackfillUnavailable('WORD_REPAIR_PROJECT_UNAVAILABLE')
+            owners=tx.saved_word_owners(pid,timeout=self._remaining(deadline))
+            verify_owner(project_id=pid,owner_rows=[(r.path,dict(r.data)) for r in owners],hosted_user=profile)
+            saved=tx.get(records.path(uid))
+            if saved is None:raise BackfillUnavailable('WORD_REPAIR_UNINITIALIZED')
+            account=records.parse(dict(saved.data),uid,profile['created_at']);entry=account['projects'].get(pid)
+            if (not account['initialized'] or entry is None or not entry['initialized']
+                    or entry['project_created_at']!=root.data.get('created_at')
+                    or entry['canonical_revision']!=root.data.get('generation')):
+                raise BackfillUnavailable('WORD_REPAIR_UNINITIALIZED')
+            missing=[]
+            for bid in bids:
+                row=tx.saved_word_block(pid,bid,timeout=self._remaining(deadline))
+                if row is None or verified_contribution(dict(row.data)) is not None:continue
+                gen=row.data.get('generation');records._integer(gen,records.MAX_REVISION)
+                if not gen:raise BackfillUnavailable('WORD_REPAIR_GENERATION')
+                pp=proof_path(uid,profile['created_at'],pid,entry['project_created_at'],bid)
+                proof=tx.get(pp)
+                if proof_count(dict(proof.data) if proof else None,uid_created=profile['created_at'],
+                        pid=pid,project_created=entry['project_created_at'],bid=bid,generation=gen) is None:
+                    missing.append(dict(block_id=bid,generation=gen,path=pp))
+            if len(missing)>entry['blocks']-entry['known_blocks']:
+                raise BackfillUnavailable('WORD_REPAIR_COVERAGE_UNVERIFIED')
+            return profile,account,missing
+        profile,account,missing=self._run(uid,inspect,deadline)
+        completed=[];chars=byte_count=0
+        for item in missing[:MAX_TEXT_READS]:
+            self._remaining(deadline)
+            if MAX_STEP_CHARS-chars<MAX_TEXT_CHARS or MAX_STEP_BYTES-byte_count<4*MAX_TEXT_CHARS:break
+            try:
+                body=self.read_block(user_id=uid,project_id=pid,block_id=item['block_id'],
+                    expected_generation=item['generation'],deadline=deadline,max_text_chars=MAX_TEXT_CHARS,
+                    max_text_bytes=4*MAX_TEXT_CHARS)
+                if type(body) is not dict or type(body.get('generation')) is not int or body['generation']!=item['generation']:
+                    raise ValueError()
+                text=body['text_content'];count=count_saved_text(text)
+                size=len(text.encode('utf-8'))
+                if len(text)>MAX_TEXT_CHARS or size>4*MAX_TEXT_CHARS:raise ValueError()
+                chars+=len(text);byte_count+=size
+                completed.append(dict(item,words=count.words));del body,text
+            except BackfillBudgetExceeded:raise
+            except Exception:raise BackfillUnavailable('WORD_REPAIR_CONTENT_UNAVAILABLE') from None
+        if not completed:return dict(state=account['state'],repaired_blocks=0,pending_blocks=len(missing))
+        def publish(tx):
+            current_profile,current_account,current_missing=inspect(tx)
+            if profile!=current_profile or account!=current_account or missing!=current_missing:
+                raise BackfillUnavailable('WORD_REPAIR_CURRENT_STATE_CHANGED')
+            entry=current_account['projects'][pid]
+            entry['known_blocks']+=len(completed);entry['known_words']+=sum(r['words'] for r in completed)
+            updated=records.state(uid,profile['created_at'],projects=current_account['projects'],initialized=True)
+            for row in completed:
+                tx.set(row['path'],dict(schema_version=1,definition=DEFINITION,user_created_at=profile['created_at'],
+                    project_id=pid,project_created_at=entry['project_created_at'],block_id=row['block_id'],
+                    source_generation=row['generation'],words=row['words']))
+            tx.set(records.path(uid),updated)
+            return dict(state=updated['state'],repaired_blocks=len(completed),pending_blocks=len(missing)-len(completed))
+        return self._run(uid,publish,deadline)
+
     def _page(self, tx, handle, job, deadline):
         rows = tx.saved_word_page(handle['project_id'], after_id=job['cursor'], limit=33,
                                   timeout=self._remaining(deadline))
@@ -248,6 +319,7 @@ class AccountWordBackfill:
                     text = content['text_content']
                     count = count_saved_text(text)
                     size = len(text.encode('utf-8'))
+                except BackfillBudgetExceeded:raise
                 except Exception:
                     raise BackfillUnavailable('WORD_BACKFILL_CONTENT_UNAVAILABLE') from None
                 self._remaining(deadline)

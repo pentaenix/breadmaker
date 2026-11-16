@@ -64,8 +64,9 @@ generation-bound proof under `users/{uid}/word_block_counts/{opaque}` supplies a
 legacy block's count when its canonical record lacks contribution metadata.
 Proof keys hash identifiers/incarnation pins, never plaintext.
 
-The worker must first inspect a bounded complete owner-membership manifest and
-pin account birth, unique current owner, project birth and generation. Per-project
+The worker inspects at most 101 active project roots (100 plus sentinel), verifies
+unique current owners, then pins a complete owned manifest, account/project birth
+and canonical generations. Old collaborations do not exhaust that census. Per-project
 jobs live under `users/{uid}/metric_jobs/` and page by block document name. A page
 uses at most 33 projected rows (32 plus sentinel), 2,000,000 text characters and
 8 MiB decoded text; an individual block retains the current one-million-character
@@ -79,7 +80,8 @@ The normal unbounded SDK transaction/content readers are not sufficient for a
 production backfill claim. Explicit finite RPC budgets, no SDK retry, object
 generation/hash/size checks, decode limits and caller authorization must be proved
 by the production adapter. `BoundedAccountWordStore` uses explicit begin/commit,
-no automatic retries, at most 512 reads/128 writes and two-second metadata RPCs.
+no automatic retries, at most 512 metadata read operations/128 writes and
+two-second metadata RPCs.
 `BoundedCurrentBlockReader` rechecks active profile, erasure fence, unique owner,
 active project and current block generation in its transaction. It reads only
 that current block and its canonical content-addressed object, with generation,
@@ -88,15 +90,25 @@ limit and bounded returned text. It ignores read-bundle caches. Unverified priva
 codecs fail closed; this does not enable or bypass encryption. Tests exercise the
 pinned real Firestore SDK framing and synthetic GCS responses with sockets denied.
 A synthetic rehearsal is not production access or a live backfill receipt. No
-production backfill has run at this checkpoint. Execution still needs an operator
-adapter, finite whole-run cost allowance and exact scope/coverage evidence; the
+production backfill has run at this checkpoint. The explicit `operator_worker`
+reuses injected existing clients and requires exact project/bucket targets plus a
+shared whole-invocation `BackfillBudget`. Defaults cap conservative reads at 20,000,
+writes at 4,000, RPCs at 2,000, current Firestore bodies and GCS downloads at 64 MiB
+each, and total elapsed time at ten minutes. Reservations are not refunded after
+failure. Budget exhaustion before commit never publishes partial account state.
+Actual execution still needs its finite cost/scope plan and coverage evidence; the
 worker never loops an entire fleet automatically.
 
-Restoring an old Undo image without a count can make coverage unknown. A bounded
-current-state repair must count only the now-current authorized blocks, without
-rewriting the historical image. That path must be tested before claiming complete
-coverage across existing Undo history. New ordinary counted edits and Undo/Redo
-already carry the exact generation-bound contribution metadata.
+Restoring an old Undo image without a count can make coverage unknown. The runtime
+now attaches a post-commit current-state repair under the existing contribution
+flag. It rechecks actor membership and current ownership, then repairs at most
+eight restored blocks within six seconds and the same text budget. It never reads
+old content or rewrites journal/canonical images. Failure cannot reapply or fail
+an already committed Undo. Large restores remain unknown until repair finishes;
+an idempotent retry can repair the remainder without advancing the project again
+or adding a completed proof twice. Full backfill can also resume current coverage.
+This behavior is tested with legacy Undo/Redo, partial budgets, failures and real
+pinned SDK framing. It does not prove production history coverage.
 
 ## Reporting, exclusions, cache and deletion
 
@@ -117,9 +129,14 @@ revision. Missing/inactive/frozen account roots contribute zero without changing
 retained metric documents. Retained exclusion entries for those inactive accounts
 do not require a provider/account cleanup just to remove their contribution.
 Active incarnation mismatch still fails closed. Partial/missing/stale account
-coverage publishes null. Paired Cloud/Admin validation and cache eligibility
-revalidation are still required before selecting this new source. The legacy
-source remains untouched and must not be selected as a fallback.
+coverage publishes null. The paired Cloud candidate validates an eligibility hash
+in the same transaction as cache admission/publication; closure, ownership change,
+project removal, recreation and erasure fences invalidate retained observations.
+Ordinary word edits can retain a dated observation until its existing expiry.
+The paired Admin candidate requires schema 2 and reuses the existing details
+table for account coverage. Legacy schema support is retained only as an explicit
+foundation/compatibility seam, never as a fallback in account-mode composition.
+Exact final source integration, images and live verification remain release gates.
 
 The previous Test policy is scoped to saved words. Whether the same Test setting
 excludes all product metric families is a pending clarification; account ownership
@@ -135,8 +152,8 @@ must be reassessed against this account model before execution activation; no
 
 ## Account-scoped Test policy and bounded decision history
 
-The recommended replacement for the shared 32-target array/128-decision lifetime
-book is a backend-only Test setting and receipt collection under the target
+The paired Cloud candidate replaces the shared 128-decision lifetime book with a
+backend-only Test setting and individual receipt records under the target
 account, bound to its account birth. Absence means ordinary account only after a
 complete, checked migration of existing choices. Every operation must pin target
 birth, setting revision and exact reviewed action. Current settings are read from
@@ -159,13 +176,28 @@ that is a different retention guarantee needing an explicit decision.
 
 This model has bounded per-operation work and bounded monthly admission, with
 storage growth proportional to actual decisions rather than a full-copy journal
-array. The existing conservative journal cost model remains an upper-bound
-comparison, not an implemented quota or evidence of whole-app headroom. Actual
+array. The candidate admits at most 32 preparation attempts and 256 policy
+operations per UTC month, reserving the final 64 operations for context/recovery.
+Admission commits before provider lookup or account scans; failed operations do
+not refund attempts. Full reviews, key mappings, nonce reservations and receipts
+are separate target-account records. History uses manual schema-2 account cursors,
+so more than 128 retained decisions remain recoverable without compaction.
+The existing conservative journal model remains a cost comparison rather than
+evidence of whole-app headroom. Actual
 production billing is denominated separately and must not be called USD headroom
 without a verified conversion/budget reconciliation. This account-scoped protocol
-is a design recommendation, not yet the running policy executor. Migration must
-read and preserve every current choice, prohibit simultaneous legacy/new mutation,
-test replay and deletion, and publish the new Cloud/Admin protocol together.
+is implemented as a default-off candidate, not the running production executor.
+Explicit CAS initialization copies existing choices and preserves all legacy
+records and refresh quota. Nonempty legacy decision history blocks initialization
+pending its own preservation migration. A static marker seals the migration and
+freezes the legacy executor; current policy has no ongoing dependency on the old
+shared policy document, so later approved legacy retention cleanup does not need
+a general-policy hash repair. Existing data is never silently deleted. The new
+protocol still requires final CI, source/image review and production verification.
+
+Reporting population limits do not impose a new product write/access limit. A
+new project beyond the bounded account map remains creatable and makes reporting
+unknown until a complete supported census is available.
 
 ## Concrete audit references and remaining migration
 

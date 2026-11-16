@@ -54,6 +54,7 @@ def test_backfill_is_account_owned_and_preserves_canonical_content_and_undo_imag
     assert all(path[:2]==('users',A) for path in set(raw._documents)-set(before))
     # Backfill has not changed strict journal CAS. An old uncounted restored
     # image becomes unknown; counting the now-current state repairs it safely.
+    current.projects.documents.restore_repair=None  # exercise the explicit worker separately
     ActionJournal(current.projects.documents).restore(pid,A,token,'undo')
     assert raw.get(records.path(A)).data['saved_words'] is None
     repaired=initialize(w);finish(w,repaired['jobs'][0])
@@ -112,6 +113,17 @@ def test_empty_verified_account_is_zero_and_participant_project_is_not_owned(mon
     result=initialize(worker(current,raw))
     assert result['jobs']==[] and raw.get(records.path(A)).data['saved_words']==0
     assert raw.get(records.path(A)).data['projects']=={}
+
+
+def test_historical_collaborations_do_not_exhaust_current_project_census(monkeypatch):
+    app,raw,_=runtime(monkeypatch,enabled=False);born=raw.get(('users',A)).data['created_at']
+    def seed(tx):
+        for i in range(150):
+            pid=format(i,'032x');tx.create(('projects',pid),dict(status='deleted',generation=1,created_at=born))
+            tx.create(('projects',pid,'members',A),dict(user_id=A,role='editor',created_at=born))
+    raw.run_transaction(seed)
+    result=initialize(worker(app,raw))
+    assert result['state']=='complete' and result['jobs']==[] and raw.get(records.path(A)).data['saved_words']==0
 
 
 def test_unapproved_initialization_never_writes_and_failed_commit_is_atomic(monkeypatch):

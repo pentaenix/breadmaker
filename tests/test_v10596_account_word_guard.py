@@ -118,3 +118,18 @@ def test_normal_canonical_callbacks_cannot_write_derived_account_sources(monkeyp
     with pytest.raises(DocumentConflict,match='DIRECT_WRITE_FORBIDDEN'):
         app.projects.documents.run_transaction(lambda tx:tx.set(('users',A,*suffix),{'forged':True}))
     assert raw._documents==before
+
+
+def test_reporting_population_limit_does_not_block_an_allowed_product_write(monkeypatch):
+    app,raw,_=runtime(monkeypatch);born=raw.get(('users',A)).data['created_at'];projects={}
+    def seed(tx):
+        for i in range(100):
+            pid=format(i,'032x');tx.create(('projects',pid),dict(status='active',generation=1,created_at=born))
+            tx.create(('projects',pid,'members',A),dict(user_id=A,role='owner',created_at=born))
+            projects[pid]=records.project_entry(created_at=born,revision=1,blocks=0,known_blocks=0,known_words=0,initialized=True)
+        tx.set(records.path(A),records.state(A,born,projects=projects,initialized=True))
+    raw.run_transaction(seed)
+    created=app.projects.create('Synthetic reporting overflow')['id']
+    assert raw.get(('projects',created)).data['status']=='active'
+    record=raw.get(records.path(A)).data
+    assert record['saved_words'] is None and record['initialized'] is False and len(record['projects'])==100

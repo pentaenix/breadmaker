@@ -117,6 +117,8 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
     saved_words_enabled = word_flag == 'true'
 
     documents,objects=_stores(runtime_mode, documents, objects)
+    account_metric_source = documents.store if type(documents) is AccountLifecycleDocumentStore else documents
+    account_metric_objects = objects
     lifecycle = None
     if isinstance(documents, GoogleFirestoreDocumentStore):
         lifecycle = AccountLifecycleDocumentStore(documents)
@@ -193,6 +195,17 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
     usage=HostedProjectUsageService(documents,objects)
     from hosted.narration.composition import configured as configured_narration
     narration=configured_narration(projects.domain,mode=runtime_mode,auth_mode=auth_mode,environment=environment)
+    if saved_words_enabled:
+        from hosted.security.account_word_restore import AccountWordRestoreRepair
+        def current_memory_block(**kw):
+            row=projects.domain.get('manuscript_block',dict(project_id=kw['project_id'],block_id=kw['block_id']),
+                user_id=kw['user_id'])
+            text=row.get('text_content')
+            if type(text) is not str or len(text)>kw['max_text_chars'] or len(text.encode('utf-8'))>kw['max_text_bytes']:
+                raise ValueError('WORD_REPAIR_TEXT_BUDGET')
+            return row
+        documents.restore_repair=AccountWordRestoreRepair(account_metric_source,account_metric_objects,
+                                                        memory_reader=current_memory_block)
     # Same read-only current account/admission/membership fence used by Narration;
     # this does not make Highlights depend on its device models or entitlement.
     from hosted.narration.authority import NarrationAuthority

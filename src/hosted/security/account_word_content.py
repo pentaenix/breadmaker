@@ -53,6 +53,7 @@ class BoundedCurrentBlockReader:
                          hosted_user=dict(profile.data))
             # The metadata adapter deliberately cannot read manuscript bodies.
             # Only this separately authorized fixed current-block path can.
+            tx.charge_read(content_bytes=1024*1024)
             row = tx._ref(('projects', pid, 'blocks', bid)).get(field_paths=CONTENT_FIELDS,
                 transaction=tx._transaction, retry=None, timeout=_remaining(deadline))
             _remaining(deadline)
@@ -85,11 +86,13 @@ class BoundedCurrentBlockReader:
                         dict(project_id=pid, block_id=bid), key) != digest:
                     raise ValueError()
                 blob = self.objects._bucket.blob(key)
+                if self.store.budget is not None:self.store.budget.reserve(rpcs=1)
                 blob.reload(if_generation_match=generation, retry=None, timeout=_remaining(deadline))
                 if type(blob.size) is not int or blob.size != size or int(blob.generation) != generation:
                     raise ValueError()
                 # One range GET, including an excess byte. No unbounded stream
                 # or automatic transport retry. Hash is from canonical metadata.
+                if self.store.budget is not None:self.store.budget.reserve(rpcs=1,download_bytes=size)
                 encoded = blob.download_as_bytes(start=0, end=size, if_generation_match=generation,
                     raw_download=True, checksum=None, single_shot_download=True, retry=None,
                     timeout=_remaining(deadline, 4))
@@ -99,6 +102,7 @@ class BoundedCurrentBlockReader:
                 body = _json_gunzip(encoded, max_decoded_bytes=MAX_OBJECT_BYTES)
                 if not set(body) <= {'text_content', 'content_html'}: raise ValueError()
                 text = body.get('text_content')
+            except BackfillUnavailable:raise
             except Exception:
                 raise BackfillUnavailable('WORD_BACKFILL_OBJECT_UNAVAILABLE') from None
         else:

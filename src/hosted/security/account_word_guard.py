@@ -155,6 +155,11 @@ class AccountWordGuard:
             owner = verify_owner(project_id=pid, owner_rows=list(owners_after.items()), hosted_user=dict(profile.data))
             record = account(owner.hosted_user_id)
             entry = record['projects'].get(pid)
+            if entry is None and len(record['projects'])>=records.MAX_PROJECTS:
+                # Reporting bounds never impose a new product write/access cap.
+                # Preserve existing proofs and require a later complete census.
+                record['initialized']=False
+                continue
             if before is None:
                 if entry is not None: raise DocumentConflict('ACCOUNT_WORD_PROJECT_ID_REUSE')
                 entry = self._new_project(tx, buffered, pid, after)
