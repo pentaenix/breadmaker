@@ -129,10 +129,12 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
         objects = AccountLifecycleObjectStore(objects, lifecycle)
     if saved_words_enabled:
         from hosted.security.saved_word_guard import SavedWordCoverageGuard
-        # Exact composition: journal -> coverage -> account lifecycle -> provider.
+        from hosted.security.account_word_guard import AccountWordGuard
+        # journal -> project proof -> account-owned source -> lifecycle -> provider.
         # Undo/Redo and canonical writes share the same coverage transaction.
         # Only a newly published root can establish bounded metadata coverage.
         # Existing manuscripts are never initialized or scanned by this flag.
+        documents = AccountWordGuard(documents, enabled=True)
         documents = SavedWordCoverageGuard(documents, enabled=True,
                                           initialize_new_projects=True)
     documents=ActionDocumentStore(documents)

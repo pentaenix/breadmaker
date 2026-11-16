@@ -57,6 +57,33 @@ class _MemoryTransaction(Transaction):
         return [StoredDocument(row.path, {key: value for key, value in row.data.items()
                     if key in {'generation', '_bm_saved_word_v1'}}, row.revision) for row in rows]
 
+    def saved_word_owners(self, project_id: str, *, timeout: float):
+        from .ids import require_project_id
+        if not 0 < timeout <= 2:
+            raise ValueError('WORD_OWNER_QUERY_LIMIT')
+        rows = self.query_collection(('projects', require_project_id(project_id), 'members'),
+                                     field='role', value='owner')[:2]
+        return [StoredDocument(row.path, {k: row.data[k] for k in ('user_id', 'role', 'created_at')
+                    if k in row.data}, row.revision) for row in rows]
+
+    def saved_word_memberships(self, user_id: str, *, timeout: float):
+        from .ids import require_user_id
+        uid = require_user_id(user_id)
+        if not 0 < timeout <= 2: raise ValueError('WORD_MEMBERSHIP_QUERY_LIMIT')
+        rows = self._owner.query_collection_group('members', field='user_id', value=uid)[:101]
+        return [StoredDocument(row.path, {k: row.data[k] for k in ('user_id', 'role', 'created_at')
+                    if k in row.data}, row.revision) for row in rows]
+
+    def saved_word_page(self, project_id: str, *, after_id=None, limit=33, timeout=2):
+        from .ids import require_project_id, require_opaque_id
+        if after_id is not None: require_opaque_id(after_id, label='block_id')
+        if type(limit) is not int or not 1 <= limit <= 33 or not 0 < timeout <= 2:
+            raise ValueError('WORD_PAGE_QUERY_LIMIT')
+        rows = self.query_collection(('projects', require_project_id(project_id), 'blocks'))
+        rows = [row for row in rows if after_id is None or row.path[-1] > after_id][:limit]
+        return [StoredDocument(row.path, {k: row.data[k] for k in ('generation', '_bm_saved_word_v1')
+                    if k in row.data}, row.revision) for row in rows]
+
     def count_collection(self, collection_path: tuple[str, ...]) -> int:
         prefix = require_collection_path(collection_path)
         return sum(len(path) == len(prefix)+1 and path[:-1] == prefix for path in self._owner._documents)

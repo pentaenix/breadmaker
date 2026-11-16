@@ -87,6 +87,19 @@ class _LifecycleTransaction:
             raise DocumentConflict('WORD_METADATA_QUERY_AFTER_WRITE')
         return self.tx.saved_word_metadata(project_id, limit=limit, timeout=timeout)
 
+    def saved_word_owners(self, project_id, *, timeout):
+        if self.pending:
+            raise DocumentConflict('WORD_METADATA_QUERY_AFTER_WRITE')
+        return self.tx.saved_word_owners(project_id, timeout=timeout)
+
+    def saved_word_memberships(self, user_id, *, timeout):
+        if self.pending: raise DocumentConflict('WORD_METADATA_QUERY_AFTER_WRITE')
+        return self.tx.saved_word_memberships(user_id, timeout=timeout)
+
+    def saved_word_page(self, project_id, *, after_id=None, limit=33, timeout=2):
+        if self.pending: raise DocumentConflict('WORD_METADATA_QUERY_AFTER_WRITE')
+        return self.tx.saved_word_page(project_id, after_id=after_id, limit=limit, timeout=timeout)
+
     def create(self, path, data):
         key = require_document_path(path)
         if self.get(key) is not None:
