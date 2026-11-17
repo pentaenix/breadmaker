@@ -109,6 +109,8 @@ class HostedAccountDeletionPlanner:
         self.saved_word_retention_enabled = saved_word_retention_enabled is True
         if account_descendant_classifier is not None and not callable(account_descendant_classifier):
             raise ValueError('HOSTED_ACCOUNT_CLASSIFIER_INVALID')
+        if account_descendant_classifier is not None and not self.saved_word_retention_enabled:
+            raise ValueError('HOSTED_ACCOUNT_LEGACY_RETENTION_REVIEW_REQUIRED')
         self.account_descendant_classifier=account_descendant_classifier
 
     def _snapshot(self) -> tuple[tuple[tuple[str, ...], dict, int], ...]:

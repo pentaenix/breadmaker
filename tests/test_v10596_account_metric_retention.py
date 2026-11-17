@@ -20,7 +20,7 @@ def test_injected_classification_adds_explicit_review_blocks_and_never_authorize
         raw,path=setup();before=deepcopy(raw._documents)
         classify=lambda *a,**kw:AccountDescendantProof(UID,BORN,category)
         planner=HostedAccountDeletionPlanner(raw,MemoryObjectStore(),MemoryObjectStore(),lambda:UID,
-            account_descendant_classifier=classify)
+            saved_word_retention_enabled=True,account_descendant_classifier=classify)
         preview=planner.preview(UID)
         assert blocker in preview.blockers and 'HOSTED_ACCOUNT_UNCLASSIFIED_USER_REFERENCES' not in preview.blockers
         assert path in preview.account_document_paths and not preview.physical_deletion_authorized
@@ -36,7 +36,7 @@ def test_unverified_or_cross_incarnation_classification_remains_unknown(fault):
         return AccountDescendantProof('usr_'+'b'*32 if fault=='wrong_owner' else UID,
             '2025-01-01T00:00:00Z' if fault=='wrong_birth' else BORN,'metric_data')
     preview=HostedAccountDeletionPlanner(raw,MemoryObjectStore(),MemoryObjectStore(),lambda:UID,
-        account_descendant_classifier=classify).preview(UID)
+        saved_word_retention_enabled=True,account_descendant_classifier=classify).preview(UID)
     assert 'HOSTED_ACCOUNT_UNCLASSIFIED_USER_REFERENCES' in preview.blockers
     assert not preview.account_metric_data_paths and path in preview.account_document_paths
 
@@ -49,5 +49,12 @@ def test_classifier_receives_copies_and_default_public_shape_is_preserved():
         data.clear();profile.clear();lookup(('users',UID)).clear()
         return AccountDescendantProof(UID,BORN,'metric_data')
     preview=HostedAccountDeletionPlanner(raw,MemoryObjectStore(),MemoryObjectStore(),lambda:UID,
-        account_descendant_classifier=classify).preview(UID)
+        saved_word_retention_enabled=True,account_descendant_classifier=classify).preview(UID)
     assert raw._documents==before and preview.account_metric_data_paths==(path,)
+
+
+def test_new_classification_cannot_omit_existing_shared_policy_and_ledger_review():
+    raw,_=setup()
+    with pytest.raises(ValueError,match='LEGACY_RETENTION_REVIEW_REQUIRED'):
+        HostedAccountDeletionPlanner(raw,MemoryObjectStore(),MemoryObjectStore(),lambda:UID,
+            account_descendant_classifier=lambda *a,**kw:AccountDescendantProof(UID,BORN,'metric_data'))
