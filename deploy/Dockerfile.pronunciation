@@ -2,7 +2,7 @@
 ARG PYTHON_BASE_DIGEST
 FROM cgr.dev/chainguard/wolfi-base@sha256:${PYTHON_BASE_DIGEST} AS build
 ARG PYTHON_BASE_DIGEST
-RUN apk add --no-cache python-3.14=3.14.10_git20261104-r0 python-3.14-dev=3.14.10_git20261104-r0 py3.14-pip build-base
+RUN apk add --no-cache python-3.14=3.14.10_git20261111-r0 python-3.14-dev=3.14.10_git20261111-r0 py3.14-pip build-base
 WORKDIR /helper
 COPY deploy/requirements-pronunciation.txt ./requirements.txt
 COPY deploy/vendor-runtime.json ./deploy/vendor-runtime.json

@@ -167,7 +167,9 @@ class SavedWordCoverageGuard:
                 ledgers=self._project_ledgers(ProjectionTransaction(tx,scope),buffered,affected)
                 scope.reserve(writes=len(ledgers),write_bytes=sum(write_envelope(p,d) for p,d in ledgers.items()))
                 for path,data in ledgers.items():
-                    if data is not None:scope.envelope('project',path[1],'legacy-coverage',64*1024)
+                    if data is not None:
+                        previous=ProjectionTransaction(tx,scope).get(path)
+                        scope.retain(path,data,dict(previous.data) if previous is not None else None)
             except ProjectionBudgetUnavailable:scope.failed=True
         if scope is not None and scope.failed:ledgers={}
         # All reads, including coverage/root reads, precede provider writes.

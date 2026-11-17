@@ -13,6 +13,7 @@ from tests.test_v10596_account_word_guard import runtime,new_project,A
 class Budget:
     def __init__(self,*,reads=10**6,writes=10**6,write_bytes=2**40,fail_envelope=None,fail_start=False):
         self.left=dict(reads=reads,writes=writes,write_bytes=write_bytes);self.fail_envelope=fail_envelope;self.fail_start=fail_start
+        self.retained=[]
     def projection(self):
         if self.fail_start:raise OSError('Synthetic admission unavailable')
         return self
@@ -21,8 +22,27 @@ class Budget:
         for k,v in charges.items():self.left[k]-=v
     def run_restore(self,handler,**kw):
         self.reserve(reads=1);return handler(**kw)
-    def envelope(self,kind,*args):
+    def retain(self,path,*args):
+        kind='account' if path[0]=='users' else 'project'
         if kind==self.fail_envelope:raise ValueError('Synthetic storage exhausted')
+        self.retained.append((tuple(path),deepcopy(args)))
+
+
+@pytest.mark.parametrize('present',[True,False])
+def test_retained_storage_receives_the_real_prepublication_record_in_the_canonical_transaction(monkeypatch,present):
+    app,raw,_=runtime(monkeypatch);pid,_=new_project(app,A,'two words')
+    path=records.path(A)
+    if not present:raw.run_transaction(lambda tx:tx.delete(path))
+    previous=raw.get(path);ledger=raw.get((LEDGER_COLLECTION,pid))
+    budget=Budget();app.projects.documents.store.store.resource_budget=budget
+    callbacks=[];save(app,pid,callbacks)
+    observations={p:args for p,args in budget.retained}
+    assert observations[path][1]==(dict(previous.data) if previous is not None else None)
+    assert observations[(LEDGER_COLLECTION,pid)][1]==dict(ledger.data)
+    assert observations[path][0]==raw.get(path).data
+    assert callbacks==['canonical callback']
+    assert raw.get(('projects',pid,'blocks','b_words')).data['text_content']=='three saved words'
+    if not present:assert raw.get(path).data['state']=='unknown'
 
 def save(app,pid,callbacks):
     def mutate(tx):

@@ -125,7 +125,8 @@ class AccountWordGuard:
                 updates=self._project(metered,buffered)
                 scope.reserve(writes=len(updates),write_bytes=sum(write_envelope(p,d) for p,d in updates.items()))
                 for path,data in updates.items():
-                    scope.envelope('account',path[1],data['user_created_at'],4*1024**2)
+                    previous=metered.get(path)
+                    scope.retain(path,data,dict(previous.data) if previous is not None else None)
             except ProjectionBudgetUnavailable:scope.failed=True
         if scope is not None and scope.failed:
             updates={}

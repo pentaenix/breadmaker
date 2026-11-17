@@ -29,9 +29,9 @@ class ProjectionScope:
         try:self.adapter.reserve(**charges)
         except Exception:
             self.failed=True;raise ProjectionBudgetUnavailable() from None
-    def envelope(self,kind,key,born,maximum):
+    def retain(self,path,data,previous):
         if self.failed:raise ProjectionBudgetUnavailable()
-        try:self.adapter.envelope(kind,key,born,maximum)
+        try:self.adapter.retain(path,data,previous)
         except Exception:
             self.failed=True;raise ProjectionBudgetUnavailable() from None
 
