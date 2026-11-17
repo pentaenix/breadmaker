@@ -91,13 +91,47 @@ codecs fail closed; this does not enable or bypass encryption. Tests exercise th
 pinned real Firestore SDK framing and synthetic GCS responses with sockets denied.
 A synthetic rehearsal is not production access or a live backfill receipt. No
 production backfill has run at this checkpoint. The explicit `operator_worker`
-reuses injected existing clients and requires exact project/bucket targets plus a
-shared whole-invocation `BackfillBudget`. Defaults cap conservative reads at 20,000,
-writes at 4,000, RPCs at 2,000, current Firestore bodies and GCS downloads at 64 MiB
-each, and total elapsed time at ten minutes. Reservations are not refunded after
-failure. Budget exhaustion before commit never publishes partial account state.
-Actual execution still needs its finite cost/scope plan and coverage evidence; the
-worker never loops an entire fleet automatically.
+reuses injected existing clients and requires exact project/bucket targets, an
+inspected account plan, a durable `BackfillCampaign` and an invocation budget.
+Invocation defaults cap conservative reads at 20,000, writes at 4,000, RPCs at
+2,000, object RPCs at 2,000, content reservations at 64 MiB, downloads at 64 MiB,
+native Firestore response bytes at 64 MiB and elapsed time at ten minutes.
+Content reservations conservatively charge one MiB per inspected block metadata
+row; they are distinct from actual response bytes. A range GET reserves its
+declared size plus the single excess byte used to detect a mismatched response.
+
+The explicit operator sequence is: inspect complete current account plans without
+reading bodies; review those plans, project/bucket, finite caps and UTC deadline;
+create one campaign checkpoint in an owner-only `0700` local directory; then call
+`process_account_campaign` serially for each approved account. The function needs
+`approved=True`; it has no CLI, scheduler, credentials or activation behavior.
+It rotates invocation budgets before a step could exhaust them and retains the
+same cumulative campaign. Per-operation admission remains mandatory.
+
+Default cumulative caps are 500,000 reads, 25,000 writes, 200,000 combined RPCs,
+35,000 object RPCs, 16 GiB of conservative content reservations, 64 MiB of object
+downloads and one GiB of native Firestore response bytes, over at most 24 hours.
+They are operational envelopes, not a billing guarantee or production approval.
+Response accounting uses protobuf byte sizes before SDK document decoding; it
+does not count TLS/HTTP framing. The final response can exceed the byte cap by at
+most one four-MiB native frame; that response is recorded and execution stops.
+
+The `0600` checkpoint contains only a scope digest, immutable limits/deadline,
+resource counters and status. It contains no identities, plans or manuscript
+content. The operator must retain the approved plans privately to reopen the
+same scope. An exclusive local lock covers each operation. Reservations are
+persisted with atomic replacement and fsync before provider calls and are never
+refunded. Every error stops the entire campaign before the next account or
+block; a crash leaves `running`, which also prevents automatic continuation.
+There is no reset or resume-after-error operation. An uncertain commit remains
+unknown even if a budget limit or interruption follows its dispatch. Use the
+separate metadata-only `inspect_job_state` to reconcile persisted cursor/phase;
+it cannot clear a stopped campaign or create a fresh allowance. Any subsequent
+campaign needs a newly reviewed residual scope and cost plan.
+
+Actual execution still needs release, cost, authorization and coverage gates.
+Synthetic tests do not establish production object integrity, codec coverage or
+complete totals. The worker never selects or loops an entire fleet automatically.
 
 Restoring an old Undo image without a count can make coverage unknown. The runtime
 now attaches a post-commit current-state repair under the existing contribution

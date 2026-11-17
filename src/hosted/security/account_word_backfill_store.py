@@ -22,20 +22,35 @@ class BackfillBudget:
     not a new product refresh allowance or proof of monthly billing headroom.
     """
     def __init__(self,*,reads=20_000,writes=4_000,rpcs=2_000,content_bytes=64*1024*1024,
-                 download_bytes=64*1024*1024,seconds=600):
-        values=dict(reads=reads,writes=writes,rpcs=rpcs,content_bytes=content_bytes,download_bytes=download_bytes)
-        maxima=dict(reads=100_000,writes=10_000,rpcs=10_000,content_bytes=512*1024*1024,download_bytes=512*1024*1024)
+                 download_bytes=64*1024*1024,object_rpcs=2_000,response_bytes=64*1024*1024,seconds=600,campaign=None):
+        values=dict(reads=reads,writes=writes,rpcs=rpcs,content_bytes=content_bytes,download_bytes=download_bytes,
+                    object_rpcs=object_rpcs,response_bytes=response_bytes)
+        maxima=dict(reads=100_000,writes=10_000,rpcs=10_000,content_bytes=512*1024*1024,download_bytes=512*1024*1024,
+                    object_rpcs=10_000,response_bytes=512*1024*1024)
         if any(type(v) is not int or not 0<v<=maxima[k] for k,v in values.items()) or type(seconds) is not int or not 1<=seconds<=900:
             raise BackfillUnavailable('WORD_BACKFILL_BUDGET_INVALID')
-        self.limits=values;self.used=dict.fromkeys(values,0);self.deadline=time.monotonic()+seconds
+        if campaign is not None:
+            from .account_word_campaign import BackfillCampaign
+            if type(campaign) is not BackfillCampaign:raise BackfillUnavailable('WORD_BACKFILL_CAMPAIGN_REQUIRED')
+        self.campaign=campaign;self.limits=values;self.used=dict.fromkeys(values,0);self.deadline=time.monotonic()+seconds;self.failed=False
 
     def reserve(self,**charges):
-        if time.monotonic()>=self.deadline:raise BackfillBudgetExceeded('WORD_BACKFILL_INVOCATION_DEADLINE')
-        if any(k not in self.limits or type(v) is not int or v<0 for k,v in charges.items()):
+        if self.failed or time.monotonic()>=self.deadline:raise BackfillBudgetExceeded('WORD_BACKFILL_INVOCATION_DEADLINE')
+        if any(k not in self.limits or k=='response_bytes' or type(v) is not int or v<0 for k,v in charges.items()):
             raise BackfillUnavailable('WORD_BACKFILL_BUDGET_INVALID')
         if any(self.used[k]+v>self.limits[k] for k,v in charges.items()):
             raise BackfillBudgetExceeded('WORD_BACKFILL_INVOCATION_BUDGET')
+        if self.campaign is not None:self.campaign.reserve(**charges)
         for k,v in charges.items():self.used[k]+=v
+
+    def observe_response(self,size):
+        # The final native response has already arrived. Record it even when
+        # it crosses a cap, then stop before SDK decode or any later operation.
+        if type(size) is not int or not 0<=size<=4*1024*1024:raise BackfillUnavailable('WORD_BACKFILL_RESPONSE_INVALID')
+        self.used['response_bytes']+=size
+        if self.campaign is not None:self.campaign.observe_response(size)
+        if self.used['response_bytes']>self.limits['response_bytes']:
+            self.failed=True;raise BackfillBudgetExceeded('WORD_BACKFILL_RESPONSE_BUDGET')
 
 
 class _Transaction(_GoogleTransaction):
@@ -134,12 +149,16 @@ class BoundedAccountWordStore:
         self.budget=budget
         self.database = 'projects/' + project_id + '/databases/(default)'
 
-    def _rpc(self, method, request, deadline):
+    def _rpc(self, method, request, deadline, before_dispatch=None):
         remaining = deadline - time.monotonic()
         if not 0 < remaining <= 30: raise BackfillUnavailable('WORD_BACKFILL_DEADLINE')
         if self.budget is not None:self.budget.reserve(rpcs=1,**({'writes':len(request['writes'])} if method=='commit' else {}))
-        result = getattr(self.client._firestore_api, method)(request=request,
-            metadata=self.client._rpc_metadata, retry=None, timeout=min(2, remaining))
+        api=self.client._firestore_api
+        options=dict(metadata=self.client._rpc_metadata,retry=None,timeout=min(2,remaining))
+        if before_dispatch is not None:
+            if getattr(type(api),'supports_before_dispatch',False):options['before_dispatch']=before_dispatch
+            else:before_dispatch()
+        result = getattr(api, method)(request=request,**options)
         if time.monotonic() >= deadline: raise BackfillUnavailable('WORD_BACKFILL_DEADLINE')
         return result
 
@@ -154,17 +173,27 @@ class BoundedAccountWordStore:
             adapter = _Transaction(self, transaction, deadline)
             result = fn(adapter)
             adapter.remaining()
-            committing = True
+            def dispatched():
+                nonlocal committing
+                committing=True
             self._rpc('commit', {'database': self.database, 'transaction': token,
-                'writes': list(transaction._write_pbs)}, deadline)
+                'writes': list(transaction._write_pbs)}, deadline,before_dispatch=dispatched)
             committed = True
             return result
-        except Exception as error:
+        except BaseException as error:
+            if committing:
+                if not isinstance(error,Exception):
+                    error._word_backfill_commit_unknown=True
+                    raise
+                raise BackfillOutcomeUnknown('WORD_BACKFILL_COMMIT_UNKNOWN') from None
             if isinstance(error,BackfillBudgetExceeded):raise
-            if committing: raise BackfillOutcomeUnknown('WORD_BACKFILL_COMMIT_UNKNOWN') from None
             if isinstance(error, BackfillUnavailable): raise
+            if not isinstance(error,Exception):raise
             raise BackfillUnavailable('WORD_BACKFILL_REJECTED') from None
         finally:
-            if token and not committed and time.monotonic() < deadline:
+            # Once commit was dispatched, its outcome is uncertain. Do not send
+            # another provider request or replace the original failure while
+            # attempting cleanup of a transaction that may already have landed.
+            if token and not committed and not committing and time.monotonic() < deadline:
                 try: self._rpc('rollback', {'database': self.database, 'transaction': token}, deadline)
                 except Exception: pass

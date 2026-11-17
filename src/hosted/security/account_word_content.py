@@ -143,13 +143,13 @@ class BoundedCurrentBlockReader:
                         dict(project_id=pid, block_id=bid), key) != digest:
                     raise ValueError()
                 blob = self.objects._bucket.blob(key)
-                if self.store.budget is not None:self.store.budget.reserve(rpcs=1)
+                if self.store.budget is not None:self.store.budget.reserve(rpcs=1,object_rpcs=1)
                 blob.reload(if_generation_match=generation, retry=None, timeout=_remaining(deadline))
                 if type(blob.size) is not int or blob.size != size or int(blob.generation) != generation:
                     raise ValueError()
                 # One range GET, including an excess byte. No unbounded stream
                 # or automatic transport retry. Hash is from canonical metadata.
-                if self.store.budget is not None:self.store.budget.reserve(rpcs=1,download_bytes=size)
+                if self.store.budget is not None:self.store.budget.reserve(rpcs=1,object_rpcs=1,download_bytes=size+1)
                 encoded = blob.download_as_bytes(start=0, end=size, if_generation_match=generation,
                     raw_download=True, checksum=None, single_shot_download=True, retry=None,
                     timeout=_remaining(deadline, 4))
