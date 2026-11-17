@@ -83,6 +83,61 @@ class _GoogleTransaction(Transaction):
         results = self._client.collection('/'.join(key)).count(alias='total').get(transaction=self._transaction)
         return int(results[0][0].value)
 
+    def saved_word_owners(self, project_id: str, *, timeout: float):
+        from .ids import require_project_id
+        from google.cloud.firestore_v1.base_query import FieldFilter
+        if not 0 < timeout <= 2:
+            raise ValueError('WORD_OWNER_QUERY_LIMIT')
+        query = self._client.collection('projects/' + require_project_id(project_id) + '/members')
+        stream = query.where(filter=FieldFilter('role', '==', 'owner')).select(
+            ['user_id', 'role', 'created_at']).limit(2).stream(
+                transaction=self._transaction, timeout=timeout, retry=None)
+        try:
+            return [StoredDocument(tuple(row.reference.path.split('/')), row.to_dict() or {},
+                                   _snapshot_revision(row)) for row in stream]
+        finally:
+            close = getattr(stream, 'close', None)
+            if close is not None: close()
+
+    def saved_word_active_projects(self, *, timeout: float):
+        from google.cloud.firestore_v1.base_query import FieldFilter
+        if not 0 < timeout <= 2: raise ValueError('WORD_PROJECT_QUERY_LIMIT')
+        query = self._client.collection('projects').where(filter=FieldFilter('status','==','active'))
+        stream = query.select(['status','generation','created_at']).limit(101).stream(
+            transaction=self._transaction, timeout=timeout, retry=None)
+        try:
+            return [StoredDocument(tuple(row.reference.path.split('/')), row.to_dict() or {},
+                                   _snapshot_revision(row)) for row in stream]
+        finally:
+            close = getattr(stream, 'close', None)
+            if close is not None: close()
+
+    def saved_word_page(self, project_id: str, *, after_id=None, limit=33, timeout=2):
+        from .ids import require_project_id, require_opaque_id
+        if type(limit) is not int or not 1 <= limit <= 33 or not 0 < timeout <= 2:
+            raise ValueError('WORD_PAGE_QUERY_LIMIT')
+        parent = 'projects/' + require_project_id(project_id) + '/blocks'
+        query = self._client.collection(parent).order_by('__name__')
+        if after_id is not None:
+            bid = require_opaque_id(after_id, label='block_id')
+            query = query.start_after({'__name__': self._client.document(parent + '/' + bid)})
+        stream = query.select(['generation', '_bm_saved_word_v1']).limit(limit).stream(
+            transaction=self._transaction, timeout=timeout, retry=None)
+        try:
+            return [StoredDocument(tuple(row.reference.path.split('/')), row.to_dict() or {},
+                                   _snapshot_revision(row)) for row in stream]
+        finally:
+            close = getattr(stream, 'close', None)
+            if close is not None: close()
+
+    def saved_word_block(self, project_id: str, block_id: str, *, timeout=2):
+        from .ids import require_project_id, require_opaque_id
+        if not 0 < timeout <= 2: raise ValueError('WORD_BLOCK_QUERY_LIMIT')
+        path=('projects',require_project_id(project_id),'blocks',require_opaque_id(block_id,label='block_id'))
+        row=self._ref(path).get(field_paths=['generation','_bm_saved_word_v1'],
+            transaction=self._transaction,timeout=timeout,retry=None)
+        return StoredDocument(path,row.to_dict() or {},_snapshot_revision(row)) if row.exists else None
+
     def create(self, path: tuple[str, ...], data: Mapping[str, Any]) -> None:
         self._transaction.create(self._ref(path), dict(data))
 

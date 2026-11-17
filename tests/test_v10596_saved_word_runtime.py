@@ -6,6 +6,7 @@ from hosted.firestore.memory import MemoryDocumentStore
 from hosted.storage.memory import MemoryObjectStore
 from hosted.runtime_services import _DEV_USER_ID as UID
 from hosted.security.saved_word_guard import SavedWordCoverageGuard, LEDGER_COLLECTION
+from hosted.security.account_word_guard import AccountWordGuard
 from runtime.hosted import build_hosted_dev_runtime
 
 
@@ -29,7 +30,8 @@ def test_exact_runtime_chain_and_new_project_coverage_save_undo_replay(monkeypat
     assert type(wrapped) is ActionDocumentStore
     if enabled:
         assert type(wrapped.store) is SavedWordCoverageGuard
-        assert wrapped.store.store is source
+        assert type(wrapped.store.store) is AccountWordGuard
+        assert wrapped.store.store.store is source
         assert wrapped.store.initialize_new_projects is True
     else:
         assert wrapped.store is source
