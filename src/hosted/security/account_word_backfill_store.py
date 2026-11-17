@@ -85,6 +85,14 @@ class _Transaction(_GoogleTransaction):
         rows = super().saved_word_owners(pid, timeout=min(timeout, self.remaining()))
         self.remaining(); return rows
 
+    def saved_word_owner_batch(self, pids, *, timeout=2):
+        from hosted.firestore.owner_queries import project_ids, OWNER_BATCH_SIZE
+        pids=project_ids(pids)
+        if not 0<len(pids)<=OWNER_BATCH_SIZE:raise BackfillUnavailable('WORD_BACKFILL_OWNER_SCOPE')
+        self.charge_read(len(pids)+1)
+        rows=super().saved_word_owner_batch(pids,timeout=min(timeout,self.remaining()))
+        self.remaining();return rows
+
     def saved_word_active_projects(self, *, timeout=2):
         self.charge_read(101)
         rows = super().saved_word_active_projects(timeout=min(timeout, self.remaining()))

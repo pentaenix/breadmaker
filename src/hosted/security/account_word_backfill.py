@@ -70,6 +70,7 @@ class AccountWordBackfill:
         projects = tx.saved_word_active_projects(timeout=self._remaining(deadline))
         if len(projects) > 100: raise BackfillUnavailable('WORD_BACKFILL_PROJECT_LIMIT')
         roots, seen = {}, set()
+        validated=[]
         for row in projects:
             self._remaining(deadline)
             p = row.path
@@ -78,11 +79,20 @@ class AccountWordBackfill:
             pid = require_project_id(p[1])
             if pid in seen: raise BackfillUnavailable('WORD_BACKFILL_ROOT_UNVERIFIED')
             seen.add(pid)
-            owners = tx.saved_word_owners(pid, timeout=self._remaining(deadline))
+            validated.append(row)
+        from hosted.firestore.owner_queries import OWNER_BATCH_SIZE
+        owner_rows={pid:[] for pid in seen}
+        pids=sorted(seen)
+        for offset in range(0,len(pids),OWNER_BATCH_SIZE):
+            for owner in tx.saved_word_owner_batch(pids[offset:offset+OWNER_BATCH_SIZE],timeout=self._remaining(deadline)):
+                owner_rows[owner.path[1]].append(owner)
+        for row in validated:
+            pid=row.path[1];owners=owner_rows[pid]
             if len(owners)!=1:raise BackfillUnavailable('WORD_BACKFILL_OWNER_UNVERIFIED')
             owner_uid=require_user_id(owners[0].data.get('user_id'))
             if owners[0].path!=('projects',pid,'members',owner_uid) or owners[0].data.get('role')!='owner':
                 raise BackfillUnavailable('WORD_BACKFILL_OWNER_UNVERIFIED')
+            _stamp(owners[0].data.get('created_at'))
             if owner_uid!=uid:continue
             verify_owner(project_id=pid, owner_rows=[(r.path, dict(r.data)) for r in owners], hosted_user=profile)
             _stamp(row.data.get('created_at'))

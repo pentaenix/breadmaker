@@ -9,7 +9,7 @@ import hashlib
 import json
 from hosted.firestore.ids import require_user_id,require_project_id
 from hosted.security.saved_word_reader import (GoogleFirestoreSavedWordsProducer,SavedWordsUnavailable,
-    USER_FIELDS,OWNER_FIELDS)
+    USER_FIELDS)
 from hosted.security.saved_word_identity import verify_owner,_stamp
 
 ROOT_FIELDS=('status','generation','created_at')
@@ -93,6 +93,18 @@ class GoogleFirestoreAccountEligibility(GoogleFirestoreSavedWordsProducer):
             found[key]=data
         return found
 
+    def _owners(self,roots,deadline):
+        from hosted.firestore.owner_queries import OWNER_BATCH_SIZE,read_owner_batch,validate_owner_rows
+        pids=sorted(roots);owners={}
+        for offset in range(0,len(pids),OWNER_BATCH_SIZE):
+            batch=pids[offset:offset+OWNER_BATCH_SIZE]
+            try:
+                rows=read_owner_batch(self.client,batch,transaction=self.transaction,
+                    remaining=lambda:self._remaining(deadline))
+                owners.update(validate_owner_rows(batch,[(r.reference.path.split('/'),r.to_dict() or {}) for r in rows]))
+            except ValueError as error:raise SavedWordsUnavailable(str(error)) from None
+        return owners
+
     def snapshot(self,*,deadline):
         if not self.enabled or self.client is None:raise SavedWordsUnavailable('ACCOUNT_ELIGIBILITY_DISABLED')
         all_profiles=self._population('users',USER_FIELDS,deadline)
@@ -100,14 +112,14 @@ class GoogleFirestoreAccountEligibility(GoogleFirestoreSavedWordsProducer):
         locks={uid:lock_rows[('account_erasure_locks',uid)] for uid in all_profiles}
         profiles={uid:p for uid,p in all_profiles.items() if locks[uid] is None}
         roots=self._population('projects',ROOT_FIELDS,deadline)
-        manifests={uid:{} for uid in profiles};owners={};inactive={};project_pins={}
+        manifests={uid:{} for uid in profiles};owners=self._owners(roots,deadline);inactive={};project_pins={}
         for pid in roots:
-            rows=self._query(('projects',pid,'members'),OWNER_FIELDS,'role','owner',2,deadline)
-            owners[pid]=rows
+            rows=owners[pid]
             if len(rows)!=1:raise SavedWordsUnavailable('ACCOUNT_WORD_OWNER_UNVERIFIED')
             path,member=rows[0];uid=require_user_id(member.get('user_id'))
             if path!=('projects',pid,'members',uid) or member.get('role')!='owner':
                 raise SavedWordsUnavailable('ACCOUNT_WORD_OWNER_UNVERIFIED')
+            _stamp(member.get('created_at'))
             if uid not in all_profiles:inactive[uid]=None
         inactive_rows=self._many([('users',uid) for uid in inactive],USER_FIELDS,deadline)
         for uid in inactive:

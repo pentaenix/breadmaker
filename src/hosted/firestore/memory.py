@@ -72,6 +72,22 @@ class _MemoryTransaction(Transaction):
         return [StoredDocument(row.path, {k: row.data[k] for k in ('status', 'generation', 'created_at')
                     if k in row.data}, row.revision) for row in rows]
 
+    def saved_word_owner_batch(self, project_ids, *, timeout: float):
+        from .owner_queries import project_ids as validate_ids, validate_owner_rows, OWNER_BATCH_SIZE, OWNER_FIELDS
+        pids = validate_ids(project_ids)
+        if not 0 < timeout <= 2 or not 0 < len(pids) <= OWNER_BATCH_SIZE:
+            raise ValueError('WORD_OWNER_QUERY_LIMIT')
+        # Compare reference path elements, like Firestore. Retained roots outside
+        # the selected prefixes never consume the sentinel. Nested matches fail.
+        rows = [self._owner._get_locked(path) for path in sorted(self._owner._documents)
+            if len(path) >= 2 and path[-2] == 'members'
+            and any(('projects', pid) <= path < ('projects', pid + '\uf8ff') for pid in pids)
+            and self._owner._documents[path][0].get('role') == 'owner'][:len(pids) + 1]
+        rows = [StoredDocument(row.path, {k: row.data[k] for k in OWNER_FIELDS if k in row.data}, row.revision)
+                for row in rows]
+        validate_owner_rows(pids, [(row.path, dict(row.data)) for row in rows])
+        return rows
+
     def saved_word_page(self, project_id: str, *, after_id=None, limit=33, timeout=2):
         from .ids import require_project_id, require_opaque_id
         if after_id is not None: require_opaque_id(after_id, label='block_id')
