@@ -192,7 +192,13 @@ class AccountWordGuard:
                         known += int(counts[1] is not None) - int(counts[0] is not None)
                         words += (counts[1].words if counts[1] else 0) - (counts[0].words if counts[0] else 0)
                     if entry['initialized']:
-                        entry.update(blocks=blocks, known_blocks=known, known_words=words)
+                        if not (0<=known<=blocks<=records.MAX_BLOCKS and 0<=words<=records.MAX_WORDS
+                                and (known>0 or words==0)):
+                            # Reporting bounds do not restrict valid canonical
+                            # saves. Keep the prior bounded evidence, mark it
+                            # unknown and let normal authorization still decide.
+                            entry['initialized']=False
+                        else:entry.update(blocks=blocks, known_blocks=known, known_words=words)
                 entry['canonical_revision'] = after['generation']
                 entry = records.project_entry(created_at=entry['project_created_at'], revision=entry['canonical_revision'],
                     blocks=entry['blocks'], known_blocks=entry['known_blocks'], known_words=entry['known_words'],

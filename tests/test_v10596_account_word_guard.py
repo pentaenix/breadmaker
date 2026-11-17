@@ -133,3 +133,34 @@ def test_reporting_population_limit_does_not_block_an_allowed_product_write(monk
     assert raw.get(('projects',created)).data['status']=='active'
     record=raw.get(records.path(A)).data
     assert record['saved_words'] is None and record['initialized'] is False and len(record['projects'])==100
+
+
+@pytest.mark.parametrize('limit',['words','blocks'])
+def test_numeric_reporting_limit_marks_unknown_without_blocking_canonical_save(monkeypatch,limit):
+    monkeypatch.setattr(records,'MAX_WORDS' if limit=='words' else 'MAX_BLOCKS',2 if limit=='words' else 1)
+    app,raw,_=runtime(monkeypatch);pid,cid=new_project(app,A,'two words')
+    before=app.projects.get(pid)['generation']
+    rows=[{'id':'b_words','text_content':'three saved words' if limit=='words' else 'two words'}]
+    if limit=='blocks':rows.append({'id':'b_more','text_content':'more words'})
+    _replace(app,pid,cid,rows,'synthetic_numeric_reporting_overflow',before)
+    assert app.projects.get(pid)['generation']==before+1
+    assert raw.get(('projects',pid,'blocks','b_words')) is not None
+    if limit=='blocks':assert raw.get(('projects',pid,'blocks','b_more')) is not None
+    state=raw.get(records.path(A)).data
+    assert state['state']=='unknown' and state['saved_words'] is None
+    assert state['projects'][pid]['initialized'] is False
+    assert state['projects'][pid]['canonical_revision']==before+1
+
+
+def test_inconsistent_bounded_word_evidence_does_not_block_canonical_block_removal(monkeypatch):
+    app,raw,_=runtime(monkeypatch);pid,cid=new_project(app,A,'three saved words')
+    stored=raw.get(records.path(A)).data;projects=deepcopy(stored['projects'])
+    projects[pid]['known_words']=5
+    raw.run_transaction(lambda tx:tx.set(records.path(A),records.state(A,stored['user_created_at'],projects=projects,initialized=True)))
+    before=app.projects.get(pid)['generation']
+    _replace(app,pid,cid,[],'synthetic_inconsistent_reporting_removal',before)
+    assert raw.get(('projects',pid,'blocks','b_words')) is None
+    assert app.projects.get(pid)['generation']==before+1
+    state=raw.get(records.path(A)).data
+    assert state['state']=='unknown' and state['saved_words'] is None
+    assert state['projects'][pid]['initialized'] is False and state['projects'][pid]['known_words']==5
