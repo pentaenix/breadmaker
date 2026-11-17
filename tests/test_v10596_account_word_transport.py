@@ -29,12 +29,12 @@ def sdk(monkeypatch):
         tx.create(('projects',PID,'blocks','b_one'),dict(generation=1))
     raw.run_transaction(seed)
     class API:
-        def __init__(self):self.calls=[];self.reads={};self.uncertain=False;self.before_commit=None
+        def __init__(self):self.calls=[];self.reads={};self.queries=[];self.uncertain=False;self.before_commit=None
         def check(self,name,request,kw):
             assert kw['retry'] is None and 0<kw['timeout']<=2
             self.calls.append((name,deepcopy(request)))
         def begin_transaction(self,request,**kw):
-            self.check('begin',request,kw);self.reads={}
+            self.check('begin',request,kw);self.reads={};self.queries=[]
             assert request['database']==DB
             return SimpleNamespace(transaction=b'synthetic-word-transaction')
         def document(self,row,fields=None):
@@ -52,24 +52,34 @@ def sdk(monkeypatch):
                 answers.append(BatchGetDocumentsResponse(found=self.document(row,fields)) if row else
                                BatchGetDocumentsResponse(missing=name))
             return iter(answers)
-        def run_query(self,request,**kw):
-            self.check('query',request,kw)
-            assert request['transaction']==b'synthetic-word-transaction'
+        def matching(self,request):
             q=request['structured_query'];source=q.from_[0]
             parent=request['parent'].split('/documents',1)[1].strip('/')
             if source.all_descendants:
-                assert source.collection_id=='members' and q.where.field_filter.field.field_path=='user_id'
-                rows=raw.query_collection_group('members',field='user_id',value=q.where.field_filter.value.string_value)
+                assert source.collection_id=='members'
+                rows=[raw.get(p) for p in sorted(raw._documents) if len(p)>=2 and p[-2]=='members']
             else:
                 prefix=tuple((parent+'/'+source.collection_id).strip('/').split('/'))
                 rows=raw.query_collection(prefix)
-                if q.where:
-                    f=q.where.field_filter
-                    rows=[r for r in rows if r.data.get(f.field.field_path)==f.value.string_value]
+            def matches(f,row):
+                if f._pb.WhichOneof('filter_type')=='composite_filter':
+                    values=[matches(x,row) for x in f.composite_filter.filters]
+                    return all(values) if int(f.composite_filter.op)==1 else any(values)
+                field=f.field_filter;key=field.field.field_path
+                value=row.path if key=='__name__' else row.data.get(key)
+                expected=tuple(field.value.reference_value.split('/documents/',1)[1].split('/')) if key=='__name__' else _helpers.decode_value(field.value,client)
+                return value==expected if int(field.op)==5 else value>=expected if int(field.op)==4 else value<expected if int(field.op)==1 else False
+            if q.where:rows=[r for r in rows if matches(q.where,r)]
             rows=sorted(rows,key=lambda r:r.path)
             if q.start_at.values:
                 after=q.start_at.values[0].reference_value.split('/documents/',1)[1]
                 rows=[r for r in rows if '/'.join(r.path)>after]
+            return rows[:q.limit]
+        def run_query(self,request,**kw):
+            self.check('query',request,kw)
+            assert request['transaction']==b'synthetic-word-transaction'
+            q=request['structured_query'];rows=self.matching(request)
+            self.queries.append((deepcopy(request),[(r.path,r.revision) for r in rows]))
             fields=[f.field_path for f in q.select.fields]
             assert not {'text_content','content_html','title','email'} & set(fields)
             rows=rows[:q.limit]
@@ -83,6 +93,8 @@ def sdk(monkeypatch):
                 for path,revision in self.reads.items():
                     current=tx.get(path)
                     if (current.revision if current else 0)!=revision:raise RuntimeError('synthetic CAS conflict')
+                for query,expected in self.queries:
+                    if [(r.path,r.revision) for r in self.matching(query)]!=expected:raise RuntimeError('synthetic query conflict')
                 for write in request['writes']:
                     path=tuple(write.update.name.split('/documents/',1)[1].split('/'))
                     assert path[:2]==('users',UID) and path[2] in {'metrics','metric_jobs','word_block_counts'}

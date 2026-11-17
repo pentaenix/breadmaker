@@ -33,7 +33,8 @@ class Client:
         return Ref()
     def get_all(self,references,**kwargs):
         return iter([ref.get(**kwargs) for ref in references])
-    def collection(self, path):
+    def collection_group(self,path):return self.collection(path,group=True)
+    def collection(self, path,group=False):
         client = self
         class Query:
             def where(self, *, filter):
@@ -44,8 +45,15 @@ class Client:
                 self.maximum = limit; return self
             def stream(self, **kwargs):
                 client.calls.append(('query', path, self.fields, self.maximum, kwargs))
+                def matches(f,p,d):
+                    if hasattr(f,'filters'):
+                        values=[matches(x,p,d) for x in f.filters]
+                        return all(values) if int(f.operator)==1 else any(values)
+                    value=tuple(p.split('/')) if f.field_path=='__name__' else d.get(f.field_path)
+                    expected=tuple(f.value.path.split('/')) if f.field_path=='__name__' else f.value
+                    return value==expected if f.op_string=='==' else value>=expected if f.op_string=='>=' else value<expected if f.op_string=='<' else False
                 rows = [(p,d) for p,d in sorted(client.rows.items())
-                    if p.rsplit('/',1)[0] == path and d.get(self.filter.field_path) == self.filter.value]
+                    if (p.split('/')[-2]==path if group else p.rsplit('/',1)[0]==path) and matches(self.filter,p,d)]
                 return iter([SimpleNamespace(reference=SimpleNamespace(path=p),
                     to_dict=lambda d=d: {key:d[key] for key in self.fields if key in d})
                     for p,d in rows[:self.maximum]])

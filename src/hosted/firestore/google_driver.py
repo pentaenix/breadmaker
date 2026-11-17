@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Callable, Mapping, TypeVar
+import time
 
 from .contracts import (
     DocumentAlreadyExists,
@@ -111,6 +112,19 @@ class _GoogleTransaction(Transaction):
         finally:
             close = getattr(stream, 'close', None)
             if close is not None: close()
+
+    def saved_word_owner_batch(self, project_ids, *, timeout: float):
+        from .owner_queries import read_owner_batch
+        if not 0 < timeout <= 2: raise ValueError('WORD_OWNER_QUERY_LIMIT')
+        end = time.monotonic() + timeout
+        def remaining():
+            left = end - time.monotonic()
+            if not 0 < left <= 2: raise ValueError('WORD_OWNER_BATCH_DEADLINE')
+            return left
+        rows = read_owner_batch(self._client, project_ids, transaction=self._transaction,
+            remaining=remaining)
+        return [StoredDocument(tuple(row.reference.path.split('/')), row.to_dict() or {},
+                               _snapshot_revision(row)) for row in rows]
 
     def saved_word_page(self, project_id: str, *, after_id=None, limit=33, timeout=2):
         from .ids import require_project_id, require_opaque_id

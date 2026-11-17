@@ -70,6 +70,7 @@ class AccountWordBackfill:
         projects = tx.saved_word_active_projects(timeout=self._remaining(deadline))
         if len(projects) > 100: raise BackfillUnavailable('WORD_BACKFILL_PROJECT_LIMIT')
         roots, seen = {}, set()
+        validated=[]
         for row in projects:
             self._remaining(deadline)
             p = row.path
@@ -78,11 +79,20 @@ class AccountWordBackfill:
             pid = require_project_id(p[1])
             if pid in seen: raise BackfillUnavailable('WORD_BACKFILL_ROOT_UNVERIFIED')
             seen.add(pid)
-            owners = tx.saved_word_owners(pid, timeout=self._remaining(deadline))
+            validated.append(row)
+        from hosted.firestore.owner_queries import OWNER_BATCH_SIZE
+        owner_rows={pid:[] for pid in seen}
+        pids=sorted(seen)
+        for offset in range(0,len(pids),OWNER_BATCH_SIZE):
+            for owner in tx.saved_word_owner_batch(pids[offset:offset+OWNER_BATCH_SIZE],timeout=self._remaining(deadline)):
+                owner_rows[owner.path[1]].append(owner)
+        for row in validated:
+            pid=row.path[1];owners=owner_rows[pid]
             if len(owners)!=1:raise BackfillUnavailable('WORD_BACKFILL_OWNER_UNVERIFIED')
             owner_uid=require_user_id(owners[0].data.get('user_id'))
             if owners[0].path!=('projects',pid,'members',owner_uid) or owners[0].data.get('role')!='owner':
                 raise BackfillUnavailable('WORD_BACKFILL_OWNER_UNVERIFIED')
+            _stamp(owners[0].data.get('created_at'))
             if owner_uid!=uid:continue
             verify_owner(project_id=pid, owner_rows=[(r.path, dict(r.data)) for r in owners], hosted_user=profile)
             _stamp(row.data.get('created_at'))
@@ -283,7 +293,7 @@ class AccountWordBackfill:
             if job['phase'] == 'complete' or job['cursor'] != expected_cursor:
                 return dict(skip=True, phase=job['phase'], cursor=job['cursor'])
             rows = self._page(tx, handle, job, deadline)
-            values = []
+            values = [];unknown = 0
             for row in rows[:MAX_PAGE]:
                 if len(row.path) != 4 or row.path[:3] != ('projects', handle['project_id'], 'blocks'):
                     raise BackfillUnavailable('WORD_BACKFILL_PAGE_UNVERIFIED')
@@ -293,11 +303,17 @@ class AccountWordBackfill:
                     raise BackfillUnavailable('WORD_BACKFILL_PAGE_UNVERIFIED')
                 count = verified_contribution(dict(row.data))
                 if count is None:
+                    # Do not resolve proofs for bodies this step cannot read.
+                    # A short prefix keeps the remaining cursor untouched and
+                    # avoids repeating a full page of missing proof lookups.
+                    if unknown >= MAX_TEXT_READS:break
                     proof = tx.get(proof_path(handle['user_id'], profile['created_at'], handle['project_id'], pin['created_at'], bid))
                     count = proof_count(dict(proof.data) if proof else None, uid_created=profile['created_at'],
                         pid=handle['project_id'], project_created=pin['created_at'], bid=bid, generation=generation)
+                    if count is None:unknown+=1
                 values.append(dict(block_id=bid, generation=generation, words=count.words if count else None))
-            return dict(skip=False, profile=profile, pin=pin, path=jp, job=job, values=values, exhausted=len(rows) <= MAX_PAGE)
+            return dict(skip=False, profile=profile, pin=pin, path=jp, job=job, values=values,
+                exhausted=len(rows) <= MAX_PAGE and len(values)==len(rows))
         page = self._run(handle['user_id'], prepare, deadline)
         if page['skip']: return page
         completed, chars, byte_count, reads = [], 0, 0, 0

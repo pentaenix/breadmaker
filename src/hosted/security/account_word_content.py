@@ -2,6 +2,11 @@
 
 Existing injected clients only. Reads no journal/history/cache, writes nothing,
 and does not enable private codecs or invent a decryption capability.
+
+Pointer metadata is capped before SDK decoding; GCS mode never selects the
+Firestore text field. Inline text has its own read in the same authorized
+transaction. Each RPC still reserves1MiB in the conservative invocation budget;
+that counter is an allocation, not a measurement of accepted/wire bytes.
 """
 import hashlib
 import time
@@ -13,9 +18,11 @@ from hosted.storage.google_driver import GoogleCloudObjectStore
 from hosted.storage.keys import require_hybrid_entity_object_key
 
 MAX_OBJECT_BYTES = 8 * 1024 * 1024
-CONTENT_FIELDS = ['generation', 'block_id', 'text_content', 'payload_object',
-                  'object_name', 'object_generation', 'object_size', 'object_sha256',
-                  '_bm_private_fields']
+METADATA_MAX_BYTES = 32 * 1024
+METADATA_FIELDS = ['generation', 'block_id', 'payload_object',
+                   'object_name', 'object_generation', 'object_size', 'object_sha256',
+                   '_bm_private_fields']
+INLINE_FIELDS = ['generation', 'block_id', 'text_content']
 
 
 def _remaining(deadline, cap=2):
@@ -29,6 +36,57 @@ class BoundedCurrentBlockReader:
         if type(store) is not BoundedAccountWordStore or type(objects) is not GoogleCloudObjectStore:
             raise BackfillUnavailable('WORD_BACKFILL_BOUNDED_READER_REQUIRED')
         self.store, self.objects = store, objects
+
+    def _block(self, tx, pid, bid, fields, maximum, deadline):
+        from google.cloud.firestore_v1 import types
+        from google.cloud.firestore_v1._helpers import decode_dict
+        name = self.store.database+'/documents/projects/'+pid+'/blocks/'+bid
+        tx.charge_read(content_bytes=1024*1024)
+        stream = self.store.client._firestore_api.batch_get_documents(request=dict(
+            database=self.store.database, documents=[name], mask=types.DocumentMask(field_paths=fields),
+            transaction=tx._transaction.id), metadata=self.store.client._rpc_metadata,
+            retry=None, timeout=_remaining(deadline))
+        found = None
+        try:
+            for row in stream:
+                _remaining(deadline)
+                if (found is not None or row._pb.ByteSize()>maximum
+                        or row._pb.WhichOneof('result')!='found' or row.found.name!=name
+                        or set(row.found.fields)-set(fields)):
+                    raise BackfillUnavailable('WORD_BACKFILL_BLOCK_RESPONSE')
+                raw=row.found.fields
+                # Private envelopes are not a fallback text source. Reject them
+                # before any decode, GCS access or credentials/codec discovery.
+                if '_bm_private_fields' in raw:
+                    raise BackfillUnavailable('WORD_BACKFILL_PRIVATE_READER_REQUIRED')
+                for key,value in raw.items():
+                    kind=value._pb.WhichOneof('value_type')
+                    if key=='payload_object':
+                        if kind=='null_value':continue
+                        if kind!='map_value':raise BackfillUnavailable('WORD_BACKFILL_BLOCK_RESPONSE')
+                        pointer=value.map_value.fields
+                        if set(pointer)-{'object_name','object_generation','object_size','object_sha256','encryption_format','encryption_operation'}:
+                            raise BackfillUnavailable('WORD_BACKFILL_OBJECT_POINTER_INVALID')
+                        for field,item in pointer.items():self._primitive(field,item)
+                    else:self._primitive(key,value)
+                found=decode_dict(raw,self.store.client)
+        finally:
+            close=getattr(stream,'close',None) or getattr(stream,'cancel',None)
+            if close:close()
+        if found is None:raise BackfillUnavailable('WORD_BACKFILL_BLOCK_CHANGED')
+        return found
+
+    @staticmethod
+    def _primitive(key,value):
+        kind=value._pb.WhichOneof('value_type')
+        if key in {'generation','object_generation','object_size'}:
+            if kind!='integer_value' or not 1<=value.integer_value<=2**53-1:
+                raise BackfillUnavailable('WORD_BACKFILL_BLOCK_RESPONSE')
+        else:
+            limits={'block_id':160,'object_name':1024,'object_sha256':64,
+                    'encryption_format':64,'encryption_operation':160,'text_content':1_000_000}
+            if key not in limits or kind!='string_value' or len(value.string_value)>limits[key]:
+                raise BackfillUnavailable('WORD_BACKFILL_BLOCK_RESPONSE')
 
     def __call__(self, *, user_id, project_id, block_id, expected_generation,
                  deadline, max_text_chars, max_text_bytes):
@@ -51,15 +109,14 @@ class BoundedCurrentBlockReader:
             owners = tx.saved_word_owners(pid, timeout=_remaining(deadline))
             verify_owner(project_id=pid, owner_rows=[(r.path, dict(r.data)) for r in owners],
                          hosted_user=dict(profile.data))
-            # The metadata adapter deliberately cannot read manuscript bodies.
-            # Only this separately authorized fixed current-block path can.
-            tx.charge_read(content_bytes=1024*1024)
-            row = tx._ref(('projects', pid, 'blocks', bid)).get(field_paths=CONTENT_FIELDS,
-                transaction=tx._transaction, retry=None, timeout=_remaining(deadline))
-            _remaining(deadline)
-            value = row.to_dict() if row.exists else None
-            if (type(value) is not dict or type(value.get('generation')) is not int
-                    or value['generation'] != expected_generation
+            # Read pointer metadata first, with a raw protobuf cap before SDK
+            # recursive decode. GCS-backed blocks never request Firestore text.
+            value = self._block(tx, pid, bid, METADATA_FIELDS, METADATA_MAX_BYTES, deadline)
+            if value.get('generation') != expected_generation or value.get('block_id', bid) != bid:
+                raise BackfillUnavailable('WORD_BACKFILL_BLOCK_CHANGED')
+            if value.get('payload_object') is None and 'object_name' not in value:
+                value = self._block(tx, pid, bid, INLINE_FIELDS, 1024*1024, deadline)
+            if (type(value.get('generation')) is not int or value['generation'] != expected_generation
                     or value.get('block_id', bid) != bid):
                 raise BackfillUnavailable('WORD_BACKFILL_BLOCK_CHANGED')
             return value
@@ -86,13 +143,13 @@ class BoundedCurrentBlockReader:
                         dict(project_id=pid, block_id=bid), key) != digest:
                     raise ValueError()
                 blob = self.objects._bucket.blob(key)
-                if self.store.budget is not None:self.store.budget.reserve(rpcs=1)
+                if self.store.budget is not None:self.store.budget.reserve(rpcs=1,object_rpcs=1)
                 blob.reload(if_generation_match=generation, retry=None, timeout=_remaining(deadline))
                 if type(blob.size) is not int or blob.size != size or int(blob.generation) != generation:
                     raise ValueError()
                 # One range GET, including an excess byte. No unbounded stream
                 # or automatic transport retry. Hash is from canonical metadata.
-                if self.store.budget is not None:self.store.budget.reserve(rpcs=1,download_bytes=size)
+                if self.store.budget is not None:self.store.budget.reserve(rpcs=1,object_rpcs=1,download_bytes=size+1)
                 encoded = blob.download_as_bytes(start=0, end=size, if_generation_match=generation,
                     raw_download=True, checksum=None, single_shot_download=True, retry=None,
                     timeout=_remaining(deadline, 4))

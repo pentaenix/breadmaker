@@ -54,7 +54,7 @@ def test_bounded_current_content_reader_drives_complete_account_backfill(content
     assert len(requested)==1 and [c[0] for c in blob.calls]==['reload','download']
     for path,row in before.items():assert raw._documents[path]==row
     masks=[list(r['mask'].field_paths) for name,r in api.calls if name=='get' and r.get('mask')]
-    assert any('text_content' in fields for fields in masks)
+    assert all('text_content' not in fields for fields in masks)
     assert all('content_html' not in fields and 'email' not in fields and '_bm_read_bundle' not in fields for fields in masks)
 
 
@@ -100,5 +100,89 @@ def test_direct_legacy_text_is_bounded_without_an_object_read(content):
     raw.run_transaction(lambda tx:tx.set(('projects',PID,'blocks','b_one'),dict(generation=1,text_content='two words')))
     assert reader(**args)==dict(generation=1,text_content='two words')
     assert not requested
+    masks=[list(r['mask'].field_paths) for name,r in api.calls if name=='get' and r.get('mask')]
+    assert sum('text_content' in fields for fields in masks)==1
     args['max_text_chars']=3
     with pytest.raises(BackfillUnavailable):reader(**args)
+
+
+def test_gcs_pointer_does_not_request_a_redundant_firestore_body(content):
+    reader,args,raw,api,_,_,_=content
+    row=dict(raw.get(('projects',PID,'blocks','b_one')).data)
+    row['text_content']='Synthetic redundant body that must not be fetched'
+    raw.run_transaction(lambda tx:tx.set(('projects',PID,'blocks','b_one'),row))
+    assert reader(**args)['text_content']=='three saved words'
+    masks=[list(r['mask'].field_paths) for name,r in api.calls if name=='get' and r.get('mask')]
+    assert all('text_content' not in fields for fields in masks)
+
+
+@pytest.mark.parametrize('fault',['wide_metadata','compound_generation','compound_size','private_marker','encrypted_v1','encrypted_unknown'])
+def test_malformed_or_unsupported_metadata_rejects_before_gcs_or_inline_body(content,fault):
+    reader,args,raw,api,blob,requested,pointer=content
+    row=dict(raw.get(('projects',PID,'blocks','b_one')).data)
+    if fault=='wide_metadata':pointer['object_name']='a'*(32*1024+1)
+    elif fault=='compound_generation':row['generation']={'nested':['synthetic']}
+    elif fault=='compound_size':pointer['object_size']={'nested':['synthetic']}
+    elif fault=='private_marker':row['_bm_private_fields']={'format':'future-format','nested':{'synthetic':'denied'}}
+    else:pointer['encryption_format']='bm-hosted-envelope-v1' if fault=='encrypted_v1' else 'future-format'
+    row['payload_object']=pointer
+    raw.run_transaction(lambda tx:tx.set(('projects',PID,'blocks','b_one'),row))
+    before=deepcopy(raw._documents)
+    with pytest.raises(BackfillUnavailable):reader(**args)
+    assert not requested and not blob.calls and raw._documents==before
+    masks=[list(r['mask'].field_paths) for name,r in api.calls if name=='get' and r.get('mask')]
+    assert all('text_content' not in fields for fields in masks)
+
+
+def test_stale_inline_generation_rejects_before_requesting_text(content):
+    reader,args,raw,api,_,requested,_=content
+    raw.run_transaction(lambda tx:tx.set(('projects',PID,'blocks','b_one'),dict(generation=2,text_content='Synthetic unread body')))
+    with pytest.raises(BackfillUnavailable):reader(**args)
+    masks=[list(r['mask'].field_paths) for name,r in api.calls if name=='get' and r.get('mask')]
+    assert not requested and all('text_content' not in fields for fields in masks)
+
+
+@pytest.mark.parametrize('fault',['foreign_response','unexpected_field','stream_tail_failure'])
+def test_raw_metadata_stream_cannot_supply_a_partial_or_foreign_body(content,monkeypatch,fault):
+    from google.api_core.exceptions import DeadlineExceeded
+    reader,args,raw,api,blob,requested,_=content;native=api.batch_get_documents;closed=[]
+    def altered(request,**kw):
+        rows=list(native(request,**kw))
+        if not request['documents'][0].endswith('/blocks/b_one'):return iter(rows)
+        if fault=='foreign_response':rows[0].found.name=rows[0].found.name.replace('/blocks/b_one','/blocks/b_other')
+        elif fault=='unexpected_field':rows[0].found.fields['text_content']={'string_value':'Synthetic forbidden projection'}
+        def stream():
+            try:
+                yield from rows
+                if fault=='stream_tail_failure':raise DeadlineExceeded('Synthetic metadata stream tail failure')
+            finally:closed.append(True)
+        return stream()
+    monkeypatch.setattr(api,'batch_get_documents',altered);before=deepcopy(raw._documents)
+    with pytest.raises(BackfillUnavailable):reader(**args)
+    assert closed and not requested and not blob.calls and raw._documents==before
+
+
+def test_imported_optional_bundle_uses_actual_canonical_gzip_codec(content):
+    from hosted.domain_store import HostedDomainStore
+    from hosted.storage.memory import MemoryObjectStore
+    from hosted.packages import HostedProjectPackageService
+    reader,args,raw,api,_,_,_=content
+    objects=MemoryObjectStore();domain=HostedDomainStore(raw,objects)
+    service=HostedProjectPackageService(SimpleNamespace(documents=raw,objects=objects,domain=domain))
+    path,stored=service._prepare_import_entity('manuscript_block',{'project_id':PID},
+        {'text_content':'three imported words'},entity_id='b_one',
+        read_bundle={'object_name':'never/read/optional/bundle','bundle_entry':'b_one'})
+    raw.run_transaction(lambda tx:tx.set(path,stored));pointer=stored['payload_object'];names=[]
+    def blob(name):
+        names.append(name);assert name==pointer['object_name']
+        data=b''.join(objects.read_chunks(name,max_bytes=8*1024*1024,if_generation_match=pointer['object_generation']))
+        return SimpleNamespace(size=len(data),generation=pointer['object_generation'],reload=lambda **kw:None,
+            download_as_bytes=lambda **kw:data)
+    reader.objects._bucket=SimpleNamespace(blob=blob)
+    before=deepcopy(raw._documents)
+    worker=AccountWordBackfill(reader.store,reader,enabled=True)
+    plan=worker.inspect_account(UID,deadline=until());job=worker.initialize_account(plan,approved=True,deadline=until())['jobs'][0]
+    assert worker.step(job,expected_cursor=None,approved=True,deadline=until())['phase']=='complete'
+    assert raw.get(('users',UID,'metrics','saved_words_v1')).data['saved_words']==3
+    assert names==[pointer['object_name']]
+    for p,row in before.items():assert raw._documents[p]==row

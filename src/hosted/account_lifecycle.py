@@ -116,6 +116,74 @@ class _LifecycleTransaction:
         self._original(key)
         self.pending[key] = None
 
+    def _ownership_fence(self, projects):
+        """Bind ownership changes to the canonical root revision, always on.
+
+        No repair or new authority. Unpublished imports remain invisible until
+        publication; activation must establish exactly one verified owner.
+        """
+        owners = set()
+        def identity(data):
+            return ((data.get('user_id'), data.get('created_at'))
+                    if data is not None and data.get('role') == 'owner' else None)
+        for pid in projects:
+            root = ('projects', pid)
+            changed = any(len(path) == 4 and path[:3] == ('projects', pid, 'members')
+                and identity(self._original(path).data if self._original(path) else None) != identity(data)
+                for path, data in self.pending.items())
+            # Presence-only member updates must keep the existing batched fence;
+            # they do not need another serial root or owner query.
+            if root not in self.pending and not changed:
+                continue
+            before_row = self._original(root)
+            before = dict(before_row.data) if before_row else None
+            after = self.pending.get(root, before)
+            if after is None or after.get('status') != 'active':
+                continue
+            activated = before is None or before.get('status') != 'active'
+            if not (changed or activated):
+                continue
+            generation = after.get('generation')
+            if type(generation) is not int or not 1 <= generation <= 2**53-1:
+                raise DocumentConflict('HOSTED_PROJECT_OWNER_REVISION_REQUIRED')
+            if before is not None and (root not in self.pending
+                    or type(before.get('generation')) is not int
+                    or generation != before['generation'] + 1
+                    or after.get('created_at') != before.get('created_at')):
+                raise DocumentConflict('HOSTED_PROJECT_OWNER_REVISION_REQUIRED')
+            # Two is a sentinel, never evidence that a malformed collection has
+            # exactly two owners. Ambiguous prior state needs operator review.
+            rows = self.tx.saved_word_owners(pid, timeout=2)
+            if len(rows) > 1:
+                raise DocumentConflict('HOSTED_PROJECT_OWNER_UNVERIFIED')
+            current = {row.path: dict(row.data) for row in rows}
+            for path, data in self.pending.items():
+                if len(path) == 4 and path[:3] == ('projects', pid, 'members'):
+                    current.pop(path, None)
+                    if identity(data) is not None:
+                        current[path] = data
+            if len(current) != 1:
+                raise DocumentConflict('HOSTED_PROJECT_OWNER_UNVERIFIED')
+            path, data = next(iter(current.items()))
+            try:
+                from hosted.security.saved_word_identity import verify_owner
+                uid = data.get('user_id')
+                profile = self.get(('users', uid))
+                if profile is not None and (profile.data.get('status') != 'active'
+                        or profile.data.get('_bm_erasure_operation')):
+                    raise DocumentConflict('HOSTED_ACCOUNT_ERASURE_PENDING')
+                if self._original(('account_erasure_locks', uid)) is not None:
+                    raise DocumentConflict('HOSTED_ACCOUNT_ERASURE_PENDING')
+                if profile is None:
+                    raise ValueError()
+                verify_owner(project_id=pid, owner_rows=[(path, dict(data))], hosted_user=dict(profile.data))
+            except DocumentConflict:
+                raise
+            except Exception:
+                raise DocumentConflict('HOSTED_PROJECT_OWNER_UNVERIFIED') from None
+            owners.add(uid)
+        return owners
+
     def flush(self, actor):
         if not self.pending:
             return
@@ -135,6 +203,7 @@ class _LifecycleTransaction:
                     uid = data.get(field)
                     if isinstance(uid, str) and _USER.fullmatch(uid):
                         users.add(uid)
+        users.update(self._ownership_fence(projects))
         # All fence reads occur BEFORE any provider writes, including with the
         # action-journal facade nested above this transaction. Firestore retries
         # a pre-freeze writer whose account/project changed before commit.
