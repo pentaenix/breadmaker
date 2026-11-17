@@ -293,7 +293,7 @@ class AccountWordBackfill:
             if job['phase'] == 'complete' or job['cursor'] != expected_cursor:
                 return dict(skip=True, phase=job['phase'], cursor=job['cursor'])
             rows = self._page(tx, handle, job, deadline)
-            values = []
+            values = [];unknown = 0
             for row in rows[:MAX_PAGE]:
                 if len(row.path) != 4 or row.path[:3] != ('projects', handle['project_id'], 'blocks'):
                     raise BackfillUnavailable('WORD_BACKFILL_PAGE_UNVERIFIED')
@@ -303,11 +303,17 @@ class AccountWordBackfill:
                     raise BackfillUnavailable('WORD_BACKFILL_PAGE_UNVERIFIED')
                 count = verified_contribution(dict(row.data))
                 if count is None:
+                    # Do not resolve proofs for bodies this step cannot read.
+                    # A short prefix keeps the remaining cursor untouched and
+                    # avoids repeating a full page of missing proof lookups.
+                    if unknown >= MAX_TEXT_READS:break
                     proof = tx.get(proof_path(handle['user_id'], profile['created_at'], handle['project_id'], pin['created_at'], bid))
                     count = proof_count(dict(proof.data) if proof else None, uid_created=profile['created_at'],
                         pid=handle['project_id'], project_created=pin['created_at'], bid=bid, generation=generation)
+                    if count is None:unknown+=1
                 values.append(dict(block_id=bid, generation=generation, words=count.words if count else None))
-            return dict(skip=False, profile=profile, pin=pin, path=jp, job=job, values=values, exhausted=len(rows) <= MAX_PAGE)
+            return dict(skip=False, profile=profile, pin=pin, path=jp, job=job, values=values,
+                exhausted=len(rows) <= MAX_PAGE and len(values)==len(rows))
         page = self._run(handle['user_id'], prepare, deadline)
         if page['skip']: return page
         completed, chars, byte_count, reads = [], 0, 0, 0

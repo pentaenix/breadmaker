@@ -318,6 +318,30 @@ def test_explicit_controller_stops_at_step_cap_before_next_body(content,tmp_path
     assert len(names)==8 and c.snapshot()['status']=='stopped'
 
 
+def test_preparation_resolves_only_the_processable_unknown_proof_prefix(content,tmp_path):
+    nine_blocks(content);w,c,b,p,raw,api,blob,names=worker(content,tmp_path)
+    handle=w.initialize_account(p,approved=True,deadline=until())['jobs'][0];before=len(api.calls)
+    state=w.step(handle,expected_cursor=None,approved=True,deadline=until())
+    proof_reads=[name for method,request in api.calls[before:] if method=='get' for name in request['documents'] if '/word_block_counts/' in name]
+    assert len(proof_reads)==8 and len(names)==8 and state['phase']=='running' and state['seen_blocks']==8
+
+
+def test_existing_valid_proofs_do_not_consume_the_unknown_body_prefix(content,tmp_path):
+    from hosted.security.account_word_guard import proof_path
+    from hosted.security.saved_word_projection import DEFINITION
+    nine_blocks(content);w,c,b,p,raw,api,blob,names=worker(content,tmp_path)
+    born=p['user_created_at'];project_born=p['projects'][PID]['created_at']
+    def seed(tx):
+        for n in range(8):
+            bid='b_'+str(n).zfill(2)
+            tx.create(proof_path(UID,born,PID,project_born,bid),dict(schema_version=1,definition=DEFINITION,user_created_at=born,project_id=PID,project_created_at=project_born,block_id=bid,source_generation=1,words=3))
+    raw.run_transaction(seed)
+    handle=w.initialize_account(p,approved=True,deadline=until())['jobs'][0]
+    state=w.step(handle,expected_cursor=None,approved=True,deadline=until())
+    assert state['phase']=='complete' and state['seen_blocks']==9 and len(names)==1
+    assert raw.get(('users',UID,'metrics','saved_words_v1')).data['saved_words']==27
+
+
 def test_explicit_controller_stops_on_first_invalid_object_without_later_bodies(content,tmp_path):
     from hosted.security.account_word_operator import process_account_campaign
     nine_blocks(content);w,c,b,p,raw,api,blob,names=worker(content,tmp_path)
