@@ -159,6 +159,33 @@ class SavedWordCoverageGuard:
                 # replays and byte-identical writes do not change coverage.
                 if after != buffered.before[path]:
                     affected.add(require_project_id(path[1]))
+        from .metric_projection_budget import current_scope,ProjectionTransaction,ProjectionBudgetUnavailable,write_envelope
+        scope=current_scope();ledgers={}
+        if scope is None:ledgers=self._project_ledgers(tx,buffered,affected)
+        elif not scope.failed:
+            try:
+                ledgers=self._project_ledgers(ProjectionTransaction(tx,scope),buffered,affected)
+                scope.reserve(writes=len(ledgers),write_bytes=sum(write_envelope(p,d) for p,d in ledgers.items()))
+                for path,data in ledgers.items():
+                    if data is not None:scope.envelope('project',path[1],'legacy-coverage',64*1024)
+            except ProjectionBudgetUnavailable:scope.failed=True
+        if scope is not None and scope.failed:ledgers={}
+        # All reads, including coverage/root reads, precede provider writes.
+        for path, data in buffered.pending.items():
+            if data is None:
+                tx.delete(path)
+            elif buffered.before[path] is None:
+                tx.create(path, data)
+            else:
+                tx.set(path, data)
+        for path, data in ledgers.items():
+            if data is None:
+                tx.delete(path)
+            else:
+                tx.set(path, data)
+        return result
+
+    def _project_ledgers(self,tx,buffered,affected):
         ledgers = {}
         for pid in sorted(affected):
             path = (LEDGER_COLLECTION, pid)
@@ -195,20 +222,7 @@ class SavedWordCoverageGuard:
                        if len(p) == 4 and p[:3] == ('projects', pid, 'blocks')
                        and buffered.before[p] != data]
             ledgers[path] = _maintain(dict(old.data), before_root, after_root, changes)
-        # All reads, including coverage/root reads, precede provider writes.
-        for path, data in buffered.pending.items():
-            if data is None:
-                tx.delete(path)
-            elif buffered.before[path] is None:
-                tx.create(path, data)
-            else:
-                tx.set(path, data)
-        for path, data in ledgers.items():
-            if data is None:
-                tx.delete(path)
-            else:
-                tx.set(path, data)
-        return result
+        return ledgers
 
 
 

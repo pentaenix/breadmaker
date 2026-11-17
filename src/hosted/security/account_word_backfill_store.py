@@ -22,7 +22,7 @@ class BackfillBudget:
     not a new product refresh allowance or proof of monthly billing headroom.
     """
     def __init__(self,*,reads=20_000,writes=4_000,rpcs=2_000,content_bytes=64*1024*1024,
-                 download_bytes=64*1024*1024,object_rpcs=2_000,response_bytes=64*1024*1024,seconds=600,campaign=None):
+                 download_bytes=64*1024*1024,object_rpcs=2_000,response_bytes=64*1024*1024,seconds=600,campaign=None,resource_budget=None):
         values=dict(reads=reads,writes=writes,rpcs=rpcs,content_bytes=content_bytes,download_bytes=download_bytes,
                     object_rpcs=object_rpcs,response_bytes=response_bytes)
         maxima=dict(reads=100_000,writes=10_000,rpcs=10_000,content_bytes=512*1024*1024,download_bytes=512*1024*1024,
@@ -32,7 +32,7 @@ class BackfillBudget:
         if campaign is not None:
             from .account_word_campaign import BackfillCampaign
             if type(campaign) is not BackfillCampaign:raise BackfillUnavailable('WORD_BACKFILL_CAMPAIGN_REQUIRED')
-        self.campaign=campaign;self.limits=values;self.used=dict.fromkeys(values,0);self.deadline=time.monotonic()+seconds;self.failed=False
+        self.campaign=campaign;self.resource_budget=resource_budget;self.limits=values;self.used=dict.fromkeys(values,0);self.deadline=time.monotonic()+seconds;self.failed=False
 
     def reserve(self,**charges):
         if self.failed or time.monotonic()>=self.deadline:raise BackfillBudgetExceeded('WORD_BACKFILL_INVOCATION_DEADLINE')
@@ -153,6 +153,10 @@ class BoundedAccountWordStore:
         remaining = deadline - time.monotonic()
         if not 0 < remaining <= 30: raise BackfillUnavailable('WORD_BACKFILL_DEADLINE')
         if self.budget is not None:self.budget.reserve(rpcs=1,**({'writes':len(request['writes'])} if method=='commit' else {}))
+        if method=='commit' and self.budget is not None and self.budget.resource_budget is not None:
+            self.budget.resource_budget.before_writes(request['writes'],budget=self.budget)
+            remaining = deadline - time.monotonic()
+            if not 0 < remaining <= 30:raise BackfillBudgetExceeded('WORD_RESOURCE_ADMISSION_DEADLINE')
         api=self.client._firestore_api
         options=dict(metadata=self.client._rpc_metadata,retry=None,timeout=min(2,remaining))
         if before_dispatch is not None:

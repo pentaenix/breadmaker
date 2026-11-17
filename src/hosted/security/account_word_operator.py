@@ -83,7 +83,7 @@ def ready_for_step(budget):
     return not budget.failed and budget.deadline-time.monotonic()>=30 and all(budget.limits[k]-budget.used[k]>=v for k,v in worst.items())
 
 
-def process_account_campaign(client,objects,*,campaign,approved_plan,approved=False,max_steps=10000):
+def process_account_campaign(client,objects,*,campaign,approved_plan,approved=False,max_steps=10000,resource_budget=None):
     """Explicit operator call only. No scheduler, retry, flags or credentials.
 
     Source-side root/cursor/ownership CAS still executes for every step. The
@@ -94,7 +94,7 @@ def process_account_campaign(client,objects,*,campaign,approved_plan,approved=Fa
     plan=_plan(approved_plan);invocations=0
     def allocate():
         nonlocal invocations
-        budget=BackfillBudget(campaign=campaign);invocations+=1
+        budget=BackfillBudget(campaign=campaign,resource_budget=resource_budget);invocations+=1
         worker=operator_worker(client,objects,owner_user_id=plan['user_id'],expected_project=campaign.project,
             expected_bucket=campaign.bucket,budget=budget,approved_plan=plan)
         return budget,worker
