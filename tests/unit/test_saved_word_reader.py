@@ -24,12 +24,15 @@ class Client:
     def document(self, path):
         client = self
         class Ref:
+            def __init__(self):self.path=path
             def get(self, **kwargs):
                 client.calls.append(('get', path, kwargs))
                 data = client.rows.get(path)
-                return SimpleNamespace(exists=data is not None,
+                return SimpleNamespace(exists=data is not None,reference=self,
                     to_dict=lambda: {key: data[key] for key in kwargs['field_paths'] if key in data})
         return Ref()
+    def get_all(self,references,**kwargs):
+        return iter([ref.get(**kwargs) for ref in references])
     def collection(self, path):
         client = self
         class Query:

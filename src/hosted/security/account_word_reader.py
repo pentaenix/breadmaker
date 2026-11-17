@@ -52,8 +52,9 @@ class GoogleFirestoreAccountWordsProducer(GoogleFirestoreAccountEligibility):
                 if not match_pinned_identity(pin, current): raise SavedWordsUnavailable('WORD_IDENTITY_CHANGED')
                 excluded.append(current.hosted_user_id)
             snapshots, covered = [], 0
+            word_rows=self._many([records.path(uid) for uid in profiles],tuple(records.FIELDS),deadline)
             for uid, profile in profiles.items():
-                raw = self._get(records.path(uid), tuple(records.FIELDS), deadline)
+                raw = word_rows[records.path(uid)]
                 snapshots.append(dict(profile=profile, words=raw, owned_projects=manifest[uid]))
                 try:
                     records.sum_accounts([snapshots[-1]])

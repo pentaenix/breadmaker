@@ -13,11 +13,42 @@ from hosted.security.saved_word_reader import (GoogleFirestoreSavedWordsProducer
 from hosted.security.saved_word_identity import verify_owner,_stamp
 
 ROOT_FIELDS=('status','generation','created_at')
+MAX_BATCH_METADATA_BYTES=8*1024*1024
 
 
 class GoogleFirestoreAccountEligibility(GoogleFirestoreSavedWordsProducer):
     def __init__(self,*a,transaction=None,**kw):
         super().__init__(*a,**kw);self.transaction=transaction
+
+    def _many(self,paths,fields,deadline):
+        """One projected batch; missing/unordered replies must cover every path.
+
+        Keep the existing RPC/deadline bounds and transaction. Never recover a
+        partial batch through individual reads or retry a failed stream.
+        """
+        paths=[tuple(p) for p in paths]
+        if len(paths)>100 or len(set(paths))!=len(paths):raise SavedWordsUnavailable('ACCOUNT_ELIGIBILITY_BATCH_SCOPE')
+        if not paths:return {}
+        stream=self.client.get_all([self.client.document('/'.join(p)) for p in paths],
+            field_paths=list(fields),transaction=self.transaction,retry=None,
+            timeout=min(2 if self.transaction is not None else 4,self._remaining(deadline)))
+        found={};expected=set(paths);size=0
+        try:
+            for row in stream:
+                self._remaining(deadline);path=tuple(row.reference.path.split('/'))
+                if path not in expected or path in found:raise SavedWordsUnavailable('ACCOUNT_ELIGIBILITY_BATCH_UNVERIFIED')
+                data=(row.to_dict() or {}) if row.exists else None
+                if data is not None:
+                    if set(data)-set(fields):raise SavedWordsUnavailable('ACCOUNT_ELIGIBILITY_BATCH_UNVERIFIED')
+                    size+=len(json.dumps(data,separators=(',',':'),allow_nan=False).encode())
+                    if size>MAX_BATCH_METADATA_BYTES:raise SavedWordsUnavailable('ACCOUNT_ELIGIBILITY_BATCH_BYTES')
+                found[path]=None if data is None else {k:data[k] for k in fields if k in data}
+        finally:
+            close=getattr(stream,'close',None)
+            if close is not None:close()
+        self._remaining(deadline)
+        if set(found)!=expected:raise SavedWordsUnavailable('ACCOUNT_ELIGIBILITY_BATCH_INCOMPLETE')
+        return found
 
     def _get(self,path,fields,deadline):
         if self.transaction is None:return super()._get(path,fields,deadline)
@@ -65,23 +96,27 @@ class GoogleFirestoreAccountEligibility(GoogleFirestoreSavedWordsProducer):
     def snapshot(self,*,deadline):
         if not self.enabled or self.client is None:raise SavedWordsUnavailable('ACCOUNT_ELIGIBILITY_DISABLED')
         all_profiles=self._population('users',USER_FIELDS,deadline)
-        locks={uid:self._get(('account_erasure_locks',uid),('user_id',),deadline) for uid in all_profiles}
+        lock_rows=self._many([('account_erasure_locks',uid) for uid in all_profiles],('user_id',),deadline)
+        locks={uid:lock_rows[('account_erasure_locks',uid)] for uid in all_profiles}
         profiles={uid:p for uid,p in all_profiles.items() if locks[uid] is None}
         roots=self._population('projects',ROOT_FIELDS,deadline)
         manifests={uid:{} for uid in profiles};owners={};inactive={};project_pins={}
-        for pid,root in roots.items():
+        for pid in roots:
             rows=self._query(('projects',pid,'members'),OWNER_FIELDS,'role','owner',2,deadline)
             owners[pid]=rows
             if len(rows)!=1:raise SavedWordsUnavailable('ACCOUNT_WORD_OWNER_UNVERIFIED')
             path,member=rows[0];uid=require_user_id(member.get('user_id'))
             if path!=('projects',pid,'members',uid) or member.get('role')!='owner':
                 raise SavedWordsUnavailable('ACCOUNT_WORD_OWNER_UNVERIFIED')
-            if uid not in profiles:
-                if uid in all_profiles:continue
-                profile=self._get(('users',uid),USER_FIELDS,deadline)
-                if profile is not None and profile.get('status')=='active':
-                    raise SavedWordsUnavailable('ACCOUNT_WORD_POPULATION_CHANGED')
-                inactive[uid]=profile;continue
+            if uid not in all_profiles:inactive[uid]=None
+        inactive_rows=self._many([('users',uid) for uid in inactive],USER_FIELDS,deadline)
+        for uid in inactive:
+            profile=inactive_rows[('users',uid)]
+            if profile is not None and profile.get('status')=='active':raise SavedWordsUnavailable('ACCOUNT_WORD_POPULATION_CHANGED')
+            inactive[uid]=profile
+        for pid,root in roots.items():
+            rows=owners[pid];uid=rows[0][1]['user_id']
+            if uid not in profiles:continue
             owner=verify_owner(project_id=pid,owner_rows=rows,hosted_user=profiles[uid])
             manifests[uid][pid]=(root['created_at'],root['generation'])
             project_pins[pid]=[root['created_at'],uid,owner.hosted_created_at,owner.membership_created_at]

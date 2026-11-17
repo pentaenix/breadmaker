@@ -22,6 +22,24 @@ MAX_ACCOUNT_ITEMS = 25000
 
 
 @dataclass(frozen=True)
+class AccountDescendantProof:
+    """Trusted, injected read-only classification; never deletion authority.
+
+    Private record schemas stay in their owning backend. The public planner
+    accepts only an exact owner/incarnation proof and retains explicit blockers.
+    """
+    user_id: str
+    user_created_at: str
+    category: str
+
+    def __post_init__(self):
+        from hosted.security.saved_word_identity import _stamp
+        require_user_id(self.user_id);_stamp(self.user_created_at)
+        if self.category not in {'metric_data','metric_history'}:
+            raise ValueError('HOSTED_ACCOUNT_CLASSIFICATION_INVALID')
+
+
+@dataclass(frozen=True)
 class AccountDeletionPreview:
     user_id: str
     owned_projects: tuple[str, ...]
@@ -41,10 +59,13 @@ class AccountDeletionPreview:
     staged_import_object_names: tuple[str, ...] = ()
     saved_word_ledger_paths: tuple[tuple[str, ...], ...] = ()
     saved_word_policy_reference_paths: tuple[tuple[str, ...], ...] = ()
+    account_metric_data_paths: tuple[tuple[str, ...], ...] = ()
+    account_metric_history_paths: tuple[tuple[str, ...], ...] = ()
+    account_metric_classification_enabled: bool = False
 
     def public(self) -> dict:
         """Suppress account/provider identifiers and object paths in UI summaries."""
-        return {
+        result = {
             'owned_project_count': len(self.owned_projects),
             'collaboration_count': len(self.collaborative_projects),
             'identity_binding_count': len(self.identity_binding_paths),
@@ -61,6 +82,10 @@ class AccountDeletionPreview:
             'saved_word_ledger_count': len(self.saved_word_ledger_paths),
             'saved_word_policy_reference_count': len(self.saved_word_policy_reference_paths),
         }
+        if self.account_metric_classification_enabled:
+            result.update(account_metric_data_count=len(self.account_metric_data_paths),
+                          account_metric_history_count=len(self.account_metric_history_paths))
+        return result
 
 
 class HostedAccountDeletionPlanner:
@@ -74,7 +99,7 @@ class HostedAccountDeletionPlanner:
 
     def __init__(self, documents: MemoryDocumentStore, content: MemoryObjectStore,
                  recovery: MemoryObjectStore, actor_user_id: Callable[[], str], *,
-                 saved_word_retention_enabled: bool = False):
+                 saved_word_retention_enabled: bool = False, account_descendant_classifier=None):
         if (type(documents) is not MemoryDocumentStore or type(content) is not MemoryObjectStore
                 or type(recovery) is not MemoryObjectStore or content is recovery
                 or not callable(actor_user_id)):
@@ -82,6 +107,9 @@ class HostedAccountDeletionPlanner:
         self.documents, self.content, self.recovery = documents, content, recovery
         self.actor_user_id = actor_user_id
         self.saved_word_retention_enabled = saved_word_retention_enabled is True
+        if account_descendant_classifier is not None and not callable(account_descendant_classifier):
+            raise ValueError('HOSTED_ACCOUNT_CLASSIFIER_INVALID')
+        self.account_descendant_classifier=account_descendant_classifier
 
     def _snapshot(self) -> tuple[tuple[tuple[str, ...], dict, int], ...]:
         with self.documents._lock:
@@ -98,6 +126,7 @@ class HostedAccountDeletionPlanner:
             raise DocumentConflict('HOSTED_ACCOUNT_PROFILE_MISSING')
         owned, collaborating, missing = set(), set(), set()
         bindings, account_docs, unknown, audit_docs = set(), set(), set(), set()
+        metric_data,metric_history=set(),set()
         from hosted.package_import_ownership import import_job_scope, import_child_owned
         jobs = {}
         for path, data, _ in before:
@@ -113,6 +142,21 @@ class HostedAccountDeletionPlanner:
                 if len(path) > 2:
                     job = jobs.get(path[:4])
                     known = job is not None and (path == path[:4] or import_child_owned(path, data, path[:4], job[0]))
+                    if not known and self.account_descendant_classifier is not None:
+                        from copy import deepcopy
+                        def lookup(target):
+                            row=by_path.get(tuple(target))
+                            return deepcopy(row[0]) if row is not None else None
+                        try:
+                            proof=self.account_descendant_classifier(path,deepcopy(data),
+                                profile=deepcopy(by_path[('users',uid)][0]),lookup=lookup)
+                            if (type(proof) is AccountDescendantProof and proof.category in {'metric_data','metric_history'} and proof.user_id==uid
+                                    and proof.user_created_at==by_path[('users',uid)][0].get('created_at')):
+                                (metric_data if proof.category=='metric_data' else metric_history).add(path)
+                                known=True
+                        except Exception:
+                            # Unknown/malformed/orphaned records remain blockers.
+                            pass
                     # Unknown descendants remain a hard completeness blocker.
                     if not known:
                         unknown.add(path)
@@ -234,6 +278,10 @@ class HostedAccountDeletionPlanner:
             blockers.append('HOSTED_ACCOUNT_ORPHANED_PROJECT_MEMBERSHIP')
         if unknown:
             blockers.append('HOSTED_ACCOUNT_UNCLASSIFIED_USER_REFERENCES')
+        if metric_data:
+            blockers.append('HOSTED_ACCOUNT_METRIC_DATA_ERASURE_REVIEW_REQUIRED')
+        if metric_history:
+            blockers.append('HOSTED_ACCOUNT_METRIC_HISTORY_RETENTION_REVIEW_REQUIRED')
         if word_ledgers:
             blockers.append('HOSTED_ACCOUNT_SAVED_WORD_LEDGER_CLEANUP_REQUIRED')
         if orphan_ledgers:
@@ -254,6 +302,9 @@ class HostedAccountDeletionPlanner:
             'staged_import_projects': sorted(staged), 'staged_import_objects': staged_names,
             'retained_audits': [list(p) for p in sorted(audit_docs)],
         }
+        if self.account_descendant_classifier is not None:
+            canonical.update(account_metric_data=[list(p) for p in sorted(metric_data)],
+                             account_metric_history=[list(p) for p in sorted(metric_history)])
         fingerprint = hashlib.sha256(json.dumps(canonical,sort_keys=True,
                       separators=(',',':')).encode('utf-8')).hexdigest()
         return AccountDeletionPreview(
@@ -265,4 +316,7 @@ class HostedAccountDeletionPlanner:
             staged_import_object_names=tuple(name for name, _, _ in staged_names),
             saved_word_ledger_paths=tuple(sorted(word_ledgers)),
             saved_word_policy_reference_paths=tuple(sorted(word_policies)),
+            account_metric_data_paths=tuple(sorted(metric_data)),
+            account_metric_history_paths=tuple(sorted(metric_history)),
+            account_metric_classification_enabled=self.account_descendant_classifier is not None,
         )

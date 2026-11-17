@@ -235,3 +235,21 @@ does not silently delete any of that existing data.
 
 Source tests, a merge and deployment each prove different things. None alone is
 a complete coverage, authenticated live-flow or physical-erasure claim.
+
+## Bounded census and explicit erasure classification
+
+Projected account/fence/state point reads use finite batches of at most 100
+documents and 8 MiB of decoded metadata. Every requested path must receive exactly
+one found-or-missing result, in the same supplied transaction where applicable.
+Missing, duplicate, foreign, oversized or interrupted batches fail closed; there
+is no individual-read fallback, timeout extension or automatic retry. Unique
+inactive owners are read once. Owner membership still uses the original two-row
+sentinel query for each project, with no new index, permission or population cap.
+
+The memory-only erasure planner accepts an explicit trusted classification hook.
+An owner/incarnation proof can identify metric data or private decision history;
+both remain in the account census and receive separate mandatory review blockers.
+The hook is absent by default, and unfamiliar, malformed, cross-incarnation or
+unproven records remain unknown. Private record schemas stay with their owning
+backend. Classification grants no physical erasure, retention change or automatic
+cleanup, and it does not make a live provider census exhaustive.
