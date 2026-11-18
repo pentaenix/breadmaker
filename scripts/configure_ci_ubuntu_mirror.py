@@ -1,9 +1,9 @@
 """Prefer the runner's existing HTTPS Ubuntu archive, retaining signed fallbacks.
 
-GitHub's Ubuntu image configures /etc/apt/apt-mirrors.txt with Azure first.
-A slow but successful Azure response never triggers its error-based failover.
+GitHub's Ubuntu image configures /etc/apt/apt-mirrors.txt with a regional mirror first.
+A slow but successful regional response never triggers its error-based failover.
 This optional CI optimization changes priorities, not repositories, suites or
-signing keys. Runners without the Azure mirror list retain their vendor sources.
+signing keys. Runners without the mirror list retain their vendor sources.
 """
 from __future__ import annotations
 
@@ -21,6 +21,8 @@ _ARCHIVE = 'https://archive.ubuntu.com/ubuntu/'
 _SECURITY = 'https://security.ubuntu.com/ubuntu/'
 _DEFAULT = {_AZURE: 'priority:1', _ARCHIVE: 'priority:2', _SECURITY: 'priority:3'}
 _PREFERRED = {_AZURE: 'priority:2', _ARCHIVE: 'priority:1', _SECURITY: 'priority:3'}
+_AWS_DEFAULT = {_AWS: 'priority:1', _ARCHIVE: 'priority:2', _SECURITY: 'priority:3'}
+_AWS_PREFERRED = {_AWS: 'priority:2', _ARCHIVE: 'priority:1', _SECURITY: 'priority:3'}
 
 
 def prefer_https_archive(text: str) -> str:
@@ -29,16 +31,16 @@ def prefer_https_archive(text: str) -> str:
             or len({row[0] for row in rows}) != 3):
         raise ValueError('CI_APT_MIRROR_LAYOUT_CHANGED')
     current = dict(rows)
-    # Observed AWS-hosted image: its regional mirror is already appropriate.
-    # Recognize the exact signed-vendor fallback layout without rewriting it.
-    if current == {_AWS:'priority:1',_ARCHIVE:'priority:2',_SECURITY:'priority:3'}:
+    if current in (_PREFERRED, _AWS_PREFERRED):
         return text
-    if current == _PREFERRED:
-        return text
-    if current != _DEFAULT:
+    if current == _DEFAULT:
+        original, preferred = _DEFAULT, _PREFERRED
+    elif current == _AWS_DEFAULT:
+        original, preferred = _AWS_DEFAULT, _AWS_PREFERRED
+    else:
         raise ValueError('CI_APT_MIRROR_LAYOUT_CHANGED')
     # Keep every original URI and all formatting outside the priority values.
-    return ''.join(line.replace(_DEFAULT[line.split()[0]], _PREFERRED[line.split()[0]])
+    return ''.join(line.replace(original[line.split()[0]], preferred[line.split()[0]])
                    if line.strip() else line for line in text.splitlines(keepends=True))
 
 
@@ -75,19 +77,16 @@ def main() -> int:
         if updated != original:
             path.write_text(updated)
     except FileNotFoundError:
-        # Some hosted images do not use the Azure mirror list. There is no
+        # Some hosted images do not use the mirror list. There is no
         # priority to optimize; leave all vendor APT sources and keys untouched.
-        print('Azure mirror list absent; runner repositories left unchanged.')
+        print('Ubuntu mirror list absent; runner repositories left unchanged.')
         return 0
     except (OSError, ValueError) as error:
         print(f'CI_APT_MIRROR_CONFIGURATION_BLOCKED:{type(error).__name__}', file=sys.stderr)
         if isinstance(error,ValueError) and isinstance(original,str):
             print('CI_APT_MIRROR_LAYOUT '+json.dumps(safe_layout_summary(original)),file=sys.stderr)
         return 2
-    if _AWS in original:
-        print('Regional Ubuntu mirror retained; repositories and signing keys unchanged.')
-    else:
-        print('Ubuntu HTTPS archive preferred; existing repositories and signing keys preserved.')
+    print('Ubuntu HTTPS archive preferred; existing repositories and signing keys preserved.')
     return 0
 
 

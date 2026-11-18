@@ -96,21 +96,44 @@ def test_ci_mirror_layout_diagnostics_redact_unknown_hosts_and_nonstandard_paths
 AWS_DEFAULT=DEFAULT.replace('http://azure.archive.ubuntu.com/ubuntu/','http://us-east-2.ec2.archive.ubuntu.com/ubuntu/')
 
 
-def test_ci_mirror_observed_aws_layout_remains_byte_for_byte_unchanged():
-    assert prefer_https_archive(AWS_DEFAULT)==AWS_DEFAULT
-    assert prefer_https_archive(prefer_https_archive(AWS_DEFAULT))==AWS_DEFAULT
+@pytest.mark.parametrize('source', [
+    AWS_DEFAULT,
+    '\n'+'\n'.join(reversed(AWS_DEFAULT.replace('\t','   ').splitlines()))+'\n\n',
+])
+def test_ci_mirror_aws_prefers_existing_archive_and_preserves_other_bytes(source):
+    expected=source.replace('priority:1','priority:temporary').replace(
+        'priority:2','priority:1').replace('priority:temporary','priority:2')
+    result=prefer_https_archive(source)
+    assert result==expected
+    assert {line.split()[0] for line in result.splitlines() if line.strip()}=={
+        line.split()[0] for line in source.splitlines() if line.strip()}
+    assert prefer_https_archive(result)==result
 
 
-def test_ci_mirror_aws_cli_never_rewrites_regional_vendor_configuration(monkeypatch,capsys):
+def test_ci_mirror_aws_cli_writes_only_preference_once(monkeypatch,capsys):
     module=_github_linux_root(monkeypatch)
     class RegionalList:
-        def read_text(self):return AWS_DEFAULT
-        def write_text(self,value):raise AssertionError('must retain the regional vendor configuration')
-    monkeypatch.setattr(module,'Path',lambda _:RegionalList())
+        text=AWS_DEFAULT
+        writes=[]
+        def read_text(self):return self.text
+        def write_text(self,value):
+            self.writes.append(value)
+            self.text=value
+    mirror=RegionalList()
+    monkeypatch.setattr(module,'Path',lambda _:mirror)
     assert module.main()==0
-    assert 'Regional Ubuntu mirror retained' in capsys.readouterr().out
+    assert mirror.writes==[prefer_https_archive(AWS_DEFAULT)]
+    assert 'existing repositories and signing keys preserved' in capsys.readouterr().out
+    assert module.main()==0
+    assert len(mirror.writes)==1
 
 
-def test_ci_mirror_unobserved_regional_layout_still_requires_review():
+@pytest.mark.parametrize('source', [
+    AWS_DEFAULT.replace('us-east-2','unreviewed-region'),
+    AWS_DEFAULT.replace('https://archive.ubuntu.com/','https://untrusted.invalid/'),
+    AWS_DEFAULT+AWS_DEFAULT.splitlines()[0]+'\n',
+    AWS_DEFAULT.replace('priority:3','priority:1'),
+])
+def test_ci_mirror_unobserved_regional_layout_still_requires_review(source):
     with pytest.raises(ValueError,match='CI_APT_MIRROR_LAYOUT_CHANGED'):
-        prefer_https_archive(AWS_DEFAULT.replace('us-east-2','unreviewed-region'))
+        prefer_https_archive(source)
