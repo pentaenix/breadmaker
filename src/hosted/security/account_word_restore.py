@@ -15,15 +15,21 @@ from hosted.security.account_word_content import BoundedCurrentBlockReader
 
 
 class AccountWordRestoreRepair:
-    def __init__(self,store,objects,*,memory_reader=None):
+    def __init__(self,store,objects,*,memory_reader=None,resource_budget=None):
         if not ((type(store) is GoogleFirestoreDocumentStore and type(objects) is GoogleCloudObjectStore)
                 or (type(store) is MemoryDocumentStore and type(objects) is MemoryObjectStore and callable(memory_reader))):
             raise BackfillUnavailable('WORD_REPAIR_COMPOSITION_UNVERIFIED')
         self.store,self.objects,self.memory_reader=store,objects,memory_reader
+        self.resource_budget=resource_budget
 
     def __call__(self,*,project_id,actor_user_id,block_ids):
+        if self.resource_budget is not None:
+            return self.resource_budget.run_restore(self._repair,project_id=project_id,actor_user_id=actor_user_id,block_ids=block_ids)
+        return self._repair(project_id=project_id,actor_user_id=actor_user_id,block_ids=block_ids)
+
+    def _repair(self,*,project_id,actor_user_id,block_ids,budget=None):
         pid,actor=require_project_id(project_id),require_user_id(actor_user_id)
-        deadline=time.monotonic()+6
+        deadline=min(time.monotonic()+6,budget.deadline) if budget is not None else time.monotonic()+6
         def resolve(tx):
             profile=tx.get(('users',actor));member=tx.get(('projects',pid,'members',actor))
             root=tx.get(('projects',pid))
@@ -42,8 +48,8 @@ class AccountWordRestoreRepair:
             worker=AccountWordBackfill(self.store,self.memory_reader,enabled=True)
         else:
             client=self.store._client
-            authority=BoundedAccountWordStore(client,project_id=client.project,owner_user_id=actor)
+            authority=BoundedAccountWordStore(client,project_id=client.project,owner_user_id=actor,budget=budget)
             owner=authority.run_transaction(resolve,deadline=deadline)
-            scope=BoundedAccountWordStore(client,project_id=client.project,owner_user_id=owner)
+            scope=BoundedAccountWordStore(client,project_id=client.project,owner_user_id=owner,budget=budget)
             worker=AccountWordBackfill(scope,BoundedCurrentBlockReader(scope,self.objects),enabled=True)
         return worker.repair_current_blocks(owner,pid,block_ids,deadline=deadline)

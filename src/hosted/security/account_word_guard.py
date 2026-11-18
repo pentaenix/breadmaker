@@ -61,14 +61,22 @@ class _Transaction(_BufferedTransaction):
 
 
 class AccountWordGuard:
-    def __init__(self, store, *, enabled=False):
+    def __init__(self, store, *, enabled=False, resource_budget=None):
         self.store, self.enabled = store, enabled is True
+        self.resource_budget = resource_budget
 
     def __getattr__(self, name): return getattr(self.store, name)
 
     def run_transaction(self, fn, *, max_attempts=5):
         if not self.enabled: return self.store.run_transaction(fn, max_attempts=max_attempts)
-        return self.store.run_transaction(lambda tx: self._execute(tx, fn), max_attempts=max_attempts)
+        if self.resource_budget is None:
+            return self.store.run_transaction(lambda tx: self._execute(tx, fn), max_attempts=max_attempts)
+        from .metric_projection_budget import transaction_scope
+        def bounded(tx):
+            try:adapter = self.resource_budget.projection()
+            except Exception:adapter = None
+            with transaction_scope(adapter):return self._execute(tx, fn)
+        return self.store.run_transaction(bounded, max_attempts=max_attempts)
 
     @staticmethod
     def _operational(path):
@@ -106,6 +114,38 @@ class AccountWordGuard:
         buffered = _Transaction(tx); result = fn(buffered)
         if any(self._operational(p) for p in buffered.pending):
             raise DocumentConflict('ACCOUNT_WORD_DIRECT_WRITE_FORBIDDEN')
+        from .metric_projection_budget import current_scope,ProjectionTransaction,ProjectionBudgetUnavailable,write_envelope
+        from .saved_word_guard import LEDGER_COLLECTION
+        scope=current_scope();updates={}
+        if scope is None:
+            updates=self._project(tx,buffered)
+        elif not scope.failed:
+            try:
+                metered=ProjectionTransaction(tx,scope);buffered.tx=metered
+                updates=self._project(metered,buffered)
+                scope.reserve(writes=len(updates),write_bytes=sum(write_envelope(p,d) for p,d in updates.items()))
+                for path,data in updates.items():
+                    previous=metered.get(path)
+                    scope.retain(path,data,dict(previous.data) if previous is not None else None)
+            except ProjectionBudgetUnavailable:scope.failed=True
+        if scope is not None and scope.failed:
+            updates={}
+            # Coverage updates were buffered above; a later account-budget
+            # failure must discard them together with account contributions.
+            buffered.pending={p:d for p,d in buffered.pending.items() if not p or p[0]!=LEDGER_COLLECTION}
+        # Mandatory project-root erasure cleanup is not optional reporting.
+        erased=[p[1] for p,d in buffered.pending.items() if len(p)==2 and p[0]=='projects' and d is None]
+        if scope is not None and scope.failed:
+            for pid in erased:tx.delete((LEDGER_COLLECTION,pid))
+        # Lifecycle checks and provider commit remain outside this buffer.
+        for p, data in buffered.pending.items():
+            if data is None: tx.delete(p)
+            elif buffered.before[p] is None: tx.create(p, data)
+            else: tx.set(p, data)
+        for p, data in updates.items(): tx.set(p, data)
+        return result
+
+    def _project(self, tx, buffered):
         changed = {require_project_id(p[1]) for p, data in buffered.pending.items()
             if len(p) >= 2 and p[0] == 'projects' and _canonical(data) != _canonical(buffered.before[p])
             and (len(p) == 2 or len(p) == 4 and p[2] in {'blocks', 'chapters', 'members'})}
@@ -209,10 +249,4 @@ class AccountWordGuard:
             updated = records.state(uid, record['user_created_at'], projects=record['projects'],
                                     initialized=record['initialized'])
             if updated != original[uid]: updates[records.path(uid)] = updated
-        # Lifecycle checks and provider commit remain outside this buffer.
-        for p, data in buffered.pending.items():
-            if data is None: tx.delete(p)
-            elif buffered.before[p] is None: tx.create(p, data)
-            else: tx.set(p, data)
-        for p, data in updates.items(): tx.set(p, data)
-        return result
+        return updates

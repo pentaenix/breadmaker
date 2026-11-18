@@ -11,6 +11,18 @@ spec=importlib.util.spec_from_file_location('stage_vendor_runtime',ROOT/'scripts
 owner=importlib.util.module_from_spec(spec);spec.loader.exec_module(owner)
 
 
+def test_python_closure_pins_the_reviewed_hashlib_security_fix():
+    contract=json.loads((ROOT/'deploy/vendor-runtime.json').read_bytes())
+    rows=[row for row in contract['packages']['x86_64'] if row['P'] in {'python-3.14','python-3.14-base','python-3.14-runtime'}]
+    assert len(rows)==3
+    assert {row['V'] for row in rows}=={contract['python_package']}=={'3.14.10_git20261111-r0'}
+    assert {row['c'] for row in rows}=={'2283fc0b206ee1f8c592ed0633b432fa86f5a9c3'}
+    for name in ('Dockerfile.hosted','Dockerfile.pronunciation'):
+        text=(ROOT/'deploy'/name).read_text()
+        assert 'python-3.14='+contract['python_package'] in text
+        assert 'python-3.14-dev='+contract['python_package'] in text
+
+
 @pytest.fixture
 def staged(tmp_path):
     root=tmp_path/'runtime';root.mkdir()
