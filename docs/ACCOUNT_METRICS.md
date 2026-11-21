@@ -289,3 +289,15 @@ backend. The hook also requires the existing legacy policy/ledger retention scan
 its backend must preserve shared legacy decision-history review. Classification
 grants no physical erasure, retention change or automatic
 cleanup, and it does not make a live provider census exhaustive.
+
+
+## Explicit owner-only account breakdown candidate (November 21, 2026)
+
+The account word collector supports `include_account_rows=True` to return schema 3
+with sorted hosted-account ID, saved words, exclusion status, and owned-project
+count. Default collection retains aggregate-only schema 2. The breakdown reuses
+already verified metadata with no extra reads, names, email joins, or content.
+Unknown coverage suppresses every row count and total. Paired Cloud/Admin validation
+requires the full population and exact row-to-total arithmetic. See the private
+paired `docs/ACCOUNT_WORD_BREAKDOWN.md` release note for activation gates. This
+option does not enable production collection, count maintenance, or backfill.

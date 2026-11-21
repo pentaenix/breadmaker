@@ -111,3 +111,24 @@ def test_policy_revision_change_and_disabled_producer_cannot_publish_totals():
     assert GoogleFirestoreAccountWordsProducer().collect(deadline=None) is None
     result=producer(Client(rows()),PolicyReader('policy_2')).collect(deadline=130)
     assert set(result['metrics'].values())=={None}
+
+
+def test_explicit_account_breakdown_preserves_shared_ownership_and_no_extra_io():
+    data=rows();other='usr_'+'b'*32
+    data['users/'+other]=dict(user_id=other,status='active',created_at=BORN)
+    data['users/'+other+'/metrics/saved_words_v1']=records.state(other,BORN,initialized=True)
+    data['projects/'+PID+'/members/'+other]=dict(user_id=other,role='editor',created_at=BORN)
+    aggregate_client=Client(deepcopy(data));detail_client=Client(deepcopy(data))
+    aggregate=producer(aggregate_client).collect(deadline=130)
+    result=producer(detail_client).collect(deadline=130,include_account_rows=True)
+    assert result['schema_version']==3 and aggregate['schema_version']==2
+    assert result['metrics']==aggregate['metrics']
+    assert result['account_rows']==sorted([
+        dict(hosted_user_id=UID,saved_words=7,excluded=False,current_projects=1),
+        dict(hosted_user_id=other,saved_words=0,excluded=False,current_projects=0)],key=lambda r:r['hosted_user_id'])
+    assert detail_client.calls==aggregate_client.calls
+    assert 'project_id' not in str(result) and 'NEVER' not in str(result)
+    data.pop('users/'+UID+'/metrics/saved_words_v1')
+    partial=producer(Client(data)).collect(deadline=130,include_account_rows=True)
+    assert all(row['saved_words'] is None for row in partial['account_rows'])
+    assert all(value is None for value in partial['metrics'].values())
