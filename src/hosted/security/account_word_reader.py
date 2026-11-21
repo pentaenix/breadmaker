@@ -17,7 +17,7 @@ SOURCE = 'cloud_account_saved_words_v1'
 
 
 class GoogleFirestoreAccountWordsProducer(GoogleFirestoreAccountEligibility):
-    def collect(self, *, deadline):
+    def collect(self, *, deadline, include_account_rows=False):
         if not self.enabled: return None
         if (self.client is None or self.policy_reader is None or not callable(self.account_reader)
                 or type(self.issuer) is not str or not self.issuer.startswith('identity-platform://')):
@@ -51,15 +51,18 @@ class GoogleFirestoreAccountWordsProducer(GoogleFirestoreAccountEligibility):
                     binding=binding, provider=provider, hosted_user=profile)
                 if not match_pinned_identity(pin, current): raise SavedWordsUnavailable('WORD_IDENTITY_CHANGED')
                 excluded.append(current.hosted_user_id)
-            snapshots, covered = [], 0
+            snapshots, covered, account_rows = [], 0, []
             word_rows=self._many([records.path(uid) for uid in profiles],tuple(records.FIELDS),deadline)
             for uid, profile in profiles.items():
                 raw = word_rows[records.path(uid)]
                 snapshots.append(dict(profile=profile, words=raw, owned_projects=manifest[uid]))
                 try:
-                    records.sum_accounts([snapshots[-1]])
+                    value = records.sum_accounts([snapshots[-1]])['all_saved_words']
                     covered += 1
-                except ValueError: pass
+                except ValueError:
+                    value = None
+                account_rows.append(dict(hosted_user_id=uid, saved_words=value,
+                    excluded=uid in excluded, current_projects=len(manifest[uid])))
             # Explicitly non-atomic observation with all populations, owner and
             # incarnation pins rechecked. A retained cache must also revalidate
             # current eligibility on use; this producer alone cannot prove that.
@@ -75,7 +78,7 @@ class GoogleFirestoreAccountWordsProducer(GoogleFirestoreAccountEligibility):
             complete = covered == len(profiles) and revision == policy.revision
             metrics = records.sum_accounts(snapshots, excluded=excluded) if complete else {
                 key: None for key in ('all_saved_words', 'included_saved_words', 'excluded_saved_words')}
-            return dict(schema_version=2, source=SOURCE, definition=DEFINITION,
+            result = dict(schema_version=2, source=SOURCE, definition=DEFINITION,
                 eligibility_scope='active_cloud_accounts', policy_scope='saved_words_only',
                 exclusion_revision=revision, as_of=_timestamp(end),eligibility_fingerprint=facts['fingerprint'],
                 coverage=dict(start=_timestamp(start), end=_timestamp(end),
@@ -83,5 +86,12 @@ class GoogleFirestoreAccountWordsProducer(GoogleFirestoreAccountEligibility):
                     eligible_accounts=len(profiles), covered_accounts=covered,
                     unknown_accounts=len(profiles)-covered,
                     eligible_projects=sum(len(p) for p in manifest.values())), metrics=metrics)
+            if include_account_rows:
+                result['schema_version'] = 3
+                result['account_rows'] = sorted(account_rows, key=lambda row: row['hosted_user_id'])
+                if not complete:
+                    for row in result['account_rows']:
+                        row['saved_words'] = None
+            return result
         except SavedWordsUnavailable: raise
         except Exception: raise SavedWordsUnavailable('ACCOUNT_WORD_COLLECTION_UNAVAILABLE') from None
