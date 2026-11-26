@@ -32,6 +32,7 @@ EXPECTED_CSS=[
     '/static/css/reviews/manuscript-layer.css',
     '/static/css/profile/local-profile.css',
     '/static/css/profile/account-security.css',
+    '/static/css/profile/usage-consent.css',
     '/static/css/shared/startup-hydration.css',
 ]
 

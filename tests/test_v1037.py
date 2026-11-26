@@ -11,7 +11,7 @@ def test_v1037_release_identity_keeps_css_boundary_stable():
     version=(ROOT/'VERSION').read_text(encoding='utf-8').strip()
     assert tuple(map(int,version.split('.'))) >= (10,3,7)
     hrefs=frontend_stylesheet_hrefs(ROOT)
-    assert len(hrefs)==23
+    assert len(hrefs)==24
 
 
 def test_v1037_removes_known_redundant_cascade_reassertions():

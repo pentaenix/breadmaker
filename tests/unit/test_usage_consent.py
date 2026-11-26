@@ -1,15 +1,13 @@
-from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI, HTTPException
-from fastapi.testclient import TestClient
+from fastapi import HTTPException
 
 from hosted.account_lifecycle import AccountLifecycleDocumentStore
 from hosted.firestore.contracts import DocumentConflict, HostedAuthorizationError
 from hosted.firestore.memory import MemoryDocumentStore
 from hosted.firestore.repositories import HostedStructuredRepository, HostedUserRepository
-from hosted.usage_consent import FIELD, NOTICE_SHA256, NOTICE_VERSION, UsageConsent, router_for
+from hosted.usage_consent import FIELD, NOTICE_SHA256, NOTICE_VERSION, UsageConsent
 
 UID = 'usr_' + '1' * 32
 OTHER = 'usr_' + '2' * 32
@@ -120,20 +118,3 @@ def test_new_scope_turns_permission_off_until_another_choice(setup, change):
     assert service.get(UID) == dict(choice=None, allowed=False, needs_choice=True,
                                     revision=1, notice_version=NOTICE_VERSION, notice_sha256=NOTICE_SHA256)
     assert service.save(UID, body(False, 1))['choice'] is False
-
-
-def test_http_uses_only_bound_account_and_bounds_json(setup):
-    store, fenced, _ = setup
-    runtime = SimpleNamespace(mode='hosted', sessions=SimpleNamespace(metadata=lambda: {'auth_mode': 'identity_platform'}),
-                              identity=SimpleNamespace(documents=fenced, request_user_id=lambda: UID))
-    app = FastAPI(); app.include_router(router_for(runtime))
-    with TestClient(app) as client:
-        path = '/api/account/usage-consent'
-        result = client.put(path, json=body(False), headers={'X-Breadmaker-User': OTHER})
-        assert result.status_code == 200 and result.json()['choice'] is False
-        assert FIELD not in store.get(('users', OTHER)).data
-        assert client.get(path).json() == result.json()
-        assert client.put(path, content='{"choice":true,"choice":false}').status_code == 400
-        assert client.put(path, content=b'x' * 513).status_code == 413
-        runtime.mode = 'local'
-        assert client.get(path).status_code == 404

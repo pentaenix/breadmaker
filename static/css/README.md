@@ -51,7 +51,9 @@ Do not use `@import` to hide dependencies. Add a stylesheet to `static/index.htm
 19. `manuscript/media-and-split.css` — Manuscript media and Split View additions.
 20. `reviews/manuscript-layer.css` — Manuscript Review working-layer presentation.
 21. `profile/local-profile.css` — local profile/account presentation.
-22. `shared/startup-hydration.css` — final startup-hydration chrome guard.
+22. `profile/account-security.css` — hosted identity and account-security presentation.
+23. `profile/usage-consent.css` — non-modal hosted statistics choice and Privacy switch.
+24. `shared/startup-hydration.css` — final startup-hydration chrome guard.
 
 Some features intentionally have more than one stylesheet because later historical rules must remain later in the cascade. Those separate files remain intentional where their relative position carries cascade meaning. Consolidation or reordering now requires a concrete behavior-preserving proof rather than a lower file count.
 
