@@ -28,3 +28,5 @@ else:
     app.include_router(platform_router)
     from hosted.usage_consent import router_for as usage_consent_router
     app.include_router(usage_consent_router(runtime))
+    from hosted.activity.http_api import router_for as activity_router
+    app.include_router(activity_router(runtime))

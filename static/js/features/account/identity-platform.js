@@ -1,7 +1,7 @@
 import {
   identityClient,identityConfig,signInProvider,signInEmail,createEmailAccount,sendVerification,reloadUser,
   sendPasswordReset,enrolledTotp,beginTotpEnrollment,exchangeServerSession,signOutClient
-} from './identity-platform-client.js?v=10.5.97&privacy=9';
+} from './identity-platform-client.js?v=10.5.98&privacy=9';
 
 
 const $=selector=>document.querySelector(selector);

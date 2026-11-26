@@ -138,16 +138,26 @@ class _BufferedTransaction:
     def create(self, path, data): self._stage(path, data, create=True)
     def delete(self, path): self._stage(path, None)
 
+    def activity_task_states(self, path, before, after):
+        marker = getattr(self.tx, 'activity_task_states', None)
+        if marker is not None:
+            marker(path, before, after)
+
 
 class ActionDocumentStore:
     """Transparent hosted store; journals ONLY explicitly bound product requests."""
-    def __init__(self, store): self.store, self.restore_repair = store, None
+    def __init__(self, store): self.store, self.restore_repair, self.activity = store, None, None
     def __getattr__(self, name): return getattr(self.store, name)
+
+    def _run(self, fn, *, max_attempts=5):
+        if self.activity is not None:
+            fn = self.activity.callback(fn)
+        return self.store.run_transaction(fn, max_attempts=max_attempts)
 
     def run_transaction(self, fn, *, max_attempts=5):
         context = _ACTION.get()
         if context is None:
-            return self.store.run_transaction(fn, max_attempts=max_attempts)
+            return self._run(fn, max_attempts=max_attempts)
         token, pid, uid = context
 
         def execute(tx):
@@ -198,13 +208,14 @@ class ActionDocumentStore:
                 else: tx.set(path, data)
             tx.set(_path(uid, token), action)
             return result
-        return self.store.run_transaction(execute, max_attempts=max_attempts)
+        return self._run(execute, max_attempts=max_attempts)
 
 
 class ActionJournal:
     def __init__(self, documents):
         self.documents = documents.store if isinstance(documents, ActionDocumentStore) else documents
         self.restore_repair = documents.restore_repair if type(documents) is ActionDocumentStore else None
+        self.activity = documents.activity if type(documents) is ActionDocumentStore else None
 
     def begin(self, pid, uid, label='', scope='full', scope_id=None):
         pid, uid = require_project_id(pid), require_user_id(uid)
@@ -315,7 +326,8 @@ class ActionJournal:
             if related_data: tx.set(_path(uid,related_token),related_data)
             return {'ok': True, 'changed': bool(pending)}, [p[-1] for p,_ in pending
                 if len(p)==4 and p[:3]==('projects',pid,'blocks')]
-        result,blocks=self.documents.run_transaction(restore)
+        callback = self.activity.callback(restore, restoring=True) if self.activity is not None else restore
+        result,blocks=self.documents.run_transaction(callback)
         if blocks and callable(self.restore_repair):
             try:self.restore_repair(project_id=pid,actor_user_id=uid,block_ids=blocks)
             except Exception:pass  # Undo already committed; coverage remains unknown.
