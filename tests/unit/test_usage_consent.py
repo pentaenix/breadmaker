@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from pathlib import Path
 
 import pytest
 from fastapi import FastAPI, HTTPException
@@ -26,7 +27,14 @@ def setup():
 
 
 def body(choice, revision=0):
-    return dict(choice=choice, revision=revision, notice_version=NOTICE_VERSION)
+    return dict(choice=choice, revision=revision, notice_version=NOTICE_VERSION, notice_sha256=NOTICE_SHA256)
+
+
+def test_shipped_copy_pins_the_same_notice_as_the_server():
+    client = (Path(__file__).parents[2] / 'static/js/features/account/usage-consent.js').read_text()
+    assert f"version:'{NOTICE_VERSION}'" in client
+    assert f"sha256:'{NOTICE_SHA256}'" in client
+    assert 'notice_version:usageConsentNotice.version,notice_sha256:usageConsentNotice.sha256' in client
 
 
 @pytest.mark.parametrize('choice', [True, False])
@@ -62,7 +70,6 @@ def test_network_retry_and_old_tab_cannot_undo_new_refusal(setup):
 
 @pytest.mark.parametrize('bad', [None, [], {}, body(1), body('false'), body(None),
                                body(True, True), body(True, -1), body(True, 2**53),
-                               {**body(True), 'notice_version': 'other-purpose'},
                                {**body(True), 'user_id': OTHER},
                                {**body(True), 'updated_at': STAMP}])
 def test_untrusted_fields_and_malformed_choices_never_write(setup, bad):
@@ -70,6 +77,16 @@ def test_untrusted_fields_and_malformed_choices_never_write(setup, bad):
     with pytest.raises(HTTPException) as error:
         service.save(UID, bad)
     assert error.value.status_code == 400
+    assert FIELD not in store.get(('users', UID)).data
+
+
+@pytest.mark.parametrize('field', ['notice_version', 'notice_sha256'])
+def test_old_tab_cannot_accept_new_notice_or_purpose(setup, field):
+    store, _, service = setup
+    with pytest.raises(HTTPException) as error:
+        service.save(UID, {**body(True), field: 'older-copy'})
+    assert error.value.status_code == 409
+    assert error.value.detail['code'] == 'USAGE_NOTICE_CHANGED'
     assert FIELD not in store.get(('users', UID)).data
 
 
@@ -101,7 +118,7 @@ def test_new_scope_turns_permission_off_until_another_choice(setup, change):
         tx.set(('users', UID), data)
     store.run_transaction(old)
     assert service.get(UID) == dict(choice=None, allowed=False, needs_choice=True,
-                                    revision=1, notice_version=NOTICE_VERSION)
+                                    revision=1, notice_version=NOTICE_VERSION, notice_sha256=NOTICE_SHA256)
     assert service.save(UID, body(False, 1))['choice'] is False
 
 

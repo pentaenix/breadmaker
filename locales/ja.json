@@ -3723,7 +3723,8 @@
     "usage_consent.off": "オフ · アカウントに保存済み",
     "usage_consent.load_failed": "選択を読み込めませんでした。プライバシーを開き直してください。",
     "usage_consent.close": "閉じる",
-    "usage_consent.loading": "選択を読み込み中…"
+    "usage_consent.loading": "選択を読み込み中…",
+    "usage_consent.reload": "通知が変更されました。選択する前にBreadmakerを再読み込みしてください。"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",
