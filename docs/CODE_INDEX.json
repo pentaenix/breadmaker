@@ -6418,7 +6418,7 @@
     },
     {
       "file": "src/backend/core.py",
-      "lines": 28,
+      "lines": 30,
       "symbols": []
     },
     {
@@ -7894,23 +7894,28 @@
     },
     {
       "file": "src/hosted/account_deletion.py",
-      "lines": 225,
+      "lines": 324,
       "symbols": [
         {
-          "name": "AccountDeletionPreview",
+          "name": "AccountDescendantProof",
           "kind": "class",
           "line": 25
         },
         {
+          "name": "AccountDeletionPreview",
+          "kind": "class",
+          "line": 43
+        },
+        {
           "name": "HostedAccountDeletionPlanner",
           "kind": "class",
-          "line": 62
+          "line": 91
         }
       ]
     },
     {
       "file": "src/hosted/account_lifecycle.py",
-      "lines": 217,
+      "lines": 309,
       "symbols": [
         {
           "name": "_LifecycleTransaction",
@@ -7920,18 +7925,18 @@
         {
           "name": "AccountLifecycleDocumentStore",
           "kind": "class",
-          "line": 152
+          "line": 244
         },
         {
           "name": "AccountLifecycleObjectStore",
           "kind": "class",
-          "line": 169
+          "line": 261
         }
       ]
     },
     {
       "file": "src/hosted/account_sandbox.py",
-      "lines": 307,
+      "lines": 329,
       "symbols": [
         {
           "name": "SimulatedAccountCrash",
@@ -7952,67 +7957,72 @@
     },
     {
       "file": "src/hosted/action_journal.py",
-      "lines": 296,
+      "lines": 322,
       "symbols": [
+        {
+          "name": "_modification_stamp",
+          "kind": "function",
+          "line": 21
+        },
         {
           "name": "bind_action",
           "kind": "function",
-          "line": 34
+          "line": 39
         },
         {
           "name": "_path",
           "kind": "function",
-          "line": 44
+          "line": 49
         },
         {
           "name": "_data",
           "kind": "function",
-          "line": 48
+          "line": 53
         },
         {
           "name": "_authorize",
           "kind": "function",
-          "line": 52
+          "line": 57
         },
         {
           "name": "_load",
           "kind": "function",
-          "line": 59
+          "line": 64
         },
         {
           "name": "_same_generation",
           "kind": "function",
-          "line": 70
+          "line": 75
         },
         {
           "name": "_semantic",
           "kind": "function",
-          "line": 75
+          "line": 80
         },
         {
           "name": "_without_read_cache",
           "kind": "function",
-          "line": 79
+          "line": 92
         },
         {
           "name": "_require_product_path",
           "kind": "function",
-          "line": 85
+          "line": 98
         },
         {
           "name": "_BufferedTransaction",
           "kind": "class",
-          "line": 96
+          "line": 109
         },
         {
           "name": "ActionDocumentStore",
           "kind": "class",
-          "line": 129
+          "line": 142
         },
         {
           "name": "ActionJournal",
           "kind": "class",
-          "line": 190
+          "line": 204
         }
       ]
     },
@@ -8132,7 +8142,7 @@
     },
     {
       "file": "src/hosted/chapter_mutations.py",
-      "lines": 244,
+      "lines": 247,
       "symbols": [
         {
           "name": "replace_chapter_blocks",
@@ -8243,7 +8253,7 @@
     },
     {
       "file": "src/hosted/domain_store.py",
-      "lines": 1179,
+      "lines": 1204,
       "symbols": [
         {
           "name": "_merge_manuscript_patch",
@@ -8337,7 +8347,7 @@
     },
     {
       "file": "src/hosted/encrypted_live_restore.py",
-      "lines": 473,
+      "lines": 474,
       "symbols": [
         {
           "name": "HostedEncryptedLiveRestoreError",
@@ -8362,7 +8372,7 @@
         {
           "name": "_canonical",
           "kind": "function",
-          "line": 472
+          "line": 473
         }
       ]
     },
@@ -8542,22 +8552,22 @@
     },
     {
       "file": "src/hosted/firestore/google_driver.py",
-      "lines": 201,
+      "lines": 295,
       "symbols": [
         {
           "name": "_GoogleTransaction",
           "kind": "class",
-          "line": 17
+          "line": 18
         },
         {
           "name": "_snapshot_revision",
           "kind": "function",
-          "line": 71
+          "line": 165
         },
         {
           "name": "GoogleFirestoreDocumentStore",
           "kind": "class",
-          "line": 79
+          "line": 173
         }
       ]
     },
@@ -8599,7 +8609,7 @@
     },
     {
       "file": "src/hosted/firestore/memory.py",
-      "lines": 183,
+      "lines": 246,
       "symbols": [
         {
           "name": "_MemoryTransaction",
@@ -8609,7 +8619,7 @@
         {
           "name": "MemoryDocumentStore",
           "kind": "class",
-          "line": 62
+          "line": 125
         }
       ]
     },
@@ -8621,6 +8631,32 @@
           "name": "model_for",
           "kind": "function",
           "line": 388
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/firestore/owner_queries.py",
+      "lines": 80,
+      "symbols": [
+        {
+          "name": "project_ids",
+          "kind": "function",
+          "line": 15
+        },
+        {
+          "name": "owner_query",
+          "kind": "function",
+          "line": 21
+        },
+        {
+          "name": "validate_owner_rows",
+          "kind": "function",
+          "line": 37
+        },
+        {
+          "name": "read_owner_batch",
+          "kind": "function",
+          "line": 59
         }
       ]
     },
@@ -9343,7 +9379,7 @@
     },
     {
       "file": "src/hosted/http_auth.py",
-      "lines": 218,
+      "lines": 213,
       "symbols": []
     },
     {
@@ -12468,7 +12504,7 @@
     },
     {
       "file": "src/hosted/operator_project_preflight.py",
-      "lines": 116,
+      "lines": 139,
       "symbols": [
         {
           "name": "ProductionPurgePreflight",
@@ -12478,7 +12514,7 @@
         {
           "name": "HostedGooglePurgePreflight",
           "kind": "class",
-          "line": 49
+          "line": 53
         }
       ]
     },
@@ -12659,7 +12695,7 @@
     },
     {
       "file": "src/hosted/packages.py",
-      "lines": 723,
+      "lines": 724,
       "symbols": [
         {
           "name": "_fields",
@@ -12903,7 +12939,7 @@
     },
     {
       "file": "src/hosted/purge_planning.py",
-      "lines": 222,
+      "lines": 278,
       "symbols": [
         {
           "name": "_utc",
@@ -12923,7 +12959,7 @@
         {
           "name": "HostedPurgePlanner",
           "kind": "class",
-          "line": 73
+          "line": 80
         }
       ]
     },
@@ -12961,7 +12997,7 @@
     },
     {
       "file": "src/hosted/purge_sandbox.py",
-      "lines": 331,
+      "lines": 376,
       "symbols": [
         {
           "name": "SimulatedPurgeCrash",
@@ -13283,7 +13319,7 @@
     },
     {
       "file": "src/hosted/runtime_services.py",
-      "lines": 1111,
+      "lines": 1117,
       "symbols": [
         {
           "name": "_clean_public",
@@ -13328,32 +13364,32 @@
         {
           "name": "HostedCommittedAssetStore",
           "kind": "class",
-          "line": 814
+          "line": 816
         },
         {
           "name": "HostedHistoryStore",
           "kind": "class",
-          "line": 965
+          "line": 969
         },
         {
           "name": "HostedBackupStore",
           "kind": "class",
-          "line": 1055
+          "line": 1061
         },
         {
           "name": "HostedProjectUsageService",
           "kind": "class",
-          "line": 1067
+          "line": 1073
         },
         {
           "name": "HostedCapabilityProvider",
           "kind": "class",
-          "line": 1092
+          "line": 1098
         },
         {
           "name": "ensure_hosted_user",
           "kind": "function",
-          "line": 1100
+          "line": 1106
         }
       ]
     },
@@ -13372,6 +13408,252 @@
       "file": "src/hosted/security/__init__.py",
       "lines": 1,
       "symbols": []
+    },
+    {
+      "file": "src/hosted/security/account_metric_eligibility.py",
+      "lines": 138,
+      "symbols": [
+        {
+          "name": "GoogleFirestoreAccountEligibility",
+          "kind": "class",
+          "line": 19
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/account_word_backfill.py",
+      "lines": 382,
+      "symbols": [
+        {
+          "name": "fingerprint",
+          "kind": "function",
+          "line": 27
+        },
+        {
+          "name": "job_path",
+          "kind": "function",
+          "line": 32
+        },
+        {
+          "name": "AccountWordBackfill",
+          "kind": "class",
+          "line": 37
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/account_word_backfill_store.py",
+      "lines": 204,
+      "symbols": [
+        {
+          "name": "BackfillUnavailable",
+          "kind": "class",
+          "line": 13
+        },
+        {
+          "name": "BackfillOutcomeUnknown",
+          "kind": "class",
+          "line": 14
+        },
+        {
+          "name": "BackfillBudgetExceeded",
+          "kind": "class",
+          "line": 15
+        },
+        {
+          "name": "BackfillBudget",
+          "kind": "class",
+          "line": 18
+        },
+        {
+          "name": "_Transaction",
+          "kind": "class",
+          "line": 56
+        },
+        {
+          "name": "BoundedAccountWordStore",
+          "kind": "class",
+          "line": 142
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/account_word_campaign.py",
+      "lines": 176,
+      "symbols": [
+        {
+          "name": "_object",
+          "kind": "function",
+          "line": 22
+        },
+        {
+          "name": "_plan",
+          "kind": "function",
+          "line": 30
+        },
+        {
+          "name": "BackfillCampaign",
+          "kind": "class",
+          "line": 46
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/account_word_campaign_transport.py",
+      "lines": 42,
+      "symbols": [
+        {
+          "name": "_API",
+          "kind": "class",
+          "line": 6
+        },
+        {
+          "name": "metered_client",
+          "kind": "function",
+          "line": 37
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/account_word_content.py",
+      "lines": 171,
+      "symbols": [
+        {
+          "name": "_remaining",
+          "kind": "function",
+          "line": 28
+        },
+        {
+          "name": "BoundedCurrentBlockReader",
+          "kind": "class",
+          "line": 34
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/account_word_guard.py",
+      "lines": 252,
+      "symbols": [
+        {
+          "name": "_canonical",
+          "kind": "function",
+          "line": 19
+        },
+        {
+          "name": "proof_path",
+          "kind": "function",
+          "line": 23
+        },
+        {
+          "name": "proof_count",
+          "kind": "function",
+          "line": 29
+        },
+        {
+          "name": "_Transaction",
+          "kind": "class",
+          "line": 42
+        },
+        {
+          "name": "AccountWordGuard",
+          "kind": "class",
+          "line": 63
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/account_word_operator.py",
+      "lines": 111,
+      "symbols": [
+        {
+          "name": "inspect_account_plan",
+          "kind": "function",
+          "line": 15
+        },
+        {
+          "name": "inspect_job_state",
+          "kind": "function",
+          "line": 22
+        },
+        {
+          "name": "_CampaignWorker",
+          "kind": "class",
+          "line": 33
+        },
+        {
+          "name": "operator_worker",
+          "kind": "function",
+          "line": 63
+        },
+        {
+          "name": "ready_for_step",
+          "kind": "function",
+          "line": 74
+        },
+        {
+          "name": "process_account_campaign",
+          "kind": "function",
+          "line": 86
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/account_word_reader.py",
+      "lines": 97,
+      "symbols": [
+        {
+          "name": "GoogleFirestoreAccountWordsProducer",
+          "kind": "class",
+          "line": 19
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/account_word_restore.py",
+      "lines": 55,
+      "symbols": [
+        {
+          "name": "AccountWordRestoreRepair",
+          "kind": "class",
+          "line": 17
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/account_word_state.py",
+      "lines": 121,
+      "symbols": [
+        {
+          "name": "path",
+          "kind": "function",
+          "line": 22
+        },
+        {
+          "name": "_integer",
+          "kind": "function",
+          "line": 26
+        },
+        {
+          "name": "project_entry",
+          "kind": "function",
+          "line": 32
+        },
+        {
+          "name": "state",
+          "kind": "function",
+          "line": 43
+        },
+        {
+          "name": "parse",
+          "kind": "function",
+          "line": 67
+        },
+        {
+          "name": "sum_accounts",
+          "kind": "function",
+          "line": 80
+        }
+      ]
     },
     {
       "file": "src/hosted/security/canvas_projection.py",
@@ -13660,6 +13942,63 @@
       ]
     },
     {
+      "file": "src/hosted/security/map_line_inventory.py",
+      "lines": 117,
+      "symbols": [
+        {
+          "name": "MapLineInventorySnapshot",
+          "kind": "class",
+          "line": 23
+        },
+        {
+          "name": "GoogleFirestoreMapLineInventoryProducer",
+          "kind": "class",
+          "line": 53
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/metric_projection_budget.py",
+      "lines": 79,
+      "symbols": [
+        {
+          "name": "ProjectionBudgetUnavailable",
+          "kind": "class",
+          "line": 10
+        },
+        {
+          "name": "current_scope",
+          "kind": "function",
+          "line": 14
+        },
+        {
+          "name": "current_operation",
+          "kind": "function",
+          "line": 15
+        },
+        {
+          "name": "ProjectionScope",
+          "kind": "class",
+          "line": 17
+        },
+        {
+          "name": "transaction_scope",
+          "kind": "function",
+          "line": 39
+        },
+        {
+          "name": "ProjectionTransaction",
+          "kind": "class",
+          "line": 44
+        },
+        {
+          "name": "write_envelope",
+          "kind": "function",
+          "line": 74
+        }
+      ]
+    },
+    {
       "file": "src/hosted/security/metrics.py",
       "lines": 51,
       "symbols": [
@@ -13683,6 +14022,250 @@
           "name": "HostedPrivateFirestoreFields",
           "kind": "class",
           "line": 76
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/product_inventory.py",
+      "lines": 173,
+      "symbols": [
+        {
+          "name": "ProductInventorySnapshot",
+          "kind": "class",
+          "line": 44
+        },
+        {
+          "name": "GoogleFirestoreProductInventoryProducer",
+          "kind": "class",
+          "line": 73
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/project_recency.py",
+      "lines": 164,
+      "symbols": [
+        {
+          "name": "ProjectRecencySnapshot",
+          "kind": "class",
+          "line": 30
+        },
+        {
+          "name": "GoogleFirestoreProjectRecencyProducer",
+          "kind": "class",
+          "line": 62
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/saved_word_aggregate.py",
+      "lines": 114,
+      "symbols": [
+        {
+          "name": "WordContext",
+          "kind": "class",
+          "line": 20
+        },
+        {
+          "name": "_timestamp",
+          "kind": "function",
+          "line": 29
+        },
+        {
+          "name": "aggregate_verified_snapshot",
+          "kind": "function",
+          "line": 35
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/saved_word_guard.py",
+      "lines": 287,
+      "symbols": [
+        {
+          "name": "_ledger",
+          "kind": "function",
+          "line": 23
+        },
+        {
+          "name": "_maintain",
+          "kind": "function",
+          "line": 32
+        },
+        {
+          "name": "_CoverageTransaction",
+          "kind": "class",
+          "line": 68
+        },
+        {
+          "name": "SavedWordCoverageGuard",
+          "kind": "class",
+          "line": 78
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/saved_word_identity.py",
+      "lines": 116,
+      "symbols": [
+        {
+          "name": "_uid",
+          "kind": "function",
+          "line": 16
+        },
+        {
+          "name": "_stamp",
+          "kind": "function",
+          "line": 23
+        },
+        {
+          "name": "WordIdentity",
+          "kind": "class",
+          "line": 33
+        },
+        {
+          "name": "verify_identity",
+          "kind": "function",
+          "line": 48
+        },
+        {
+          "name": "match_pinned_identity",
+          "kind": "function",
+          "line": 84
+        },
+        {
+          "name": "WordOwner",
+          "kind": "class",
+          "line": 90
+        },
+        {
+          "name": "verify_owner",
+          "kind": "function",
+          "line": 97
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/saved_word_policy.py",
+      "lines": 158,
+      "symbols": [
+        {
+          "name": "_token",
+          "kind": "function",
+          "line": 18
+        },
+        {
+          "name": "WordPolicy",
+          "kind": "class",
+          "line": 25
+        },
+        {
+          "name": "WordReview",
+          "kind": "class",
+          "line": 42
+        },
+        {
+          "name": "WordPolicyCandidate",
+          "kind": "class",
+          "line": 52
+        },
+        {
+          "name": "_fingerprint",
+          "kind": "function",
+          "line": 59
+        },
+        {
+          "name": "prepare_review",
+          "kind": "function",
+          "line": 63
+        },
+        {
+          "name": "candidate_update",
+          "kind": "function",
+          "line": 97
+        },
+        {
+          "name": "prepare_stored_removal",
+          "kind": "function",
+          "line": 140
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/saved_word_projection.py",
+      "lines": 131,
+      "symbols": [
+        {
+          "name": "_integer",
+          "kind": "function",
+          "line": 16
+        },
+        {
+          "name": "Contribution",
+          "kind": "class",
+          "line": 21
+        },
+        {
+          "name": "count_saved_text",
+          "kind": "function",
+          "line": 30
+        },
+        {
+          "name": "Projection",
+          "kind": "class",
+          "line": 38
+        },
+        {
+          "name": "prepare_complete_snapshot",
+          "kind": "function",
+          "line": 58
+        },
+        {
+          "name": "prepare_replacement",
+          "kind": "function",
+          "line": 77
+        },
+        {
+          "name": "verified_contribution",
+          "kind": "function",
+          "line": 99
+        },
+        {
+          "name": "rebind_restored_contribution",
+          "kind": "function",
+          "line": 115
+        },
+        {
+          "name": "contribution_intent",
+          "kind": "function",
+          "line": 125
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/saved_word_reader.py",
+      "lines": 159,
+      "symbols": [
+        {
+          "name": "SavedWordsUnavailable",
+          "kind": "class",
+          "line": 21
+        },
+        {
+          "name": "GoogleFirestoreSavedWordsProducer",
+          "kind": "class",
+          "line": 25
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/security/saved_word_retention.py",
+      "lines": 35,
+      "symbols": [
+        {
+          "name": "policy_references_user",
+          "kind": "function",
+          "line": 12
         }
       ]
     },
@@ -13961,6 +14544,22 @@
           "name": "delete_confirmed_orphan",
           "kind": "function",
           "line": 439
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/usage_consent.py",
+      "lines": 124,
+      "symbols": [
+        {
+          "name": "UsageConsent",
+          "kind": "class",
+          "line": 28
+        },
+        {
+          "name": "router_for",
+          "kind": "function",
+          "line": 90
         }
       ]
     },
@@ -14611,7 +15210,7 @@
     },
     {
       "file": "src/runtime/hosted.py",
-      "lines": 238,
+      "lines": 268,
       "symbols": [
         {
           "name": "_validate_worker_configuration",
@@ -14636,12 +15235,12 @@
         {
           "name": "build_hosted_dev_runtime",
           "kind": "function",
-          "line": 233
+          "line": 263
         },
         {
           "name": "build_hosted_runtime",
           "kind": "function",
-          "line": 237
+          "line": 267
         }
       ]
     },
@@ -16020,7 +16619,7 @@
     },
     {
       "file": "static/js/core/boot.js",
-      "lines": 305,
+      "lines": 306,
       "symbols": [
         {
           "name": "applyRuntimeImageInputPolicy",
@@ -16085,22 +16684,22 @@
         {
           "name": "openRecoveryBoot",
           "kind": "function",
-          "line": 255
+          "line": 256
         },
         {
           "name": "applyCanvasConfig",
           "kind": "function",
-          "line": 266
+          "line": 267
         },
         {
           "name": "applyBootstrapData",
           "kind": "function",
-          "line": 272
+          "line": 273
         },
         {
           "name": "refresh",
           "kind": "function",
-          "line": 281
+          "line": 282
         }
       ]
     },
@@ -16562,7 +17161,7 @@
     },
     {
       "file": "static/js/core/runtime.js",
-      "lines": 100,
+      "lines": 102,
       "symbols": [
         {
           "name": "$",
@@ -16627,7 +17226,7 @@
         {
           "name": "apiList",
           "kind": "function",
-          "line": 95
+          "line": 97
         }
       ]
     },
@@ -16654,7 +17253,7 @@
     },
     {
       "file": "static/js/core/ui.js",
-      "lines": 325,
+      "lines": 327,
       "symbols": [
         {
           "name": "runtimeSupports",
@@ -16814,82 +17413,82 @@
         {
           "name": "closeUserProfilePopover",
           "kind": "function",
-          "line": 219
+          "line": 221
         },
         {
           "name": "toggleUserProfilePopover",
           "kind": "function",
-          "line": 220
+          "line": 222
         },
         {
           "name": "openCreateLocalProfile",
           "kind": "function",
-          "line": 221
+          "line": 223
         },
         {
           "name": "create",
           "kind": "function",
-          "line": 225
+          "line": 227
         },
         {
           "name": "normalizeLocalProfileAvatar",
           "kind": "function",
-          "line": 228
+          "line": 230
         },
         {
           "name": "openLocalProfileEditor",
           "kind": "function",
-          "line": 242
+          "line": 244
         },
         {
           "name": "renderPreview",
           "kind": "function",
-          "line": 247
+          "line": 249
         },
         {
           "name": "setTheme",
           "kind": "function",
-          "line": 260
+          "line": 262
         },
         {
           "name": "setSaveState",
           "kind": "function",
-          "line": 275
+          "line": 277
         },
         {
           "name": "i18nLocale",
           "kind": "function",
-          "line": 281
+          "line": 283
         },
         {
           "name": "i18nNumber",
           "kind": "function",
-          "line": 283
+          "line": 285
         },
         {
           "name": "i18nDate",
           "kind": "function",
-          "line": 284
+          "line": 286
         },
         {
           "name": "i18nDateTime",
           "kind": "function",
-          "line": 285
+          "line": 287
         },
         {
           "name": "i18nTime",
           "kind": "function",
-          "line": 286
+          "line": 288
         },
         {
           "name": "i18nCount",
           "kind": "function",
-          "line": 287
+          "line": 289
         },
         {
           "name": "refreshRuntimeLocalizedUi",
           "kind": "function",
-          "line": 288
+          "line": 290
         }
       ]
     },
@@ -16916,117 +17515,112 @@
     },
     {
       "file": "static/js/features/account/identity-platform.js",
-      "lines": 184,
+      "lines": 149,
       "symbols": [
-        {
-          "name": "currentNoticeLanguage",
-          "kind": "function",
-          "line": 16
-        },
         {
           "name": "creationReady",
           "kind": "function",
-          "line": 17
+          "line": 11
         },
         {
           "name": "updateAvailability",
           "kind": "function",
-          "line": 18
+          "line": 12
         },
         {
           "name": "requireNotice",
           "kind": "function",
-          "line": 24
+          "line": 18
         },
         {
           "name": "suspendNotice",
           "kind": "function",
-          "line": 28
+          "line": 22
         },
         {
           "name": "loadNotice",
           "kind": "function",
-          "line": 34
+          "line": 23
         },
         {
           "name": "authText",
           "kind": "function",
-          "line": 66
+          "line": 32
         },
         {
           "name": "label",
           "kind": "function",
-          "line": 67
+          "line": 33
         },
         {
           "name": "refreshLabels",
           "kind": "function",
-          "line": 68
+          "line": 34
         },
         {
           "name": "setMode",
           "kind": "function",
-          "line": 77
+          "line": 43
         },
         {
           "name": "chooseLanguage",
           "kind": "function",
-          "line": 88
+          "line": 54
         },
         {
           "name": "setupPresentation",
           "kind": "function",
-          "line": 94
+          "line": 60
         },
         {
           "name": "showMessage",
           "kind": "function",
-          "line": 115
+          "line": 81
         },
         {
           "name": "hideMessage",
           "kind": "function",
-          "line": 116
+          "line": 82
         },
         {
           "name": "safeReturn",
           "kind": "function",
-          "line": 117
+          "line": 83
         },
         {
           "name": "busy",
           "kind": "function",
-          "line": 128
+          "line": 94
         },
         {
           "name": "askTotp",
           "kind": "function",
-          "line": 129
+          "line": 95
         },
         {
           "name": "requireVerifiedEmail",
           "kind": "function",
-          "line": 136
+          "line": 102
         },
         {
           "name": "requirePasswordTotp",
           "kind": "function",
-          "line": 146
+          "line": 112
         },
         {
           "name": "finish",
           "kind": "function",
-          "line": 156
+          "line": 122
         },
         {
           "name": "withBusy",
           "kind": "function",
-          "line": 163
+          "line": 129
         },
         {
           "name": "renderSocial",
           "kind": "function",
-          "line": 164
+          "line": 130
         }
       ]
     },
@@ -17174,6 +17768,72 @@
           "name": "keys",
           "kind": "function",
           "line": 9
+        }
+      ]
+    },
+    {
+      "file": "static/js/features/account/usage-consent.js",
+      "lines": 68,
+      "symbols": [
+        {
+          "name": "usageConsentAvailable",
+          "kind": "function",
+          "line": 4
+        },
+        {
+          "name": "usageConsentText",
+          "kind": "function",
+          "line": 5
+        },
+        {
+          "name": "usageConsentDetailsMarkup",
+          "kind": "function",
+          "line": 6
+        },
+        {
+          "name": "usageConsentPromptMarkup",
+          "kind": "function",
+          "line": 7
+        },
+        {
+          "name": "clearUsageConsent",
+          "kind": "function",
+          "line": 8
+        },
+        {
+          "name": "renderUsageConsentBanner",
+          "kind": "function",
+          "line": 9
+        },
+        {
+          "name": "loadUsageConsent",
+          "kind": "function",
+          "line": 17
+        },
+        {
+          "name": "saveUsageConsent",
+          "kind": "function",
+          "line": 23
+        },
+        {
+          "name": "usageConsentPrivacyMarkup",
+          "kind": "function",
+          "line": 45
+        },
+        {
+          "name": "renderUsageConsentPrivacy",
+          "kind": "function",
+          "line": 48
+        },
+        {
+          "name": "openUsagePrivacy",
+          "kind": "function",
+          "line": 53
+        },
+        {
+          "name": "startUsageConsent",
+          "kind": "function",
+          "line": 63
         }
       ]
     },
@@ -21585,7 +22245,7 @@
     },
     {
       "file": "static/js/features/manuscript/rendering.js",
-      "lines": 505,
+      "lines": 522,
       "symbols": [
         {
           "name": "newTempId",
@@ -21830,167 +22490,167 @@
         {
           "name": "active",
           "kind": "function",
-          "line": 256
+          "line": 267
         },
         {
           "name": "worker",
           "kind": "function",
-          "line": 289
+          "line": 300
         },
         {
           "name": "selectSceneGap",
           "kind": "function",
-          "line": 308
+          "line": 319
         },
         {
           "name": "findIsOpen",
           "kind": "function",
-          "line": 314
+          "line": 325
         },
         {
           "name": "syncFindScopeLabel",
           "kind": "function",
-          "line": 316
+          "line": 327
         },
         {
           "name": "refreshFindForContext",
           "kind": "function",
-          "line": 317
+          "line": 328
         },
         {
           "name": "selectChapter",
           "kind": "function",
-          "line": 318
+          "line": 329
         },
         {
           "name": "loadChapterData",
           "kind": "function",
-          "line": 326
+          "line": 337
         },
         {
           "name": "task",
           "kind": "function",
-          "line": 334
+          "line": 345
         },
         {
           "name": "clearManuscriptReadCache",
           "kind": "function",
-          "line": 366
+          "line": 377
         },
         {
           "name": "cancelFullTextPreview",
           "kind": "function",
-          "line": 375
+          "line": 386
         },
         {
           "name": "fullTextLoadingIndicator",
           "kind": "function",
-          "line": 376
+          "line": 387
         },
         {
           "name": "fullTextPreview",
           "kind": "function",
-          "line": 377
+          "line": 388
         },
         {
           "name": "openWholeBook",
           "kind": "function",
-          "line": 392
+          "line": 403
         },
         {
           "name": "captureManuscriptViewport",
           "kind": "function",
-          "line": 401
+          "line": 418
         },
         {
           "name": "restoreManuscriptViewport",
           "kind": "function",
-          "line": 409
+          "line": 426
         },
         {
           "name": "manuscriptLocationPayload",
           "kind": "function",
-          "line": 415
+          "line": 432
         },
         {
           "name": "schedulePersistManuscriptLocation",
           "kind": "function",
-          "line": 422
+          "line": 439
         },
         {
           "name": "restoreManuscriptLocation",
           "kind": "function",
-          "line": 425
+          "line": 442
         },
         {
           "name": "restoreLastManuscriptLocation",
           "kind": "function",
-          "line": 437
+          "line": 454
         },
         {
           "name": "pulseBookmarkTarget",
           "kind": "function",
-          "line": 440
+          "line": 457
         },
         {
           "name": "bookmarkStartWrap",
           "kind": "function",
-          "line": 441
+          "line": 458
         },
         {
           "name": "revealBookmarkWrap",
           "kind": "function",
-          "line": 442
+          "line": 459
         },
         {
           "name": "goToBookmark",
           "kind": "function",
-          "line": 443
+          "line": 460
         },
         {
           "name": "preserveManuscriptViewport",
           "kind": "function",
-          "line": 472
+          "line": 489
         },
         {
           "name": "reloadManuscriptView",
           "kind": "function",
-          "line": 474
+          "line": 491
         },
         {
           "name": "scheduleCommentsWorkspaceSync",
           "kind": "function",
-          "line": 493
+          "line": 510
         },
         {
           "name": "manuscriptProseForStorage",
           "kind": "function",
-          "line": 494
+          "line": 511
         },
         {
           "name": "serializeWrap",
           "kind": "function",
-          "line": 498
+          "line": 515
         },
         {
           "name": "serializeSceneWrap",
           "kind": "function",
-          "line": 502
+          "line": 519
         },
         {
           "name": "wrapsForChapter",
           "kind": "function",
-          "line": 503
+          "line": 520
         },
         {
           "name": "localChapterSnapshot",
           "kind": "function",
-          "line": 504
+          "line": 521
         },
         {
           "name": "localSceneSnapshot",
           "kind": "function",
-          "line": 505
+          "line": 522
         }
       ]
     },
@@ -28374,63 +29034,63 @@
       "method": "GET",
       "function": "identity_platform_client_config",
       "file": "src/hosted/http_auth.py",
-      "line": 125,
+      "line": 120,
       "path": "/api/auth/client-config"
     },
     {
       "method": "GET",
       "function": "identity_platform_csrf",
       "file": "src/hosted/http_auth.py",
-      "line": 129,
+      "line": 124,
       "path": "/api/auth/csrf"
     },
     {
       "method": "POST",
       "function": "identity_platform_exchange",
       "file": "src/hosted/http_auth.py",
-      "line": 139,
+      "line": 134,
       "path": "/api/auth/session/exchange"
     },
     {
       "method": "GET",
       "function": "identity_platform_security_snapshot",
       "file": "src/hosted/http_auth.py",
-      "line": 164,
+      "line": 159,
       "path": "/api/auth/security"
     },
     {
       "method": "POST",
       "function": "identity_platform_security_proof",
       "file": "src/hosted/http_auth.py",
-      "line": 175,
+      "line": 170,
       "path": "/api/auth/security/proof"
     },
     {
       "method": "POST",
       "function": "identity_platform_security_sync",
       "file": "src/hosted/http_auth.py",
-      "line": 184,
+      "line": 179,
       "path": "/api/auth/security/sync"
     },
     {
       "method": "POST",
       "function": "identity_platform_logout_everywhere",
       "file": "src/hosted/http_auth.py",
-      "line": 201,
+      "line": 196,
       "path": "/api/auth/logout-everywhere"
     },
     {
       "method": "POST",
       "function": "identity_platform_logout_everywhere",
       "file": "src/hosted/http_auth.py",
-      "line": 201,
+      "line": 196,
       "path": "/api/auth/security/sign-out-everywhere"
     },
     {
       "method": "POST",
       "function": "identity_platform_selective_session_revoke",
       "file": "src/hosted/http_auth.py",
-      "line": 214,
+      "line": 209,
       "path": "/api/auth/security/session/revoke"
     },
     {
@@ -29958,7 +30618,21 @@
       "file": "src/hosted/readable_export.py",
       "line": 36,
       "path": "/api/export/zip"
+    },
+    {
+      "method": "GET",
+      "function": "get_choice",
+      "file": "src/hosted/usage_consent.py",
+      "line": 98,
+      "path": "/api/account/usage-consent"
+    },
+    {
+      "method": "PUT",
+      "function": "save_choice",
+      "file": "src/hosted/usage_consent.py",
+      "line": 102,
+      "path": "/api/account/usage-consent"
     }
   ],
-  "route_decorator_count": 549
+  "route_decorator_count": 551
 }
