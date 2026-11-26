@@ -1,0 +1,8 @@
+/* Non-modal account choice; reuse shared body buttons and settings switch. */
+.usage-consent-banner{position:fixed;right:18px;bottom:calc(38px + env(safe-area-inset-bottom,0px));z-index:45;width:min(440px,calc(100vw - 36px));max-height:60dvh;overflow:auto;padding:18px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);box-shadow:var(--shadow);font-size:13px;line-height:1.5}
+.usage-consent-copy{display:grid;gap:7px}.usage-consent-copy>b{font-size:14px}.usage-consent-copy p,.usage-consent-details p{margin:0}.usage-consent-copy small{color:var(--muted);font-size:12px}
+.usage-consent-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.usage-consent-actions button{min-height:44px}
+.usage-consent-details{margin-top:10px;font-size:12px;color:var(--muted)}.usage-consent-details summary{cursor:pointer;color:var(--text);width:fit-content;min-height:28px;display:list-item;align-content:center}.usage-consent-details p{margin-top:8px}.usage-consent-details a{color:var(--text)}
+.usage-consent-error{margin:10px 0 0;color:var(--danger);font-size:12px}.usage-consent-error[hidden]{display:none}
+.usage-consent-privacy{max-width:520px}.usage-consent-privacy .project-settings-switch-row{gap:20px}.usage-consent-privacy .structure-switch{flex-shrink:0}.usage-consent-privacy #usageConsentStatus{margin:12px 0}
+@media(max-width:600px){.usage-consent-banner{right:12px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:calc(100vw - 24px);padding:16px}.usage-consent-details summary{min-height:44px}}

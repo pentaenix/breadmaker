@@ -161,7 +161,7 @@ async def hosted_request_boundary(request: Request, call_next):
             project_id=''
             match=_PROJECT_PATH_RE.match(path)
             if match:project_id=match.group(1)
-            if not project_id and not package_import_path and path.startswith('/api/') and path not in _PUBLIC_API and path not in {'/api/workspace','/api/profile','/api/profiles','/api/projects','/api/projects/import','/api/data/export','/api/identity/current'}:
+            if not project_id and not package_import_path and path.startswith('/api/') and path not in _PUBLIC_API and path not in {'/api/workspace','/api/profile','/api/profiles','/api/projects','/api/projects/import','/api/data/export','/api/identity/current','/api/account/usage-consent'}:
                 project_id=str(request.headers.get('x-breadmaker-project') or request.query_params.get('project_id') or '')
                 if not project_id:
                     try:project_id=str(await run_in_threadpool(lambda:runtime.projects.profile_project_target(runtime.identity.active_profile_id())) or '')

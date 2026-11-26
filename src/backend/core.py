@@ -26,3 +26,5 @@ else:
     from hosted.http_api import install_request_boundary, platform_router
     install_request_boundary(app)
     app.include_router(platform_router)
+    from hosted.usage_consent import router_for as usage_consent_router
+    app.include_router(usage_consent_router(runtime))

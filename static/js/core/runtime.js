@@ -69,7 +69,7 @@ async function api(url, options={}) {
   const narrationRequest=/^\/api\/(?:narrations(?:\/|\?|$)|narration-(?:models|pronunciation|voices)(?:\/|\?|$))/.test(url);
   // Personal UI state is outside canonical Undo. Background preference saves
   // can overlap an action, but member-state entities cannot join its journal.
-  const personalStateRequest=/^\/api\/ui-state(?:\/|\?|$)/.test(url);
+  const personalStateRequest=/^\/api\/(?:ui-state|account\/usage-consent)(?:\/|\?|$)/.test(url);
   // Package import creates a distinct project; it cannot join an in-flight
   // structural Undo journal belonging to the currently open manuscript.
   const projectPackageImportRequest=/^\/api\/projects\/import(?:\/|\?|$)/.test(url);
@@ -78,6 +78,7 @@ async function api(url, options={}) {
   const response = await fetch(url, {...fetchOptions, headers:{...headers, ...contextHeaders, ...nonceHeaders, 'X-Breadmaker-Client':CLIENT_ID, 'X-Breadmaker-Locale':i18nLocale(), ...(options.headers||{})}});
   if(response.status===304&&acceptNotModified&&method==='GET')return null;
   if (!response.ok) {
+    if(hosted&&(response.status===401||response.status===403)&&typeof clearUsageConsent==='function')clearUsageConsent();
     // Missing membership intentionally looks like a missing project (404).
     const missingManuscript=method==='GET'&&response.status===404&&(url.startsWith('/api/book?')||url.startsWith('/api/chapters/'));
     if(hosted&&(response.status===401||response.status===403||missingManuscript)&&typeof clearManuscriptReadCache==='function')clearManuscriptReadCache();
@@ -87,6 +88,7 @@ async function api(url, options={}) {
     throw breadmakerErrorFromPayload(payload,response.status);
   }
   if(hosted&&method==='POST'&&url==='/api/auth/logout'&&typeof clearManuscriptReadCache==='function')clearManuscriptReadCache();
+  if(hosted&&method==='POST'&&url==='/api/auth/logout'&&typeof clearUsageConsent==='function')clearUsageConsent();
   if(hosted&&method==='POST'&&url==='/api/auth/logout'&&typeof clearHostedNarrationContext==='function')clearHostedNarrationContext(true);
   if(rawResponse)return response; // caller owns bounded private JSON/binary parsing
   const type = response.headers.get('content-type') || '';
