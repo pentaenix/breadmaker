@@ -175,6 +175,12 @@ def _build_hosted_runtime(_workspace=None, *, runtime_mode: str, documents=None,
             lambda: sessions.current().user_id if sessions.current() is not None else None)
 
     context=HostedProjectContextProvider(project_authority,users,user_id_provider,kind=identity_kind)
+    from hosted.activity.records import enabled as activity_enabled
+    if activity_enabled():
+        if runtime_mode != 'hosted' or auth_mode != 'identity_platform':
+            raise RuntimeError('HOSTED_ACTIVITY_REQUIRES_AUTHENTICATED_HOSTED_MODE')
+        from hosted.activity.journal import ActivityObserver
+        documents.activity = ActivityObserver(user_id_provider)
     identity=HostedIdentityProvider(documents,objects,project_authority,context,user_id_provider,kind=identity_kind)
     projects=HostedCloudProjectRepository(documents,objects,project_authority,users,user_id_provider,
         saved_word_projection_enabled=saved_words_enabled)

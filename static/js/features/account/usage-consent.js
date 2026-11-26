@@ -8,7 +8,8 @@ function usageConsentAvailable(){return state.runtime?.mode==='hosted'&&runtimeS
 function usageConsentText(key){return i18nText(`usage_consent.${key}`)}
 function usageConsentDetailsMarkup(){return `<details class="usage-consent-details"><summary>${escapeHtml(usageConsentText('details'))}</summary><p>${escapeHtml(usageConsentText('scope'))}</p><p>${escapeHtml(usageConsentText('exclusions'))}</p><p>${escapeHtml(usageConsentText('retention'))} <a href="https://breadmaker.studio/privacy" target="_blank" rel="noopener noreferrer">${escapeHtml(usageConsentText('privacy_notice'))}</a></p></details>`}
 function usageConsentPromptMarkup(){return `<div class="usage-consent-copy"><b id="usageConsentTitle">${escapeHtml(usageConsentText('title'))}</b><p>${escapeHtml(usageConsentText('summary'))}</p><small>${escapeHtml(usageConsentText('remembered'))}</small></div>${usageConsentDetailsMarkup()}<div class="usage-consent-actions"><button type="button" class="soft-button" data-usage-choice="allow">${escapeHtml(usageConsentText('allow'))}</button><button type="button" class="soft-button" data-usage-choice="refuse">${escapeHtml(usageConsentText('refuse'))}</button></div><p class="usage-consent-error" role="alert" hidden></p>`}
-function clearUsageConsent(){usageConsentEpoch++;usageConsentValue=null;usageConsentBusy=false;document.getElementById('usageConsentBanner')?.remove();renderUsageConsentPrivacy()}
+function usageConsentChanged(){window.dispatchEvent(new Event('breadmaker-usage-choice'))}
+function clearUsageConsent(){usageConsentEpoch++;usageConsentValue=null;usageConsentBusy=false;document.getElementById('usageConsentBanner')?.remove();renderUsageConsentPrivacy();usageConsentChanged()}
 function renderUsageConsentBanner(){
   let panel=document.getElementById('usageConsentBanner');
   if(!usageConsentAvailable()||!usageConsentValue?.needs_choice){panel?.remove();return}
@@ -22,7 +23,7 @@ async function loadUsageConsent(){
   const epoch=usageConsentEpoch,result=await api(usageConsentPath);
   if(epoch!==usageConsentEpoch||usageConsentBusy)return usageConsentValue;
   if(result.notice_version!==usageConsentNotice.version||result.notice_sha256!==usageConsentNotice.sha256){clearUsageConsent();throw Object.assign(new Error(usageConsentText('reload')),{code:'USAGE_NOTICE_CHANGED'})}
-  usageConsentValue=result;renderUsageConsentBanner();return result;
+  usageConsentValue=result;renderUsageConsentBanner();usageConsentChanged();return result;
 }
 async function saveUsageConsent(choice,host){
   if(usageConsentBusy||!usageConsentAvailable()||!usageConsentValue)return;
@@ -44,7 +45,7 @@ async function saveUsageConsent(choice,host){
     }
     if(error?.isConnected){error.textContent=usageConsentText(failure.status===409?'changed':'save_failed');error.hidden=false}
   }finally{
-    if(epoch===usageConsentEpoch){usageConsentBusy=false;host?.querySelectorAll('button').forEach(button=>button.disabled=false);renderUsageConsentBanner();renderUsageConsentPrivacy()}
+    if(epoch===usageConsentEpoch){usageConsentBusy=false;host?.querySelectorAll('button').forEach(button=>button.disabled=false);renderUsageConsentBanner();renderUsageConsentPrivacy();usageConsentChanged()}
   }
 }
 function usageConsentPrivacyMarkup(){

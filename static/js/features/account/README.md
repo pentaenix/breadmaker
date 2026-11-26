@@ -15,7 +15,8 @@ revision. Records live privately on the account root, within the existing
 lifecycle/erasure fence and account retention. They are not project content,
 structural Undo, advertising permission or installation-wide consent.
 
-This preference does not activate activity collection. Future producers must
+This preference alone does not activate activity collection. The separately gated
+`activity.js` sender and `hosted/activity` producers must
 check current consent, the exact notice scope and active-account fence before
 writing anything, apply the promised 30-day activity retention, and stop when
 permission is withdrawn. A broader purpose requires a new notice version.

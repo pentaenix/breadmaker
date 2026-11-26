@@ -69,7 +69,7 @@ async function api(url, options={}) {
   const narrationRequest=/^\/api\/(?:narrations(?:\/|\?|$)|narration-(?:models|pronunciation|voices)(?:\/|\?|$))/.test(url);
   // Personal UI state is outside canonical Undo. Background preference saves
   // can overlap an action, but member-state entities cannot join its journal.
-  const personalStateRequest=/^\/api\/(?:ui-state|account\/usage-consent)(?:\/|\?|$)/.test(url);
+  const personalStateRequest=/^\/api\/(?:ui-state|account\/(?:usage-consent|activity-pulse))(?:\/|\?|$)/.test(url);
   // Package import creates a distinct project; it cannot join an in-flight
   // structural Undo journal belonging to the currently open manuscript.
   const projectPackageImportRequest=/^\/api\/projects\/import(?:\/|\?|$)/.test(url);

@@ -624,6 +624,8 @@ class HostedDomainStore:
                 stamp=stamp,
             )
             tx.create(path, data)
+            if logical_entity == 'task' and hasattr(tx, 'activity_task_states'):
+                tx.activity_task_states(path, None, public.get('status'))
             return data
 
         row = self.documents.run_transaction(mutate)
@@ -1082,6 +1084,8 @@ class HostedDomainStore:
             data["_bm_last_operation"] = op
             data["_bm_last_fingerprint"] = fingerprint
             tx.set(path, data)
+            if logical_entity == 'task' and hasattr(tx, 'activity_task_states'):
+                tx.activity_task_states(path, hydrated_current.get('status'), merged_for_object.get('status'))
             return data
 
         row = self.documents.run_transaction(mutate)

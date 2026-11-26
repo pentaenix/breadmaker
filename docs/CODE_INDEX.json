@@ -6418,7 +6418,7 @@
     },
     {
       "file": "src/backend/core.py",
-      "lines": 30,
+      "lines": 32,
       "symbols": []
     },
     {
@@ -7957,7 +7957,7 @@
     },
     {
       "file": "src/hosted/action_journal.py",
-      "lines": 322,
+      "lines": 334,
       "symbols": [
         {
           "name": "_modification_stamp",
@@ -8017,12 +8017,161 @@
         {
           "name": "ActionDocumentStore",
           "kind": "class",
-          "line": 142
+          "line": 147
         },
         {
           "name": "ActionJournal",
           "kind": "class",
-          "line": 204
+          "line": 214
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/activity/__init__.py",
+      "lines": 1,
+      "symbols": []
+    },
+    {
+      "file": "src/hosted/activity/http_api.py",
+      "lines": 30,
+      "symbols": [
+        {
+          "name": "router_for",
+          "kind": "function",
+          "line": 8
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/activity/journal.py",
+      "lines": 151,
+      "symbols": [
+        {
+          "name": "ActivityTransaction",
+          "kind": "class",
+          "line": 16
+        },
+        {
+          "name": "ActivityObserver",
+          "kind": "class",
+          "line": 45
+        },
+        {
+          "name": "pulse",
+          "kind": "function",
+          "line": 134
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/activity/reader.py",
+      "lines": 204,
+      "symbols": [
+        {
+          "name": "Unavailable",
+          "kind": "class",
+          "line": 16
+        },
+        {
+          "name": "iso",
+          "kind": "function",
+          "line": 20
+        },
+        {
+          "name": "_stream",
+          "kind": "function",
+          "line": 24
+        },
+        {
+          "name": "_iterator",
+          "kind": "function",
+          "line": 36
+        },
+        {
+          "name": "_locks",
+          "kind": "function",
+          "line": 47
+        },
+        {
+          "name": "_roots",
+          "kind": "function",
+          "line": 60
+        },
+        {
+          "name": "_grant",
+          "kind": "function",
+          "line": 72
+        },
+        {
+          "name": "collect",
+          "kind": "function",
+          "line": 77
+        }
+      ]
+    },
+    {
+      "file": "src/hosted/activity/records.py",
+      "lines": 136,
+      "symbols": [
+        {
+          "name": "enabled",
+          "kind": "function",
+          "line": 30
+        },
+        {
+          "name": "bundle_hash",
+          "kind": "function",
+          "line": 44
+        },
+        {
+          "name": "digest",
+          "kind": "function",
+          "line": 53
+        },
+        {
+          "name": "eligible",
+          "kind": "function",
+          "line": 58
+        },
+        {
+          "name": "day_key",
+          "kind": "function",
+          "line": 78
+        },
+        {
+          "name": "blank",
+          "kind": "function",
+          "line": 82
+        },
+        {
+          "name": "load",
+          "kind": "function",
+          "line": 90
+        },
+        {
+          "name": "collection",
+          "kind": "function",
+          "line": 108
+        },
+        {
+          "name": "task_path",
+          "kind": "function",
+          "line": 118
+        },
+        {
+          "name": "canonical",
+          "kind": "function",
+          "line": 122
+        },
+        {
+          "name": "task_fingerprint",
+          "kind": "function",
+          "line": 126
+        },
+        {
+          "name": "increment",
+          "kind": "function",
+          "line": 131
         }
       ]
     },
@@ -8253,7 +8402,7 @@
     },
     {
       "file": "src/hosted/domain_store.py",
-      "lines": 1204,
+      "lines": 1208,
       "symbols": [
         {
           "name": "_merge_manuscript_patch",
@@ -14549,7 +14698,7 @@
     },
     {
       "file": "src/hosted/usage_consent.py",
-      "lines": 128,
+      "lines": 131,
       "symbols": [
         {
           "name": "UsageConsent",
@@ -15210,7 +15359,7 @@
     },
     {
       "file": "src/runtime/hosted.py",
-      "lines": 268,
+      "lines": 274,
       "symbols": [
         {
           "name": "_validate_worker_configuration",
@@ -15235,12 +15384,12 @@
         {
           "name": "build_hosted_dev_runtime",
           "kind": "function",
-          "line": 263
+          "line": 269
         },
         {
           "name": "build_hosted_runtime",
           "kind": "function",
-          "line": 267
+          "line": 273
         }
       ]
     },
@@ -17493,6 +17642,37 @@
       ]
     },
     {
+      "file": "static/js/features/account/activity.js",
+      "lines": 26,
+      "symbols": [
+        {
+          "name": "allowed",
+          "kind": "function",
+          "line": 5
+        },
+        {
+          "name": "foreground",
+          "kind": "function",
+          "line": 6
+        },
+        {
+          "name": "stop",
+          "kind": "function",
+          "line": 7
+        },
+        {
+          "name": "pulse",
+          "kind": "function",
+          "line": 8
+        },
+        {
+          "name": "sync",
+          "kind": "function",
+          "line": 16
+        }
+      ]
+    },
+    {
       "file": "static/js/features/account/identity-platform-client.js",
       "lines": 227,
       "symbols": [
@@ -17773,7 +17953,7 @@
     },
     {
       "file": "static/js/features/account/usage-consent.js",
-      "lines": 73,
+      "lines": 74,
       "symbols": [
         {
           "name": "usageConsentAvailable",
@@ -17796,44 +17976,49 @@
           "line": 10
         },
         {
-          "name": "clearUsageConsent",
+          "name": "usageConsentChanged",
           "kind": "function",
           "line": 11
         },
         {
-          "name": "renderUsageConsentBanner",
+          "name": "clearUsageConsent",
           "kind": "function",
           "line": 12
         },
         {
+          "name": "renderUsageConsentBanner",
+          "kind": "function",
+          "line": 13
+        },
+        {
           "name": "loadUsageConsent",
           "kind": "function",
-          "line": 20
+          "line": 21
         },
         {
           "name": "saveUsageConsent",
           "kind": "function",
-          "line": 27
+          "line": 28
         },
         {
           "name": "usageConsentPrivacyMarkup",
           "kind": "function",
-          "line": 50
+          "line": 51
         },
         {
           "name": "renderUsageConsentPrivacy",
           "kind": "function",
-          "line": 53
+          "line": 54
         },
         {
           "name": "openUsagePrivacy",
           "kind": "function",
-          "line": 58
+          "line": 59
         },
         {
           "name": "startUsageConsent",
           "kind": "function",
-          "line": 68
+          "line": 69
         }
       ]
     },
@@ -29010,6 +29195,13 @@
       "path": "/api/lease/release"
     },
     {
+      "method": "POST",
+      "function": "foreground",
+      "file": "src/hosted/activity/http_api.py",
+      "line": 12,
+      "path": "/api/account/activity-pulse"
+    },
+    {
       "method": "GET",
       "function": "status",
       "file": "src/hosted/editing_http.py",
@@ -30623,16 +30815,16 @@
       "method": "GET",
       "function": "get_choice",
       "file": "src/hosted/usage_consent.py",
-      "line": 102,
+      "line": 105,
       "path": "/api/account/usage-consent"
     },
     {
       "method": "PUT",
       "function": "save_choice",
       "file": "src/hosted/usage_consent.py",
-      "line": 106,
+      "line": 109,
       "path": "/api/account/usage-consent"
     }
   ],
-  "route_decorator_count": 551
+  "route_decorator_count": 552
 }

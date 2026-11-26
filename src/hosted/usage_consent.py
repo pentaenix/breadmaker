@@ -93,6 +93,9 @@ class UsageConsent:
 
 def router_for(runtime):
     router = APIRouter()
+    def public(value):
+        from hosted.activity.records import enabled
+        return {**value, 'collection_enabled': enabled()}
     def service():
         if runtime.mode != 'hosted' or runtime.sessions.metadata().get('auth_mode') != 'identity_platform':
             raise HTTPException(404, 'NOT_FOUND')
@@ -100,7 +103,7 @@ def router_for(runtime):
 
     @router.get('/api/account/usage-consent')
     def get_choice():
-        return service().get(runtime.identity.request_user_id())
+        return public(service().get(runtime.identity.request_user_id()))
 
     @router.put('/api/account/usage-consent')
     async def save_choice(request: Request):
@@ -123,6 +126,6 @@ def router_for(runtime):
         except (ValueError, UnicodeError):
             raise HTTPException(400, 'USAGE_CHOICE_INVALID') from None
         owner = runtime.identity.request_user_id()
-        return await run_in_threadpool(service().save, owner, body)
+        return public(await run_in_threadpool(service().save, owner, body))
 
     return router
