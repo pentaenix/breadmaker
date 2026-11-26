@@ -40,14 +40,15 @@ class UsageConsent:
     def _view(data):
         record = data.get(FIELD)
         if record is None:
-            return dict(choice=None, allowed=False, needs_choice=True, revision=0, notice_version=NOTICE_VERSION)
+            return dict(choice=None, allowed=False, needs_choice=True, revision=0,
+                        notice_version=NOTICE_VERSION, notice_sha256=NOTICE_SHA256)
         if (not isinstance(record, dict) or type(record.get('choice')) is not bool
                 or type(record.get('revision')) is not int or not 1 <= record['revision'] < 2**53):
             raise HTTPException(503, 'USAGE_CHOICE_UNAVAILABLE')
         current = record.get('notice_version') == NOTICE_VERSION and record.get('notice_sha256') == NOTICE_SHA256
         return dict(choice=record['choice'] if current else None,
                     allowed=current and record['choice'], needs_choice=not current,
-                    revision=record['revision'], notice_version=NOTICE_VERSION)
+                    revision=record['revision'], notice_version=NOTICE_VERSION, notice_sha256=NOTICE_SHA256)
 
     def get(self, uid):
         uid = require_user_id(uid)
@@ -60,10 +61,13 @@ class UsageConsent:
 
     def save(self, uid, body):
         uid = require_user_id(uid)
-        if (not isinstance(body, dict) or set(body) != {'choice', 'revision', 'notice_version'}
+        if (not isinstance(body, dict) or set(body) != {'choice', 'revision', 'notice_version', 'notice_sha256'}
                 or type(body.get('choice')) is not bool or type(body.get('revision')) is not int
-                or not 0 <= body['revision'] < 2**53-1 or body.get('notice_version') != NOTICE_VERSION):
+                or not 0 <= body['revision'] < 2**53-1
+                or not isinstance(body.get('notice_version'), str) or not isinstance(body.get('notice_sha256'), str)):
             raise HTTPException(400, 'USAGE_CHOICE_INVALID')
+        if body['notice_version'] != NOTICE_VERSION or body['notice_sha256'] != NOTICE_SHA256:
+            raise HTTPException(409, dict(code='USAGE_NOTICE_CHANGED', message='Reload Breadmaker before choosing.'))
         stamp = self.clock()
         def write(tx):
             path = ('users', uid)

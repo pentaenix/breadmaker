@@ -14549,7 +14549,7 @@
     },
     {
       "file": "src/hosted/usage_consent.py",
-      "lines": 124,
+      "lines": 128,
       "symbols": [
         {
           "name": "UsageConsent",
@@ -14559,7 +14559,7 @@
         {
           "name": "router_for",
           "kind": "function",
-          "line": 90
+          "line": 94
         }
       ]
     },
@@ -17773,67 +17773,67 @@
     },
     {
       "file": "static/js/features/account/usage-consent.js",
-      "lines": 68,
+      "lines": 73,
       "symbols": [
         {
           "name": "usageConsentAvailable",
           "kind": "function",
-          "line": 4
+          "line": 7
         },
         {
           "name": "usageConsentText",
           "kind": "function",
-          "line": 5
+          "line": 8
         },
         {
           "name": "usageConsentDetailsMarkup",
           "kind": "function",
-          "line": 6
+          "line": 9
         },
         {
           "name": "usageConsentPromptMarkup",
           "kind": "function",
-          "line": 7
+          "line": 10
         },
         {
           "name": "clearUsageConsent",
           "kind": "function",
-          "line": 8
+          "line": 11
         },
         {
           "name": "renderUsageConsentBanner",
           "kind": "function",
-          "line": 9
+          "line": 12
         },
         {
           "name": "loadUsageConsent",
           "kind": "function",
-          "line": 17
+          "line": 20
         },
         {
           "name": "saveUsageConsent",
           "kind": "function",
-          "line": 23
+          "line": 27
         },
         {
           "name": "usageConsentPrivacyMarkup",
           "kind": "function",
-          "line": 45
+          "line": 50
         },
         {
           "name": "renderUsageConsentPrivacy",
           "kind": "function",
-          "line": 48
+          "line": 53
         },
         {
           "name": "openUsagePrivacy",
           "kind": "function",
-          "line": 53
+          "line": 58
         },
         {
           "name": "startUsageConsent",
           "kind": "function",
-          "line": 63
+          "line": 68
         }
       ]
     },
@@ -30623,14 +30623,14 @@
       "method": "GET",
       "function": "get_choice",
       "file": "src/hosted/usage_consent.py",
-      "line": 98,
+      "line": 102,
       "path": "/api/account/usage-consent"
     },
     {
       "method": "PUT",
       "function": "save_choice",
       "file": "src/hosted/usage_consent.py",
-      "line": 102,
+      "line": 106,
       "path": "/api/account/usage-consent"
     }
   ],

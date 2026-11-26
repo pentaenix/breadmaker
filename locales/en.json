@@ -3723,7 +3723,8 @@
     "usage_consent.off": "Off · saved to your account",
     "usage_consent.load_failed": "Could not load your choice. Close and reopen Privacy to try again.",
     "usage_consent.close": "Close",
-    "usage_consent.loading": "Loading your choice…"
+    "usage_consent.loading": "Loading your choice…",
+    "usage_consent.reload": "The notice changed. Reload Breadmaker before choosing."
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

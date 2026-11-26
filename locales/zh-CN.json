@@ -3723,7 +3723,8 @@
     "usage_consent.off": "关闭 · 已保存到账户",
     "usage_consent.load_failed": "无法加载选择。请关闭并重新打开隐私。",
     "usage_consent.close": "关闭",
-    "usage_consent.loading": "正在加载您的选择…"
+    "usage_consent.loading": "正在加载您的选择…",
+    "usage_consent.reload": "声明已更改。请重新加载 Breadmaker 后再选择。"
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

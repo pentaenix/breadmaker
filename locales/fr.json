@@ -3723,7 +3723,8 @@
     "usage_consent.off": "Désactivées · enregistré dans votre compte",
     "usage_consent.load_failed": "Impossible de charger votre choix. Fermez puis rouvrez Confidentialité.",
     "usage_consent.close": "Fermer",
-    "usage_consent.loading": "Chargement de votre choix…"
+    "usage_consent.loading": "Chargement de votre choix…",
+    "usage_consent.reload": "L’avis a changé. Rechargez Breadmaker avant de choisir."
   },
   "css_variables": {
     "--i18n-287cdd3aa816": "css.content.content.e1c6b5c4",

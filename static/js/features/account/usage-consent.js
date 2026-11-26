@@ -1,5 +1,8 @@
 // Hosted account preference only. No presence, activity listeners or telemetry.
 const usageConsentPath='/api/account/usage-consent';
+// These pins describe THIS shipped copy. Never adopt a newer server notice
+// while an old tab is still showing the previous wording.
+const usageConsentNotice={version:'hosted-usage-v1',sha256:'48aef39f2c232477605e1b16c12853e2fb5ceed5a1c57565be563d745a841c55'};
 let usageConsentValue=null,usageConsentBusy=false,usageConsentEpoch=0,usageConsentStarted=false;
 function usageConsentAvailable(){return state.runtime?.mode==='hosted'&&runtimeSupports('account_sessions')&&state.runtime?.auth?.auth_mode==='identity_platform'}
 function usageConsentText(key){return i18nText(`usage_consent.${key}`)}
@@ -18,6 +21,7 @@ async function loadUsageConsent(){
   if(!usageConsentAvailable()){clearUsageConsent();return null}
   const epoch=usageConsentEpoch,result=await api(usageConsentPath);
   if(epoch!==usageConsentEpoch||usageConsentBusy)return usageConsentValue;
+  if(result.notice_version!==usageConsentNotice.version||result.notice_sha256!==usageConsentNotice.sha256){clearUsageConsent();throw Object.assign(new Error(usageConsentText('reload')),{code:'USAGE_NOTICE_CHANGED'})}
   usageConsentValue=result;renderUsageConsentBanner();return result;
 }
 async function saveUsageConsent(choice,host){
@@ -27,15 +31,16 @@ async function saveUsageConsent(choice,host){
   const error=host?.querySelector('.usage-consent-error');if(error)error.hidden=true;
   host?.querySelectorAll('button').forEach(button=>button.disabled=true);
   try{
-    const result=await api(usageConsentPath,{method:'PUT',body:JSON.stringify({choice,revision:previous.revision,notice_version:previous.notice_version})});
+    const result=await api(usageConsentPath,{method:'PUT',body:JSON.stringify({choice,revision:previous.revision,notice_version:usageConsentNotice.version,notice_sha256:usageConsentNotice.sha256})});
     if(epoch!==usageConsentEpoch)return;
     usageConsentValue=result;
     toast(usageConsentText(choice?'saved_on':'saved_off'));
   }catch(failure){
     if(epoch!==usageConsentEpoch)return;
     if(failure.status===401||failure.status===403){clearUsageConsent();return}
+    if(failure.code==='USAGE_NOTICE_CHANGED'){clearUsageConsent();toast(usageConsentText('reload'),6000);return}
     if(failure.status===409){
-      try{const latest=await api(usageConsentPath);if(epoch!==usageConsentEpoch)return;usageConsentValue=latest}catch{}
+      try{const latest=await api(usageConsentPath);if(epoch!==usageConsentEpoch)return;if(latest.notice_version!==usageConsentNotice.version||latest.notice_sha256!==usageConsentNotice.sha256){clearUsageConsent();toast(usageConsentText('reload'),6000);return}usageConsentValue=latest}catch{}
     }
     if(error?.isConnected){error.textContent=usageConsentText(failure.status===409?'changed':'save_failed');error.hidden=false}
   }finally{
@@ -58,7 +63,7 @@ async function openUsagePrivacy(){
   document.getElementById('usageConsentSwitch').onclick=()=>saveUsageConsent(!usageConsentValue?.allowed,document.getElementById('usageConsentPrivacy'));
   renderUsageConsentPrivacy();
   try{await loadUsageConsent();renderUsageConsentPrivacy()}
-  catch{const error=document.querySelector('#usageConsentPrivacy .usage-consent-error');if(error){error.textContent=usageConsentText('load_failed');error.hidden=false}}
+  catch(failure){const error=document.querySelector('#usageConsentPrivacy .usage-consent-error');if(error){error.textContent=usageConsentText(failure.code==='USAGE_NOTICE_CHANGED'?'reload':'load_failed');error.hidden=false}}
 }
 function startUsageConsent(){
   if(!usageConsentAvailable())return;
